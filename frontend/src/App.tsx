@@ -405,10 +405,14 @@ const modelSeed: ModelItem[] = [
 ];
 
 function ModelsPage() {
+  const { t } = useTranslation();
   const [models, setModels] = useState(modelSeed);
   const [type, setType] = useState<"ALL" | ModelItem["type"]>("ALL");
   const [editing, setEditing] = useState<ModelItem | null>(null);
-  const [testResult, setTestResult] = useState("");
+  const [testResult, setTestResult] = useState<{
+    state: "testing" | "success" | "error";
+    message: string;
+  } | null>(null);
   useEffect(() => {
     fetch("/api/v1/models")
       .then((response) =>
@@ -442,7 +446,10 @@ function ModelsPage() {
       },
     );
     if (!response.ok) {
-      setTestResult("保存失败，请检查服务连接和输入内容");
+      setTestResult({
+        state: "error",
+        message: t("models.saveFailed"),
+      });
       return;
     }
     const saved = await response.json();
@@ -468,7 +475,7 @@ function ModelsPage() {
   };
   const testConnection = async () => {
     if (!editing) return;
-    setTestResult("正在调用模型验证连接…");
+    setTestResult({ state: "testing", message: t("models.connectionTesting") });
     try {
       const response = await fetch("/api/v1/models/test-connection", {
         method: "POST",
@@ -496,10 +503,18 @@ function ModelsPage() {
         `请求失败（HTTP ${response.status}）`;
       const statusCode = result.statusCode || response.status;
       setTestResult(
-        `${success ? "✓" : "✕"} ${message}${statusCode ? `（HTTP ${statusCode}）` : ""}`,
+        success
+          ? { state: "success", message: t("models.connectionSucceeded") }
+          : {
+              state: "error",
+              message: `${message || t("models.connectionFailed")}${statusCode ? `（HTTP ${statusCode}）` : ""}`,
+            },
       );
     } catch {
-      setTestResult("✕ 无法连接后端服务");
+      setTestResult({
+        state: "error",
+        message: t("models.connectionFailed"),
+      });
     }
   };
   return (
@@ -727,9 +742,22 @@ function ModelsPage() {
                 </label>
               </div>
               {testResult && (
-                <div className="policy-note">
-                  <b>{testResult}</b>
-                  <p>测试会向模型厂商发起一次最小真实请求，不保存响应内容。</p>
+                <div
+                  className={`connection-result connection-result--${testResult.state}`}
+                  role="status"
+                  aria-live="polite"
+                >
+                  <span className="connection-result__icon" aria-hidden="true">
+                    {testResult.state === "success"
+                      ? "✓"
+                      : testResult.state === "error"
+                        ? "×"
+                        : "···"}
+                  </span>
+                  <div>
+                    <b>{testResult.message}</b>
+                    <p>{t("models.connectionHint")}</p>
+                  </div>
                 </div>
               )}
               <div className="sticky-actions">

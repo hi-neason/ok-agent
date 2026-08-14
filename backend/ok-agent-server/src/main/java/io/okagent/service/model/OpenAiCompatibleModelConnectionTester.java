@@ -44,8 +44,7 @@ public class OpenAiCompatibleModelConnectionTester implements ModelConnectionTes
         return new ModelConnectionTestResponse(false, 0, "Model provider returned no response.");
       }
 
-      return new ModelConnectionTestResponse(
-          true, 200, "Model request succeeded through AgentScope Java.");
+      return new ModelConnectionTestResponse(true, 200, "Connection succeeded.");
     } catch (Exception exception) {
       var providerException = findCause(exception, OpenAIException.class);
       if (providerException != null && providerException.getStatusCode() != null) {

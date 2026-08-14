@@ -19,6 +19,14 @@ const resources = {
         system: "账号与权限",
       },
       common: { controlPlane: "控制面", search: "搜索", language: "语言" },
+      models: {
+        connectionSucceeded: "连接成功",
+        connectionTesting: "正在验证连接…",
+        connectionFailed: "连接失败",
+        saveFailed: "保存失败，请检查服务连接和输入内容",
+        connectionHint:
+          "测试会向模型厂商发起一次最小真实请求，不保存响应内容。",
+      },
     },
   },
   "en-US": {
@@ -41,6 +49,14 @@ const resources = {
         controlPlane: "Control Plane",
         search: "Search",
         language: "Language",
+      },
+      models: {
+        connectionSucceeded: "Connection succeeded",
+        connectionTesting: "Testing connection…",
+        connectionFailed: "Connection failed",
+        saveFailed: "Save failed. Check the service connection and input.",
+        connectionHint:
+          "The test sends one minimal request to the model provider and does not store its response.",
       },
     },
   },

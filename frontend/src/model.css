@@ -1,1 +1,151 @@
-.model-type-filter{display:flex;align-items:center;gap:8px;margin-left:auto;color:#6f93bb;font:10px 'DM Mono',monospace}.model-type-filter select{border:1px solid #cfe2f7;border-radius:6px;background:#fff;color:#356997;padding:7px 9px;outline:none;font:10px 'DM Mono',monospace}.table-head.model-table-row,.table-row.model-table-row{grid-template-columns:minmax(190px,1.3fr) 105px 125px minmax(120px,.9fr) minmax(165px,1fr) 72px 120px;gap:12px}.model-actions{display:flex;gap:10px;white-space:nowrap}.model-modal-mask{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:36px;background:rgba(22,51,88,.24);backdrop-filter:blur(4px);animation:model-fade .18s ease}.model-editor{width:min(820px,calc(100vw - 72px));max-height:calc(100vh - 72px);overflow:auto;padding:24px;box-shadow:0 26px 80px rgba(22,62,110,.25);animation:model-rise .22s ease}.model-editor .sticky-actions{position:sticky;bottom:-24px;background:#fff;padding:17px 0 0;margin-top:18px}.model-editor .form-title{position:sticky;top:-24px;background:#fff;padding:0 0 16px;z-index:1}@keyframes model-fade{from{opacity:0}to{opacity:1}}@keyframes model-rise{from{opacity:0;transform:translateY(12px) scale(.985)}to{opacity:1;transform:none}}
+.model-type-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  color: #6f93bb;
+  font:
+    10px "DM Mono",
+    monospace;
+}
+.model-type-filter select {
+  border: 1px solid #cfe2f7;
+  border-radius: 6px;
+  background: #fff;
+  color: #356997;
+  padding: 7px 9px;
+  outline: none;
+  font:
+    10px "DM Mono",
+    monospace;
+}
+.table-head.model-table-row,
+.table-row.model-table-row {
+  grid-template-columns:
+    minmax(190px, 1.3fr) 105px 125px minmax(120px, 0.9fr)
+    minmax(165px, 1fr) 72px 120px;
+  gap: 12px;
+}
+.model-actions {
+  display: flex;
+  gap: 10px;
+  white-space: nowrap;
+}
+.model-modal-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 36px;
+  background: rgba(22, 51, 88, 0.24);
+  backdrop-filter: blur(4px);
+  animation: model-fade 0.18s ease;
+}
+.model-editor {
+  width: min(820px, calc(100vw - 72px));
+  max-height: calc(100vh - 72px);
+  overflow: auto;
+  padding: 24px;
+  box-shadow: 0 26px 80px rgba(22, 62, 110, 0.25);
+  animation: model-rise 0.22s ease;
+}
+.model-editor .sticky-actions {
+  position: sticky;
+  bottom: -24px;
+  background: #fff;
+  padding: 17px 0 0;
+  margin-top: 18px;
+}
+.model-editor .form-title {
+  position: sticky;
+  top: -24px;
+  background: #fff;
+  padding: 0 0 16px;
+  z-index: 1;
+}
+.connection-result {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 19px 0;
+  padding: 14px 16px;
+  border: 1px solid #d9e7f5;
+  border-radius: 8px;
+  background: #f6faff;
+  color: #4a7198;
+  animation: connection-result-in 0.2s ease both;
+}
+.connection-result__icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: #e4eef8;
+  color: #6485a8;
+  font:
+    700 15px/1 "DM Mono",
+    monospace;
+}
+.connection-result b {
+  display: block;
+  font-size: 12px;
+  line-height: 25px;
+}
+.connection-result p {
+  margin: 5px 0 0;
+  font-size: 11px;
+  line-height: 1.6;
+}
+.connection-result--success {
+  border-color: #b9e7d0;
+  background: linear-gradient(110deg, #edfbf4, #f8fdfa);
+  color: #16744f;
+}
+.connection-result--success .connection-result__icon {
+  background: #1aa371;
+  color: #fff;
+  box-shadow: 0 0 0 5px rgba(26, 163, 113, 0.1);
+}
+.connection-result--error {
+  border-color: #f0d0cd;
+  background: #fff7f6;
+  color: #a24e47;
+}
+.connection-result--error .connection-result__icon {
+  background: #d96258;
+  color: #fff;
+}
+.connection-result--testing .connection-result__icon {
+  color: #176fd7;
+  background: #e3f0ff;
+}
+@keyframes model-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes model-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes connection-result-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

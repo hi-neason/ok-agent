@@ -1,0 +1,13 @@
+{
+  "name": "ok-agent",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=ok-agent-console",
+    "build": "npm run build --workspace=ok-agent-console",
+    "preview": "npm run preview --workspace=ok-agent-console"
+  }
+}

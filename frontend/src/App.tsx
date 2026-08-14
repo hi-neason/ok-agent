@@ -864,38 +864,46 @@ function SkillTree({
   nodes,
   selectedPath,
   onSelect,
-  depth = 0,
 }: {
   nodes: SkillTreeNode[];
   selectedPath?: string;
   onSelect: (path: string) => void;
-  depth?: number;
 }) {
-  return (
-    <>
-      {nodes.map((node) => (
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
+
+  const toggleFolder = (path: string) => {
+    setCollapsed((current) => {
+      const next = new Set(current);
+      if (next.has(path)) next.delete(path);
+      else next.add(path);
+      return next;
+    });
+  };
+
+  const renderNodes = (items: SkillTreeNode[], depth: number) =>
+    items.map((node) => {
+      const folder = !node.file;
+      const isCollapsed = collapsed.has(node.path);
+      return (
         <div key={node.path}>
           <button
-            className={selectedPath === node.path ? "selected" : ""}
+            className={`${selectedPath === node.path ? "selected" : ""} ${folder ? "skill-tree-folder" : ""}`}
             style={{ paddingLeft: 10 + depth * 17 }}
-            onClick={() => node.file && onSelect(node.path)}
-            disabled={!node.file}
+            onClick={() =>
+              folder ? toggleFolder(node.path) : onSelect(node.path)
+            }
+            aria-expanded={folder ? !isCollapsed : undefined}
           >
-            <span>{node.file ? "◇" : "▾"}</span>
+            <span>{folder ? (isCollapsed ? "▸" : "▾") : "◇"}</span>
             {node.name}
           </button>
-          {node.children.length > 0 && (
-            <SkillTree
-              nodes={node.children}
-              selectedPath={selectedPath}
-              onSelect={onSelect}
-              depth={depth + 1}
-            />
-          )}
+          {node.children.length > 0 && !isCollapsed &&
+            renderNodes(node.children, depth + 1)}
         </div>
-      ))}
-    </>
-  );
+      );
+    });
+
+  return <>{renderNodes(nodes, 0)}</>;
 }
 
 function SkillsPage() {

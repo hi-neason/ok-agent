@@ -192,8 +192,8 @@
 .skill-browser aside > p { margin: 0 10px 12px; color: #7898b8; font: 9px "DM Mono", monospace; letter-spacing: 1px; text-transform: uppercase; }
 .skill-browser aside button { display: flex; align-items: center; gap: 8px; width: 100%; padding: 9px 10px; overflow: hidden; border: 0; border-radius: 6px; background: transparent; color: #42688e; font: 10px "DM Mono", monospace; text-align: left; white-space: nowrap; cursor: pointer; }
 .skill-browser aside button:hover, .skill-browser aside button.selected { background: #dfeeff; color: #0b6dcc; }
-.skill-browser aside button:disabled { opacity: 1; color: #315f8c; cursor: default; }
-.skill-browser aside button:disabled:hover { background: transparent; }
+.skill-browser aside button.skill-tree-folder { color: #315f8c; font-weight: 600; }
+.skill-browser aside button.skill-tree-folder:hover { background: #e8f3ff; }
 .skill-browser aside button span { color: #7da7d0; }
 .skill-browser main { min-width: 0; overflow: auto; background: #fff; }
 .file-preview-head { position: sticky; top: 0; display: flex; justify-content: space-between; padding: 15px 20px; border-bottom: 1px solid #e1ebf5; background: rgba(255,255,255,.94); color: #426b94; }

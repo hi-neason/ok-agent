@@ -640,7 +640,7 @@ function ModelsPage() {
                   )}
                 </label>
                 <label className="field">
-                  <span>模型 ID</span>
+                  <span>模型（MODEL_ID）</span>
                   <input
                     value={editing.modelId}
                     onChange={(e) =>

@@ -811,83 +811,398 @@ function ModelsPage() {
   );
 }
 
+type SkillItem = {
+  id: string;
+  skillKey: string;
+  name: string;
+  description: string;
+  assetVersion: string;
+  sourceType: "MANUAL" | "FILE_IMPORT" | "GIT";
+  sourceUri: string;
+  entryFile: string;
+  content: string;
+  enabled: boolean;
+  updatedAt?: string;
+};
+
+const emptySkill: SkillItem = {
+  id: "",
+  skillKey: "",
+  name: "",
+  description: "",
+  assetVersion: "v1",
+  sourceType: "MANUAL",
+  sourceUri: "",
+  entryFile: "SKILL.md",
+  content: "",
+  enabled: true,
+};
+
 function SkillsPage() {
-  const [enabled, setEnabled] = useState([true, true, false]);
-  const skills = [
-    ["product-faq", "产品知识问答", "v11 · 12 references"],
-    ["ticket-writing", "工单编写规范", "v3 · 2 scripts"],
-    ["self-reflection", "自我复盘草稿", "v1-draft · review required"],
-  ];
+  const { t } = useTranslation();
+  const [skills, setSkills] = useState<SkillItem[]>([]);
+  const [editing, setEditing] = useState<SkillItem | null>(null);
+  const [query, setQuery] = useState("");
+  const [source, setSource] = useState<"ALL" | SkillItem["sourceType"]>("ALL");
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/v1/skills")
+      .then((response) =>
+        response.ok
+          ? (response.json() as Promise<SkillItem[]>)
+          : Promise.reject(),
+      )
+      .then(setSkills)
+      .catch(() => setError(t("skills.loadFailed")));
+  }, [t]);
+
+  const visibleSkills = skills.filter(
+    (skill) =>
+      (source === "ALL" || skill.sourceType === source) &&
+      `${skill.name} ${skill.skillKey} ${skill.description}`
+        .toLowerCase()
+        .includes(query.toLowerCase()),
+  );
+
+  const saveSkill = async () => {
+    if (!editing || saving) return;
+    setSaving(true);
+    setError("");
+    try {
+      const response = await fetch(
+        editing.id ? `/api/v1/skills/${editing.id}` : "/api/v1/skills",
+        {
+          method: editing.id ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(editing),
+        },
+      );
+      if (!response.ok) throw new Error();
+      const saved = (await response.json()) as SkillItem;
+      setSkills((current) =>
+        editing.id
+          ? current.map((skill) => (skill.id === saved.id ? saved : skill))
+          : [saved, ...current],
+      );
+      setEditing(null);
+    } catch {
+      setError(t("skills.saveFailed"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const setSkillEnabled = async (skill: SkillItem, enabled: boolean) => {
+    const response = await fetch(
+      `/api/v1/skills/${skill.id}/enabled?value=${enabled}`,
+      { method: "PATCH" },
+    );
+    if (!response.ok) {
+      setError(t("skills.statusFailed"));
+      return;
+    }
+    const saved = (await response.json()) as SkillItem;
+    setSkills((current) =>
+      current.map((item) => (item.id === saved.id ? saved : item)),
+    );
+  };
+
+  const deleteSkill = async (skill: SkillItem) => {
+    if (!window.confirm(t("skills.deleteConfirm", { name: skill.name })))
+      return;
+    const response = await fetch(`/api/v1/skills/${skill.id}`, {
+      method: "DELETE",
+    });
+    if (!response.ok) {
+      setError(t("skills.deleteFailed"));
+      return;
+    }
+    setSkills((current) => current.filter((item) => item.id !== skill.id));
+  };
+
+  const importFile = async (file: File) => {
+    const content = await file.text();
+    const fallbackKey = file.name
+      .replace(/\.md$/i, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+    setEditing((current) =>
+      current
+        ? {
+            ...current,
+            sourceType: "FILE_IMPORT",
+            entryFile: file.name,
+            content,
+            skillKey: current.skillKey || fallbackKey,
+            name: current.name || fallbackKey,
+          }
+        : current,
+    );
+  };
+
   return (
     <>
       <PageHeader
-        kicker="SKILL MARKET / BINDING"
-        title="技能仓库"
-        description="按优先级绑定 AgentSkillRepository；发布时锁定 Skill 的内容 hash 与版本。"
-        action={<Button>＋ 导入 Skill</Button>}
+        kicker="SKILL ASSETS / REPOSITORY"
+        title={t("skills.title")}
+        description={t("skills.description")}
+        action={
+          <Button
+            onClick={() => {
+              setError("");
+              setEditing({ ...emptySkill });
+            }}
+          >
+            ＋ {t("skills.create")}
+          </Button>
+        }
       />
-      <div className="content-split">
-        <section className="catalog-panel">
-          <div className="catalog-header">
-            <div className="search-mini">⌕ 搜索技能资产</div>
-            <button className="filter-chip">全部来源⌄</button>
+      {error && <div className="skill-error">× {error}</div>}
+      <section className="run-table skill-registry">
+        <div className="table-tools">
+          <label className="search-mini skill-search">
+            ⌕
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder={t("skills.search")}
+            />
+          </label>
+          <label className="model-type-filter">
+            {t("skills.source")}
+            <select
+              value={source}
+              onChange={(event) =>
+                setSource(event.target.value as typeof source)
+              }
+            >
+              <option value="ALL">{t("skills.allSources")}</option>
+              <option value="MANUAL">{t("skills.manual")}</option>
+              <option value="FILE_IMPORT">{t("skills.fileImport")}</option>
+              <option value="GIT">Git</option>
+            </select>
+          </label>
+        </div>
+        <div className="table-head skill-table-row">
+          <span>{t("skills.skill")}</span>
+          <span>{t("skills.version")}</span>
+          <span>{t("skills.source")}</span>
+          <span>{t("skills.entryFile")}</span>
+          <span>{t("skills.updated")}</span>
+          <span>{t("skills.status")}</span>
+          <span>{t("skills.actions")}</span>
+        </div>
+        {visibleSkills.length === 0 ? (
+          <div className="skill-empty">
+            <span>✦</span>
+            <b>{t("skills.emptyTitle")}</b>
+            <p>{t("skills.emptyDescription")}</p>
           </div>
-          {skills.map(([id, name, meta], i) => (
-            <article className="skill-row" key={id}>
-              <div className="skill-glyph">✦</div>
-              <div>
-                <b>{name}</b>
-                <code>{id}</code>
-                <small>{meta}</small>
-              </div>
+        ) : (
+          visibleSkills.map((skill) => (
+            <div className="table-row skill-table-row" key={skill.id}>
+              <span className="skill-identity">
+                <i>✦</i>
+                <span>
+                  <b>{skill.name}</b>
+                  <code>{skill.skillKey}</code>
+                  <small>{skill.description}</small>
+                </span>
+              </span>
+              <code>{skill.assetVersion}</code>
+              <span
+                className={`skill-source ${skill.sourceType.toLowerCase()}`}
+              >
+                {skill.sourceType.replace("_", " ")}
+              </span>
+              <code>{skill.entryFile}</code>
+              <span>
+                {skill.updatedAt
+                  ? new Date(skill.updatedAt).toLocaleString()
+                  : "—"}
+              </span>
               <Toggle
-                on={enabled[i]}
-                setOn={(next) =>
-                  setEnabled((current) =>
-                    current.map((v, index) => (index === i ? next : v)),
-                  )
-                }
-                label={`toggle ${name}`}
+                on={skill.enabled}
+                setOn={(next) => setSkillEnabled(skill, next)}
+                label={`${t("skills.status")} ${skill.name}`}
               />
-            </article>
-          ))}
-        </section>
-        <aside className="binding-panel">
-          <p className="kicker">RESOLUTION ORDER</p>
-          <h2>加载优先级</h2>
-          <div className="priority-list">
-            <div>
-              <b>01</b>
-              <span>
-                平台基础库<small>project-global</small>
+              <span className="model-actions">
+                <button
+                  className="link-button"
+                  onClick={() => {
+                    setError("");
+                    setEditing(skill);
+                  }}
+                >
+                  {t("skills.edit")}
+                </button>
+                <button
+                  className="link-button danger-link"
+                  onClick={() => deleteSkill(skill)}
+                >
+                  {t("skills.delete")}
+                </button>
               </span>
             </div>
-            <div>
-              <b>02</b>
-              <span>
-                已绑定市场<small>marketplace repository</small>
-              </span>
+          ))
+        )}
+      </section>
+      {editing &&
+        createPortal(
+          <div
+            className="model-modal-mask"
+            role="presentation"
+            onMouseDown={() => setEditing(null)}
+          >
+            <div
+              className="form-surface model-editor skill-editor"
+              role="dialog"
+              aria-modal="true"
+              aria-label={t("skills.editor")}
+              onMouseDown={(event) => event.stopPropagation()}
+            >
+              <div className="form-title">
+                <div>
+                  <p className="kicker">
+                    {editing.id ? "EDIT SKILL ASSET" : "IMPORT SKILL ASSET"}
+                  </p>
+                  <h2>{editing.id ? editing.name : t("skills.create")}</h2>
+                </div>
+                <button
+                  className="link-button"
+                  onClick={() => setEditing(null)}
+                >
+                  {t("skills.close")} ×
+                </button>
+              </div>
+              <div className="skill-import-strip">
+                <div>
+                  <b>SKILL.md</b>
+                  <small>{t("skills.importHint")}</small>
+                </div>
+                <label className="ui-button quiet file-button">
+                  {t("skills.selectFile")}
+                  <input
+                    type="file"
+                    accept=".md,text/markdown,text/plain"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (file) void importFile(file);
+                    }}
+                  />
+                </label>
+              </div>
+              <div className="field-grid">
+                <label className="field">
+                  <span>{t("skills.key")}</span>
+                  <input
+                    value={editing.skillKey}
+                    onChange={(event) =>
+                      setEditing({ ...editing, skillKey: event.target.value })
+                    }
+                    placeholder="customer-support"
+                  />
+                </label>
+                <label className="field">
+                  <span>{t("skills.name")}</span>
+                  <input
+                    value={editing.name}
+                    onChange={(event) =>
+                      setEditing({ ...editing, name: event.target.value })
+                    }
+                  />
+                </label>
+                <label className="field wide">
+                  <span>{t("skills.skillDescription")}</span>
+                  <input
+                    value={editing.description}
+                    onChange={(event) =>
+                      setEditing({
+                        ...editing,
+                        description: event.target.value,
+                      })
+                    }
+                  />
+                </label>
+                <label className="field">
+                  <span>{t("skills.version")}</span>
+                  <input
+                    value={editing.assetVersion}
+                    onChange={(event) =>
+                      setEditing({
+                        ...editing,
+                        assetVersion: event.target.value,
+                      })
+                    }
+                  />
+                </label>
+                <label className="field">
+                  <span>{t("skills.source")}</span>
+                  <select
+                    value={editing.sourceType}
+                    onChange={(event) =>
+                      setEditing({
+                        ...editing,
+                        sourceType: event.target
+                          .value as SkillItem["sourceType"],
+                      })
+                    }
+                  >
+                    <option value="MANUAL">{t("skills.manual")}</option>
+                    <option value="FILE_IMPORT">
+                      {t("skills.fileImport")}
+                    </option>
+                    <option value="GIT">Git</option>
+                  </select>
+                </label>
+                <label className="field">
+                  <span>{t("skills.entryFile")}</span>
+                  <input
+                    value={editing.entryFile}
+                    onChange={(event) =>
+                      setEditing({ ...editing, entryFile: event.target.value })
+                    }
+                  />
+                </label>
+                <label className="field">
+                  <span>{t("skills.sourceUri")}</span>
+                  <input
+                    value={editing.sourceUri ?? ""}
+                    onChange={(event) =>
+                      setEditing({ ...editing, sourceUri: event.target.value })
+                    }
+                    placeholder="https://github.com/org/repo"
+                  />
+                </label>
+                <label className="field wide skill-content-field">
+                  <span>{t("skills.content")}</span>
+                  <textarea
+                    value={editing.content}
+                    onChange={(event) =>
+                      setEditing({ ...editing, content: event.target.value })
+                    }
+                    placeholder="# Skill instructions..."
+                  />
+                </label>
+              </div>
+              {error && (
+                <div className="skill-error modal-error">× {error}</div>
+              )}
+              <div className="sticky-actions">
+                <Button quiet onClick={() => setEditing(null)}>
+                  {t("skills.cancel")}
+                </Button>
+                <Button onClick={saveSkill} disabled={saving}>
+                  {saving ? t("skills.saving") : t("skills.save")}
+                </Button>
+              </div>
             </div>
-            <div className="highlight">
-              <b>03</b>
-              <span>
-                当前工作空间<small>workspace/skills</small>
-              </span>
-            </div>
-            <div>
-              <b>04</b>
-              <span>
-                用户覆盖层<small>&lt;userId&gt;/skills</small>
-              </span>
-            </div>
-          </div>
-          <section className="policy-note">
-            <b>生产保护</b>
-            <p>草稿 Skill 必须经 Promotion Gate 审核后才可在 prod 可见。</p>
-          </section>
-          <Button>保存绑定</Button>
-        </aside>
-      </div>
+          </div>,
+          document.body,
+        )}
     </>
   );
 }

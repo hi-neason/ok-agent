@@ -5,6 +5,7 @@ import "./i18n";
 import "./styles.css";
 import "./model.css";
 import "./llm-provider.css";
+import "./skill.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

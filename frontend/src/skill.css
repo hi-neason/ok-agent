@@ -1,0 +1,172 @@
+.skill-registry {
+  position: relative;
+}
+.skill-search {
+  min-width: 320px;
+}
+.skill-table-row {
+  grid-template-columns: minmax(260px, 1.6fr) 80px 115px 110px 145px 80px 110px;
+  gap: 14px;
+}
+.skill-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.skill-identity > i {
+  display: grid;
+  place-items: center;
+  flex: 0 0 34px;
+  height: 34px;
+  border: 1px solid #b9d9fa;
+  border-radius: 9px;
+  background: linear-gradient(145deg, #e4f2ff, #f8fcff);
+  color: #1678df;
+  font-style: normal;
+  box-shadow: 0 7px 18px rgba(30, 112, 202, 0.1);
+}
+.skill-identity > span {
+  min-width: 0;
+}
+.skill-identity code,
+.skill-identity small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.skill-identity code {
+  margin-top: 3px;
+  color: #2374c6;
+}
+.skill-source {
+  width: max-content;
+  padding: 4px 7px;
+  border-radius: 4px;
+  background: #edf4fc;
+  color: #5c7fa4;
+  font:
+    8px "DM Mono",
+    monospace;
+  letter-spacing: 0.35px;
+}
+.skill-source.file_import {
+  background: #e7f7f0;
+  color: #18805b;
+}
+.skill-source.git {
+  background: #edf0ff;
+  color: #4c62bd;
+}
+.skill-empty {
+  display: grid;
+  place-items: center;
+  padding: 68px 20px;
+  color: #7899ba;
+  text-align: center;
+}
+.skill-empty span {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border: 1px dashed #91bde9;
+  border-radius: 16px;
+  background: #edf7ff;
+  color: #1779df;
+  font-size: 23px;
+}
+.skill-empty b {
+  margin-top: 15px;
+  color: #315b87;
+  font-size: 14px;
+}
+.skill-empty p {
+  margin: 7px 0 0;
+  font-size: 11px;
+}
+.skill-error {
+  margin: 0 0 15px;
+  padding: 11px 13px;
+  border: 1px solid #efcfcb;
+  border-radius: 7px;
+  background: #fff7f6;
+  color: #a34e47;
+  font-size: 11px;
+}
+.danger-link {
+  color: #b24f49;
+}
+.skill-editor {
+  width: min(960px, calc(100vw - 72px));
+}
+.skill-import-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  border: 1px dashed #a9ccec;
+  border-radius: 9px;
+  background: linear-gradient(110deg, #eff8ff, #fbfdff);
+}
+.skill-import-strip b {
+  display: block;
+  color: #2465a8;
+  font:
+    11px "DM Mono",
+    monospace;
+}
+.skill-import-strip small {
+  display: block;
+  margin-top: 5px;
+  color: #7597b9;
+  font-size: 10px;
+}
+.file-button {
+  display: inline-flex;
+  align-items: center;
+}
+.file-button input {
+  display: none;
+}
+.field select,
+.field textarea {
+  border: 1px solid #d6e5f5;
+  border-radius: 5px;
+  background: #fcfeff;
+  color: #264e78;
+  outline: none;
+  font:
+    10px "DM Mono",
+    monospace;
+}
+.field select {
+  height: 35px;
+  padding: 0 10px;
+}
+.field textarea {
+  min-height: 210px;
+  padding: 13px;
+  line-height: 1.65;
+  resize: vertical;
+}
+.skill-content-field {
+  margin-top: 2px;
+}
+.modal-error {
+  margin-top: 16px;
+  margin-bottom: 0;
+}
+@media (max-width: 1300px) {
+  .skill-table-row {
+    grid-template-columns: minmax(
+        220px,
+        1.5fr
+      ) 70px 100px 100px 120px 70px 100px;
+  }
+  .skill-table-row > span:nth-child(5) {
+    font-size: 8px;
+  }
+}

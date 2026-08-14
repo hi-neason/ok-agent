@@ -580,26 +580,6 @@ function ModelsPage() {
                   </button>
                 ))}
               </div>
-              {editing.type === "LLM" && (
-                <label className="field wide">
-                  <span>预置 AI 厂商</span>
-                  <select
-                    value={
-                      llmProviders.some(([name]) => name === editing.provider)
-                        ? editing.provider
-                        : ""
-                    }
-                    onChange={(event) => applyLlmProvider(event.target.value)}
-                  >
-                    <option value="">选择厂商后自动填充建议配置</option>
-                    {llmProviders.map(([name]) => (
-                      <option key={name} value={name}>
-                        {name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
               <div className="field-grid">
                 <label className="field">
                   <span>名称</span>
@@ -612,12 +592,52 @@ function ModelsPage() {
                 </label>
                 <label className="field">
                   <span>模型提供商</span>
-                  <input
-                    value={editing.provider}
-                    onChange={(e) =>
-                      setEditing({ ...editing, provider: e.target.value })
-                    }
-                  />
+                  {editing.type === "LLM" ? (
+                    <>
+                      <select
+                        value={
+                          llmProviders.some(
+                            ([name]) => name === editing.provider,
+                          )
+                            ? editing.provider
+                            : "CUSTOM"
+                        }
+                        onChange={(event) =>
+                          event.target.value === "CUSTOM"
+                            ? setEditing({ ...editing, provider: "" })
+                            : applyLlmProvider(event.target.value)
+                        }
+                      >
+                        {llmProviders.map(([name]) => (
+                          <option key={name} value={name}>
+                            {name}
+                          </option>
+                        ))}
+                        <option value="CUSTOM">自定义</option>
+                      </select>
+                      {!llmProviders.some(
+                        ([name]) => name === editing.provider,
+                      ) && (
+                        <input
+                          placeholder="请输入自定义模型厂商"
+                          value={editing.provider}
+                          onChange={(event) =>
+                            setEditing({
+                              ...editing,
+                              provider: event.target.value,
+                            })
+                          }
+                        />
+                      )}
+                    </>
+                  ) : (
+                    <input
+                      value={editing.provider}
+                      onChange={(e) =>
+                        setEditing({ ...editing, provider: e.target.value })
+                      }
+                    />
+                  )}
                 </label>
                 <label className="field">
                   <span>模型 ID</span>
@@ -629,7 +649,7 @@ function ModelsPage() {
                   />
                 </label>
                 <label className="field">
-                  <span>密钥引用（SecretRef）</span>
+                  <span>API_KEY</span>
                   <input
                     value={editing.secretRef}
                     onChange={(e) =>

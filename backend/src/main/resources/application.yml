@@ -1,0 +1,19 @@
+spring:
+  application:
+    name: ok-agent-server
+server:
+  port: ${SERVER_PORT:8080}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+ok-agent:
+  runtime:
+    agentscope-version: ${AGENTSCOPE_VERSION:2.0.2}
+  storage:
+    jdbc-url: ${OK_AGENT_JDBC_URL:}

@@ -18,7 +18,10 @@ public class ModelAssetServiceImpl implements ModelAssetService {
   private final ApiKeyCipher apiKeyCipher;
   private final ModelConnectionTester connectionTester;
 
-  public ModelAssetServiceImpl(ModelAssetRepository repository, ApiKeyCipher apiKeyCipher, ModelConnectionTester connectionTester) {
+  public ModelAssetServiceImpl(
+      ModelAssetRepository repository,
+      ApiKeyCipher apiKeyCipher,
+      ModelConnectionTester connectionTester) {
     this.repository = repository;
     this.apiKeyCipher = apiKeyCipher;
     this.connectionTester = connectionTester;
@@ -56,7 +59,9 @@ public class ModelAssetServiceImpl implements ModelAssetService {
         request.provider(),
         request.modelId(),
         request.endpoint(),
-        request.apiKey() == null || request.apiKey().isBlank() ? null : apiKeyCipher.encrypt(request.apiKey()),
+        request.apiKey() == null || request.apiKey().isBlank()
+            ? null
+            : apiKeyCipher.encrypt(request.apiKey()),
         request.enabled());
     return ModelAssetResponse.from(asset);
   }
@@ -82,8 +87,26 @@ public class ModelAssetServiceImpl implements ModelAssetService {
     return connectionTester.test(asset, apiKeyCipher.decrypt(asset.getApiKeyCiphertext()));
   }
 
+  @Override
+  public ModelConnectionTestResponse testConnection(ModelAssetRequest request) {
+    var apiKey = requiredApiKey(request.apiKey());
+    var transientAsset =
+        new ModelAsset(
+            UUID.randomUUID(),
+            request.name(),
+            request.type(),
+            request.provider(),
+            request.modelId(),
+            request.endpoint(),
+            apiKeyCipher.encrypt(apiKey),
+            request.enabled());
+    return connectionTester.test(transientAsset, apiKey);
+  }
+
   private String requiredApiKey(String apiKey) {
-    if (apiKey == null || apiKey.isBlank()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "API key is required for a new model asset");
+    if (apiKey == null || apiKey.isBlank())
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "API key is required for a new model asset");
     return apiKey;
   }
 

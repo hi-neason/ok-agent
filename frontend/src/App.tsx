@@ -323,11 +323,14 @@ type ModelItem = {
   provider: string;
   modelId: string;
   endpoint: string;
-  secretRef: string;
+  apiKey: string;
+  apiKeyConfigured?: boolean;
   enabled: boolean;
   updated: string;
 };
-type ModelApiItem = Omit<ModelItem, "updated"> & { updatedAt: string };
+type ModelApiItem = Omit<ModelItem, "updated" | "apiKey"> & {
+  updatedAt: string;
+};
 const llmProviders = [
   ["OpenAI", "gpt-4.1", "https://api.openai.com/v1"],
   ["Anthropic", "claude-sonnet-4-20250514", "https://api.anthropic.com/v1"],
@@ -362,7 +365,7 @@ const modelSeed: ModelItem[] = [
     provider: "DashScope",
     modelId: "qwen-plus",
     endpoint: "https://dashscope.aliyuncs.com/compatible-mode/v1",
-    secretRef: "secrets/models/qwen-prod",
+    apiKey: "",
     enabled: true,
     updated: "2 min ago",
   },
@@ -373,7 +376,7 @@ const modelSeed: ModelItem[] = [
     provider: "OpenAI",
     modelId: "whisper-1",
     endpoint: "https://api.openai.com/v1",
-    secretRef: "secrets/models/openai-speech",
+    apiKey: "",
     enabled: true,
     updated: "18 min ago",
   },
@@ -384,7 +387,7 @@ const modelSeed: ModelItem[] = [
     provider: "Alibaba Cloud",
     modelId: "ocr-invoice",
     endpoint: "https://ocr-api.internal/v1",
-    secretRef: "secrets/models/ocr-prod",
+    apiKey: "",
     enabled: false,
     updated: "yesterday",
   },
@@ -395,7 +398,7 @@ const modelSeed: ModelItem[] = [
     provider: "Qwen",
     modelId: "qwen-vl-max",
     endpoint: "https://dashscope.aliyuncs.com/api/v1",
-    secretRef: "secrets/models/qwen-vl",
+    apiKey: "",
     enabled: true,
     updated: "3 days ago",
   },
@@ -417,6 +420,7 @@ function ModelsPage() {
         setModels(
           data.map((item) => ({
             ...item,
+            apiKey: "",
             updated: new Date(item.updatedAt).toLocaleString(),
           })),
         ),
@@ -462,6 +466,27 @@ function ModelsPage() {
       });
     }
   };
+  const testConnection = async () => {
+    if (!editing) return;
+    setTestResult("正在调用模型验证连接…");
+    try {
+      const response = await fetch("/api/v1/models/test-connection", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editing),
+      });
+      const result = (await response.json()) as {
+        success: boolean;
+        statusCode: number;
+        message: string;
+      };
+      setTestResult(
+        `${result.success ? "✓" : "✕"} ${result.message}${result.statusCode ? `（HTTP ${result.statusCode}）` : ""}`,
+      );
+    } catch {
+      setTestResult("✕ 无法连接后端服务");
+    }
+  };
   return (
     <>
       <PageHeader
@@ -478,7 +503,7 @@ function ModelsPage() {
                 provider: "OpenAI",
                 modelId: "",
                 endpoint: "",
-                secretRef: "",
+                apiKey: "",
                 enabled: true,
                 updated: "now",
               })
@@ -524,7 +549,7 @@ function ModelsPage() {
             <span>{model.type.replace("_", " / ")}</span>
             <span>{model.provider}</span>
             <code>{model.modelId}</code>
-            <code>{model.secretRef}</code>
+            <code>{model.apiKeyConfigured ? "已配置" : "未配置"}</code>
             <Toggle
               on={model.enabled}
               setOn={(next) =>
@@ -668,9 +693,9 @@ function ModelsPage() {
                 <label className="field">
                   <span>API 密钥（API_KEY）</span>
                   <input
-                    value={editing.secretRef}
+                    value={editing.apiKey}
                     onChange={(e) =>
-                      setEditing({ ...editing, secretRef: e.target.value })
+                      setEditing({ ...editing, apiKey: e.target.value })
                     }
                   />
                 </label>
@@ -687,22 +712,11 @@ function ModelsPage() {
               {testResult && (
                 <div className="policy-note">
                   <b>{testResult}</b>
-                  <p>
-                    控制面只验证配置格式；真实模型请求将在运行态受审计地执行。
-                  </p>
+                  <p>测试会向模型厂商发起一次最小真实请求，不保存响应内容。</p>
                 </div>
               )}
               <div className="sticky-actions">
-                <Button
-                  quiet
-                  onClick={() =>
-                    setTestResult(
-                      editing.endpoint && editing.secretRef
-                        ? "✓ 连接配置校验通过"
-                        : "请填写服务地址和密钥引用",
-                    )
-                  }
-                >
+                <Button quiet onClick={testConnection}>
                   测试连接
                 </Button>
                 <Button onClick={save}>保存模型</Button>

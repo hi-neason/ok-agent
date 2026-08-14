@@ -24,4 +24,7 @@ public interface ModelAssetService {
 
   /** Sends one real minimal request to the provider using the saved model configuration. */
   ModelConnectionTestResponse testConnection(UUID id);
+
+  /** Sends one real minimal request using an unsaved model configuration. */
+  ModelConnectionTestResponse testConnection(ModelAssetRequest request);
 }

@@ -49,12 +49,8 @@ public class ModelAssetController {
 
   @PostMapping("/test-connection")
   /** Validates the submitted connection configuration without exposing the credential value. */
-  public Map<String, Object> test(@Valid @RequestBody ModelAssetRequest r) {
-    return Map.of(
-        "success",
-        true,
-        "message",
-        "Configuration accepted; network probing belongs to the runtime egress policy.");
+  public ModelConnectionTestResponse test(@Valid @RequestBody ModelAssetRequest request) {
+    return service.testConnection(request);
   }
 
   /** Sends a real minimal request through the saved model configuration. */

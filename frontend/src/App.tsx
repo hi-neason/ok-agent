@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
 type Page = 'agents' | 'models' | 'skills' | 'mcp' | 'knowledge' | 'workflows' | 'memory' | 'workspace' | 'teams' | 'release' | 'observe' | 'system'
@@ -60,6 +60,7 @@ function AgentPage({ go }: { go: (page: Page) => void }) {
 }
 
 type ModelItem = { id: string; name: string; type: 'LLM' | 'SPEECH' | 'VISION' | 'OCR' | 'AUDIO_VIDEO'; provider: string; modelId: string; endpoint: string; secretRef: string; enabled: boolean; updated: string }
+type ModelApiItem = Omit<ModelItem, 'updated'> & { updatedAt: string }
 const modelSeed: ModelItem[] = [
   { id: 'qwen-prod', name: 'Qwen Production', type: 'LLM', provider: 'DashScope', modelId: 'qwen-plus', endpoint: 'https://dashscope.aliyuncs.com/compatible-mode/v1', secretRef: 'secrets/models/qwen-prod', enabled: true, updated: '2 min ago' },
   { id: 'whisper', name: 'Whisper Transcription', type: 'SPEECH', provider: 'OpenAI', modelId: 'whisper-1', endpoint: 'https://api.openai.com/v1', secretRef: 'secrets/models/openai-speech', enabled: true, updated: '18 min ago' },
@@ -69,8 +70,9 @@ const modelSeed: ModelItem[] = [
 
 function ModelsPage() {
   const [models, setModels] = useState(modelSeed); const [type, setType] = useState<'ALL' | ModelItem['type']>('ALL'); const [editing, setEditing] = useState<ModelItem | null>(null); const [testResult, setTestResult] = useState('')
+  useEffect(() => { fetch('/api/v1/models').then(response => response.ok ? response.json() as Promise<ModelApiItem[]> : Promise.reject()).then(data => setModels(data.map(item => ({ ...item, updated: new Date(item.updatedAt).toLocaleString() })))).catch(() => undefined) }, [])
   const visible = models.filter(model => type === 'ALL' || model.type === type)
-  const save = () => { if (!editing) return; setModels(current => current.some(x => x.id === editing.id) ? current.map(x => x.id === editing.id ? editing : x) : [{ ...editing, id: `model-${Date.now()}`, updated: 'now' }, ...current]); setEditing(null) }
+  const save = async () => { if (!editing) return; const existing = Boolean(editing.id); const response = await fetch(existing ? `/api/v1/models/${editing.id}` : '/api/v1/models', { method: existing ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(editing) }); if (!response.ok) { setTestResult('保存失败，请检查服务连接和输入内容'); return }; const saved = await response.json(); setModels(current => existing ? current.map(x => x.id === saved.id ? { ...saved, updated: 'now' } : x) : [{ ...saved, updated: 'now' }, ...current]); setEditing(null) }
   return <><PageHeader kicker="MODEL ASSETS / REGISTRY" title="模型管理" description="统一管理文本、语音、视觉、OCR 和音视频模型。Agent 仅引用已启用的模型资产与其版本。" action={<Button onClick={() => setEditing({ id: '', name: '', type: 'LLM', provider: 'OpenAI', modelId: '', endpoint: '', secretRef: '', enabled: true, updated: 'now' })}>＋ 新增模型</Button>} />
     <div className="tab-switch">{(['ALL', 'LLM', 'SPEECH', 'VISION', 'OCR', 'AUDIO_VIDEO'] as const).map(x => <button key={x} className={type === x ? 'active' : ''} onClick={() => setType(x)}>{x === 'ALL' ? '全部模型' : x.replace('_', ' / ')}</button>)}</div>
     <section className="run-table"><div className="table-tools"><div className="search-mini">◌ {models.length} registered models</div><button className="filter-chip">Enabled first⌄</button></div><div className="table-head"><span>MODEL</span><span>TYPE / PROVIDER</span><span>MODEL ID</span><span>SECRET REF</span><span>STATUS</span><span>ACTIONS</span></div>{visible.map(model => <div className="table-row" key={model.id}><span><b>{model.name}</b><small>{model.endpoint}</small></span><span><b>{model.type}</b><small>{model.provider}</small></span><code>{model.modelId}</code><code>{model.secretRef}</code><Toggle on={model.enabled} setOn={next => setModels(current => current.map(x => x.id === model.id ? { ...x, enabled: next } : x))} label={`Enable ${model.name}`} /><span><button className="link-button" onClick={() => setEditing(model)}>编辑</button><button className="link-button" onClick={() => setModels(current => current.filter(x => x.id !== model.id))}>删除</button></span></div>)}</section>

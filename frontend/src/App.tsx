@@ -82,6 +82,23 @@ const navigationGroups: NavigationGroup[] = [
 ];
 
 const modules = navigationGroups.flatMap((group) => group.items);
+const pagePaths: Record<Page, string> = {
+  agents: "/agents",
+  models: "/models",
+  skills: "/skills",
+  mcp: "/mcp",
+  knowledge: "/knowledge",
+  workflows: "/workflows",
+  memory: "/memory",
+  workspace: "/workspace",
+  teams: "/teams",
+  release: "/releases",
+  observe: "/observability",
+  system: "/system",
+};
+const pathPages = Object.fromEntries(
+  Object.entries(pagePaths).map(([page, path]) => [path, page]),
+) as Record<string, Page>;
 
 function Button({
   children,
@@ -1485,11 +1502,24 @@ function ObservePage() {
 
 export default function App() {
   const { t, i18n } = useTranslation();
-  const [page, setPage] = useState<Page>("agents");
+  const [page, setPage] = useState<Page>(
+    () => pathPages[window.location.pathname] ?? "agents",
+  );
+  useEffect(() => {
+    if (!pathPages[window.location.pathname])
+      window.history.replaceState({}, "", pagePaths.agents);
+    const syncPage = () =>
+      setPage(pathPages[window.location.pathname] ?? "agents");
+    window.addEventListener("popstate", syncPage);
+    return () => window.removeEventListener("popstate", syncPage);
+  }, []);
   const selected = modules.find((x) => x.id === page)!;
   const moduleName = (module: { id: Page; name: string }) =>
     t(`navigation.${module.id}`, { defaultValue: module.name });
-  const navigate = (next: Page) => setPage(next);
+  const navigate = (next: Page) => {
+    window.history.pushState({}, "", pagePaths[next]);
+    setPage(next);
+  };
   const content = {
     agents: <AgentPage go={navigate} />,
     models: <ModelsPage />,

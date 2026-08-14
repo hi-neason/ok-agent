@@ -41,6 +41,31 @@ class ZipSkillArchiveParserTests {
         .hasMessageContaining("SKILL.md was found below an outer directory");
   }
 
+  @Test
+  void shouldIgnoreMacMetadataPythonCacheAndNestedArchive() throws Exception {
+    var archive =
+        zip(
+            Map.of(
+                "SKILL.md",
+                "---\nname: clean-skill\ndescription: Clean package\n---",
+                "references/guide.md",
+                "# Guide",
+                "__MACOSX/._SKILL.md",
+                "binary metadata",
+                "scripts/__pycache__/cli.cpython-312.pyc",
+                "bytecode",
+                ".DS_Store",
+                "metadata",
+                "clean-skill.zip",
+                "nested archive"));
+
+    var parsed = parser.parse("clean-skill.zip", archive);
+
+    assertThat(parsed.files())
+        .extracting(file -> file.path())
+        .containsExactlyInAnyOrder("SKILL.md", "references/guide.md");
+  }
+
   private byte[] zip(Map<String, String> files) throws Exception {
     var output = new ByteArrayOutputStream();
     try (var zip = new ZipOutputStream(output)) {

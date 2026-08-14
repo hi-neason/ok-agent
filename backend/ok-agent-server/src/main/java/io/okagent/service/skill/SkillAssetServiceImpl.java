@@ -7,6 +7,7 @@ import io.okagent.web.skill.SkillAssetResponse;
 import io.okagent.web.skill.SkillFileContentResponse;
 import io.okagent.web.skill.SkillFileResponse;
 import io.okagent.web.skill.SkillMetadataRequest;
+import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
@@ -112,16 +113,14 @@ public class SkillAssetServiceImpl implements SkillAssetService {
             .findBySkillIdAndFilePath(id, path)
             .orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Skill file not found"));
-    var previewable =
+    var textMediaType =
         file.getMediaType().startsWith("text/")
             || file.getMediaType().equals("application/json")
             || file.getMediaType().equals("application/yaml");
+    var content = textMediaType ? decodeUtf8(file.getContent()) : null;
+    var previewable = content != null;
     return new SkillFileContentResponse(
-        file.getFilePath(),
-        file.getMediaType(),
-        file.getFileSize(),
-        previewable,
-        previewable ? new String(file.getContent(), StandardCharsets.UTF_8) : null);
+        file.getFilePath(), file.getMediaType(), file.getFileSize(), previewable, content);
   }
 
   @Override
@@ -147,5 +146,18 @@ public class SkillAssetServiceImpl implements SkillAssetService {
 
   private String prefer(String requested, String parsed) {
     return requested == null || requested.isBlank() ? parsed : requested.trim();
+  }
+
+  private String decodeUtf8(byte[] content) {
+    try {
+      return StandardCharsets.UTF_8
+          .newDecoder()
+          .onMalformedInput(CodingErrorAction.REPORT)
+          .onUnmappableCharacter(CodingErrorAction.REPORT)
+          .decode(java.nio.ByteBuffer.wrap(content))
+          .toString();
+    } catch (java.nio.charset.CharacterCodingException exception) {
+      return null;
+    }
   }
 }

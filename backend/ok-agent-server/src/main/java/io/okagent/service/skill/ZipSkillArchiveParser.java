@@ -30,7 +30,7 @@ public class ZipSkillArchiveParser implements SkillArchiveParser {
     if (archive.length == 0 || archive.length > MAX_ARCHIVE_SIZE) {
       reject("Skill archive must be between 1 byte and 20 MB");
     }
-    var files = readEntries(archive);
+    var files = readEntries(archiveName, archive);
     var entry = files.stream().filter(file -> file.path().equals("SKILL.md")).findFirst();
     if (entry.isEmpty()) {
       var nestedEntry =
@@ -59,7 +59,7 @@ public class ZipSkillArchiveParser implements SkillArchiveParser {
         toKey(name), name, description, markdown, sha256(archive), List.copyOf(files));
   }
 
-  private List<ArchivedSkillFile> readEntries(byte[] archive) {
+  private List<ArchivedSkillFile> readEntries(String archiveName, byte[] archive) {
     var files = new ArrayList<ArchivedSkillFile>();
     long expandedSize = 0;
     try (var input = new ZipInputStream(new ByteArrayInputStream(archive))) {
@@ -67,6 +67,7 @@ public class ZipSkillArchiveParser implements SkillArchiveParser {
       while ((entry = input.getNextEntry()) != null) {
         var path = normalizePath(entry.getName());
         if (entry.isDirectory()) continue;
+        if (isPackagingNoise(path, archiveName)) continue;
         if (files.size() >= MAX_FILES) {
           reject("Skill archive expands beyond the allowed limits");
         }
@@ -81,6 +82,20 @@ public class ZipSkillArchiveParser implements SkillArchiveParser {
       throw new SkillArchiveValidationException("INVALID_SKILL_ARCHIVE", "Invalid ZIP archive");
     }
     return files;
+  }
+
+  private boolean isPackagingNoise(String path, String archiveName) {
+    var components = path.split("/");
+    for (var component : components) {
+      if (component.equals("__MACOSX")
+          || component.equals("__pycache__")
+          || component.equals(".DS_Store")
+          || component.startsWith("._")) {
+        return true;
+      }
+    }
+    var lower = path.toLowerCase(Locale.ROOT);
+    return lower.endsWith(".pyc") || path.equals(archiveName);
   }
 
   private String normalizePath(String rawPath) {

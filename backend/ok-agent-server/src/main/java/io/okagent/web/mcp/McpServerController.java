@@ -65,4 +65,13 @@ public class McpServerController {
   public List<McpToolResponse> tools(@PathVariable UUID id) {
     return service.tools(id);
   }
+
+  /** Invokes one MCP tool with development arguments and returns its protocol result. */
+  @PostMapping("/{id}/tools/{toolName}/call")
+  public McpToolCallResponse callTool(
+      @PathVariable UUID id,
+      @PathVariable String toolName,
+      @Valid @RequestBody McpToolCallRequest request) {
+    return service.callTool(id, toolName, request);
+  }
 }

@@ -1589,7 +1589,7 @@ const mcpDraftToJson = (draft: McpDraft) => {
   );
 };
 
-function McpPage() {
+function McpRegistryPage() {
   const { t } = useTranslation();
   const [servers, setServers] = useState<McpServer[]>([]);
   const [search, setSearch] = useState("");
@@ -1935,6 +1935,13 @@ function McpPage() {
               <Toggle on={server.enabled} setOn={() => void toggle(server)} />
             </span>
             <span className="row-actions">
+              <button
+                onClick={() => {
+                  window.location.href = `/mcp/${server.id}/debug`;
+                }}
+              >
+                {t("mcp.debug")}
+              </button>
               <button onClick={() => open(server)}>{t("mcp.edit")}</button>
               <button className="danger" onClick={() => void remove(server)}>
                 {t("mcp.delete")}
@@ -2337,6 +2344,252 @@ function McpPage() {
           document.body,
         )}
     </>
+  );
+}
+
+function McpPage() {
+  const match = window.location.pathname.match(/^\/mcp\/([^/]+)\/debug$/);
+  return match ? <McpDebugPage serverId={match[1]} /> : <McpRegistryPage />;
+}
+
+function McpDebugPage({ serverId }: { serverId: string }) {
+  const { t } = useTranslation();
+  const [server, setServer] = useState<McpServer | null>(null);
+  const [tools, setTools] = useState<McpTool[]>([]);
+  const [selected, setSelected] = useState<McpTool | null>(null);
+  const [query, setQuery] = useState("");
+  const [argumentsJson, setArgumentsJson] = useState("{}");
+  const [result, setResult] = useState("");
+  const [resultOk, setResultOk] = useState<boolean | null>(null);
+  const [durationMs, setDurationMs] = useState<number | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  const argumentTemplate = (tool: McpTool) => {
+    try {
+      const schema: unknown = JSON.parse(tool.inputSchemaJson);
+      if (!isJsonObject(schema) || !isJsonObject(schema.properties))
+        return "{}";
+      const values = Object.fromEntries(
+        Object.entries(schema.properties).map(([name, property]) => {
+          if (!isJsonObject(property)) return [name, null];
+          if (property.default !== undefined) return [name, property.default];
+          if (property.type === "number" || property.type === "integer")
+            return [name, 0];
+          if (property.type === "boolean") return [name, false];
+          if (property.type === "array") return [name, []];
+          if (property.type === "object") return [name, {}];
+          return [name, ""];
+        }),
+      );
+      return JSON.stringify(values, null, 4);
+    } catch {
+      return "{}";
+    }
+  };
+
+  const chooseTool = (tool: McpTool) => {
+    setSelected(tool);
+    setArgumentsJson(argumentTemplate(tool));
+    setResult("");
+    setResultOk(null);
+    setDurationMs(null);
+  };
+
+  const loadTools = async (refresh = false) => {
+    setBusy(true);
+    setError("");
+    try {
+      if (refresh) {
+        const inspectionResponse = await fetch(
+          `/api/v1/mcp-servers/${serverId}/inspect`,
+          { method: "POST" },
+        );
+        const inspection = await inspectionResponse.json();
+        if (!inspectionResponse.ok || !inspection.success)
+          throw new Error(t("mcp.connectionFailed"));
+        setTools(inspection.tools);
+        const next = inspection.tools[0] ?? null;
+        if (next) chooseTool(next);
+      } else {
+        const response = await fetch(`/api/v1/mcp-servers/${serverId}/tools`);
+        if (!response.ok) throw new Error();
+        const loaded: McpTool[] = await response.json();
+        setTools(loaded);
+        if (loaded[0]) chooseTool(loaded[0]);
+      }
+    } catch (loadError) {
+      setError(
+        loadError instanceof Error && loadError.message
+          ? loadError.message
+          : t("mcp.toolsLoadFailed"),
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const response = await fetch("/api/v1/mcp-servers");
+        const loaded: McpServer[] = await response.json();
+        const current = loaded.find((item) => item.id === serverId) ?? null;
+        setServer(current);
+        if (!current) setError(t("mcp.serverNotFound"));
+        else await loadTools(false);
+      } catch {
+        setError(t("mcp.serverNotFound"));
+      }
+    })();
+  }, [serverId]);
+
+  const runTool = async () => {
+    if (!selected) return;
+    let args: unknown;
+    try {
+      args = JSON.parse(argumentsJson);
+      if (!isJsonObject(args)) throw new Error();
+    } catch {
+      setError(t("mcp.argumentsInvalid"));
+      return;
+    }
+    setBusy(true);
+    setError("");
+    setResult("");
+    try {
+      const response = await fetch(
+        `/api/v1/mcp-servers/${serverId}/tools/${encodeURIComponent(selected.name)}/call`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ arguments: args }),
+        },
+      );
+      const call = await response.json();
+      setResultOk(Boolean(call.success));
+      setDurationMs(call.durationMs);
+      try {
+        setResult(JSON.stringify(JSON.parse(call.resultJson), null, 4));
+      } catch {
+        setResult(call.resultJson || call.message);
+      }
+    } catch {
+      setResultOk(false);
+      setError(t("mcp.toolCallFailed"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const visibleTools = tools.filter((tool) =>
+    `${tool.name} ${tool.description}`
+      .toLowerCase()
+      .includes(query.toLowerCase()),
+  );
+
+  return (
+    <div className="mcp-debug-page">
+      <header className="mcp-debug-header">
+        <div>
+          <button onClick={() => (window.location.href = "/mcp")}>
+            ← {t("mcp.backToRegistry")}
+          </button>
+          <p className="kicker">MCP SERVER / DEBUG WORKBENCH</p>
+          <h1>{server?.name ?? t("mcp.loading")}</h1>
+          <code>{server?.serverUrl || server?.command}</code>
+        </div>
+        <div className="mcp-debug-connection">
+          <span
+            className={server?.lastTestStatus === "SUCCESS" ? "online" : ""}
+          />
+          <div>
+            <b>
+              {server?.lastTestStatus === "SUCCESS"
+                ? t("mcp.connected")
+                : t("mcp.notConnected")}
+            </b>
+            <small>{server?.transport}</small>
+          </div>
+          <Button quiet onClick={() => void loadTools(true)} disabled={busy}>
+            {busy ? t("mcp.refreshing") : t("mcp.reconnect")}
+          </Button>
+        </div>
+      </header>
+      {error && <div className="mcp-debug-error">× {error}</div>}
+      <div className="mcp-debug-workbench">
+        <aside className="mcp-debug-tools">
+          <div>
+            <span>TOOLS</span>
+            <b>{tools.length}</b>
+          </div>
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder={t("mcp.searchTools")}
+          />
+          <section>
+            {visibleTools.map((tool) => (
+              <button
+                key={tool.name}
+                className={selected?.name === tool.name ? "selected" : ""}
+                onClick={() => chooseTool(tool)}
+              >
+                <i>⚡</i>
+                <span>
+                  <b>{tool.name}</b>
+                  <small>{tool.description || t("mcp.noDescription")}</small>
+                </span>
+              </button>
+            ))}
+          </section>
+        </aside>
+        <main className="mcp-debug-schema">
+          {selected ? (
+            <>
+              <div className="debug-panel-title">
+                <p className="kicker">TOOL DEFINITION</p>
+                <h2>{selected.name}</h2>
+                <p>{selected.description}</p>
+              </div>
+              <div className="schema-label">INPUT SCHEMA</div>
+              <pre>{selected.inputSchemaJson}</pre>
+            </>
+          ) : (
+            <div className="debug-empty">{t("mcp.selectTool")}</div>
+          )}
+        </main>
+        <aside className="mcp-debug-runner">
+          <div className="debug-panel-title">
+            <p className="kicker">REQUEST LAB</p>
+            <h2>{t("mcp.arguments")}</h2>
+          </div>
+          <textarea
+            value={argumentsJson}
+            onChange={(event) => setArgumentsJson(event.target.value)}
+            spellCheck={false}
+          />
+          <button
+            className="mcp-run-button"
+            disabled={!selected || busy}
+            onClick={() => void runTool()}
+          >
+            {busy ? t("mcp.running") : `▶ ${t("mcp.runTool")}`}
+          </button>
+          <div className="mcp-result-head">
+            <b>{t("mcp.result")}</b>
+            {durationMs !== null && (
+              <span className={resultOk ? "success" : "error"}>
+                {resultOk ? "✓" : "×"} {durationMs} ms
+              </span>
+            )}
+          </div>
+          <pre className={resultOk === false ? "failed" : ""}>
+            {result || t("mcp.resultPlaceholder")}
+          </pre>
+        </aside>
+      </div>
+    </div>
   );
 }
 
@@ -2956,14 +3209,18 @@ function ObservePage() {
 
 export default function App() {
   const { t, i18n } = useTranslation();
-  const [page, setPage] = useState<Page>(
-    () => pathPages[window.location.pathname] ?? "agents",
+  const pageForPath = (path: string): Page =>
+    path.startsWith("/mcp/") ? "mcp" : (pathPages[path] ?? "agents");
+  const [page, setPage] = useState<Page>(() =>
+    pageForPath(window.location.pathname),
   );
   useEffect(() => {
-    if (!pathPages[window.location.pathname])
+    if (
+      !pathPages[window.location.pathname] &&
+      !window.location.pathname.startsWith("/mcp/")
+    )
       window.history.replaceState({}, "", pagePaths.agents);
-    const syncPage = () =>
-      setPage(pathPages[window.location.pathname] ?? "agents");
+    const syncPage = () => setPage(pageForPath(window.location.pathname));
     window.addEventListener("popstate", syncPage);
     return () => window.removeEventListener("popstate", syncPage);
   }, []);

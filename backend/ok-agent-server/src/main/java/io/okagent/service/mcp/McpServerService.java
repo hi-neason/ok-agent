@@ -27,4 +27,7 @@ public interface McpServerService {
 
   /** Returns the latest discovered tool snapshot for a server. */
   List<McpToolResponse> tools(UUID id);
+
+  /** Invokes a tool through a saved MCP server configuration for development debugging. */
+  McpToolCallResponse callTool(UUID id, String toolName, McpToolCallRequest request);
 }

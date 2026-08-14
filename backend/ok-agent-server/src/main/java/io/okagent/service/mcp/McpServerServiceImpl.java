@@ -144,6 +144,28 @@ public class McpServerServiceImpl implements McpServerService {
         .toList();
   }
 
+  @Override
+  public McpToolCallResponse callTool(UUID id, String toolName, McpToolCallRequest request) {
+    var server = get(id);
+    var startedAt = System.nanoTime();
+    try {
+      var result =
+          inspector.callTool(
+              server,
+              secret(server, "headers"),
+              secret(server, "environment"),
+              toolName,
+              request.arguments());
+      return new McpToolCallResponse(
+          result.success(),
+          result.success() ? "Tool call succeeded" : "Tool returned an error",
+          result.resultJson(),
+          elapsedMillis(startedAt));
+    } catch (Exception exception) {
+      return new McpToolCallResponse(false, safe(exception), "{}", elapsedMillis(startedAt));
+    }
+  }
+
   private McpServer get(UUID id) {
     return servers
         .findById(id)
@@ -255,5 +277,9 @@ public class McpServerServiceImpl implements McpServerService {
       return "Authentication failed";
     }
     return "Connection failed";
+  }
+
+  private long elapsedMillis(long startedAt) {
+    return (System.nanoTime() - startedAt) / 1_000_000;
   }
 }

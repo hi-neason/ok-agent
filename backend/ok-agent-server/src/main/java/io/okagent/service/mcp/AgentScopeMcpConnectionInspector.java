@@ -15,21 +15,7 @@ public class AgentScopeMcpConnectionInspector implements McpConnectionInspector 
   @Override
   public List<McpToolResponse> inspect(
       McpServer server, Map<String, String> headers, Map<String, String> environment) {
-    McpClientBuilder builder = McpClientBuilder.create(server.getServerKey());
-    switch (server.getTransport()) {
-      case STREAMABLE_HTTP ->
-          builder.streamableHttpTransport(required(server.getServerUrl(), "serverUrl"));
-      case SSE -> builder.sseTransport(required(server.getServerUrl(), "serverUrl"));
-      case STDIO ->
-          builder.stdioTransport(
-              required(server.getCommand(), "command"), arguments(server), environment);
-    }
-    builder
-        .headers(headers)
-        .queryParams(map(server.getQueryParametersJson()))
-        .timeout(Duration.ofSeconds(server.getRequestTimeoutSeconds()))
-        .initializationTimeout(Duration.ofSeconds(server.getInitializationTimeoutSeconds()));
-    try (McpClientWrapper client = builder.buildSync()) {
+    try (McpClientWrapper client = client(server, headers, environment)) {
       client.initialize().block(Duration.ofSeconds(server.getInitializationTimeoutSeconds() + 1L));
       var tools =
           client.listTools().block(Duration.ofSeconds(server.getRequestTimeoutSeconds() + 1L));
@@ -44,6 +30,43 @@ public class AgentScopeMcpConnectionInspector implements McpConnectionInspector 
                       java.time.Instant.now()))
           .toList();
     }
+  }
+
+  @Override
+  public McpToolInvocationResult callTool(
+      McpServer server,
+      Map<String, String> headers,
+      Map<String, String> environment,
+      String toolName,
+      Map<String, Object> arguments) {
+    try (McpClientWrapper client = client(server, headers, environment)) {
+      client.initialize().block(Duration.ofSeconds(server.getInitializationTimeoutSeconds() + 1L));
+      var result =
+          client
+              .callTool(toolName, arguments)
+              .block(Duration.ofSeconds(server.getRequestTimeoutSeconds() + 1L));
+      if (result == null) throw new IllegalStateException("MCP tool returned no result");
+      return new McpToolInvocationResult(!Boolean.TRUE.equals(result.isError()), json(result));
+    }
+  }
+
+  private McpClientWrapper client(
+      McpServer server, Map<String, String> headers, Map<String, String> environment) {
+    McpClientBuilder builder = McpClientBuilder.create(server.getServerKey());
+    switch (server.getTransport()) {
+      case STREAMABLE_HTTP ->
+          builder.streamableHttpTransport(required(server.getServerUrl(), "serverUrl"));
+      case SSE -> builder.sseTransport(required(server.getServerUrl(), "serverUrl"));
+      case STDIO ->
+          builder.stdioTransport(
+              required(server.getCommand(), "command"), arguments(server), environment);
+    }
+    builder
+        .headers(headers)
+        .queryParams(map(server.getQueryParametersJson()))
+        .timeout(Duration.ofSeconds(server.getRequestTimeoutSeconds()))
+        .initializationTimeout(Duration.ofSeconds(server.getInitializationTimeoutSeconds()));
+    return builder.buildSync();
   }
 
   private List<String> arguments(McpServer server) {

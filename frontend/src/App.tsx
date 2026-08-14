@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 
 type Page =
@@ -436,14 +437,29 @@ function ModelsPage() {
       <section className="run-table">
         <div className="table-tools">
           <div className="search-mini">◌ 共 {models.length} 个模型</div>
-          <label className="model-type-filter">类型
-            <select value={type} onChange={(event) => setType(event.target.value as typeof type)}>
-              <option value="ALL">全部类型</option><option value="LLM">大语言模型</option><option value="SPEECH">语音模型</option><option value="VISION">视觉模型</option><option value="OCR">OCR 模型</option><option value="AUDIO_VIDEO">音视频模型</option>
+          <label className="model-type-filter">
+            类型
+            <select
+              value={type}
+              onChange={(event) => setType(event.target.value as typeof type)}
+            >
+              <option value="ALL">全部类型</option>
+              <option value="LLM">大语言模型</option>
+              <option value="SPEECH">语音模型</option>
+              <option value="VISION">视觉模型</option>
+              <option value="OCR">OCR 模型</option>
+              <option value="AUDIO_VIDEO">音视频模型</option>
             </select>
           </label>
         </div>
         <div className="table-head model-table-row">
-          <span>模型名称</span><span>类型</span><span>提供商</span><span>模型 ID</span><span>密钥引用</span><span>启用状态</span><span>操作</span>
+          <span>模型名称</span>
+          <span>类型</span>
+          <span>提供商</span>
+          <span>模型 ID</span>
+          <span>密钥引用</span>
+          <span>启用状态</span>
+          <span>操作</span>
         </div>
         {visible.map((model) => (
           <div className="table-row model-table-row" key={model.id}>
@@ -451,7 +467,8 @@ function ModelsPage() {
               <b>{model.name}</b>
               <small>{model.endpoint}</small>
             </span>
-            <span>{model.type.replace("_", " / ")}</span><span>{model.provider}</span>
+            <span>{model.type.replace("_", " / ")}</span>
+            <span>{model.provider}</span>
             <code>{model.modelId}</code>
             <code>{model.secretRef}</code>
             <Toggle
@@ -483,23 +500,38 @@ function ModelsPage() {
           </div>
         ))}
       </section>
-      {editing && (
-        <div className="model-modal-mask" role="presentation" onMouseDown={() => setEditing(null)}>
-          <div className="form-surface model-editor" role="dialog" aria-modal="true" aria-label="模型配置" onMouseDown={(event) => event.stopPropagation()}>
-            <div className="form-title">
-              <div>
-                <p className="kicker">
-                  {editing.id ? "编辑模型" : "新增模型"}
-                </p>
-                <h2>{editing.id ? editing.name : "新增模型"}</h2>
+      {editing &&
+        createPortal(
+          <div
+            className="model-modal-mask"
+            role="presentation"
+            onMouseDown={() => setEditing(null)}
+          >
+            <div
+              className="form-surface model-editor"
+              role="dialog"
+              aria-modal="true"
+              aria-label="模型配置"
+              onMouseDown={(event) => event.stopPropagation()}
+            >
+              <div className="form-title">
+                <div>
+                  <p className="kicker">
+                    {editing.id ? "编辑模型" : "新增模型"}
+                  </p>
+                  <h2>{editing.id ? editing.name : "新增模型"}</h2>
+                </div>
+                <button
+                  className="link-button"
+                  onClick={() => setEditing(null)}
+                >
+                  关闭 ×
+                </button>
               </div>
-              <button className="link-button" onClick={() => setEditing(null)}>
-                关闭 ×
-              </button>
-            </div>
-            <div className="provider-pills">
-              {(["LLM", "SPEECH", "VISION", "OCR", "AUDIO_VIDEO"] as const).map(
-                (x) => (
+              <div className="provider-pills">
+                {(
+                  ["LLM", "SPEECH", "VISION", "OCR", "AUDIO_VIDEO"] as const
+                ).map((x) => (
                   <button
                     key={x}
                     onClick={() => setEditing({ ...editing, type: x })}
@@ -509,82 +541,82 @@ function ModelsPage() {
                   >
                     {x.replace("_", " / ")}
                   </button>
-                ),
-              )}
-            </div>
-            <div className="field-grid">
-              <label className="field">
-                <span>名称</span>
-                <input
-                  value={editing.name}
-                  onChange={(e) =>
-                    setEditing({ ...editing, name: e.target.value })
-                  }
-                />
-              </label>
-              <label className="field">
-                <span>模型提供商</span>
-                <input
-                  value={editing.provider}
-                  onChange={(e) =>
-                    setEditing({ ...editing, provider: e.target.value })
-                  }
-                />
-              </label>
-              <label className="field">
-                <span>模型 ID</span>
-                <input
-                  value={editing.modelId}
-                  onChange={(e) =>
-                    setEditing({ ...editing, modelId: e.target.value })
-                  }
-                />
-              </label>
-              <label className="field">
-                <span>密钥引用（SecretRef）</span>
-                <input
-                  value={editing.secretRef}
-                  onChange={(e) =>
-                    setEditing({ ...editing, secretRef: e.target.value })
-                  }
-                />
-              </label>
-              <label className="field wide">
-                <span>服务地址（Endpoint）</span>
-                <input
-                  value={editing.endpoint}
-                  onChange={(e) =>
-                    setEditing({ ...editing, endpoint: e.target.value })
-                  }
-                />
-              </label>
-            </div>
-            {testResult && (
-              <div className="policy-note">
-                <b>{testResult}</b>
-                <p>
-                  控制面只验证配置格式；真实模型请求将在运行态受审计地执行。
-                </p>
+                ))}
               </div>
-            )}
-            <div className="sticky-actions">
-              <Button
-                quiet
-                onClick={() =>
-                  setTestResult(
-                    editing.endpoint && editing.secretRef
-                      ? "✓ 连接配置校验通过"
-                      : "请填写服务地址和密钥引用",
-                  )
-                }
-              >
-                测试连接
-              </Button>
-              <Button onClick={save}>保存模型</Button>
+              <div className="field-grid">
+                <label className="field">
+                  <span>名称</span>
+                  <input
+                    value={editing.name}
+                    onChange={(e) =>
+                      setEditing({ ...editing, name: e.target.value })
+                    }
+                  />
+                </label>
+                <label className="field">
+                  <span>模型提供商</span>
+                  <input
+                    value={editing.provider}
+                    onChange={(e) =>
+                      setEditing({ ...editing, provider: e.target.value })
+                    }
+                  />
+                </label>
+                <label className="field">
+                  <span>模型 ID</span>
+                  <input
+                    value={editing.modelId}
+                    onChange={(e) =>
+                      setEditing({ ...editing, modelId: e.target.value })
+                    }
+                  />
+                </label>
+                <label className="field">
+                  <span>密钥引用（SecretRef）</span>
+                  <input
+                    value={editing.secretRef}
+                    onChange={(e) =>
+                      setEditing({ ...editing, secretRef: e.target.value })
+                    }
+                  />
+                </label>
+                <label className="field wide">
+                  <span>服务地址（Endpoint）</span>
+                  <input
+                    value={editing.endpoint}
+                    onChange={(e) =>
+                      setEditing({ ...editing, endpoint: e.target.value })
+                    }
+                  />
+                </label>
+              </div>
+              {testResult && (
+                <div className="policy-note">
+                  <b>{testResult}</b>
+                  <p>
+                    控制面只验证配置格式；真实模型请求将在运行态受审计地执行。
+                  </p>
+                </div>
+              )}
+              <div className="sticky-actions">
+                <Button
+                  quiet
+                  onClick={() =>
+                    setTestResult(
+                      editing.endpoint && editing.secretRef
+                        ? "✓ 连接配置校验通过"
+                        : "请填写服务地址和密钥引用",
+                    )
+                  }
+                >
+                  测试连接
+                </Button>
+                <Button onClick={save}>保存模型</Button>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </>
   );
 }

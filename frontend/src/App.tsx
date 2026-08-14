@@ -649,7 +649,7 @@ function ModelsPage() {
                   />
                 </label>
                 <label className="field">
-                  <span>API_KEY</span>
+                  <span>API 密钥（API_KEY）</span>
                   <input
                     value={editing.secretRef}
                     onChange={(e) =>

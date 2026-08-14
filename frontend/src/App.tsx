@@ -832,6 +832,8 @@ type SkillFileItem = {
 type SkillFileContent = SkillFileItem & {
   previewable: boolean;
   content: string | null;
+  version: number;
+  updatedAt: string;
 };
 
 type SkillTreeNode = {
@@ -914,6 +916,9 @@ function SkillsPage() {
   const [viewing, setViewing] = useState<SkillItem | null>(null);
   const [files, setFiles] = useState<SkillFileItem[]>([]);
   const [selectedFile, setSelectedFile] = useState<SkillFileContent | null>(null);
+  const [fileDraft, setFileDraft] = useState<string | null>(null);
+  const [fileSaving, setFileSaving] = useState(false);
+  const [fileError, setFileError] = useState("");
   const [archive, setArchive] = useState<File | null>(null);
   const [uploadName, setUploadName] = useState("");
   const [uploadDescription, setUploadDescription] = useState("");
@@ -1031,10 +1036,46 @@ function SkillsPage() {
   };
 
   const openFile = async (skillId: string, path: string) => {
+    setFileDraft(null);
+    setFileError("");
     const response = await fetch(
       `/api/v1/skills/${skillId}/file?path=${encodeURIComponent(path)}`,
     );
     if (response.ok) setSelectedFile((await response.json()) as SkillFileContent);
+  };
+
+  const saveFile = async () => {
+    if (!viewing || !selectedFile || fileDraft === null || fileSaving) return;
+    setFileSaving(true);
+    setFileError("");
+    try {
+      const response = await fetch(`/api/v1/skills/${viewing.id}/file`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          path: selectedFile.path,
+          content: fileDraft,
+          version: selectedFile.version,
+        }),
+      });
+      if (response.status === 409) throw new Error(t("skills.fileConflict"));
+      if (!response.ok) throw new Error(t("skills.fileSaveFailed"));
+      const saved = (await response.json()) as SkillFileContent;
+      setSelectedFile(saved);
+      setFileDraft(null);
+      const refreshed = await fetch("/api/v1/skills");
+      if (refreshed.ok) {
+        const items = (await refreshed.json()) as SkillItem[];
+        setSkills(items);
+        setViewing(items.find((item) => item.id === viewing.id) ?? viewing);
+      }
+    } catch (failure) {
+      setFileError(
+        failure instanceof Error ? failure.message : t("skills.fileSaveFailed"),
+      );
+    } finally {
+      setFileSaving(false);
+    }
   };
 
   const setSkillEnabled = async (skill: SkillItem, enabled: boolean) => {
@@ -1247,7 +1288,15 @@ function SkillsPage() {
             <header><div><p className="kicker">SKILL PACKAGE / EXPLORER</p><h2>{viewing.name}</h2><span className="skill-domain">#{viewing.businessDomain}</span></div><button className="link-button" onClick={() => setViewing(null)}>{t("skills.close")} ×</button></header>
             <div className="skill-browser-body">
               <aside><p>{t("skills.files")} · {files.length}</p><SkillTree nodes={buildSkillTree(files)} selectedPath={selectedFile?.path} onSelect={(path) => void openFile(viewing.id, path)} /></aside>
-              <main><div className="file-preview-head"><code>{selectedFile?.path ?? "—"}</code><small>{selectedFile ? `${selectedFile.mediaType} · ${selectedFile.size} B` : ""}</small></div>{selectedFile?.previewable ? <pre>{selectedFile.content}</pre> : <div className="binary-preview">{t("skills.binaryPreview")}</div>}</main>
+              <main>
+                <div className="file-preview-head">
+                  <div><code>{selectedFile?.path ?? "—"}</code><small>{selectedFile ? `${selectedFile.mediaType} · ${selectedFile.size} B` : ""}</small></div>
+                  {selectedFile?.previewable && fileDraft === null && <button className="file-edit-button" onClick={() => setFileDraft(selectedFile.content ?? "")}>✎ {t("skills.editFile")}</button>}
+                  {fileDraft !== null && <div className="file-edit-actions"><button onClick={() => { setFileDraft(null); setFileError(""); }}>{t("skills.cancel")}</button><button className="primary" onClick={() => void saveFile()} disabled={fileSaving}>{fileSaving ? t("skills.saving") : t("skills.saveFile")}</button></div>}
+                </div>
+                {fileError && <div className="file-edit-error">× {fileError}</div>}
+                {fileDraft !== null ? <textarea className="skill-file-editor" value={fileDraft} onChange={(event) => setFileDraft(event.target.value)} spellCheck={false} /> : selectedFile?.previewable ? <pre>{selectedFile.content}</pre> : <div className="binary-preview">{t("skills.binaryPreview")}</div>}
+              </main>
             </div>
           </div>
         </div>, document.body)}

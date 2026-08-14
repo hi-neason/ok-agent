@@ -6,6 +6,7 @@ import io.okagent.repository.skill.SkillFileRepository;
 import io.okagent.web.skill.SkillAssetResponse;
 import io.okagent.web.skill.SkillFileContentResponse;
 import io.okagent.web.skill.SkillFileResponse;
+import io.okagent.web.skill.SkillFileUpdateRequest;
 import io.okagent.web.skill.SkillMetadataRequest;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
@@ -120,7 +121,45 @@ public class SkillAssetServiceImpl implements SkillAssetService {
     var content = textMediaType ? decodeUtf8(file.getContent()) : null;
     var previewable = content != null;
     return new SkillFileContentResponse(
-        file.getFilePath(), file.getMediaType(), file.getFileSize(), previewable, content);
+        file.getFilePath(),
+        file.getMediaType(),
+        file.getFileSize(),
+        previewable,
+        content,
+        file.getVersion(),
+        file.getUpdatedAt());
+  }
+
+  @Override
+  @Transactional
+  public SkillFileContentResponse updateFile(UUID id, SkillFileUpdateRequest request) {
+    var asset = find(id);
+    var file =
+        fileRepository
+            .findBySkillIdAndFilePath(id, request.path())
+            .orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Skill file not found"));
+    if (file.getVersion() != request.version()) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "Skill file was modified by another operation");
+    }
+    if (!isTextMediaType(file.getMediaType())) {
+      throw new ResponseStatusException(
+          HttpStatus.UNSUPPORTED_MEDIA_TYPE, "Binary files are read-only");
+    }
+    if (request.path().equals("SKILL.md")) {
+      var metadata = archiveParser.parseMetadata(request.content());
+      if (repository.existsBySkillKeyAndIdNot(metadata.skillKey(), id)) {
+        throw new ResponseStatusException(
+            HttpStatus.CONFLICT, "A skill with the updated name already exists");
+      }
+      asset.updateManifestMetadata(
+          metadata.skillKey(), metadata.name(), metadata.description(), request.content());
+    }
+    file.updateContent(request.content().getBytes(StandardCharsets.UTF_8));
+    asset.markFileModified();
+    fileRepository.flush();
+    return getFile(id, request.path());
   }
 
   @Override
@@ -159,5 +198,11 @@ public class SkillAssetServiceImpl implements SkillAssetService {
     } catch (java.nio.charset.CharacterCodingException exception) {
       return null;
     }
+  }
+
+  private boolean isTextMediaType(String mediaType) {
+    return mediaType.startsWith("text/")
+        || mediaType.equals("application/json")
+        || mediaType.equals("application/yaml");
   }
 }

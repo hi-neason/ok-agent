@@ -40,6 +40,12 @@ public class SkillAsset {
   @Column(name = "archive_size", nullable = false)
   private long archiveSize;
 
+  @Column(name = "content_revision", nullable = false)
+  private long contentRevision;
+
+  @Column(name = "package_status", nullable = false, length = 32)
+  private String packageStatus = "SYNCED";
+
   @Column(name = "asset_version", nullable = false, length = 64)
   private String assetVersion;
 
@@ -142,6 +148,8 @@ public class SkillAsset {
     this.archiveName = archiveName;
     this.archiveSha256 = archiveSha256;
     this.archiveSize = archiveSize;
+    this.contentRevision = 0;
+    this.packageStatus = "SYNCED";
     this.sourceType = SkillSourceType.FILE_IMPORT;
     this.entryFile = "SKILL.md";
     this.content = entryContent;
@@ -159,6 +167,20 @@ public class SkillAsset {
     this.description = description;
     this.businessDomain = businessDomain;
     this.updatedAt = Instant.now();
+  }
+
+  public void markFileModified() {
+    this.contentRevision++;
+    this.packageStatus = "MODIFIED";
+    this.updatedAt = Instant.now();
+  }
+
+  public void updateManifestMetadata(
+      String skillKey, String name, String description, String content) {
+    this.skillKey = skillKey;
+    this.name = name;
+    this.description = description;
+    this.content = content;
   }
 
   public UUID getId() {

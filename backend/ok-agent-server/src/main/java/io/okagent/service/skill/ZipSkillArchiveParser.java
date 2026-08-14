@@ -46,17 +46,25 @@ public class ZipSkillArchiveParser implements SkillArchiveParser {
       reject("SKILL.md must exist at the archive root");
     }
     var markdown = new String(entry.orElseThrow().content(), StandardCharsets.UTF_8);
-    var metadata = parseFrontMatter(markdown);
-    var name = metadata.getOrDefault("name", "").trim();
-    var description = metadata.getOrDefault("description", "").trim();
+    var metadata = parseMetadata(markdown);
+    var name = metadata.name();
+    var description = metadata.description();
+    return new ParsedSkillArchive(
+        metadata.skillKey(), name, description, markdown, sha256(archive), List.copyOf(files));
+  }
+
+  @Override
+  public ParsedSkillMetadata parseMetadata(String markdown) {
+    var values = parseFrontMatter(markdown);
+    var name = values.getOrDefault("name", "").trim();
+    var description = values.getOrDefault("description", "").trim();
     if (name.isBlank() || description.isBlank()) {
       reject("SKILL.md front matter must contain name and description");
     }
     if (name.length() > 128 || description.length() > 1024) {
       reject("SKILL.md name or description exceeds the supported length");
     }
-    return new ParsedSkillArchive(
-        toKey(name), name, description, markdown, sha256(archive), List.copyOf(files));
+    return new ParsedSkillMetadata(toKey(name), name, description);
   }
 
   private List<ArchivedSkillFile> readEntries(String archiveName, byte[] archive) {

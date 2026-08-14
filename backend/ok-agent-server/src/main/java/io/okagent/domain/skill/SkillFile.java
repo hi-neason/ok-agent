@@ -8,7 +8,11 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.util.HexFormat;
 import java.util.UUID;
 
 @Entity
@@ -33,8 +37,16 @@ public class SkillFile {
   @Column(nullable = false, columnDefinition = "LONGBLOB")
   private byte[] content;
 
+  @Column(name = "content_sha256", nullable = false, length = 64)
+  private String contentSha256;
+
+  @Version private long version;
+
   @Column(name = "created_at", nullable = false, updatable = false)
   private Instant createdAt;
+
+  @Column(name = "updated_at", nullable = false)
+  private Instant updatedAt;
 
   protected SkillFile() {}
 
@@ -45,7 +57,16 @@ public class SkillFile {
     this.mediaType = mediaType;
     this.fileSize = content.length;
     this.content = content.clone();
+    this.contentSha256 = sha256(content);
     this.createdAt = Instant.now();
+    this.updatedAt = createdAt;
+  }
+
+  public void updateContent(byte[] content) {
+    this.content = content.clone();
+    this.fileSize = content.length;
+    this.contentSha256 = sha256(content);
+    this.updatedAt = Instant.now();
   }
 
   public String getFilePath() {
@@ -62,5 +83,21 @@ public class SkillFile {
 
   public byte[] getContent() {
     return content.clone();
+  }
+
+  public long getVersion() {
+    return version;
+  }
+
+  public Instant getUpdatedAt() {
+    return updatedAt;
+  }
+
+  private String sha256(byte[] value) {
+    try {
+      return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(value));
+    } catch (NoSuchAlgorithmException exception) {
+      throw new IllegalStateException("SHA-256 is unavailable", exception);
+    }
   }
 }

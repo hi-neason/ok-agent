@@ -71,6 +71,13 @@ public class SkillAssetController {
     return service.getFile(id, path);
   }
 
+  /** Saves one UTF-8 Skill text file and synchronizes SKILL.md metadata when applicable. */
+  @PutMapping("/{id}/file")
+  public SkillFileContentResponse updateFile(
+      @PathVariable UUID id, @Valid @RequestBody SkillFileUpdateRequest request) {
+    return service.updateFile(id, request);
+  }
+
   /** Enables or disables a skill asset for new Agent configuration references. */
   @PatchMapping("/{id}/enabled")
   public SkillAssetResponse enabled(@PathVariable UUID id, @RequestParam boolean value) {

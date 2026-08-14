@@ -3,6 +3,7 @@ package io.okagent.service.skill;
 import io.okagent.web.skill.SkillAssetResponse;
 import io.okagent.web.skill.SkillFileContentResponse;
 import io.okagent.web.skill.SkillFileResponse;
+import io.okagent.web.skill.SkillFileUpdateRequest;
 import io.okagent.web.skill.SkillMetadataRequest;
 import java.util.List;
 import java.util.UUID;
@@ -28,6 +29,9 @@ public interface SkillAssetService {
 
   /** Returns preview content for one file in an imported Skill. */
   SkillFileContentResponse getFile(UUID id, String path);
+
+  /** Updates one editable UTF-8 text file with optimistic concurrency protection. */
+  SkillFileContentResponse updateFile(UUID id, SkillFileUpdateRequest request);
 
   /** Changes whether a skill asset is available for new Agent references. */
   SkillAssetResponse enabled(UUID id, boolean value);

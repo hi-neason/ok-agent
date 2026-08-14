@@ -196,8 +196,15 @@
 .skill-browser aside button.skill-tree-folder:hover { background: #e8f3ff; }
 .skill-browser aside button span { color: #7da7d0; }
 .skill-browser main { min-width: 0; overflow: auto; background: #fff; }
-.file-preview-head { position: sticky; top: 0; display: flex; justify-content: space-between; padding: 15px 20px; border-bottom: 1px solid #e1ebf5; background: rgba(255,255,255,.94); color: #426b94; }
-.file-preview-head small { color: #8aa2ba; }
+.file-preview-head { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border-bottom: 1px solid #e1ebf5; background: rgba(255,255,255,.96); color: #426b94; }
+.file-preview-head code, .file-preview-head small { display: block; }
+.file-preview-head small { margin-top: 4px; color: #8aa2ba; }
+.file-edit-button, .file-edit-actions button { padding: 7px 11px; border: 1px solid #bdd9f4; border-radius: 5px; background: #f7fbff; color: #1873cc; font-size: 10px; cursor: pointer; }
+.file-edit-actions { display: flex; gap: 8px; }
+.file-edit-actions button.primary { border-color: #1677df; background: #1677df; color: #fff; }
+.file-edit-actions button:disabled { opacity: .55; cursor: wait; }
+.skill-file-editor { display: block; width: 100%; min-height: calc(100% - 57px); padding: 25px 30px 50px; border: 0; background: #fbfdff; color: #244c75; outline: none; font: 11px/1.75 "DM Mono", monospace; resize: none; tab-size: 2; }
+.file-edit-error { padding: 10px 20px; border-bottom: 1px solid #f1c9c4; background: #fff5f4; color: #b44e45; font-size: 10px; }
 .skill-browser pre { margin: 0; padding: 25px 30px 50px; color: #294d72; font: 11px/1.75 "DM Mono", monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
 .binary-preview { display: grid; place-items: center; height: 100%; color: #819bb6; font-size: 12px; }
 @media (max-width: 1300px) {

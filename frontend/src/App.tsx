@@ -658,7 +658,7 @@ function ModelsPage() {
                   />
                 </label>
                 <label className="field wide">
-                  <span>服务地址（Endpoint）</span>
+                  <span>服务地址（BASE_URL）</span>
                   <input
                     value={editing.endpoint}
                     onChange={(e) =>

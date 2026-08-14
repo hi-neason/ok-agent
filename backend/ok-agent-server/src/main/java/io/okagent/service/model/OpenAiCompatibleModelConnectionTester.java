@@ -1,51 +1,72 @@
 package io.okagent.service.model;
 
+import io.agentscope.core.message.Msg;
+import io.agentscope.core.message.MsgRole;
+import io.agentscope.core.message.TextBlock;
+import io.agentscope.extensions.model.openai.OpenAIChatModel;
+import io.agentscope.extensions.model.openai.exception.OpenAIException;
 import io.okagent.domain.model.ModelAsset;
 import io.okagent.domain.model.ModelType;
 import io.okagent.web.model.ModelConnectionTestResponse;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.List;
 import org.springframework.stereotype.Component;
 
 @Component
 public class OpenAiCompatibleModelConnectionTester implements ModelConnectionTester {
-  private final HttpClient client =
-      HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
-
   /**
-   * Sends a minimal chat-completion request and reports only its status, never its response body.
+   * Creates an AgentScope OpenAI-compatible model, sends a minimal prompt, and never returns the
+   * provider response content.
    */
   @Override
   public ModelConnectionTestResponse test(ModelAsset asset, String apiKey) {
-    if (asset.getType() != ModelType.LLM)
+    if (asset.getType() != ModelType.LLM) {
       return new ModelConnectionTestResponse(
           false, 0, "Only LLM connection testing is currently supported.");
+    }
+
     try {
-      var baseUrl = asset.getEndpoint().replaceAll("/+$", "");
-      var body =
-          "{\"model\":\""
-              + asset.getModelId().replace("\"", "")
-              + "\",\"messages\":[{\"role\":\"user\",\"content\":\"ping\"}],\"max_tokens\":1}";
-      var request =
-          HttpRequest.newBuilder(URI.create(baseUrl + "/chat/completions"))
-              .header("Authorization", "Bearer " + apiKey)
-              .header("Content-Type", "application/json")
-              .timeout(Duration.ofSeconds(30))
-              .POST(HttpRequest.BodyPublishers.ofString(body))
+      var model =
+          OpenAIChatModel.builder()
+              .apiKey(apiKey)
+              .baseUrl(asset.getEndpoint())
+              .modelName(asset.getModelId())
+              .stream(false)
               .build();
-      var response = client.send(request, HttpResponse.BodyHandlers.discarding());
+      var prompt =
+          Msg.builder()
+              .role(MsgRole.USER)
+              .content(List.of(TextBlock.builder().text("Reply with OK.").build()))
+              .build();
+
+      var response = model.stream(List.of(prompt), null, null).blockLast(Duration.ofSeconds(30));
+      if (response == null) {
+        return new ModelConnectionTestResponse(false, 0, "Model provider returned no response.");
+      }
+
       return new ModelConnectionTestResponse(
-          response.statusCode() >= 200 && response.statusCode() < 300,
-          response.statusCode(),
-          response.statusCode() < 300
-              ? "Model request succeeded."
-              : "Model provider rejected the request.");
+          true, 200, "Model request succeeded through AgentScope Java.");
     } catch (Exception exception) {
+      var providerException = findCause(exception, OpenAIException.class);
+      if (providerException != null && providerException.getStatusCode() != null) {
+        return new ModelConnectionTestResponse(
+            false,
+            providerException.getStatusCode(),
+            "Model provider rejected the AgentScope request.");
+      }
       return new ModelConnectionTestResponse(
           false, 0, "Connection failed: " + exception.getClass().getSimpleName());
     }
+  }
+
+  private <T extends Throwable> T findCause(Throwable throwable, Class<T> causeType) {
+    var current = throwable;
+    while (current != null) {
+      if (causeType.isInstance(current)) {
+        return causeType.cast(current);
+      }
+      current = current.getCause();
+    }
+    return null;
   }
 }

@@ -37,6 +37,5 @@
 
 - One commit should address one clear objective. Use Conventional Commit messages, such as `feat: ...`, `fix: ...`, `test: ...`, or `docs: ...`.
 - Run the relevant quality gates before committing, and report the actual commands and results in the handoff.
-- After every code change, commit the completed work and push it to `origin/main` once the relevant quality gates pass, unless the user explicitly requests otherwise.
 - Do not commit `target/`, `dist/`, local environment files, credentials, logs, or IDE artifacts.
 - When a change affects data models, runtime configuration, or release semantics, update the design documentation or state the migration impact in the commit description.

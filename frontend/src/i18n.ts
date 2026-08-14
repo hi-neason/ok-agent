@@ -97,6 +97,7 @@ const resources = {
         jsonFormatFailed: "JSON 格式错误，无法格式化，请检查括号、逗号和引号",
         invalidJson: "Headers、环境变量或查询参数不是有效的 JSON",
         serverKeyHint: "Agent 引用此 Server 的唯一标识，名称输入后会自动生成",
+        serverKeyShortHint: "Agent 引用标识",
         sseUrlHint: "请填写完整 SSE 端点，例如 /api/v1/sse",
         httpUrlHint: "请填写完整 Streamable HTTP 端点，例如 /api/v1/mcp",
       },
@@ -269,6 +270,7 @@ const resources = {
           "Headers, environment, or query parameters contain invalid JSON",
         serverKeyHint:
           "Unique identifier used by Agents; generated from the name",
+        serverKeyShortHint: "Agent reference key",
         sseUrlHint: "Use the complete SSE endpoint, for example /api/v1/sse",
         httpUrlHint:
           "Use the complete Streamable HTTP endpoint, for example /api/v1/mcp",

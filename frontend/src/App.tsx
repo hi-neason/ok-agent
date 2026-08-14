@@ -2059,7 +2059,10 @@ function McpPage() {
                         />
                       </label>
                       <label>
-                        <span>SERVER_KEY</span>
+                        <span>
+                          SERVER_KEY{" "}
+                          <small>· {t("mcp.serverKeyShortHint")}</small>
+                        </span>
                         <input
                           value={draft.serverKey}
                           placeholder="local-mcp"
@@ -2067,7 +2070,6 @@ function McpPage() {
                             setDraft({ ...draft, serverKey: e.target.value })
                           }
                         />
-                        <small>{t("mcp.serverKeyHint")}</small>
                       </label>
                       <label className="wide">
                         <span>{t("mcp.descriptionLabel")}</span>
@@ -2147,7 +2149,13 @@ function McpPage() {
                         <>
                           <label>
                             <span>
-                              SERVER_URL <b className="field-required">*</b>
+                              SERVER_URL <b className="field-required">*</b>{" "}
+                              <small>
+                                ·{" "}
+                                {draft.transport === "SSE"
+                                  ? "/api/v1/sse"
+                                  : "/api/v1/mcp"}
+                              </small>
                             </span>
                             <input
                               value={draft.serverUrl}
@@ -2159,11 +2167,6 @@ function McpPage() {
                                 })
                               }
                             />
-                            <small>
-                              {draft.transport === "SSE"
-                                ? t("mcp.sseUrlHint")
-                                : t("mcp.httpUrlHint")}
-                            </small>
                           </label>
                           <label className="wide">
                             <span>

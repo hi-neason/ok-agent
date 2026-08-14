@@ -62,9 +62,14 @@ const resources = {
         save: "保存 MCP Server",
         saved: "MCP Server 已保存",
         savedAndConnected: "保存成功，连接正常并发现 {{count}} 个工具",
-        savedButConnectionFailed: "MCP Server 已保存，但连接测试失败，请检查配置后重新测试",
+        savedButConnectionFailed:
+          "MCP Server 已保存，但连接测试失败，请检查配置后重新测试",
         toolCount: "{{count}} 个工具",
-        testStatus: { untested: "未测试", success: "连接正常", failed: "连接失败" },
+        testStatus: {
+          untested: "未测试",
+          success: "连接正常",
+          failed: "连接失败",
+        },
         saveFailed: "保存失败，请检查必填字段与 JSON 格式",
         loadFailed: "MCP Server 列表加载失败",
         connectionSucceeded: "连接成功，发现 {{count}} 个工具",
@@ -78,6 +83,15 @@ const resources = {
         serverUrlPlaceholder: "请输入完整的 MCP Server 地址",
         headersPlaceholder: "无鉴权要求时保持为空",
         optional: "可选",
+        configurationMode: "配置方式",
+        formMode: "表单配置",
+        jsonMode: "JSON 配置",
+        jsonEditorTitle: "单个 MCP Server 配置",
+        jsonEditorHint:
+          "兼容 mcpServers 包装格式；仅允许包含一个 Server。支持 command、args、env、url、type 和 headers。",
+        jsonObjectRequired: "MCP 配置必须是一个 JSON 对象",
+        singleServerRequired: "JSON 配置中必须且只能包含一个 MCP Server",
+        invalidServerConfig: "MCP Server 的配置内容必须是一个 JSON 对象",
         invalidJson: "Headers、环境变量或查询参数不是有效的 JSON",
         serverKeyHint: "Agent 引用此 Server 的唯一标识，名称输入后会自动生成",
         sseUrlHint: "请填写完整 SSE 端点，例如 /api/v1/sse",
@@ -211,9 +225,14 @@ const resources = {
         save: "Save MCP Server",
         saved: "MCP Server saved",
         savedAndConnected: "Saved and connected; discovered {{count}} tools",
-        savedButConnectionFailed: "MCP Server was saved, but its connection test failed. Check the configuration and retry.",
+        savedButConnectionFailed:
+          "MCP Server was saved, but its connection test failed. Check the configuration and retry.",
         toolCount: "{{count}} tools",
-        testStatus: { untested: "Untested", success: "Connected", failed: "Failed" },
+        testStatus: {
+          untested: "Untested",
+          success: "Connected",
+          failed: "Failed",
+        },
         saveFailed: "Save failed. Check required fields and JSON.",
         loadFailed: "Failed to load MCP Servers",
         connectionSucceeded: "Connected; discovered {{count}} tools",
@@ -228,6 +247,17 @@ const resources = {
         serverUrlPlaceholder: "Enter the complete MCP Server URL",
         headersPlaceholder: "Leave blank when authentication is not required",
         optional: "optional",
+        configurationMode: "Configuration mode",
+        formMode: "Form",
+        jsonMode: "JSON",
+        jsonEditorTitle: "Single MCP Server configuration",
+        jsonEditorHint:
+          "Accepts the mcpServers wrapper and exactly one Server. Supports command, args, env, url, type, and headers.",
+        jsonObjectRequired: "The MCP configuration must be a JSON object",
+        singleServerRequired:
+          "The JSON configuration must contain exactly one MCP Server",
+        invalidServerConfig:
+          "The MCP Server configuration must be a JSON object",
         invalidJson:
           "Headers, environment, or query parameters contain invalid JSON",
         serverKeyHint:

@@ -1538,6 +1538,56 @@ const emptyMcpDraft: McpDraft = {
   initializationTimeoutSeconds: 10,
 };
 
+const isJsonObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const stringMap = (value: unknown): Record<string, string> => {
+  if (!isJsonObject(value)) return {};
+  return Object.fromEntries(
+    Object.entries(value).filter(
+      (entry): entry is [string, string] => typeof entry[1] === "string",
+    ),
+  );
+};
+
+const mcpDraftToJson = (draft: McpDraft) => {
+  const key = draft.serverKey.trim() || "my-mcp-server";
+  const connection =
+    draft.transport === "STDIO"
+      ? {
+          command: draft.command,
+          args: draft.argumentsText.split("\n").filter(Boolean),
+          env: draft.environmentText.trim()
+            ? JSON.parse(draft.environmentText)
+            : {},
+        }
+      : {
+          type: draft.transport === "SSE" ? "sse" : "streamable-http",
+          url: draft.serverUrl,
+          headers: draft.headersText.trim()
+            ? JSON.parse(draft.headersText)
+            : {},
+          queryParameters: draft.queryParametersText.trim()
+            ? JSON.parse(draft.queryParametersText)
+            : {},
+        };
+  return JSON.stringify(
+    {
+      mcpServers: {
+        [key]: {
+          name: draft.name || key,
+          description: draft.description,
+          ...connection,
+          requestTimeoutSeconds: draft.requestTimeoutSeconds,
+          initializationTimeoutSeconds: draft.initializationTimeoutSeconds,
+        },
+      },
+    },
+    null,
+    2,
+  );
+};
+
 function McpPage() {
   const { t } = useTranslation();
   const [servers, setServers] = useState<McpServer[]>([]);
@@ -1547,6 +1597,8 @@ function McpPage() {
   const [tools, setTools] = useState<McpTool[]>([]);
   const [selectedTool, setSelectedTool] = useState<McpTool | null>(null);
   const [tab, setTab] = useState<"config" | "tools">("config");
+  const [configMode, setConfigMode] = useState<"form" | "json">("form");
+  const [jsonConfig, setJsonConfig] = useState("");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(
     null,
@@ -1570,74 +1622,138 @@ function McpPage() {
     void load();
   }, []);
   const open = (server?: McpServer) => {
+    const nextDraft: McpDraft = server
+      ? {
+          serverKey: server.serverKey,
+          name: server.name,
+          description: server.description,
+          transport: server.transport,
+          serverUrl: server.serverUrl ?? "",
+          command: server.command ?? "",
+          argumentsText: (server.arguments ?? []).join("\n"),
+          headersText: "",
+          environmentText: "",
+          queryParametersText: JSON.stringify(
+            server.queryParameters ?? {},
+            null,
+            2,
+          ),
+          requestTimeoutSeconds: server.requestTimeoutSeconds,
+          initializationTimeoutSeconds: server.initializationTimeoutSeconds,
+        }
+      : { ...emptyMcpDraft };
     setEditing(server ?? "new");
-    setDraft(
-      server
-        ? {
-            serverKey: server.serverKey,
-            name: server.name,
-            description: server.description,
-            transport: server.transport,
-            serverUrl: server.serverUrl ?? "",
-            command: server.command ?? "",
-            argumentsText: (server.arguments ?? []).join("\n"),
-            headersText: "",
-            environmentText: "",
-            queryParametersText: JSON.stringify(
-              server.queryParameters ?? {},
-              null,
-              2,
-            ),
-            requestTimeoutSeconds: server.requestTimeoutSeconds,
-            initializationTimeoutSeconds: server.initializationTimeoutSeconds,
-          }
-        : { ...emptyMcpDraft },
-    );
+    setDraft(nextDraft);
+    setJsonConfig(mcpDraftToJson(nextDraft));
+    setConfigMode("form");
     setTools([]);
     setSelectedTool(null);
     setTab("config");
     setNotice(null);
   };
-  const validateDraft = () => {
-    if (!draft.name.trim()) return t("mcp.nameRequired");
-    if (!draft.serverKey.trim()) return t("mcp.serverKeyRequired");
-    if (draft.transport === "STDIO" && !draft.command.trim())
+  const parseJsonDraft = (): McpDraft => {
+    const root: unknown = JSON.parse(jsonConfig);
+    if (!isJsonObject(root)) throw new Error(t("mcp.jsonObjectRequired"));
+    const container = isJsonObject(root.mcpServers) ? root.mcpServers : root;
+    const entries = Object.entries(container);
+    if (entries.length !== 1) throw new Error(t("mcp.singleServerRequired"));
+    const [serverKey, rawConfig] = entries[0];
+    if (!isJsonObject(rawConfig)) throw new Error(t("mcp.invalidServerConfig"));
+    const transportValue =
+      typeof rawConfig.type === "string"
+        ? rawConfig.type
+        : typeof rawConfig.transport === "string"
+          ? rawConfig.transport
+          : "";
+    const type = transportValue.toLowerCase();
+    const transport: McpServer["transport"] =
+      typeof rawConfig.command === "string"
+        ? "STDIO"
+        : type === "sse"
+          ? "SSE"
+          : "STREAMABLE_HTTP";
+    const args = Array.isArray(rawConfig.args)
+      ? rawConfig.args.filter(
+          (value): value is string => typeof value === "string",
+        )
+      : [];
+    return {
+      serverKey,
+      name: typeof rawConfig.name === "string" ? rawConfig.name : serverKey,
+      description:
+        typeof rawConfig.description === "string" ? rawConfig.description : "",
+      transport,
+      serverUrl: typeof rawConfig.url === "string" ? rawConfig.url : "",
+      command: typeof rawConfig.command === "string" ? rawConfig.command : "",
+      argumentsText: args.join("\n"),
+      headersText: JSON.stringify(stringMap(rawConfig.headers), null, 2),
+      environmentText: JSON.stringify(stringMap(rawConfig.env), null, 2),
+      queryParametersText: JSON.stringify(
+        stringMap(rawConfig.queryParameters),
+        null,
+        2,
+      ),
+      requestTimeoutSeconds:
+        typeof rawConfig.requestTimeoutSeconds === "number"
+          ? rawConfig.requestTimeoutSeconds
+          : 15,
+      initializationTimeoutSeconds:
+        typeof rawConfig.initializationTimeoutSeconds === "number"
+          ? rawConfig.initializationTimeoutSeconds
+          : 10,
+    };
+  };
+  const currentDraft = () => (configMode === "json" ? parseJsonDraft() : draft);
+  const validateDraft = (value: McpDraft) => {
+    if (!value.name.trim()) return t("mcp.nameRequired");
+    if (!value.serverKey.trim()) return t("mcp.serverKeyRequired");
+    if (value.transport === "STDIO" && !value.command.trim())
       return t("mcp.commandRequired");
-    if (draft.transport !== "STDIO" && !draft.serverUrl.trim())
+    if (value.transport !== "STDIO" && !value.serverUrl.trim())
       return t("mcp.serverUrlRequired");
     try {
-      if (draft.headersText.trim()) JSON.parse(draft.headersText);
-      if (draft.environmentText.trim()) JSON.parse(draft.environmentText);
-      if (draft.queryParametersText.trim())
-        JSON.parse(draft.queryParametersText);
+      if (value.headersText.trim()) JSON.parse(value.headersText);
+      if (value.environmentText.trim()) JSON.parse(value.environmentText);
+      if (value.queryParametersText.trim())
+        JSON.parse(value.queryParametersText);
     } catch {
       return t("mcp.invalidJson");
     }
     return null;
   };
-  const payload = () => ({
-    serverKey: draft.serverKey.trim(),
-    name: draft.name.trim(),
-    description: draft.description,
-    transport: draft.transport,
-    serverUrl: draft.serverUrl.trim() || null,
-    command: draft.command.trim() || null,
-    arguments: draft.argumentsText
+  const payload = (value: McpDraft) => ({
+    serverKey: value.serverKey.trim(),
+    name: value.name.trim(),
+    description: value.description,
+    transport: value.transport,
+    serverUrl: value.serverUrl.trim() || null,
+    command: value.command.trim() || null,
+    arguments: value.argumentsText
       .split("\n")
       .map((v) => v.trim())
       .filter(Boolean),
-    headers: draft.headersText.trim() ? JSON.parse(draft.headersText) : {},
-    environment: draft.environmentText.trim()
-      ? JSON.parse(draft.environmentText)
+    headers: value.headersText.trim() ? JSON.parse(value.headersText) : {},
+    environment: value.environmentText.trim()
+      ? JSON.parse(value.environmentText)
       : {},
-    queryParameters: draft.queryParametersText.trim()
-      ? JSON.parse(draft.queryParametersText)
+    queryParameters: value.queryParametersText.trim()
+      ? JSON.parse(value.queryParametersText)
       : {},
-    requestTimeoutSeconds: draft.requestTimeoutSeconds,
-    initializationTimeoutSeconds: draft.initializationTimeoutSeconds,
+    requestTimeoutSeconds: value.requestTimeoutSeconds,
+    initializationTimeoutSeconds: value.initializationTimeoutSeconds,
   });
   const save = async () => {
-    const validation = validateDraft();
+    let value: McpDraft;
+    try {
+      value = currentDraft();
+    } catch (error) {
+      setNotice({
+        ok: false,
+        text: error instanceof Error ? error.message : t("mcp.invalidJson"),
+      });
+      return;
+    }
+    const validation = validateDraft(value);
     if (validation) {
       setNotice({ ok: false, text: validation });
       return;
@@ -1653,7 +1769,7 @@ function McpPage() {
         {
           method: isNew ? "POST" : "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload()),
+          body: JSON.stringify(payload(value)),
         },
       );
       if (!response.ok) throw new Error();
@@ -1692,7 +1808,17 @@ function McpPage() {
     }
   };
   const inspect = async () => {
-    const validation = validateDraft();
+    let value: McpDraft;
+    try {
+      value = currentDraft();
+    } catch (error) {
+      setNotice({
+        ok: false,
+        text: error instanceof Error ? error.message : t("mcp.invalidJson"),
+      });
+      return;
+    }
+    const validation = validateDraft(value);
     if (validation) {
       setNotice({ ok: false, text: validation });
       return;
@@ -1710,7 +1836,7 @@ function McpPage() {
           : {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(payload()),
+              body: JSON.stringify(payload(value)),
             },
       );
       const result = await response.json();
@@ -1789,12 +1915,12 @@ function McpPage() {
               <code>{server.transport.replace("STREAMABLE_", "")}</code>
               <small>{server.serverUrl || server.command}</small>
             </span>
-              <span>{t("mcp.toolCount", { count: server.toolCount })}</span>
-              <span
-                className={`test-state ${server.lastTestStatus.toLowerCase()}`}
-              >
-                {t(`mcp.testStatus.${server.lastTestStatus.toLowerCase()}`)}
-              </span>
+            <span>{t("mcp.toolCount", { count: server.toolCount })}</span>
+            <span
+              className={`test-state ${server.lastTestStatus.toLowerCase()}`}
+            >
+              {t(`mcp.testStatus.${server.lastTestStatus.toLowerCase()}`)}
+            </span>
             <span>
               <Toggle on={server.enabled} setOn={() => void toggle(server)} />
             </span>
@@ -1854,191 +1980,266 @@ function McpPage() {
                 </button>
               </nav>
               {tab === "config" ? (
-                <div className="mcp-form">
-                  <label>
-                    <span>{t("mcp.name")}</span>
-                    <input
-                      value={draft.name}
-                      onChange={(e) => {
-                        const previousSlug = slugifyMcpKey(draft.name);
-                        const name = e.target.value;
-                        setDraft({
-                          ...draft,
-                          name,
-                          serverKey:
-                            !draft.serverKey || draft.serverKey === previousSlug
-                              ? slugifyMcpKey(name)
-                              : draft.serverKey,
-                        });
-                      }}
-                    />
-                  </label>
-                  <label>
-                    <span>SERVER_KEY</span>
-                    <input
-                      value={draft.serverKey}
-                      placeholder="local-mcp"
-                      onChange={(e) =>
-                        setDraft({ ...draft, serverKey: e.target.value })
-                      }
-                    />
-                    <small>{t("mcp.serverKeyHint")}</small>
-                  </label>
-                  <label className="wide">
-                    <span>{t("mcp.descriptionLabel")}</span>
-                    <input
-                      value={draft.description}
-                      onChange={(e) =>
-                        setDraft({ ...draft, description: e.target.value })
-                      }
-                    />
-                  </label>
-                  <label>
-                    <span>{t("mcp.transport")}</span>
-                    <select
-                      value={draft.transport}
-                      onChange={(e) =>
-                        setDraft({
-                          ...draft,
-                          transport: e.target.value as McpServer["transport"],
-                        })
-                      }
-                    >
-                      <option value="STREAMABLE_HTTP">Streamable HTTP</option>
-                      <option value="SSE">SSE</option>
-                      <option value="STDIO">STDIO</option>
-                    </select>
-                  </label>
-                  {draft.transport === "STDIO" ? (
-                    <>
+                <>
+                  <div className="mcp-config-mode">
+                    <span>{t("mcp.configurationMode")}</span>
+                    <div>
+                      <button
+                        className={configMode === "form" ? "active" : ""}
+                        onClick={() => {
+                          if (configMode === "json") {
+                            try {
+                              const parsed = parseJsonDraft();
+                              setDraft(parsed);
+                              setNotice(null);
+                            } catch (error) {
+                              setNotice({
+                                ok: false,
+                                text:
+                                  error instanceof Error
+                                    ? error.message
+                                    : t("mcp.invalidJson"),
+                              });
+                              return;
+                            }
+                          }
+                          setConfigMode("form");
+                        }}
+                      >
+                        ◫ {t("mcp.formMode")}
+                      </button>
+                      <button
+                        className={configMode === "json" ? "active" : ""}
+                        onClick={() => {
+                          try {
+                            setJsonConfig(mcpDraftToJson(draft));
+                            setConfigMode("json");
+                            setNotice(null);
+                          } catch {
+                            setNotice({
+                              ok: false,
+                              text: t("mcp.invalidJson"),
+                            });
+                          }
+                        }}
+                      >
+                        {"{}"} {t("mcp.jsonMode")}
+                      </button>
+                    </div>
+                  </div>
+                  {configMode === "form" ? (
+                    <div className="mcp-form">
                       <label>
-                        <span>COMMAND</span>
+                        <span>{t("mcp.name")}</span>
                         <input
-                          value={draft.command}
+                          value={draft.name}
+                          onChange={(e) => {
+                            const previousSlug = slugifyMcpKey(draft.name);
+                            const name = e.target.value;
+                            setDraft({
+                              ...draft,
+                              name,
+                              serverKey:
+                                !draft.serverKey ||
+                                draft.serverKey === previousSlug
+                                  ? slugifyMcpKey(name)
+                                  : draft.serverKey,
+                            });
+                          }}
+                        />
+                      </label>
+                      <label>
+                        <span>SERVER_KEY</span>
+                        <input
+                          value={draft.serverKey}
+                          placeholder="local-mcp"
                           onChange={(e) =>
-                            setDraft({ ...draft, command: e.target.value })
+                            setDraft({ ...draft, serverKey: e.target.value })
+                          }
+                        />
+                        <small>{t("mcp.serverKeyHint")}</small>
+                      </label>
+                      <label className="wide">
+                        <span>{t("mcp.descriptionLabel")}</span>
+                        <input
+                          value={draft.description}
+                          onChange={(e) =>
+                            setDraft({ ...draft, description: e.target.value })
                           }
                         />
                       </label>
-                      <label className="wide">
-                        <span>ARGUMENTS · {t("mcp.onePerLine")}</span>
-                        <textarea
-                          value={draft.argumentsText}
+                      <label>
+                        <span>{t("mcp.transport")}</span>
+                        <select
+                          value={draft.transport}
                           onChange={(e) =>
                             setDraft({
                               ...draft,
-                              argumentsText: e.target.value,
+                              transport: e.target
+                                .value as McpServer["transport"],
                             })
                           }
-                        />
+                        >
+                          <option value="STREAMABLE_HTTP">
+                            Streamable HTTP
+                          </option>
+                          <option value="SSE">SSE</option>
+                          <option value="STDIO">STDIO</option>
+                        </select>
                       </label>
-                      <label className="wide">
-                        <span>ENVIRONMENT · JSON</span>
-                        <textarea
-                          value={draft.environmentText}
-                          placeholder={
-                            editing !== "new" &&
-                            editing.configuredEnvironmentNames.length
-                              ? t("mcp.secretConfigured", {
-                                  keys: editing.configuredEnvironmentNames.join(
-                                    ", ",
-                                  ),
+                      {draft.transport === "STDIO" ? (
+                        <>
+                          <label>
+                            <span>COMMAND</span>
+                            <input
+                              value={draft.command}
+                              onChange={(e) =>
+                                setDraft({ ...draft, command: e.target.value })
+                              }
+                            />
+                          </label>
+                          <label className="wide">
+                            <span>ARGUMENTS · {t("mcp.onePerLine")}</span>
+                            <textarea
+                              value={draft.argumentsText}
+                              onChange={(e) =>
+                                setDraft({
+                                  ...draft,
+                                  argumentsText: e.target.value,
                                 })
-                              : '{\n  "API_KEY": "..."\n}'
-                          }
+                              }
+                            />
+                          </label>
+                          <label className="wide">
+                            <span>ENVIRONMENT · JSON</span>
+                            <textarea
+                              value={draft.environmentText}
+                              placeholder={
+                                editing !== "new" &&
+                                editing.configuredEnvironmentNames.length
+                                  ? t("mcp.secretConfigured", {
+                                      keys: editing.configuredEnvironmentNames.join(
+                                        ", ",
+                                      ),
+                                    })
+                                  : '{\n  "API_KEY": "..."\n}'
+                              }
+                              onChange={(e) =>
+                                setDraft({
+                                  ...draft,
+                                  environmentText: e.target.value,
+                                })
+                              }
+                            />
+                          </label>
+                        </>
+                      ) : (
+                        <>
+                          <label>
+                            <span>
+                              SERVER_URL <b className="field-required">*</b>
+                            </span>
+                            <input
+                              value={draft.serverUrl}
+                              placeholder={t("mcp.serverUrlPlaceholder")}
+                              onChange={(e) =>
+                                setDraft({
+                                  ...draft,
+                                  serverUrl: e.target.value,
+                                })
+                              }
+                            />
+                            <small>
+                              {draft.transport === "SSE"
+                                ? t("mcp.sseUrlHint")
+                                : t("mcp.httpUrlHint")}
+                            </small>
+                          </label>
+                          <label className="wide">
+                            <span>
+                              HEADERS · JSON{" "}
+                              <small>({t("mcp.optional")})</small>
+                            </span>
+                            <textarea
+                              value={draft.headersText}
+                              placeholder={
+                                editing !== "new" &&
+                                editing.configuredHeaderNames.length
+                                  ? t("mcp.secretConfigured", {
+                                      keys: editing.configuredHeaderNames.join(
+                                        ", ",
+                                      ),
+                                    })
+                                  : t("mcp.headersPlaceholder")
+                              }
+                              onChange={(e) =>
+                                setDraft({
+                                  ...draft,
+                                  headersText: e.target.value,
+                                })
+                              }
+                            />
+                          </label>
+                          <label className="wide">
+                            <span>
+                              QUERY PARAMETERS · JSON{" "}
+                              <small>({t("mcp.optional")})</small>
+                            </span>
+                            <textarea
+                              value={draft.queryParametersText}
+                              onChange={(e) =>
+                                setDraft({
+                                  ...draft,
+                                  queryParametersText: e.target.value,
+                                })
+                              }
+                            />
+                          </label>
+                        </>
+                      )}
+                      <label>
+                        <span>{t("mcp.requestTimeout")}</span>
+                        <input
+                          type="number"
+                          value={draft.requestTimeoutSeconds}
                           onChange={(e) =>
                             setDraft({
                               ...draft,
-                              environmentText: e.target.value,
+                              requestTimeoutSeconds: +e.target.value,
                             })
                           }
                         />
                       </label>
-                    </>
+                      <label>
+                        <span>{t("mcp.initTimeout")}</span>
+                        <input
+                          type="number"
+                          value={draft.initializationTimeoutSeconds}
+                          onChange={(e) =>
+                            setDraft({
+                              ...draft,
+                              initializationTimeoutSeconds: +e.target.value,
+                            })
+                          }
+                        />
+                      </label>
+                    </div>
                   ) : (
-                    <>
-                      <label>
-                        <span>
-                          SERVER_URL <b className="field-required">*</b>
-                        </span>
-                        <input
-                          value={draft.serverUrl}
-                          placeholder={t("mcp.serverUrlPlaceholder")}
-                          onChange={(e) =>
-                            setDraft({ ...draft, serverUrl: e.target.value })
-                          }
-                        />
-                        <small>
-                          {draft.transport === "SSE"
-                            ? t("mcp.sseUrlHint")
-                            : t("mcp.httpUrlHint")}
-                        </small>
-                      </label>
-                      <label className="wide">
-                        <span>
-                          HEADERS · JSON <small>({t("mcp.optional")})</small>
-                        </span>
-                        <textarea
-                          value={draft.headersText}
-                          placeholder={
-                            editing !== "new" &&
-                            editing.configuredHeaderNames.length
-                              ? t("mcp.secretConfigured", {
-                                  keys: editing.configuredHeaderNames.join(
-                                    ", ",
-                                  ),
-                                })
-                              : t("mcp.headersPlaceholder")
-                          }
-                          onChange={(e) =>
-                            setDraft({ ...draft, headersText: e.target.value })
-                          }
-                        />
-                      </label>
-                      <label className="wide">
-                        <span>
-                          QUERY PARAMETERS · JSON {" "}
-                          <small>({t("mcp.optional")})</small>
-                        </span>
-                        <textarea
-                          value={draft.queryParametersText}
-                          onChange={(e) =>
-                            setDraft({
-                              ...draft,
-                              queryParametersText: e.target.value,
-                            })
-                          }
-                        />
-                      </label>
-                    </>
+                    <div className="mcp-json-config">
+                      <div>
+                        <p className="kicker">SINGLE MCP SERVER / JSON</p>
+                        <b>{t("mcp.jsonEditorTitle")}</b>
+                        <small>{t("mcp.jsonEditorHint")}</small>
+                      </div>
+                      <textarea
+                        value={jsonConfig}
+                        onChange={(event) => setJsonConfig(event.target.value)}
+                        spellCheck={false}
+                        aria-label={t("mcp.jsonEditorTitle")}
+                      />
+                    </div>
                   )}
-                  <label>
-                    <span>{t("mcp.requestTimeout")}</span>
-                    <input
-                      type="number"
-                      value={draft.requestTimeoutSeconds}
-                      onChange={(e) =>
-                        setDraft({
-                          ...draft,
-                          requestTimeoutSeconds: +e.target.value,
-                        })
-                      }
-                    />
-                  </label>
-                  <label>
-                    <span>{t("mcp.initTimeout")}</span>
-                    <input
-                      type="number"
-                      value={draft.initializationTimeoutSeconds}
-                      onChange={(e) =>
-                        setDraft({
-                          ...draft,
-                          initializationTimeoutSeconds: +e.target.value,
-                        })
-                      }
-                    />
-                  </label>
-                </div>
+                </>
               ) : (
                 <div className="mcp-tool-browser">
                   <aside>

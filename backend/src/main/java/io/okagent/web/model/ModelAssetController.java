@@ -56,4 +56,10 @@ public class ModelAssetController {
         "message",
         "Configuration accepted; network probing belongs to the runtime egress policy.");
   }
+
+  /** Sends a real minimal request through the saved model configuration. */
+  @PostMapping("/{id}/test-connection")
+  public ModelConnectionTestResponse testSavedConnection(@PathVariable UUID id) {
+    return service.testConnection(id);
+  }
 }

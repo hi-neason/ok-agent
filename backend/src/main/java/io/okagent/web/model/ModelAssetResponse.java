@@ -12,7 +12,7 @@ public record ModelAssetResponse(
     String provider,
     String modelId,
     String endpoint,
-    String secretRef,
+    boolean apiKeyConfigured,
     boolean enabled,
     Instant updatedAt) {
   public static ModelAssetResponse from(ModelAsset a) {
@@ -23,7 +23,7 @@ public record ModelAssetResponse(
         a.getProvider(),
         a.getModelId(),
         a.getEndpoint(),
-        a.getSecretRef(),
+        a.getApiKeyCiphertext() != null && !a.getApiKeyCiphertext().isBlank(),
         a.isEnabled(),
         a.getUpdatedAt());
   }

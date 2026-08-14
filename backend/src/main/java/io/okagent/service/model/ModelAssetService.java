@@ -2,6 +2,7 @@ package io.okagent.service.model;
 
 import io.okagent.web.model.ModelAssetRequest;
 import io.okagent.web.model.ModelAssetResponse;
+import io.okagent.web.model.ModelConnectionTestResponse;
 import java.util.List;
 import java.util.UUID;
 
@@ -20,4 +21,7 @@ public interface ModelAssetService {
 
   /** Permanently removes the identified model asset from the management plane. */
   void delete(UUID id);
+
+  /** Sends one real minimal request to the provider using the saved model configuration. */
+  ModelConnectionTestResponse testConnection(UUID id);
 }

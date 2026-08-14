@@ -9,5 +9,5 @@ public record ModelAssetRequest(
     @NotBlank String provider,
     @NotBlank String modelId,
     @NotBlank String endpoint,
-    @NotBlank String secretRef,
+    String apiKey,
     boolean enabled) {}

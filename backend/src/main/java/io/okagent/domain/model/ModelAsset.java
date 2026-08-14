@@ -25,8 +25,8 @@ public class ModelAsset {
   @Column(nullable = false, length = 1024)
   private String endpoint;
 
-  @Column(name = "secret_ref", nullable = false, length = 255)
-  private String secretRef;
+  @Column(name = "api_key_ciphertext", nullable = false, columnDefinition = "TEXT")
+  private String apiKeyCiphertext;
 
   @Column(nullable = false)
   private boolean enabled;
@@ -48,7 +48,7 @@ public class ModelAsset {
       String provider,
       String modelId,
       String endpoint,
-      String secretRef,
+      String apiKeyCiphertext,
       boolean enabled) {
     this.id = id;
     this.name = name;
@@ -56,7 +56,7 @@ public class ModelAsset {
     this.provider = provider;
     this.modelId = modelId;
     this.endpoint = endpoint;
-    this.secretRef = secretRef;
+    this.apiKeyCiphertext = apiKeyCiphertext;
     this.enabled = enabled;
     this.createdAt = Instant.now();
     this.updatedAt = this.createdAt;
@@ -68,14 +68,14 @@ public class ModelAsset {
       String provider,
       String modelId,
       String endpoint,
-      String secretRef,
+      String apiKeyCiphertext,
       boolean enabled) {
     this.name = name;
     this.type = type;
     this.provider = provider;
     this.modelId = modelId;
     this.endpoint = endpoint;
-    this.secretRef = secretRef;
+    if (apiKeyCiphertext != null && !apiKeyCiphertext.isBlank()) this.apiKeyCiphertext = apiKeyCiphertext;
     this.enabled = enabled;
     this.updatedAt = Instant.now();
   }
@@ -109,8 +109,8 @@ public class ModelAsset {
     return endpoint;
   }
 
-  public String getSecretRef() {
-    return secretRef;
+  public String getApiKeyCiphertext() {
+    return apiKeyCiphertext;
   }
 
   public boolean isEnabled() {

@@ -48,13 +48,15 @@ public class OpenAiCompatibleModelConnectionTester implements ModelConnectionTes
     } catch (Exception exception) {
       var providerException = findCause(exception, OpenAIException.class);
       if (providerException != null && providerException.getStatusCode() != null) {
+        var statusCode = providerException.getStatusCode();
         return new ModelConnectionTestResponse(
-            false,
-            providerException.getStatusCode(),
-            "Model provider rejected the AgentScope request.");
+            false, statusCode, providerFailureMessage(statusCode));
       }
-      return new ModelConnectionTestResponse(
-          false, 0, "Connection failed: " + exception.getClass().getSimpleName());
+      if (findCause(exception, java.util.concurrent.TimeoutException.class) != null) {
+        return new ModelConnectionTestResponse(
+            false, 0, "Connection timed out. Check BASE_URL and the provider status, then retry.");
+      }
+      return new ModelConnectionTestResponse(false, 0, "Unable to reach the model provider.");
     }
   }
 
@@ -67,5 +69,19 @@ public class OpenAiCompatibleModelConnectionTester implements ModelConnectionTes
       current = current.getCause();
     }
     return null;
+  }
+
+  private String providerFailureMessage(int statusCode) {
+    return switch (statusCode) {
+      case 400 -> "The provider rejected MODEL_ID or request parameters.";
+      case 401 -> "API_KEY authentication failed.";
+      case 403 -> "API_KEY does not have permission to access this model.";
+      case 404 -> "BASE_URL or MODEL_ID was not found.";
+      case 429 -> "The provider rate limit or quota was exceeded.";
+      default ->
+          statusCode >= 500
+              ? "The model provider is temporarily unavailable."
+              : "The model provider rejected the connection request.";
+    };
   }
 }

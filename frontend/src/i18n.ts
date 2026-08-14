@@ -22,6 +22,8 @@ const resources = {
       models: {
         connectionSucceeded: "连接成功",
         connectionTesting: "正在验证连接…",
+        connectionTest: "测试连接",
+        connectionRetry: "重新测试",
         connectionFailed: "连接失败",
         saveFailed: "保存失败，请检查服务连接和输入内容",
         connectionHint:
@@ -54,6 +56,8 @@ const resources = {
       models: {
         connectionSucceeded: "Connection succeeded",
         connectionTesting: "Testing connection…",
+        connectionTest: "Test connection",
+        connectionRetry: "Test again",
         connectionFailed: "Connection failed",
         saveFailed: "Save failed. Check the service connection and input.",
         connectionHint:

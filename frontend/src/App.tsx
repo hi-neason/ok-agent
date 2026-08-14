@@ -104,14 +104,17 @@ function Button({
   children,
   quiet = false,
   onClick,
+  disabled = false,
 }: {
   children: ReactNode;
   quiet?: boolean;
   onClick?: () => void;
+  disabled?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
+      disabled={disabled}
       className={quiet ? "ui-button quiet" : "ui-button"}
     >
       {children}
@@ -435,7 +438,7 @@ function ModelsPage() {
     (model) => type === "ALL" || model.type === type,
   );
   const save = async () => {
-    if (!editing) return;
+    if (!editing || testResult?.state === "testing") return;
     const existing = Boolean(editing.id);
     const response = await fetch(
       existing ? `/api/v1/models/${editing.id}` : "/api/v1/models",
@@ -787,8 +790,16 @@ function ModelsPage() {
                 </div>
               )}
               <div className="sticky-actions">
-                <Button quiet onClick={testConnection}>
-                  测试连接
+                <Button
+                  quiet
+                  onClick={testConnection}
+                  disabled={testResult?.state === "testing"}
+                >
+                  {testResult?.state === "testing"
+                    ? t("models.connectionTesting")
+                    : testResult?.state === "error"
+                      ? t("models.connectionRetry")
+                      : t("models.connectionTest")}
                 </Button>
                 <Button onClick={save}>保存模型</Button>
               </div>

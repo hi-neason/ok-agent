@@ -74,6 +74,30 @@ class OpenAiCompatibleModelConnectionTesterTests {
     assertThat(authorization.get()).isEqualTo("Bearer test-api-key");
   }
 
+  @Test
+  void shouldExplainAuthenticationFailureWithoutExposingProviderResponse() {
+    server.createContext(
+        "/v1/chat/completions",
+        exchange -> respond(exchange, 401, "{\"error\":{\"message\":\"secret detail\"}}"));
+    var asset =
+        new ModelAsset(
+            UUID.randomUUID(),
+            "Test model",
+            ModelType.LLM,
+            "Custom",
+            "test-model",
+            baseUrl,
+            "encrypted",
+            true);
+
+    var result = new OpenAiCompatibleModelConnectionTester().test(asset, "invalid-api-key");
+
+    assertThat(result.success()).isFalse();
+    assertThat(result.statusCode()).isEqualTo(401);
+    assertThat(result.message()).isEqualTo("API_KEY authentication failed.");
+    assertThat(result.message()).doesNotContain("secret detail");
+  }
+
   private void respond(HttpExchange exchange, int statusCode, String body) throws IOException {
     var bytes = body.getBytes(StandardCharsets.UTF_8);
     exchange.getResponseHeaders().set("Content-Type", "application/json");

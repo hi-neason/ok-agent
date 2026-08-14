@@ -1537,6 +1537,7 @@ const emptyMcpDraft: McpDraft = {
   requestTimeoutSeconds: 15,
   initializationTimeoutSeconds: 10,
 };
+const MCP_JSON_INDENT = 6;
 
 const isJsonObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -1584,7 +1585,7 @@ const mcpDraftToJson = (draft: McpDraft) => {
       },
     },
     null,
-    4,
+    MCP_JSON_INDENT,
   );
 };
 
@@ -1707,7 +1708,7 @@ function McpPage() {
   const formatJsonConfig = () => {
     try {
       const parsed: unknown = JSON.parse(jsonConfig);
-      setJsonConfig(JSON.stringify(parsed, null, 4));
+      setJsonConfig(JSON.stringify(parsed, null, MCP_JSON_INDENT));
       setNotice({ ok: true, text: t("mcp.jsonFormatted") });
     } catch {
       setNotice({ ok: false, text: t("mcp.jsonFormatFailed") });
@@ -2254,12 +2255,13 @@ function McpPage() {
                           const input = event.currentTarget;
                           const start = input.selectionStart;
                           const end = input.selectionEnd;
+                          const indentation = " ".repeat(MCP_JSON_INDENT);
                           setJsonConfig(
-                            `${jsonConfig.slice(0, start)}    ${jsonConfig.slice(end)}`,
+                            `${jsonConfig.slice(0, start)}${indentation}${jsonConfig.slice(end)}`,
                           );
                           requestAnimationFrame(() => {
                             input.selectionStart = input.selectionEnd =
-                              start + 4;
+                              start + MCP_JSON_INDENT;
                           });
                         }}
                         spellCheck={false}

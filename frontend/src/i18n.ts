@@ -93,7 +93,7 @@ const resources = {
         singleServerRequired: "JSON 配置中必须且只能包含一个 MCP Server",
         invalidServerConfig: "MCP Server 的配置内容必须是一个 JSON 对象",
         formatJson: "格式化 JSON",
-        jsonFormatted: "JSON 已使用 4 空格缩进格式化",
+        jsonFormatted: "JSON 已使用 6 空格缩进格式化",
         jsonFormatFailed: "JSON 格式错误，无法格式化，请检查括号、逗号和引号",
         invalidJson: "Headers、环境变量或查询参数不是有效的 JSON",
         serverKeyHint: "Agent 引用此 Server 的唯一标识，名称输入后会自动生成",
@@ -262,7 +262,7 @@ const resources = {
         invalidServerConfig:
           "The MCP Server configuration must be a JSON object",
         formatJson: "Format JSON",
-        jsonFormatted: "JSON formatted with four-space indentation",
+        jsonFormatted: "JSON formatted with six-space indentation",
         jsonFormatFailed:
           "Invalid JSON. Check brackets, commas, and quotation marks.",
         invalidJson:

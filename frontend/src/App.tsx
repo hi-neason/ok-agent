@@ -919,6 +919,7 @@ function SkillsPage() {
   const [fileDraft, setFileDraft] = useState<string | null>(null);
   const [fileSaving, setFileSaving] = useState(false);
   const [fileError, setFileError] = useState("");
+  const [fileSuccess, setFileSuccess] = useState("");
   const [archive, setArchive] = useState<File | null>(null);
   const [uploadName, setUploadName] = useState("");
   const [uploadDescription, setUploadDescription] = useState("");
@@ -1038,6 +1039,7 @@ function SkillsPage() {
   const openFile = async (skillId: string, path: string) => {
     setFileDraft(null);
     setFileError("");
+    setFileSuccess("");
     const response = await fetch(
       `/api/v1/skills/${skillId}/file?path=${encodeURIComponent(path)}`,
     );
@@ -1048,6 +1050,7 @@ function SkillsPage() {
     if (!viewing || !selectedFile || fileDraft === null || fileSaving) return;
     setFileSaving(true);
     setFileError("");
+    setFileSuccess("");
     try {
       const response = await fetch(`/api/v1/skills/${viewing.id}/file`, {
         method: "PUT",
@@ -1063,6 +1066,7 @@ function SkillsPage() {
       const saved = (await response.json()) as SkillFileContent;
       setSelectedFile(saved);
       setFileDraft(null);
+      setFileSuccess(t("skills.fileSaved", { version: saved.version }));
       const refreshed = await fetch("/api/v1/skills");
       if (refreshed.ok) {
         const items = (await refreshed.json()) as SkillItem[];
@@ -1291,10 +1295,11 @@ function SkillsPage() {
               <main>
                 <div className="file-preview-head">
                   <div><code>{selectedFile?.path ?? "—"}</code><small>{selectedFile ? `${selectedFile.mediaType} · ${selectedFile.size} B` : ""}</small></div>
-                  {selectedFile?.previewable && fileDraft === null && <button className="file-edit-button" onClick={() => setFileDraft(selectedFile.content ?? "")}>✎ {t("skills.editFile")}</button>}
+                  {selectedFile?.previewable && fileDraft === null && <button className="file-edit-button" onClick={() => { setFileDraft(selectedFile.content ?? ""); setFileSuccess(""); }}>✎ {t("skills.editFile")}</button>}
                   {fileDraft !== null && <div className="file-edit-actions"><button onClick={() => { setFileDraft(null); setFileError(""); }}>{t("skills.cancel")}</button><button className="primary" onClick={() => void saveFile()} disabled={fileSaving}>{fileSaving ? t("skills.saving") : t("skills.saveFile")}</button></div>}
                 </div>
                 {fileError && <div className="file-edit-error">× {fileError}</div>}
+                {fileSuccess && <div className="file-edit-success" role="status">✓ {fileSuccess}</div>}
                 {fileDraft !== null ? <textarea className="skill-file-editor" value={fileDraft} onChange={(event) => setFileDraft(event.target.value)} spellCheck={false} /> : selectedFile?.previewable ? <pre>{selectedFile.content}</pre> : <div className="binary-preview">{t("skills.binaryPreview")}</div>}
               </main>
             </div>

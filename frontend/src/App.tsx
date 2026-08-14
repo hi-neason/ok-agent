@@ -1659,7 +1659,31 @@ function McpPage() {
       if (!response.ok) throw new Error();
       const saved: McpServer = await response.json();
       setEditing(saved);
-      setNotice({ ok: true, text: t("mcp.saved") });
+      if (isNew) {
+        try {
+          const inspectionResponse = await fetch(
+            `/api/v1/mcp-servers/${saved.id}/inspect`,
+            { method: "POST" },
+          );
+          const inspection = await inspectionResponse.json();
+          if (inspectionResponse.ok && inspection.success) {
+            setTools(inspection.tools);
+            setSelectedTool(inspection.tools[0] ?? null);
+            setNotice({
+              ok: true,
+              text: t("mcp.savedAndConnected", {
+                count: inspection.tools.length,
+              }),
+            });
+          } else {
+            setNotice({ ok: false, text: t("mcp.savedButConnectionFailed") });
+          }
+        } catch {
+          setNotice({ ok: false, text: t("mcp.savedButConnectionFailed") });
+        }
+      } else {
+        setNotice({ ok: true, text: t("mcp.saved") });
+      }
       await load();
     } catch {
       setNotice({ ok: false, text: t("mcp.saveFailed") });
@@ -1765,14 +1789,12 @@ function McpPage() {
               <code>{server.transport.replace("STREAMABLE_", "")}</code>
               <small>{server.serverUrl || server.command}</small>
             </span>
-            <span>
-              <b>{server.toolCount}</b> tools
-            </span>
-            <span
-              className={`test-state ${server.lastTestStatus.toLowerCase()}`}
-            >
-              {server.lastTestStatus}
-            </span>
+              <span>{t("mcp.toolCount", { count: server.toolCount })}</span>
+              <span
+                className={`test-state ${server.lastTestStatus.toLowerCase()}`}
+              >
+                {t(`mcp.testStatus.${server.lastTestStatus.toLowerCase()}`)}
+              </span>
             <span>
               <Toggle on={server.enabled} setOn={() => void toggle(server)} />
             </span>

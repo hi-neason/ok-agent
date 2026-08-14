@@ -10,6 +10,7 @@
 ## Backend standards
 
 - Use Java 17 as the baseline and Spring Boot 4.x. Do not introduce pre-Java-17 compatibility patterns or unnecessary experimental APIs.
+- Use the [AgentScope Java v2 documentation index](https://java.agentscope.io/v2/llms.txt) as the starting point when locating AgentScope APIs, examples, or source implementations. Follow its referenced documentation and then verify behavior against the versioned local AgentScope source when implementation details matter.
 - Organize packages by domain, for example `module/asset`, `module/agent`, `module/release`, `module/observe`, and `module/identity`. Put shared technical capabilities in `shared/`; do not create catch-all `util` packages.
 - Prefix APIs with `/api/v1`. Keep request/response DTOs separate from domain objects and validate all inputs with Bean Validation.
 - Every Controller endpoint method must have an English Javadoc comment that states its API responsibility and intended effect.

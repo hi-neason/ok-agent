@@ -899,7 +899,8 @@ function SkillTree({
             <span>{folder ? (isCollapsed ? "▸" : "▾") : "◇"}</span>
             {node.name}
           </button>
-          {node.children.length > 0 && !isCollapsed &&
+          {node.children.length > 0 &&
+            !isCollapsed &&
             renderNodes(node.children, depth + 1)}
         </div>
       );
@@ -915,7 +916,9 @@ function SkillsPage() {
   const [editing, setEditing] = useState<SkillItem | null>(null);
   const [viewing, setViewing] = useState<SkillItem | null>(null);
   const [files, setFiles] = useState<SkillFileItem[]>([]);
-  const [selectedFile, setSelectedFile] = useState<SkillFileContent | null>(null);
+  const [selectedFile, setSelectedFile] = useState<SkillFileContent | null>(
+    null,
+  );
   const [fileDraft, setFileDraft] = useState<string | null>(null);
   const [fileSaving, setFileSaving] = useState(false);
   const [fileError, setFileError] = useState("");
@@ -939,11 +942,10 @@ function SkillsPage() {
       .catch(() => setError(t("skills.loadFailed")));
   }, [t]);
 
-  const visibleSkills = skills.filter(
-    (skill) =>
-      `${skill.name} ${skill.skillKey} ${skill.description}`
-        .toLowerCase()
-        .includes(query.toLowerCase()),
+  const visibleSkills = skills.filter((skill) =>
+    `${skill.name} ${skill.skillKey} ${skill.description}`
+      .toLowerCase()
+      .includes(query.toLowerCase()),
   );
 
   const saveMetadata = async () => {
@@ -951,18 +953,15 @@ function SkillsPage() {
     setSaving(true);
     setError("");
     try {
-      const response = await fetch(
-        `/api/v1/skills/${editing.id}/metadata`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: editing.name,
-            description: editing.description,
-            businessDomain: editing.businessDomain,
-          }),
-        },
-      );
+      const response = await fetch(`/api/v1/skills/${editing.id}/metadata`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editing.name,
+          description: editing.description,
+          businessDomain: editing.businessDomain,
+        }),
+      });
       if (!response.ok) throw new Error();
       const saved = (await response.json()) as SkillItem;
       setSkills((current) =>
@@ -1009,14 +1008,19 @@ function SkillsPage() {
         throw new Error(t("skills.importFailed"));
       }
       const saved = (await response.json()) as SkillItem;
-      setSkills((current) => [saved, ...current.filter((item) => item.id !== saved.id)]);
+      setSkills((current) => [
+        saved,
+        ...current.filter((item) => item.id !== saved.id),
+      ]);
       setUploadOpen(false);
       setArchive(null);
       setUploadName("");
       setUploadDescription("");
       setBusinessDomain("");
     } catch (failure) {
-      setError(failure instanceof Error ? failure.message : t("skills.importFailed"));
+      setError(
+        failure instanceof Error ? failure.message : t("skills.importFailed"),
+      );
     } finally {
       setSaving(false);
     }
@@ -1032,7 +1036,8 @@ function SkillsPage() {
     }
     const manifest = (await response.json()) as SkillFileItem[];
     setFiles(manifest);
-    const first = manifest.find((file) => file.path === "SKILL.md") ?? manifest[0];
+    const first =
+      manifest.find((file) => file.path === "SKILL.md") ?? manifest[0];
     if (first) await openFile(skill.id, first.path);
   };
 
@@ -1043,7 +1048,8 @@ function SkillsPage() {
     const response = await fetch(
       `/api/v1/skills/${skillId}/file?path=${encodeURIComponent(path)}`,
     );
-    if (response.ok) setSelectedFile((await response.json()) as SkillFileContent);
+    if (response.ok)
+      setSelectedFile((await response.json()) as SkillFileContent);
   };
 
   const saveFile = async () => {
@@ -1177,7 +1183,10 @@ function SkillsPage() {
                 label={`${t("skills.status")} ${skill.name}`}
               />
               <span className="model-actions">
-                <button className="link-button" onClick={() => void openSkill(skill)}>
+                <button
+                  className="link-button"
+                  onClick={() => void openSkill(skill)}
+                >
                   {t("skills.view")}
                 </button>
                 <button
@@ -1216,9 +1225,7 @@ function SkillsPage() {
             >
               <div className="form-title">
                 <div>
-                  <p className="kicker">
-                    SKILL PACKAGE / IMPORT
-                  </p>
+                  <p className="kicker">SKILL PACKAGE / IMPORT</p>
                   <h2>{t("skills.importTitle")}</h2>
                 </div>
                 <button
@@ -1258,7 +1265,9 @@ function SkillsPage() {
                   <span>{t("skills.skillDescription")}</span>
                   <input
                     value={uploadDescription}
-                    onChange={(event) => setUploadDescription(event.target.value)}
+                    onChange={(event) =>
+                      setUploadDescription(event.target.value)
+                    }
                     placeholder={t("skills.parsedPlaceholder")}
                   />
                 </label>
@@ -1278,7 +1287,10 @@ function SkillsPage() {
                 <Button quiet onClick={() => setUploadOpen(false)}>
                   {t("skills.cancel")}
                 </Button>
-                <Button onClick={() => void importArchive()} disabled={saving || !archive || !businessDomain.trim()}>
+                <Button
+                  onClick={() => void importArchive()}
+                  disabled={saving || !archive || !businessDomain.trim()}
+                >
                   {saving ? t("skills.parsing") : t("skills.import")}
                 </Button>
               </div>
@@ -1286,64 +1298,788 @@ function SkillsPage() {
           </div>,
           document.body,
         )}
-      {viewing && createPortal(
-        <div className="model-modal-mask" role="presentation" onMouseDown={() => setViewing(null)}>
-          <div className="skill-browser" role="dialog" aria-modal="true" onMouseDown={(event) => event.stopPropagation()}>
-            <header><div><p className="kicker">SKILL PACKAGE / EXPLORER</p><h2>{viewing.name}</h2><span className="skill-domain">#{viewing.businessDomain}</span></div><button className="link-button" onClick={() => setViewing(null)}>{t("skills.close")} ×</button></header>
-            <div className="skill-browser-body">
-              <aside><p>{t("skills.files")} · {files.length}</p><SkillTree nodes={buildSkillTree(files)} selectedPath={selectedFile?.path} onSelect={(path) => void openFile(viewing.id, path)} /></aside>
-              <main>
-                <div className="file-preview-head">
-                  <div><code>{selectedFile?.path ?? "—"}</code><small>{selectedFile ? `${selectedFile.mediaType} · ${selectedFile.size} B` : ""}</small></div>
-                  {selectedFile?.previewable && fileDraft === null && <button className="file-edit-button" onClick={() => { setFileDraft(selectedFile.content ?? ""); setFileSuccess(""); }}>✎ {t("skills.editFile")}</button>}
-                  {fileDraft !== null && <div className="file-edit-actions"><button onClick={() => { setFileDraft(null); setFileError(""); }}>{t("skills.cancel")}</button><button className="primary" onClick={() => void saveFile()} disabled={fileSaving}>{fileSaving ? t("skills.saving") : t("skills.saveFile")}</button></div>}
+      {viewing &&
+        createPortal(
+          <div
+            className="model-modal-mask"
+            role="presentation"
+            onMouseDown={() => setViewing(null)}
+          >
+            <div
+              className="skill-browser"
+              role="dialog"
+              aria-modal="true"
+              onMouseDown={(event) => event.stopPropagation()}
+            >
+              <header>
+                <div>
+                  <p className="kicker">SKILL PACKAGE / EXPLORER</p>
+                  <h2>{viewing.name}</h2>
+                  <span className="skill-domain">
+                    #{viewing.businessDomain}
+                  </span>
                 </div>
-                {fileError && <div className="file-edit-error">× {fileError}</div>}
-                {fileSuccess && <div className="file-edit-success" role="status">✓ {fileSuccess}</div>}
-                {fileDraft !== null ? <textarea className="skill-file-editor" value={fileDraft} onChange={(event) => setFileDraft(event.target.value)} spellCheck={false} /> : selectedFile?.previewable ? <pre>{selectedFile.content}</pre> : <div className="binary-preview">{t("skills.binaryPreview")}</div>}
-              </main>
+                <button
+                  className="link-button"
+                  onClick={() => setViewing(null)}
+                >
+                  {t("skills.close")} ×
+                </button>
+              </header>
+              <div className="skill-browser-body">
+                <aside>
+                  <p>
+                    {t("skills.files")} · {files.length}
+                  </p>
+                  <SkillTree
+                    nodes={buildSkillTree(files)}
+                    selectedPath={selectedFile?.path}
+                    onSelect={(path) => void openFile(viewing.id, path)}
+                  />
+                </aside>
+                <main>
+                  <div className="file-preview-head">
+                    <div>
+                      <code>{selectedFile?.path ?? "—"}</code>
+                      <small>
+                        {selectedFile
+                          ? `${selectedFile.mediaType} · ${selectedFile.size} B`
+                          : ""}
+                      </small>
+                    </div>
+                    {selectedFile?.previewable && fileDraft === null && (
+                      <button
+                        className="file-edit-button"
+                        onClick={() => {
+                          setFileDraft(selectedFile.content ?? "");
+                          setFileSuccess("");
+                        }}
+                      >
+                        ✎ {t("skills.editFile")}
+                      </button>
+                    )}
+                    {fileDraft !== null && (
+                      <div className="file-edit-actions">
+                        <button
+                          onClick={() => {
+                            setFileDraft(null);
+                            setFileError("");
+                          }}
+                        >
+                          {t("skills.cancel")}
+                        </button>
+                        <button
+                          className="primary"
+                          onClick={() => void saveFile()}
+                          disabled={fileSaving}
+                        >
+                          {fileSaving
+                            ? t("skills.saving")
+                            : t("skills.saveFile")}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  {fileError && (
+                    <div className="file-edit-error">× {fileError}</div>
+                  )}
+                  {fileSuccess && (
+                    <div className="file-edit-success" role="status">
+                      ✓ {fileSuccess}
+                    </div>
+                  )}
+                  {fileDraft !== null ? (
+                    <textarea
+                      className="skill-file-editor"
+                      value={fileDraft}
+                      onChange={(event) => setFileDraft(event.target.value)}
+                      spellCheck={false}
+                    />
+                  ) : selectedFile?.previewable ? (
+                    <pre>{selectedFile.content}</pre>
+                  ) : (
+                    <div className="binary-preview">
+                      {t("skills.binaryPreview")}
+                    </div>
+                  )}
+                </main>
+              </div>
             </div>
-          </div>
-        </div>, document.body)}
-      {editing && createPortal(
-        <div className="model-modal-mask" role="presentation" onMouseDown={() => setEditing(null)}><div className="form-surface model-editor skill-editor" role="dialog" onMouseDown={(event) => event.stopPropagation()}><div className="form-title"><div><p className="kicker">SKILL METADATA / EDIT</p><h2>{editing.name}</h2></div><button className="link-button" onClick={() => setEditing(null)}>{t("skills.close")} ×</button></div><div className="field-grid"><label className="field"><span>{t("skills.name")}</span><input value={editing.name} onChange={(event) => setEditing({...editing, name:event.target.value})}/></label><label className="field"><span>{t("skills.domain")}</span><input value={editing.businessDomain} onChange={(event) => setEditing({...editing, businessDomain:event.target.value})}/></label><label className="field wide"><span>{t("skills.skillDescription")}</span><input value={editing.description} onChange={(event) => setEditing({...editing, description:event.target.value})}/></label></div><div className="sticky-actions"><Button quiet onClick={() => setEditing(null)}>{t("skills.cancel")}</Button><Button onClick={() => void saveMetadata()} disabled={saving}>{saving ? t("skills.saving") : t("skills.save")}</Button></div></div></div>, document.body)}
+          </div>,
+          document.body,
+        )}
+      {editing &&
+        createPortal(
+          <div
+            className="model-modal-mask"
+            role="presentation"
+            onMouseDown={() => setEditing(null)}
+          >
+            <div
+              className="form-surface model-editor skill-editor"
+              role="dialog"
+              onMouseDown={(event) => event.stopPropagation()}
+            >
+              <div className="form-title">
+                <div>
+                  <p className="kicker">SKILL METADATA / EDIT</p>
+                  <h2>{editing.name}</h2>
+                </div>
+                <button
+                  className="link-button"
+                  onClick={() => setEditing(null)}
+                >
+                  {t("skills.close")} ×
+                </button>
+              </div>
+              <div className="field-grid">
+                <label className="field">
+                  <span>{t("skills.name")}</span>
+                  <input
+                    value={editing.name}
+                    onChange={(event) =>
+                      setEditing({ ...editing, name: event.target.value })
+                    }
+                  />
+                </label>
+                <label className="field">
+                  <span>{t("skills.domain")}</span>
+                  <input
+                    value={editing.businessDomain}
+                    onChange={(event) =>
+                      setEditing({
+                        ...editing,
+                        businessDomain: event.target.value,
+                      })
+                    }
+                  />
+                </label>
+                <label className="field wide">
+                  <span>{t("skills.skillDescription")}</span>
+                  <input
+                    value={editing.description}
+                    onChange={(event) =>
+                      setEditing({
+                        ...editing,
+                        description: event.target.value,
+                      })
+                    }
+                  />
+                </label>
+              </div>
+              <div className="sticky-actions">
+                <Button quiet onClick={() => setEditing(null)}>
+                  {t("skills.cancel")}
+                </Button>
+                <Button onClick={() => void saveMetadata()} disabled={saving}>
+                  {saving ? t("skills.saving") : t("skills.save")}
+                </Button>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
     </>
   );
 }
 
-type McpServer = { id:string; serverKey:string; name:string; description:string; transport:"STREAMABLE_HTTP"|"SSE"|"STDIO"; serverUrl:string; command:string; arguments:string[]; queryParameters:Record<string,string>; configuredHeaderNames:string[]; configuredEnvironmentNames:string[]; enabled:boolean; requestTimeoutSeconds:number; initializationTimeoutSeconds:number; lastTestStatus:string; lastTestedAt?:string; toolCount:number; updatedAt:string };
-type McpTool = { name:string; description:string; inputSchemaJson:string; discoveredAt:string };
-type McpDraft = { serverKey:string; name:string; description:string; transport:McpServer["transport"]; serverUrl:string; command:string; argumentsText:string; headersText:string; environmentText:string; queryParametersText:string; requestTimeoutSeconds:number; initializationTimeoutSeconds:number };
-const emptyMcpDraft: McpDraft = {serverKey:"",name:"",description:"",transport:"STREAMABLE_HTTP",serverUrl:"",command:"",argumentsText:"",headersText:"",environmentText:"",queryParametersText:"",requestTimeoutSeconds:15,initializationTimeoutSeconds:10};
+type McpServer = {
+  id: string;
+  serverKey: string;
+  name: string;
+  description: string;
+  transport: "STREAMABLE_HTTP" | "SSE" | "STDIO";
+  serverUrl: string;
+  command: string;
+  arguments: string[];
+  queryParameters: Record<string, string>;
+  configuredHeaderNames: string[];
+  configuredEnvironmentNames: string[];
+  enabled: boolean;
+  requestTimeoutSeconds: number;
+  initializationTimeoutSeconds: number;
+  lastTestStatus: string;
+  lastTestedAt?: string;
+  toolCount: number;
+  updatedAt: string;
+};
+type McpTool = {
+  name: string;
+  description: string;
+  inputSchemaJson: string;
+  discoveredAt: string;
+};
+type McpDraft = {
+  serverKey: string;
+  name: string;
+  description: string;
+  transport: McpServer["transport"];
+  serverUrl: string;
+  command: string;
+  argumentsText: string;
+  headersText: string;
+  environmentText: string;
+  queryParametersText: string;
+  requestTimeoutSeconds: number;
+  initializationTimeoutSeconds: number;
+};
+const emptyMcpDraft: McpDraft = {
+  serverKey: "",
+  name: "",
+  description: "",
+  transport: "STREAMABLE_HTTP",
+  serverUrl: "",
+  command: "",
+  argumentsText: "",
+  headersText: "",
+  environmentText: "",
+  queryParametersText: "",
+  requestTimeoutSeconds: 15,
+  initializationTimeoutSeconds: 10,
+};
 
 function McpPage() {
   const { t } = useTranslation();
-  const [servers,setServers]=useState<McpServer[]>([]); const [search,setSearch]=useState("");
-  const [editing,setEditing]=useState<McpServer|null|"new">(null); const [draft,setDraft]=useState<McpDraft>(emptyMcpDraft);
-  const [tools,setTools]=useState<McpTool[]>([]); const [selectedTool,setSelectedTool]=useState<McpTool|null>(null);
-  const [tab,setTab]=useState<"config"|"tools">("config"); const [busy,setBusy]=useState(false); const [notice,setNotice]=useState<{ok:boolean;text:string}|null>(null);
-  const slugifyMcpKey=(value:string)=>value.trim().toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
-  const load=async()=>{try{const response=await fetch("/api/v1/mcp-servers");if(!response.ok)throw new Error();setServers(await response.json());}catch{setNotice({ok:false,text:t("mcp.loadFailed")});}};
-  useEffect(()=>{void load();},[]);
-  const open=(server?:McpServer)=>{setEditing(server??"new");setDraft(server?{serverKey:server.serverKey,name:server.name,description:server.description,transport:server.transport,serverUrl:server.serverUrl??"",command:server.command??"",argumentsText:(server.arguments??[]).join("\n"),headersText:"",environmentText:"",queryParametersText:JSON.stringify(server.queryParameters??{},null,2),requestTimeoutSeconds:server.requestTimeoutSeconds,initializationTimeoutSeconds:server.initializationTimeoutSeconds}:{...emptyMcpDraft});setTools([]);setSelectedTool(null);setTab("config");setNotice(null);};
-  const validateDraft=()=>{if(!draft.name.trim())return t("mcp.nameRequired");if(!draft.serverKey.trim())return t("mcp.serverKeyRequired");if(draft.transport==="STDIO"&&!draft.command.trim())return t("mcp.commandRequired");if(draft.transport!=="STDIO"&&!draft.serverUrl.trim())return t("mcp.serverUrlRequired");try{if(draft.headersText.trim())JSON.parse(draft.headersText);if(draft.environmentText.trim())JSON.parse(draft.environmentText);if(draft.queryParametersText.trim())JSON.parse(draft.queryParametersText);}catch{return t("mcp.invalidJson");}return null;};
-  const payload=()=>({serverKey:draft.serverKey.trim(),name:draft.name.trim(),description:draft.description,transport:draft.transport,serverUrl:draft.serverUrl.trim()||null,command:draft.command.trim()||null,arguments:draft.argumentsText.split("\n").map(v=>v.trim()).filter(Boolean),headers:draft.headersText.trim()?JSON.parse(draft.headersText):{},environment:draft.environmentText.trim()?JSON.parse(draft.environmentText):{},queryParameters:draft.queryParametersText.trim()?JSON.parse(draft.queryParametersText):{},requestTimeoutSeconds:draft.requestTimeoutSeconds,initializationTimeoutSeconds:draft.initializationTimeoutSeconds});
-  const save=async()=>{const validation=validateDraft();if(validation){setNotice({ok:false,text:validation});return;}setBusy(true);setNotice(null);try{const isNew=editing==="new";const response=await fetch(isNew?"/api/v1/mcp-servers":`/api/v1/mcp-servers/${(editing as McpServer).id}`,{method:isNew?"POST":"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload())});if(!response.ok)throw new Error();const saved:McpServer=await response.json();setEditing(saved);setNotice({ok:true,text:t("mcp.saved")});await load();}catch{setNotice({ok:false,text:t("mcp.saveFailed")});}finally{setBusy(false);}};
-  const inspect=async()=>{const validation=validateDraft();if(validation){setNotice({ok:false,text:validation});return;}setBusy(true);setNotice(null);try{const saved=editing!=="new"&&editing;const response=await fetch(saved?`/api/v1/mcp-servers/${saved.id}/inspect`:"/api/v1/mcp-servers/inspect",saved?{method:"POST"}:{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload())});const result=await response.json();if(!response.ok||!result.success)throw new Error(result.message||t("mcp.connectionFailed"));setTools(result.tools);setSelectedTool(result.tools[0]??null);setTab("tools");setNotice({ok:true,text:t("mcp.connectionSucceeded",{count:result.tools.length})});if(saved)await load();}catch(error){setNotice({ok:false,text:error instanceof Error&&error.message?error.message:t("mcp.connectionFailed")});}finally{setBusy(false);}};
-  const remove=async(server:McpServer)=>{if(!confirm(t("mcp.deleteConfirm",{name:server.name})))return;await fetch(`/api/v1/mcp-servers/${server.id}`,{method:"DELETE"});await load();};
-  const toggle=async(server:McpServer)=>{await fetch(`/api/v1/mcp-servers/${server.id}/enabled?value=${!server.enabled}`,{method:"PATCH"});await load();};
-  const visible=servers.filter(s=>`${s.name} ${s.serverKey} ${s.serverUrl}`.toLowerCase().includes(search.toLowerCase()));
+  const [servers, setServers] = useState<McpServer[]>([]);
+  const [search, setSearch] = useState("");
+  const [editing, setEditing] = useState<McpServer | null | "new">(null);
+  const [draft, setDraft] = useState<McpDraft>(emptyMcpDraft);
+  const [tools, setTools] = useState<McpTool[]>([]);
+  const [selectedTool, setSelectedTool] = useState<McpTool | null>(null);
+  const [tab, setTab] = useState<"config" | "tools">("config");
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(
+    null,
+  );
+  const slugifyMcpKey = (value: string) =>
+    value
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+  const load = async () => {
+    try {
+      const response = await fetch("/api/v1/mcp-servers");
+      if (!response.ok) throw new Error();
+      setServers(await response.json());
+    } catch {
+      setNotice({ ok: false, text: t("mcp.loadFailed") });
+    }
+  };
+  useEffect(() => {
+    void load();
+  }, []);
+  const open = (server?: McpServer) => {
+    setEditing(server ?? "new");
+    setDraft(
+      server
+        ? {
+            serverKey: server.serverKey,
+            name: server.name,
+            description: server.description,
+            transport: server.transport,
+            serverUrl: server.serverUrl ?? "",
+            command: server.command ?? "",
+            argumentsText: (server.arguments ?? []).join("\n"),
+            headersText: "",
+            environmentText: "",
+            queryParametersText: JSON.stringify(
+              server.queryParameters ?? {},
+              null,
+              2,
+            ),
+            requestTimeoutSeconds: server.requestTimeoutSeconds,
+            initializationTimeoutSeconds: server.initializationTimeoutSeconds,
+          }
+        : { ...emptyMcpDraft },
+    );
+    setTools([]);
+    setSelectedTool(null);
+    setTab("config");
+    setNotice(null);
+  };
+  const validateDraft = () => {
+    if (!draft.name.trim()) return t("mcp.nameRequired");
+    if (!draft.serverKey.trim()) return t("mcp.serverKeyRequired");
+    if (draft.transport === "STDIO" && !draft.command.trim())
+      return t("mcp.commandRequired");
+    if (draft.transport !== "STDIO" && !draft.serverUrl.trim())
+      return t("mcp.serverUrlRequired");
+    try {
+      if (draft.headersText.trim()) JSON.parse(draft.headersText);
+      if (draft.environmentText.trim()) JSON.parse(draft.environmentText);
+      if (draft.queryParametersText.trim())
+        JSON.parse(draft.queryParametersText);
+    } catch {
+      return t("mcp.invalidJson");
+    }
+    return null;
+  };
+  const payload = () => ({
+    serverKey: draft.serverKey.trim(),
+    name: draft.name.trim(),
+    description: draft.description,
+    transport: draft.transport,
+    serverUrl: draft.serverUrl.trim() || null,
+    command: draft.command.trim() || null,
+    arguments: draft.argumentsText
+      .split("\n")
+      .map((v) => v.trim())
+      .filter(Boolean),
+    headers: draft.headersText.trim() ? JSON.parse(draft.headersText) : {},
+    environment: draft.environmentText.trim()
+      ? JSON.parse(draft.environmentText)
+      : {},
+    queryParameters: draft.queryParametersText.trim()
+      ? JSON.parse(draft.queryParametersText)
+      : {},
+    requestTimeoutSeconds: draft.requestTimeoutSeconds,
+    initializationTimeoutSeconds: draft.initializationTimeoutSeconds,
+  });
+  const save = async () => {
+    const validation = validateDraft();
+    if (validation) {
+      setNotice({ ok: false, text: validation });
+      return;
+    }
+    setBusy(true);
+    setNotice(null);
+    try {
+      const isNew = editing === "new";
+      const response = await fetch(
+        isNew
+          ? "/api/v1/mcp-servers"
+          : `/api/v1/mcp-servers/${(editing as McpServer).id}`,
+        {
+          method: isNew ? "POST" : "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload()),
+        },
+      );
+      if (!response.ok) throw new Error();
+      const saved: McpServer = await response.json();
+      setEditing(saved);
+      setNotice({ ok: true, text: t("mcp.saved") });
+      await load();
+    } catch {
+      setNotice({ ok: false, text: t("mcp.saveFailed") });
+    } finally {
+      setBusy(false);
+    }
+  };
+  const inspect = async () => {
+    const validation = validateDraft();
+    if (validation) {
+      setNotice({ ok: false, text: validation });
+      return;
+    }
+    setBusy(true);
+    setNotice(null);
+    try {
+      const saved = editing !== "new" && editing;
+      const response = await fetch(
+        saved
+          ? `/api/v1/mcp-servers/${saved.id}/inspect`
+          : "/api/v1/mcp-servers/inspect",
+        saved
+          ? { method: "POST" }
+          : {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload()),
+            },
+      );
+      const result = await response.json();
+      if (!response.ok || !result.success)
+        throw new Error(result.message || t("mcp.connectionFailed"));
+      setTools(result.tools);
+      setSelectedTool(result.tools[0] ?? null);
+      setTab("tools");
+      setNotice({
+        ok: true,
+        text: t("mcp.connectionSucceeded", { count: result.tools.length }),
+      });
+      if (saved) await load();
+    } catch (error) {
+      setNotice({
+        ok: false,
+        text:
+          error instanceof Error && error.message
+            ? error.message
+            : t("mcp.connectionFailed"),
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
+  const remove = async (server: McpServer) => {
+    if (!confirm(t("mcp.deleteConfirm", { name: server.name }))) return;
+    await fetch(`/api/v1/mcp-servers/${server.id}`, { method: "DELETE" });
+    await load();
+  };
+  const toggle = async (server: McpServer) => {
+    await fetch(
+      `/api/v1/mcp-servers/${server.id}/enabled?value=${!server.enabled}`,
+      { method: "PATCH" },
+    );
+    await load();
+  };
+  const visible = servers.filter((s) =>
+    `${s.name} ${s.serverKey} ${s.serverUrl}`
+      .toLowerCase()
+      .includes(search.toLowerCase()),
+  );
   return (
     <>
       <PageHeader
         kicker="MCP SERVER / REGISTRY"
         title={t("mcp.title")}
         description={t("mcp.description")}
-        action={<Button onClick={()=>open()}>＋ {t("mcp.register")}</Button>}
+        action={<Button onClick={() => open()}>＋ {t("mcp.register")}</Button>}
       />
-      <div className="mcp-toolbar"><input value={search} onChange={e=>setSearch(e.target.value)} placeholder={t("mcp.search")}/><span>{servers.length} MCP Servers</span></div>
-      <div className="mcp-table"><div className="mcp-row head"><span>{t("mcp.server")}</span><span>{t("mcp.transport")}</span><span>{t("mcp.tools")}</span><span>{t("mcp.lastTest")}</span><span>{t("mcp.status")}</span><span>{t("mcp.actions")}</span></div>{visible.map(server=><div className="mcp-row" key={server.id}><span className="mcp-name"><i>⌘</i><b>{server.name}</b><small>{server.serverKey}</small></span><span><code>{server.transport.replace("STREAMABLE_","")}</code><small>{server.serverUrl||server.command}</small></span><span><b>{server.toolCount}</b> tools</span><span className={`test-state ${server.lastTestStatus.toLowerCase()}`}>{server.lastTestStatus}</span><span><Toggle on={server.enabled} setOn={()=>void toggle(server)} /></span><span className="row-actions"><button onClick={()=>open(server)}>{t("mcp.edit")}</button><button className="danger" onClick={()=>void remove(server)}>{t("mcp.delete")}</button></span></div>)}{visible.length===0&&<div className="mcp-empty">⌘<b>{t("mcp.empty")}</b></div>}</div>
-      {editing&&createPortal(<div className="model-modal-mask" onMouseDown={()=>setEditing(null)}><div className="mcp-inspector" role="dialog" onMouseDown={e=>e.stopPropagation()}><header><div><p className="kicker">MCP INSPECTOR / {editing==="new"?"REGISTER":"EDIT"}</p><h2>{editing==="new"?t("mcp.register"):editing.name}</h2></div><button className="link-button" onClick={()=>setEditing(null)}>{t("mcp.close")} ×</button></header><nav><button className={tab==="config"?"active":""} onClick={()=>setTab("config")}>01 {t("mcp.connectionConfig")}</button><button className={tab==="tools"?"active":""} onClick={()=>setTab("tools")}>02 {t("mcp.toolDiscovery")} <em>{tools.length}</em></button></nav>{tab==="config"?<div className="mcp-form"><label><span>{t("mcp.name")}</span><input value={draft.name} onChange={e=>{const previousSlug=slugifyMcpKey(draft.name);const name=e.target.value;setDraft({...draft,name,serverKey:!draft.serverKey||draft.serverKey===previousSlug?slugifyMcpKey(name):draft.serverKey});}}/></label><label><span>SERVER_KEY</span><input value={draft.serverKey} placeholder="local-mcp" onChange={e=>setDraft({...draft,serverKey:e.target.value})}/><small>{t("mcp.serverKeyHint")}</small></label><label className="wide"><span>{t("mcp.descriptionLabel")}</span><input value={draft.description} onChange={e=>setDraft({...draft,description:e.target.value})}/></label><label><span>{t("mcp.transport")}</span><select value={draft.transport} onChange={e=>setDraft({...draft,transport:e.target.value as McpServer["transport"]})}><option value="STREAMABLE_HTTP">Streamable HTTP</option><option value="SSE">SSE</option><option value="STDIO">STDIO</option></select></label>{draft.transport==="STDIO"?<><label><span>COMMAND</span><input value={draft.command} onChange={e=>setDraft({...draft,command:e.target.value})}/></label><label className="wide"><span>ARGUMENTS · {t("mcp.onePerLine")}</span><textarea value={draft.argumentsText} onChange={e=>setDraft({...draft,argumentsText:e.target.value})}/></label><label className="wide"><span>ENVIRONMENT · JSON</span><textarea value={draft.environmentText} placeholder={editing!=="new"&&editing.configuredEnvironmentNames.length?t("mcp.secretConfigured",{keys:editing.configuredEnvironmentNames.join(", ")}):'{\n  "API_KEY": "..."\n}'} onChange={e=>setDraft({...draft,environmentText:e.target.value})}/></label></>:<><label><span>SERVER_URL</span><input value={draft.serverUrl} placeholder={draft.transport==="SSE"?"http://localhost:8181/api/v1/sse":"http://localhost:8181/api/v1/mcp"} onChange={e=>setDraft({...draft,serverUrl:e.target.value})}/><small>{draft.transport==="SSE"?t("mcp.sseUrlHint"):t("mcp.httpUrlHint")}</small></label><label className="wide"><span>HEADERS · JSON</span><textarea value={draft.headersText} placeholder={editing!=="new"&&editing.configuredHeaderNames.length?t("mcp.secretConfigured",{keys:editing.configuredHeaderNames.join(", ")}):'{\n  "Authorization": "Bearer ..."\n}'} onChange={e=>setDraft({...draft,headersText:e.target.value})}/></label><label className="wide"><span>QUERY PARAMETERS · JSON</span><textarea value={draft.queryParametersText} onChange={e=>setDraft({...draft,queryParametersText:e.target.value})}/></label></>}<label><span>{t("mcp.requestTimeout")}</span><input type="number" value={draft.requestTimeoutSeconds} onChange={e=>setDraft({...draft,requestTimeoutSeconds:+e.target.value})}/></label><label><span>{t("mcp.initTimeout")}</span><input type="number" value={draft.initializationTimeoutSeconds} onChange={e=>setDraft({...draft,initializationTimeoutSeconds:+e.target.value})}/></label></div>:<div className="mcp-tool-browser"><aside><div>{t("mcp.discoveredTools")} <b>{tools.length}</b></div>{tools.map(tool=><button className={selectedTool?.name===tool.name?"selected":""} onClick={()=>setSelectedTool(tool)} key={tool.name}><i>⚡</i><span><b>{tool.name}</b><small>{tool.description||t("mcp.noDescription")}</small></span></button>)}</aside><main>{selectedTool?<><div><p className="kicker">TOOL SCHEMA</p><h3>{selectedTool.name}</h3><p>{selectedTool.description}</p></div><pre>{selectedTool.inputSchemaJson}</pre></>:<div className="tool-placeholder">⌁<b>{t("mcp.queryHint")}</b></div>}</main></div>}{notice&&<div className={`mcp-notice ${notice.ok?"success":"error"}`}><b>{notice.ok?"✓":"×"} {notice.text}</b></div>}<footer><Button quiet onClick={()=>void inspect()} disabled={busy}>{busy?t("mcp.testing"):t("mcp.testAndQuery")}</Button><Button onClick={()=>void save()} disabled={busy}>{busy?t("mcp.saving"):t("mcp.save")}</Button></footer></div></div>,document.body)}
+      <div className="mcp-toolbar">
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder={t("mcp.search")}
+        />
+        <span>{servers.length} MCP Servers</span>
+      </div>
+      <div className="mcp-table">
+        <div className="mcp-row head">
+          <span>{t("mcp.server")}</span>
+          <span>{t("mcp.transport")}</span>
+          <span>{t("mcp.tools")}</span>
+          <span>{t("mcp.lastTest")}</span>
+          <span>{t("mcp.status")}</span>
+          <span>{t("mcp.actions")}</span>
+        </div>
+        {visible.map((server) => (
+          <div className="mcp-row" key={server.id}>
+            <span className="mcp-name">
+              <i>⌘</i>
+              <b>{server.name}</b>
+              <small>{server.serverKey}</small>
+            </span>
+            <span>
+              <code>{server.transport.replace("STREAMABLE_", "")}</code>
+              <small>{server.serverUrl || server.command}</small>
+            </span>
+            <span>
+              <b>{server.toolCount}</b> tools
+            </span>
+            <span
+              className={`test-state ${server.lastTestStatus.toLowerCase()}`}
+            >
+              {server.lastTestStatus}
+            </span>
+            <span>
+              <Toggle on={server.enabled} setOn={() => void toggle(server)} />
+            </span>
+            <span className="row-actions">
+              <button onClick={() => open(server)}>{t("mcp.edit")}</button>
+              <button className="danger" onClick={() => void remove(server)}>
+                {t("mcp.delete")}
+              </button>
+            </span>
+          </div>
+        ))}
+        {visible.length === 0 && (
+          <div className="mcp-empty">
+            ⌘<b>{t("mcp.empty")}</b>
+          </div>
+        )}
+      </div>
+      {editing &&
+        createPortal(
+          <div
+            className="model-modal-mask"
+            onMouseDown={() => setEditing(null)}
+          >
+            <div
+              className="mcp-inspector"
+              role="dialog"
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              <header>
+                <div>
+                  <p className="kicker">
+                    MCP INSPECTOR / {editing === "new" ? "REGISTER" : "EDIT"}
+                  </p>
+                  <h2>
+                    {editing === "new" ? t("mcp.register") : editing.name}
+                  </h2>
+                </div>
+                <button
+                  className="link-button"
+                  onClick={() => setEditing(null)}
+                >
+                  {t("mcp.close")} ×
+                </button>
+              </header>
+              <nav>
+                <button
+                  className={tab === "config" ? "active" : ""}
+                  onClick={() => setTab("config")}
+                >
+                  01 {t("mcp.connectionConfig")}
+                </button>
+                <button
+                  className={tab === "tools" ? "active" : ""}
+                  onClick={() => setTab("tools")}
+                >
+                  02 {t("mcp.toolDiscovery")} <em>{tools.length}</em>
+                </button>
+              </nav>
+              {tab === "config" ? (
+                <div className="mcp-form">
+                  <label>
+                    <span>{t("mcp.name")}</span>
+                    <input
+                      value={draft.name}
+                      onChange={(e) => {
+                        const previousSlug = slugifyMcpKey(draft.name);
+                        const name = e.target.value;
+                        setDraft({
+                          ...draft,
+                          name,
+                          serverKey:
+                            !draft.serverKey || draft.serverKey === previousSlug
+                              ? slugifyMcpKey(name)
+                              : draft.serverKey,
+                        });
+                      }}
+                    />
+                  </label>
+                  <label>
+                    <span>SERVER_KEY</span>
+                    <input
+                      value={draft.serverKey}
+                      placeholder="local-mcp"
+                      onChange={(e) =>
+                        setDraft({ ...draft, serverKey: e.target.value })
+                      }
+                    />
+                    <small>{t("mcp.serverKeyHint")}</small>
+                  </label>
+                  <label className="wide">
+                    <span>{t("mcp.descriptionLabel")}</span>
+                    <input
+                      value={draft.description}
+                      onChange={(e) =>
+                        setDraft({ ...draft, description: e.target.value })
+                      }
+                    />
+                  </label>
+                  <label>
+                    <span>{t("mcp.transport")}</span>
+                    <select
+                      value={draft.transport}
+                      onChange={(e) =>
+                        setDraft({
+                          ...draft,
+                          transport: e.target.value as McpServer["transport"],
+                        })
+                      }
+                    >
+                      <option value="STREAMABLE_HTTP">Streamable HTTP</option>
+                      <option value="SSE">SSE</option>
+                      <option value="STDIO">STDIO</option>
+                    </select>
+                  </label>
+                  {draft.transport === "STDIO" ? (
+                    <>
+                      <label>
+                        <span>COMMAND</span>
+                        <input
+                          value={draft.command}
+                          onChange={(e) =>
+                            setDraft({ ...draft, command: e.target.value })
+                          }
+                        />
+                      </label>
+                      <label className="wide">
+                        <span>ARGUMENTS · {t("mcp.onePerLine")}</span>
+                        <textarea
+                          value={draft.argumentsText}
+                          onChange={(e) =>
+                            setDraft({
+                              ...draft,
+                              argumentsText: e.target.value,
+                            })
+                          }
+                        />
+                      </label>
+                      <label className="wide">
+                        <span>ENVIRONMENT · JSON</span>
+                        <textarea
+                          value={draft.environmentText}
+                          placeholder={
+                            editing !== "new" &&
+                            editing.configuredEnvironmentNames.length
+                              ? t("mcp.secretConfigured", {
+                                  keys: editing.configuredEnvironmentNames.join(
+                                    ", ",
+                                  ),
+                                })
+                              : '{\n  "API_KEY": "..."\n}'
+                          }
+                          onChange={(e) =>
+                            setDraft({
+                              ...draft,
+                              environmentText: e.target.value,
+                            })
+                          }
+                        />
+                      </label>
+                    </>
+                  ) : (
+                    <>
+                      <label>
+                        <span>
+                          SERVER_URL <b className="field-required">*</b>
+                        </span>
+                        <input
+                          value={draft.serverUrl}
+                          placeholder={t("mcp.serverUrlPlaceholder")}
+                          onChange={(e) =>
+                            setDraft({ ...draft, serverUrl: e.target.value })
+                          }
+                        />
+                        <small>
+                          {draft.transport === "SSE"
+                            ? t("mcp.sseUrlHint")
+                            : t("mcp.httpUrlHint")}
+                        </small>
+                      </label>
+                      <label className="wide">
+                        <span>
+                          HEADERS · JSON <small>({t("mcp.optional")})</small>
+                        </span>
+                        <textarea
+                          value={draft.headersText}
+                          placeholder={
+                            editing !== "new" &&
+                            editing.configuredHeaderNames.length
+                              ? t("mcp.secretConfigured", {
+                                  keys: editing.configuredHeaderNames.join(
+                                    ", ",
+                                  ),
+                                })
+                              : t("mcp.headersPlaceholder")
+                          }
+                          onChange={(e) =>
+                            setDraft({ ...draft, headersText: e.target.value })
+                          }
+                        />
+                      </label>
+                      <label className="wide">
+                        <span>
+                          QUERY PARAMETERS · JSON {" "}
+                          <small>({t("mcp.optional")})</small>
+                        </span>
+                        <textarea
+                          value={draft.queryParametersText}
+                          onChange={(e) =>
+                            setDraft({
+                              ...draft,
+                              queryParametersText: e.target.value,
+                            })
+                          }
+                        />
+                      </label>
+                    </>
+                  )}
+                  <label>
+                    <span>{t("mcp.requestTimeout")}</span>
+                    <input
+                      type="number"
+                      value={draft.requestTimeoutSeconds}
+                      onChange={(e) =>
+                        setDraft({
+                          ...draft,
+                          requestTimeoutSeconds: +e.target.value,
+                        })
+                      }
+                    />
+                  </label>
+                  <label>
+                    <span>{t("mcp.initTimeout")}</span>
+                    <input
+                      type="number"
+                      value={draft.initializationTimeoutSeconds}
+                      onChange={(e) =>
+                        setDraft({
+                          ...draft,
+                          initializationTimeoutSeconds: +e.target.value,
+                        })
+                      }
+                    />
+                  </label>
+                </div>
+              ) : (
+                <div className="mcp-tool-browser">
+                  <aside>
+                    <div>
+                      {t("mcp.discoveredTools")} <b>{tools.length}</b>
+                    </div>
+                    {tools.map((tool) => (
+                      <button
+                        className={
+                          selectedTool?.name === tool.name ? "selected" : ""
+                        }
+                        onClick={() => setSelectedTool(tool)}
+                        key={tool.name}
+                      >
+                        <i>⚡</i>
+                        <span>
+                          <b>{tool.name}</b>
+                          <small>
+                            {tool.description || t("mcp.noDescription")}
+                          </small>
+                        </span>
+                      </button>
+                    ))}
+                  </aside>
+                  <main>
+                    {selectedTool ? (
+                      <>
+                        <div>
+                          <p className="kicker">TOOL SCHEMA</p>
+                          <h3>{selectedTool.name}</h3>
+                          <p>{selectedTool.description}</p>
+                        </div>
+                        <pre>{selectedTool.inputSchemaJson}</pre>
+                      </>
+                    ) : (
+                      <div className="tool-placeholder">
+                        ⌁<b>{t("mcp.queryHint")}</b>
+                      </div>
+                    )}
+                  </main>
+                </div>
+              )}
+              {notice && (
+                <div
+                  className={`mcp-notice ${notice.ok ? "success" : "error"}`}
+                >
+                  <b>
+                    {notice.ok ? "✓" : "×"} {notice.text}
+                  </b>
+                </div>
+              )}
+              <footer>
+                <Button quiet onClick={() => void inspect()} disabled={busy}>
+                  {busy ? t("mcp.testing") : t("mcp.testAndQuery")}
+                </Button>
+                <Button onClick={() => void save()} disabled={busy}>
+                  {busy ? t("mcp.saving") : t("mcp.save")}
+                </Button>
+              </footer>
+            </div>
+          </div>,
+          document.body,
+        )}
     </>
   );
 }

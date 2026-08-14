@@ -1,13 +1,17 @@
 package io.okagent.domain.skill;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -23,6 +27,18 @@ public class SkillAsset {
 
   @Column(nullable = false, length = 1024)
   private String description;
+
+  @Column(name = "business_domain", nullable = false, length = 64)
+  private String businessDomain;
+
+  @Column(name = "archive_name", length = 255)
+  private String archiveName;
+
+  @Column(name = "archive_sha256", length = 64)
+  private String archiveSha256;
+
+  @Column(name = "archive_size", nullable = false)
+  private long archiveSize;
 
   @Column(name = "asset_version", nullable = false, length = 64)
   private String assetVersion;
@@ -51,6 +67,9 @@ public class SkillAsset {
   @Column(name = "updated_at", nullable = false)
   private Instant updatedAt;
 
+  @OneToMany(mappedBy = "skill", cascade = CascadeType.ALL, orphanRemoval = true)
+  private List<SkillFile> files = new ArrayList<>();
+
   protected SkillAsset() {}
 
   public SkillAsset(
@@ -68,6 +87,7 @@ public class SkillAsset {
     this.skillKey = skillKey;
     this.name = name;
     this.description = description;
+    this.businessDomain = "GENERAL";
     this.assetVersion = assetVersion;
     this.sourceType = sourceType;
     this.sourceUri = sourceUri;
@@ -105,6 +125,42 @@ public class SkillAsset {
     this.updatedAt = Instant.now();
   }
 
+  public void replaceArchive(
+      String skillKey,
+      String name,
+      String description,
+      String businessDomain,
+      String archiveName,
+      String archiveSha256,
+      long archiveSize,
+      String entryContent,
+      List<ArchivedSkillFile> archivedFiles) {
+    this.skillKey = skillKey;
+    this.name = name;
+    this.description = description;
+    this.businessDomain = businessDomain;
+    this.archiveName = archiveName;
+    this.archiveSha256 = archiveSha256;
+    this.archiveSize = archiveSize;
+    this.sourceType = SkillSourceType.FILE_IMPORT;
+    this.entryFile = "SKILL.md";
+    this.content = entryContent;
+    this.updatedAt = Instant.now();
+    archivedFiles.forEach(
+        file -> files.add(new SkillFile(this, file.path(), file.mediaType(), file.content())));
+  }
+
+  public void clearFiles() {
+    this.files.clear();
+  }
+
+  public void updateMetadata(String name, String description, String businessDomain) {
+    this.name = name;
+    this.description = description;
+    this.businessDomain = businessDomain;
+    this.updatedAt = Instant.now();
+  }
+
   public UUID getId() {
     return id;
   }
@@ -119,6 +175,22 @@ public class SkillAsset {
 
   public String getDescription() {
     return description;
+  }
+
+  public String getBusinessDomain() {
+    return businessDomain;
+  }
+
+  public String getArchiveName() {
+    return archiveName;
+  }
+
+  public String getArchiveSha256() {
+    return archiveSha256;
+  }
+
+  public long getArchiveSize() {
+    return archiveSize;
   }
 
   public String getAssetVersion() {

@@ -816,34 +816,101 @@ type SkillItem = {
   skillKey: string;
   name: string;
   description: string;
-  assetVersion: string;
-  sourceType: "MANUAL" | "FILE_IMPORT" | "GIT";
-  sourceUri: string;
-  entryFile: string;
-  content: string;
+  businessDomain: string;
+  archiveName: string | null;
+  archiveSize: number;
   enabled: boolean;
   updatedAt?: string;
 };
 
-const emptySkill: SkillItem = {
-  id: "",
-  skillKey: "",
-  name: "",
-  description: "",
-  assetVersion: "v1",
-  sourceType: "MANUAL",
-  sourceUri: "",
-  entryFile: "SKILL.md",
-  content: "",
-  enabled: true,
+type SkillFileItem = {
+  path: string;
+  mediaType: string;
+  size: number;
 };
+
+type SkillFileContent = SkillFileItem & {
+  previewable: boolean;
+  content: string | null;
+};
+
+type SkillTreeNode = {
+  name: string;
+  path: string;
+  file?: SkillFileItem;
+  children: SkillTreeNode[];
+};
+
+function buildSkillTree(files: SkillFileItem[]): SkillTreeNode[] {
+  const root: SkillTreeNode[] = [];
+  files.forEach((file) => {
+    let level = root;
+    let path = "";
+    file.path.split("/").forEach((name, index, segments) => {
+      path = path ? `${path}/${name}` : name;
+      let node = level.find((item) => item.name === name);
+      if (!node) {
+        node = { name, path, children: [] };
+        level.push(node);
+      }
+      if (index === segments.length - 1) node.file = file;
+      level = node.children;
+    });
+  });
+  return root;
+}
+
+function SkillTree({
+  nodes,
+  selectedPath,
+  onSelect,
+  depth = 0,
+}: {
+  nodes: SkillTreeNode[];
+  selectedPath?: string;
+  onSelect: (path: string) => void;
+  depth?: number;
+}) {
+  return (
+    <>
+      {nodes.map((node) => (
+        <div key={node.path}>
+          <button
+            className={selectedPath === node.path ? "selected" : ""}
+            style={{ paddingLeft: 10 + depth * 17 }}
+            onClick={() => node.file && onSelect(node.path)}
+            disabled={!node.file}
+          >
+            <span>{node.file ? "◇" : "▾"}</span>
+            {node.name}
+          </button>
+          {node.children.length > 0 && (
+            <SkillTree
+              nodes={node.children}
+              selectedPath={selectedPath}
+              onSelect={onSelect}
+              depth={depth + 1}
+            />
+          )}
+        </div>
+      ))}
+    </>
+  );
+}
 
 function SkillsPage() {
   const { t } = useTranslation();
   const [skills, setSkills] = useState<SkillItem[]>([]);
+  const [uploadOpen, setUploadOpen] = useState(false);
   const [editing, setEditing] = useState<SkillItem | null>(null);
+  const [viewing, setViewing] = useState<SkillItem | null>(null);
+  const [files, setFiles] = useState<SkillFileItem[]>([]);
+  const [selectedFile, setSelectedFile] = useState<SkillFileContent | null>(null);
+  const [archive, setArchive] = useState<File | null>(null);
+  const [uploadName, setUploadName] = useState("");
+  const [uploadDescription, setUploadDescription] = useState("");
+  const [businessDomain, setBusinessDomain] = useState("");
   const [query, setQuery] = useState("");
-  const [source, setSource] = useState<"ALL" | SkillItem["sourceType"]>("ALL");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -860,31 +927,32 @@ function SkillsPage() {
 
   const visibleSkills = skills.filter(
     (skill) =>
-      (source === "ALL" || skill.sourceType === source) &&
       `${skill.name} ${skill.skillKey} ${skill.description}`
         .toLowerCase()
         .includes(query.toLowerCase()),
   );
 
-  const saveSkill = async () => {
+  const saveMetadata = async () => {
     if (!editing || saving) return;
     setSaving(true);
     setError("");
     try {
       const response = await fetch(
-        editing.id ? `/api/v1/skills/${editing.id}` : "/api/v1/skills",
+        `/api/v1/skills/${editing.id}/metadata`,
         {
-          method: editing.id ? "PUT" : "POST",
+          method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(editing),
+          body: JSON.stringify({
+            name: editing.name,
+            description: editing.description,
+            businessDomain: editing.businessDomain,
+          }),
         },
       );
       if (!response.ok) throw new Error();
       const saved = (await response.json()) as SkillItem;
       setSkills((current) =>
-        editing.id
-          ? current.map((skill) => (skill.id === saved.id ? saved : skill))
-          : [saved, ...current],
+        current.map((skill) => (skill.id === saved.id ? saved : skill)),
       );
       setEditing(null);
     } catch {
@@ -892,6 +960,65 @@ function SkillsPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const importArchive = async (overwrite = false) => {
+    if (!archive || !businessDomain.trim() || saving) return;
+    setSaving(true);
+    setError("");
+    const form = new FormData();
+    form.append("file", archive);
+    form.append("name", uploadName);
+    form.append("description", uploadDescription);
+    form.append("businessDomain", businessDomain.trim());
+    form.append("overwrite", String(overwrite));
+    try {
+      const response = await fetch("/api/v1/skills/import", {
+        method: "POST",
+        body: form,
+      });
+      if (response.status === 409 && !overwrite) {
+        if (window.confirm(t("skills.overwriteConfirm"))) {
+          setSaving(false);
+          await importArchive(true);
+          return;
+        }
+        throw new Error();
+      }
+      if (!response.ok) throw new Error();
+      const saved = (await response.json()) as SkillItem;
+      setSkills((current) => [saved, ...current.filter((item) => item.id !== saved.id)]);
+      setUploadOpen(false);
+      setArchive(null);
+      setUploadName("");
+      setUploadDescription("");
+      setBusinessDomain("");
+    } catch {
+      setError(t("skills.importFailed"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const openSkill = async (skill: SkillItem) => {
+    setViewing(skill);
+    setSelectedFile(null);
+    const response = await fetch(`/api/v1/skills/${skill.id}/files`);
+    if (!response.ok) {
+      setError(t("skills.filesFailed"));
+      return;
+    }
+    const manifest = (await response.json()) as SkillFileItem[];
+    setFiles(manifest);
+    const first = manifest.find((file) => file.path === "SKILL.md") ?? manifest[0];
+    if (first) await openFile(skill.id, first.path);
+  };
+
+  const openFile = async (skillId: string, path: string) => {
+    const response = await fetch(
+      `/api/v1/skills/${skillId}/file?path=${encodeURIComponent(path)}`,
+    );
+    if (response.ok) setSelectedFile((await response.json()) as SkillFileContent);
   };
 
   const setSkillEnabled = async (skill: SkillItem, enabled: boolean) => {
@@ -922,27 +1049,6 @@ function SkillsPage() {
     setSkills((current) => current.filter((item) => item.id !== skill.id));
   };
 
-  const importFile = async (file: File) => {
-    const content = await file.text();
-    const fallbackKey = file.name
-      .replace(/\.md$/i, "")
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "");
-    setEditing((current) =>
-      current
-        ? {
-            ...current,
-            sourceType: "FILE_IMPORT",
-            entryFile: file.name,
-            content,
-            skillKey: current.skillKey || fallbackKey,
-            name: current.name || fallbackKey,
-          }
-        : current,
-    );
-  };
-
   return (
     <>
       <PageHeader
@@ -953,7 +1059,7 @@ function SkillsPage() {
           <Button
             onClick={() => {
               setError("");
-              setEditing({ ...emptySkill });
+              setUploadOpen(true);
             }}
           >
             ＋ {t("skills.create")}
@@ -971,26 +1077,11 @@ function SkillsPage() {
               placeholder={t("skills.search")}
             />
           </label>
-          <label className="model-type-filter">
-            {t("skills.source")}
-            <select
-              value={source}
-              onChange={(event) =>
-                setSource(event.target.value as typeof source)
-              }
-            >
-              <option value="ALL">{t("skills.allSources")}</option>
-              <option value="MANUAL">{t("skills.manual")}</option>
-              <option value="FILE_IMPORT">{t("skills.fileImport")}</option>
-              <option value="GIT">Git</option>
-            </select>
-          </label>
         </div>
         <div className="table-head skill-table-row">
           <span>{t("skills.skill")}</span>
-          <span>{t("skills.version")}</span>
-          <span>{t("skills.source")}</span>
-          <span>{t("skills.entryFile")}</span>
+          <span>{t("skills.domain")}</span>
+          <span>{t("skills.archive")}</span>
           <span>{t("skills.updated")}</span>
           <span>{t("skills.status")}</span>
           <span>{t("skills.actions")}</span>
@@ -1012,13 +1103,8 @@ function SkillsPage() {
                   <small>{skill.description}</small>
                 </span>
               </span>
-              <code>{skill.assetVersion}</code>
-              <span
-                className={`skill-source ${skill.sourceType.toLowerCase()}`}
-              >
-                {skill.sourceType.replace("_", " ")}
-              </span>
-              <code>{skill.entryFile}</code>
+              <span className="skill-domain">#{skill.businessDomain}</span>
+              <code>{skill.archiveName ?? "—"}</code>
               <span>
                 {skill.updatedAt
                   ? new Date(skill.updatedAt).toLocaleString()
@@ -1030,6 +1116,9 @@ function SkillsPage() {
                 label={`${t("skills.status")} ${skill.name}`}
               />
               <span className="model-actions">
+                <button className="link-button" onClick={() => void openSkill(skill)}>
+                  {t("skills.view")}
+                </button>
                 <button
                   className="link-button"
                   onClick={() => {
@@ -1050,141 +1139,74 @@ function SkillsPage() {
           ))
         )}
       </section>
-      {editing &&
+      {uploadOpen &&
         createPortal(
           <div
             className="model-modal-mask"
             role="presentation"
-            onMouseDown={() => setEditing(null)}
+            onMouseDown={() => setUploadOpen(false)}
           >
             <div
               className="form-surface model-editor skill-editor"
               role="dialog"
               aria-modal="true"
-              aria-label={t("skills.editor")}
+              aria-label={t("skills.importTitle")}
               onMouseDown={(event) => event.stopPropagation()}
             >
               <div className="form-title">
                 <div>
                   <p className="kicker">
-                    {editing.id ? "EDIT SKILL ASSET" : "IMPORT SKILL ASSET"}
+                    SKILL PACKAGE / IMPORT
                   </p>
-                  <h2>{editing.id ? editing.name : t("skills.create")}</h2>
+                  <h2>{t("skills.importTitle")}</h2>
                 </div>
                 <button
                   className="link-button"
-                  onClick={() => setEditing(null)}
+                  onClick={() => setUploadOpen(false)}
                 >
                   {t("skills.close")} ×
                 </button>
               </div>
               <div className="skill-import-strip">
                 <div>
-                  <b>SKILL.md</b>
-                  <small>{t("skills.importHint")}</small>
+                  <b>{archive?.name ?? t("skills.noArchive")}</b>
+                  <small>{t("skills.archiveHint")}</small>
                 </div>
                 <label className="ui-button quiet file-button">
                   {t("skills.selectFile")}
                   <input
                     type="file"
-                    accept=".md,text/markdown,text/plain"
+                    accept=".zip,application/zip"
                     onChange={(event) => {
                       const file = event.target.files?.[0];
-                      if (file) void importFile(file);
+                      if (file) setArchive(file);
                     }}
                   />
                 </label>
               </div>
               <div className="field-grid">
                 <label className="field">
-                  <span>{t("skills.key")}</span>
-                  <input
-                    value={editing.skillKey}
-                    onChange={(event) =>
-                      setEditing({ ...editing, skillKey: event.target.value })
-                    }
-                    placeholder="customer-support"
-                  />
-                </label>
-                <label className="field">
                   <span>{t("skills.name")}</span>
                   <input
-                    value={editing.name}
-                    onChange={(event) =>
-                      setEditing({ ...editing, name: event.target.value })
-                    }
+                    value={uploadName}
+                    onChange={(event) => setUploadName(event.target.value)}
+                    placeholder={t("skills.parsedPlaceholder")}
                   />
                 </label>
-                <label className="field wide">
+                <label className="field">
                   <span>{t("skills.skillDescription")}</span>
                   <input
-                    value={editing.description}
-                    onChange={(event) =>
-                      setEditing({
-                        ...editing,
-                        description: event.target.value,
-                      })
-                    }
+                    value={uploadDescription}
+                    onChange={(event) => setUploadDescription(event.target.value)}
+                    placeholder={t("skills.parsedPlaceholder")}
                   />
                 </label>
                 <label className="field">
-                  <span>{t("skills.version")}</span>
+                  <span>{t("skills.domain")}</span>
                   <input
-                    value={editing.assetVersion}
-                    onChange={(event) =>
-                      setEditing({
-                        ...editing,
-                        assetVersion: event.target.value,
-                      })
-                    }
-                  />
-                </label>
-                <label className="field">
-                  <span>{t("skills.source")}</span>
-                  <select
-                    value={editing.sourceType}
-                    onChange={(event) =>
-                      setEditing({
-                        ...editing,
-                        sourceType: event.target
-                          .value as SkillItem["sourceType"],
-                      })
-                    }
-                  >
-                    <option value="MANUAL">{t("skills.manual")}</option>
-                    <option value="FILE_IMPORT">
-                      {t("skills.fileImport")}
-                    </option>
-                    <option value="GIT">Git</option>
-                  </select>
-                </label>
-                <label className="field">
-                  <span>{t("skills.entryFile")}</span>
-                  <input
-                    value={editing.entryFile}
-                    onChange={(event) =>
-                      setEditing({ ...editing, entryFile: event.target.value })
-                    }
-                  />
-                </label>
-                <label className="field">
-                  <span>{t("skills.sourceUri")}</span>
-                  <input
-                    value={editing.sourceUri ?? ""}
-                    onChange={(event) =>
-                      setEditing({ ...editing, sourceUri: event.target.value })
-                    }
-                    placeholder="https://github.com/org/repo"
-                  />
-                </label>
-                <label className="field wide skill-content-field">
-                  <span>{t("skills.content")}</span>
-                  <textarea
-                    value={editing.content}
-                    onChange={(event) =>
-                      setEditing({ ...editing, content: event.target.value })
-                    }
-                    placeholder="# Skill instructions..."
+                    value={businessDomain}
+                    onChange={(event) => setBusinessDomain(event.target.value)}
+                    placeholder={t("skills.domainPlaceholder")}
                   />
                 </label>
               </div>
@@ -1192,17 +1214,29 @@ function SkillsPage() {
                 <div className="skill-error modal-error">× {error}</div>
               )}
               <div className="sticky-actions">
-                <Button quiet onClick={() => setEditing(null)}>
+                <Button quiet onClick={() => setUploadOpen(false)}>
                   {t("skills.cancel")}
                 </Button>
-                <Button onClick={saveSkill} disabled={saving}>
-                  {saving ? t("skills.saving") : t("skills.save")}
+                <Button onClick={() => void importArchive()} disabled={saving || !archive || !businessDomain.trim()}>
+                  {saving ? t("skills.parsing") : t("skills.import")}
                 </Button>
               </div>
             </div>
           </div>,
           document.body,
         )}
+      {viewing && createPortal(
+        <div className="model-modal-mask" role="presentation" onMouseDown={() => setViewing(null)}>
+          <div className="skill-browser" role="dialog" aria-modal="true" onMouseDown={(event) => event.stopPropagation()}>
+            <header><div><p className="kicker">SKILL PACKAGE / EXPLORER</p><h2>{viewing.name}</h2><span className="skill-domain">#{viewing.businessDomain}</span></div><button className="link-button" onClick={() => setViewing(null)}>{t("skills.close")} ×</button></header>
+            <div className="skill-browser-body">
+              <aside><p>{t("skills.files")} · {files.length}</p><SkillTree nodes={buildSkillTree(files)} selectedPath={selectedFile?.path} onSelect={(path) => void openFile(viewing.id, path)} /></aside>
+              <main><div className="file-preview-head"><code>{selectedFile?.path ?? "—"}</code><small>{selectedFile ? `${selectedFile.mediaType} · ${selectedFile.size} B` : ""}</small></div>{selectedFile?.previewable ? <pre>{selectedFile.content}</pre> : <div className="binary-preview">{t("skills.binaryPreview")}</div>}</main>
+            </div>
+          </div>
+        </div>, document.body)}
+      {editing && createPortal(
+        <div className="model-modal-mask" role="presentation" onMouseDown={() => setEditing(null)}><div className="form-surface model-editor skill-editor" role="dialog" onMouseDown={(event) => event.stopPropagation()}><div className="form-title"><div><p className="kicker">SKILL METADATA / EDIT</p><h2>{editing.name}</h2></div><button className="link-button" onClick={() => setEditing(null)}>{t("skills.close")} ×</button></div><div className="field-grid"><label className="field"><span>{t("skills.name")}</span><input value={editing.name} onChange={(event) => setEditing({...editing, name:event.target.value})}/></label><label className="field"><span>{t("skills.domain")}</span><input value={editing.businessDomain} onChange={(event) => setEditing({...editing, businessDomain:event.target.value})}/></label><label className="field wide"><span>{t("skills.skillDescription")}</span><input value={editing.description} onChange={(event) => setEditing({...editing, description:event.target.value})}/></label></div><div className="sticky-actions"><Button quiet onClick={() => setEditing(null)}>{t("skills.cancel")}</Button><Button onClick={() => void saveMetadata()} disabled={saving}>{saving ? t("skills.saving") : t("skills.save")}</Button></div></div></div>, document.body)}
     </>
   );
 }

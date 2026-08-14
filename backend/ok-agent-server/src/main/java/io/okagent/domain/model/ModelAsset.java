@@ -75,7 +75,8 @@ public class ModelAsset {
     this.provider = provider;
     this.modelId = modelId;
     this.endpoint = endpoint;
-    if (apiKeyCiphertext != null && !apiKeyCiphertext.isBlank()) this.apiKeyCiphertext = apiKeyCiphertext;
+    if (apiKeyCiphertext != null && !apiKeyCiphertext.isBlank())
+      this.apiKeyCiphertext = apiKeyCiphertext;
     this.enabled = enabled;
     this.updatedAt = Instant.now();
   }

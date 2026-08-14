@@ -7,7 +7,7 @@ const resources = {
       navigation: {
         models: "模型管理",
         skills: "技能仓库",
-        mcp: "MCP 与工具",
+        mcp: "MCP工具",
         knowledge: "知识库",
         workflows: "工作流",
         agents: "智能体",

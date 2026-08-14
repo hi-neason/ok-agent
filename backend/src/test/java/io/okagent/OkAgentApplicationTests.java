@@ -5,7 +5,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
 class OkAgentApplicationTests {
-    @Test
-    void contextLoads() {
-    }
+  @Test
+  void contextLoads() {}
 }

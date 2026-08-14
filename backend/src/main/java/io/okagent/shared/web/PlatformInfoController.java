@@ -8,8 +8,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1")
 public class PlatformInfoController {
-    @GetMapping("/platform")
-    public Map<String, String> platform() {
-        return Map.of("name", "ok-agent", "managementPlane", "ready", "runtimePlane", "agentscope-java-2");
-    }
+  @GetMapping("/platform")
+  public Map<String, String> platform() {
+    return Map.of(
+        "name", "ok-agent", "managementPlane", "ready", "runtimePlane", "agentscope-java-2");
+  }
 }

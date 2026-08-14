@@ -14,9 +14,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
-import org.springframework.web.server.ResponseStatusException;
 
 @Component
 public class ZipSkillArchiveParser implements SkillArchiveParser {
@@ -35,6 +33,16 @@ public class ZipSkillArchiveParser implements SkillArchiveParser {
     var files = readEntries(archive);
     var entry = files.stream().filter(file -> file.path().equals("SKILL.md")).findFirst();
     if (entry.isEmpty()) {
+      var nestedEntry =
+          files.stream()
+              .map(ArchivedSkillFile::path)
+              .filter(path -> path.endsWith("/SKILL.md"))
+              .findFirst();
+      if (nestedEntry.isPresent()) {
+        throw new SkillArchiveValidationException(
+            "SKILL_MD_NOT_AT_ROOT",
+            "SKILL.md was found below an outer directory: " + nestedEntry.orElseThrow());
+      }
       reject("SKILL.md must exist at the archive root");
     }
     var markdown = new String(entry.orElseThrow().content(), StandardCharsets.UTF_8);
@@ -70,7 +78,7 @@ public class ZipSkillArchiveParser implements SkillArchiveParser {
         files.add(new ArchivedSkillFile(path, mediaType(path), content));
       }
     } catch (IOException exception) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid ZIP archive", exception);
+      throw new SkillArchiveValidationException("INVALID_SKILL_ARCHIVE", "Invalid ZIP archive");
     }
     return files;
   }
@@ -138,6 +146,6 @@ public class ZipSkillArchiveParser implements SkillArchiveParser {
   }
 
   private void reject(String reason) {
-    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, reason);
+    throw new SkillArchiveValidationException("INVALID_SKILL_ARCHIVE", reason);
   }
 }

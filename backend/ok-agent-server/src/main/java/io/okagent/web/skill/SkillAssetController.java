@@ -1,12 +1,15 @@
 package io.okagent.web.skill;
 
+import io.okagent.service.skill.SkillArchiveValidationException;
 import io.okagent.service.skill.SkillAssetService;
 import jakarta.validation.Valid;
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -79,5 +82,13 @@ public class SkillAssetController {
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void delete(@PathVariable UUID id) {
     service.delete(id);
+  }
+
+  /** Returns a safe, actionable validation response for a rejected Skill archive. */
+  @ExceptionHandler(SkillArchiveValidationException.class)
+  public ResponseEntity<SkillImportErrorResponse> handleArchiveValidation(
+      SkillArchiveValidationException exception) {
+    return ResponseEntity.badRequest()
+        .body(new SkillImportErrorResponse(exception.getCode(), exception.getMessage()));
   }
 }

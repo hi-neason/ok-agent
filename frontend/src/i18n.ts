@@ -57,6 +57,8 @@ const resources = {
         parsedPlaceholder: "可留空，将从 SKILL.md 自动解析",
         overwriteConfirm: "已存在同名 Skill，是否使用当前压缩包覆盖？原文件将被替换。",
         importFailed: "上传或解析失败，请检查压缩包结构和 SKILL.md 元数据",
+        skillMdNotAtRoot:
+          "检测到 SKILL.md 位于外层文件夹中。请打开 Skill 文件夹，选中其内部全部文件后重新压缩，确保解压根目录直接包含 SKILL.md。",
         filesFailed: "技能文件目录加载失败",
         view: "查看",
         files: "文件目录",
@@ -145,6 +147,8 @@ const resources = {
         parsedPlaceholder: "Optional; parsed automatically from SKILL.md",
         overwriteConfirm: "A Skill with this name exists. Replace all of its files with this archive?",
         importFailed: "Upload or parsing failed. Check the archive structure and SKILL.md metadata.",
+        skillMdNotAtRoot:
+          "SKILL.md is inside an outer folder. Compress the contents of the Skill folder so SKILL.md appears directly at the archive root.",
         filesFailed: "Failed to load the Skill file tree",
         view: "View",
         files: "Files",

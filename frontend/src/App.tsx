@@ -983,9 +983,17 @@ function SkillsPage() {
           await importArchive(true);
           return;
         }
-        throw new Error();
+        return;
       }
-      if (!response.ok) throw new Error();
+      if (!response.ok) {
+        const failure = (await response.json().catch(() => null)) as {
+          code?: string;
+        } | null;
+        if (failure?.code === "SKILL_MD_NOT_AT_ROOT") {
+          throw new Error(t("skills.skillMdNotAtRoot"));
+        }
+        throw new Error(t("skills.importFailed"));
+      }
       const saved = (await response.json()) as SkillItem;
       setSkills((current) => [saved, ...current.filter((item) => item.id !== saved.id)]);
       setUploadOpen(false);
@@ -993,8 +1001,8 @@ function SkillsPage() {
       setUploadName("");
       setUploadDescription("");
       setBusinessDomain("");
-    } catch {
-      setError(t("skills.importFailed"));
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : t("skills.importFailed"));
     } finally {
       setSaving(false);
     }

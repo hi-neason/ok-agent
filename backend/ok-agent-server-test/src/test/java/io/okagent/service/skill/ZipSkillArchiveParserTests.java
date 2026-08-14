@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.junit.jupiter.api.Test;
-import org.springframework.web.server.ResponseStatusException;
 
 class ZipSkillArchiveParserTests {
   private final SkillArchiveParser parser = new ZipSkillArchiveParser();
@@ -38,8 +37,8 @@ class ZipSkillArchiveParserTests {
         zip(Map.of("nested/SKILL.md", "---\nname: nested\ndescription: Invalid root\n---"));
 
     assertThatThrownBy(() -> parser.parse("nested.zip", archive))
-        .isInstanceOf(ResponseStatusException.class)
-        .hasMessageContaining("SKILL.md must exist at the archive root");
+        .isInstanceOf(SkillArchiveValidationException.class)
+        .hasMessageContaining("SKILL.md was found below an outer directory");
   }
 
   private byte[] zip(Map<String, String> files) throws Exception {

@@ -1,0 +1,25 @@
+package io.okagent.web.mcp;
+
+import io.okagent.domain.mcp.*;
+import java.time.Instant;
+import java.util.*;
+
+public record McpServerResponse(
+    UUID id,
+    String serverKey,
+    String name,
+    String description,
+    McpTransport transport,
+    String serverUrl,
+    String command,
+    List<String> arguments,
+    Map<String, String> queryParameters,
+    Set<String> configuredHeaderNames,
+    Set<String> configuredEnvironmentNames,
+    boolean enabled,
+    int requestTimeoutSeconds,
+    int initializationTimeoutSeconds,
+    String lastTestStatus,
+    Instant lastTestedAt,
+    int toolCount,
+    Instant updatedAt) {}

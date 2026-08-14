@@ -1311,92 +1311,37 @@ function SkillsPage() {
   );
 }
 
+type McpServer = { id:string; serverKey:string; name:string; description:string; transport:"STREAMABLE_HTTP"|"SSE"|"STDIO"; serverUrl:string; command:string; arguments:string[]; queryParameters:Record<string,string>; configuredHeaderNames:string[]; configuredEnvironmentNames:string[]; enabled:boolean; requestTimeoutSeconds:number; initializationTimeoutSeconds:number; lastTestStatus:string; lastTestedAt?:string; toolCount:number; updatedAt:string };
+type McpTool = { name:string; description:string; inputSchemaJson:string; discoveredAt:string };
+type McpDraft = { serverKey:string; name:string; description:string; transport:McpServer["transport"]; serverUrl:string; command:string; argumentsText:string; headersText:string; environmentText:string; queryParametersText:string; requestTimeoutSeconds:number; initializationTimeoutSeconds:number };
+const emptyMcpDraft: McpDraft = {serverKey:"",name:"",description:"",transport:"STREAMABLE_HTTP",serverUrl:"",command:"",argumentsText:"",headersText:"",environmentText:"",queryParametersText:"",requestTimeoutSeconds:15,initializationTimeoutSeconds:10};
+
 function McpPage() {
-  const [server, setServer] = useState("crm");
+  const { t } = useTranslation();
+  const [servers,setServers]=useState<McpServer[]>([]); const [search,setSearch]=useState("");
+  const [editing,setEditing]=useState<McpServer|null|"new">(null); const [draft,setDraft]=useState<McpDraft>(emptyMcpDraft);
+  const [tools,setTools]=useState<McpTool[]>([]); const [selectedTool,setSelectedTool]=useState<McpTool|null>(null);
+  const [tab,setTab]=useState<"config"|"tools">("config"); const [busy,setBusy]=useState(false); const [notice,setNotice]=useState<{ok:boolean;text:string}|null>(null);
+  const load=async()=>{try{const response=await fetch("/api/v1/mcp-servers");if(!response.ok)throw new Error();setServers(await response.json());}catch{setNotice({ok:false,text:t("mcp.loadFailed")});}};
+  useEffect(()=>{void load();},[]);
+  const open=(server?:McpServer)=>{setEditing(server??"new");setDraft(server?{serverKey:server.serverKey,name:server.name,description:server.description,transport:server.transport,serverUrl:server.serverUrl??"",command:server.command??"",argumentsText:(server.arguments??[]).join("\n"),headersText:"",environmentText:"",queryParametersText:JSON.stringify(server.queryParameters??{},null,2),requestTimeoutSeconds:server.requestTimeoutSeconds,initializationTimeoutSeconds:server.initializationTimeoutSeconds}:{...emptyMcpDraft});setTools([]);setSelectedTool(null);setTab("config");setNotice(null);};
+  const payload=()=>({serverKey:draft.serverKey,name:draft.name,description:draft.description,transport:draft.transport,serverUrl:draft.serverUrl||null,command:draft.command||null,arguments:draft.argumentsText.split("\n").map(v=>v.trim()).filter(Boolean),headers:draft.headersText.trim()?JSON.parse(draft.headersText):{},environment:draft.environmentText.trim()?JSON.parse(draft.environmentText):{},queryParameters:draft.queryParametersText.trim()?JSON.parse(draft.queryParametersText):{},requestTimeoutSeconds:draft.requestTimeoutSeconds,initializationTimeoutSeconds:draft.initializationTimeoutSeconds});
+  const save=async()=>{setBusy(true);setNotice(null);try{const isNew=editing==="new";const response=await fetch(isNew?"/api/v1/mcp-servers":`/api/v1/mcp-servers/${(editing as McpServer).id}`,{method:isNew?"POST":"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload())});if(!response.ok)throw new Error();const saved:McpServer=await response.json();setEditing(saved);setNotice({ok:true,text:t("mcp.saved")});await load();}catch{setNotice({ok:false,text:t("mcp.saveFailed")});}finally{setBusy(false);}};
+  const inspect=async()=>{setBusy(true);setNotice(null);try{const saved=editing!=="new"&&editing;const response=await fetch(saved?`/api/v1/mcp-servers/${saved.id}/inspect`:"/api/v1/mcp-servers/inspect",saved?{method:"POST"}:{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload())});const result=await response.json();if(!result.success)throw new Error(result.message);setTools(result.tools);setSelectedTool(result.tools[0]??null);setTab("tools");setNotice({ok:true,text:t("mcp.connectionSucceeded",{count:result.tools.length})});if(saved)await load();}catch(error){setNotice({ok:false,text:error instanceof Error&&error.message?error.message:t("mcp.connectionFailed")});}finally{setBusy(false);}};
+  const remove=async(server:McpServer)=>{if(!confirm(t("mcp.deleteConfirm",{name:server.name})))return;await fetch(`/api/v1/mcp-servers/${server.id}`,{method:"DELETE"});await load();};
+  const toggle=async(server:McpServer)=>{await fetch(`/api/v1/mcp-servers/${server.id}/enabled?value=${!server.enabled}`,{method:"PATCH"});await load();};
+  const visible=servers.filter(s=>`${s.name} ${s.serverKey} ${s.serverUrl}`.toLowerCase().includes(search.toLowerCase()));
   return (
     <>
       <PageHeader
-        kicker="TOOLS CONFIG / MCP"
-        title="MCP 与工具策略"
-        description="受管 MCP 以 SecretRef 连接，并使用 allow/deny 对可执行工具面进行最小化控制。"
-        action={<Button>＋ 注册 MCP</Button>}
+        kicker="MCP SERVER / REGISTRY"
+        title={t("mcp.title")}
+        description={t("mcp.description")}
+        action={<Button onClick={()=>open()}>＋ {t("mcp.register")}</Button>}
       />
-      <div className="config-layout">
-        <aside className="sub-rail">
-          <p>
-            MCP SERVERS <b>03</b>
-          </p>
-          {[
-            ["crm", "CRM 服务", "HTTP"],
-            ["knowledge", "知识检索", "SSE"],
-            ["internal-db", "内网数据工具", "STDIO"],
-          ].map(([id, name, type]) => (
-            <button
-              onClick={() => setServer(id)}
-              className={
-                server === id ? "agent-select selected" : "agent-select"
-              }
-              key={id}
-            >
-              <span className="agent-icon">⌘</span>
-              <span>
-                <b>{name}</b>
-                <small>{type} · healthy</small>
-              </span>
-              <i className="ok-dot" />
-            </button>
-          ))}
-        </aside>
-        <section className="form-surface">
-          <div className="form-title">
-            <div>
-              <p className="kicker">MCP BINDING / {server.toUpperCase()}</p>
-              <h2>{server === "crm" ? "CRM 服务" : "知识检索服务"}</h2>
-            </div>
-            <span className="tag green">HEALTHY</span>
-          </div>
-          <div className="field-grid">
-            <Field
-              label="传输协议"
-              value={server === "crm" ? "streamable-http" : "sse"}
-            />
-            <Field label="SecretRef" value="secrets/prod/crm-api" />
-            <Field
-              label="服务地址"
-              value={
-                server === "crm"
-                  ? "https://mcp.ok-agent.internal/crm"
-                  : "https://mcp.ok-agent.internal/search"
-              }
-              wide
-            />
-            <Field label="调用超时" value="PT15S" />
-            <Field label="初始化超时" value="PT8S" />
-          </div>
-          <section className="tool-policy">
-            <div className="section-label">
-              <b>允许的工具</b>
-              <small>enableTools · 未列出的 server tools 不会注册</small>
-            </div>
-            {[
-              "search_customer",
-              "get_ticket",
-              "create_ticket",
-              "update_ticket",
-            ].map((tool, index) => (
-              <label key={tool} className="tool-check">
-                <input defaultChecked={index < 3} type="checkbox" />
-                <span>{tool}</span>
-                <small>{index === 2 ? "ask · requires HITL" : "allow"}</small>
-              </label>
-            ))}
-          </section>
-          <div className="sticky-actions">
-            <Button quiet>测试连接</Button>
-            <Button>保存 MCP 绑定</Button>
-          </div>
-        </section>
-      </div>
+      <div className="mcp-toolbar"><input value={search} onChange={e=>setSearch(e.target.value)} placeholder={t("mcp.search")}/><span>{servers.length} MCP Servers</span></div>
+      <div className="mcp-table"><div className="mcp-row head"><span>{t("mcp.server")}</span><span>{t("mcp.transport")}</span><span>{t("mcp.tools")}</span><span>{t("mcp.lastTest")}</span><span>{t("mcp.status")}</span><span>{t("mcp.actions")}</span></div>{visible.map(server=><div className="mcp-row" key={server.id}><span className="mcp-name"><i>⌘</i><b>{server.name}</b><small>{server.serverKey}</small></span><span><code>{server.transport.replace("STREAMABLE_","")}</code><small>{server.serverUrl||server.command}</small></span><span><b>{server.toolCount}</b> tools</span><span className={`test-state ${server.lastTestStatus.toLowerCase()}`}>{server.lastTestStatus}</span><span><Toggle on={server.enabled} setOn={()=>void toggle(server)} /></span><span className="row-actions"><button onClick={()=>open(server)}>{t("mcp.edit")}</button><button className="danger" onClick={()=>void remove(server)}>{t("mcp.delete")}</button></span></div>)}{visible.length===0&&<div className="mcp-empty">⌘<b>{t("mcp.empty")}</b></div>}</div>
+      {editing&&createPortal(<div className="model-modal-mask" onMouseDown={()=>setEditing(null)}><div className="mcp-inspector" role="dialog" onMouseDown={e=>e.stopPropagation()}><header><div><p className="kicker">MCP INSPECTOR / {editing==="new"?"REGISTER":"EDIT"}</p><h2>{editing==="new"?t("mcp.register"):editing.name}</h2></div><button className="link-button" onClick={()=>setEditing(null)}>{t("mcp.close")} ×</button></header><nav><button className={tab==="config"?"active":""} onClick={()=>setTab("config")}>01 {t("mcp.connectionConfig")}</button><button className={tab==="tools"?"active":""} onClick={()=>setTab("tools")}>02 {t("mcp.toolDiscovery")} <em>{tools.length}</em></button></nav>{tab==="config"?<div className="mcp-form"><label><span>{t("mcp.name")}</span><input value={draft.name} onChange={e=>setDraft({...draft,name:e.target.value})}/></label><label><span>SERVER_KEY</span><input value={draft.serverKey} onChange={e=>setDraft({...draft,serverKey:e.target.value})}/></label><label className="wide"><span>{t("mcp.descriptionLabel")}</span><input value={draft.description} onChange={e=>setDraft({...draft,description:e.target.value})}/></label><label><span>{t("mcp.transport")}</span><select value={draft.transport} onChange={e=>setDraft({...draft,transport:e.target.value as McpServer["transport"]})}><option value="STREAMABLE_HTTP">Streamable HTTP</option><option value="SSE">SSE</option><option value="STDIO">STDIO</option></select></label>{draft.transport==="STDIO"?<><label><span>COMMAND</span><input value={draft.command} onChange={e=>setDraft({...draft,command:e.target.value})}/></label><label className="wide"><span>ARGUMENTS · {t("mcp.onePerLine")}</span><textarea value={draft.argumentsText} onChange={e=>setDraft({...draft,argumentsText:e.target.value})}/></label><label className="wide"><span>ENVIRONMENT · JSON</span><textarea value={draft.environmentText} placeholder={editing!=="new"&&editing.configuredEnvironmentNames.length?t("mcp.secretConfigured",{keys:editing.configuredEnvironmentNames.join(", ")}):'{\n  "API_KEY": "..."\n}'} onChange={e=>setDraft({...draft,environmentText:e.target.value})}/></label></>:<><label><span>SERVER_URL</span><input value={draft.serverUrl} onChange={e=>setDraft({...draft,serverUrl:e.target.value})}/></label><label className="wide"><span>HEADERS · JSON</span><textarea value={draft.headersText} placeholder={editing!=="new"&&editing.configuredHeaderNames.length?t("mcp.secretConfigured",{keys:editing.configuredHeaderNames.join(", ")}):'{\n  "Authorization": "Bearer ..."\n}'} onChange={e=>setDraft({...draft,headersText:e.target.value})}/></label><label className="wide"><span>QUERY PARAMETERS · JSON</span><textarea value={draft.queryParametersText} onChange={e=>setDraft({...draft,queryParametersText:e.target.value})}/></label></>}<label><span>{t("mcp.requestTimeout")}</span><input type="number" value={draft.requestTimeoutSeconds} onChange={e=>setDraft({...draft,requestTimeoutSeconds:+e.target.value})}/></label><label><span>{t("mcp.initTimeout")}</span><input type="number" value={draft.initializationTimeoutSeconds} onChange={e=>setDraft({...draft,initializationTimeoutSeconds:+e.target.value})}/></label></div>:<div className="mcp-tool-browser"><aside><div>{t("mcp.discoveredTools")} <b>{tools.length}</b></div>{tools.map(tool=><button className={selectedTool?.name===tool.name?"selected":""} onClick={()=>setSelectedTool(tool)} key={tool.name}><i>⚡</i><span><b>{tool.name}</b><small>{tool.description||t("mcp.noDescription")}</small></span></button>)}</aside><main>{selectedTool?<><div><p className="kicker">TOOL SCHEMA</p><h3>{selectedTool.name}</h3><p>{selectedTool.description}</p></div><pre>{selectedTool.inputSchemaJson}</pre></>:<div className="tool-placeholder">⌁<b>{t("mcp.queryHint")}</b></div>}</main></div>}{notice&&<div className={`mcp-notice ${notice.ok?"success":"error"}`}><b>{notice.ok?"✓":"×"} {notice.text}</b></div>}<footer><Button quiet onClick={()=>void inspect()} disabled={busy}>{busy?t("mcp.testing"):t("mcp.testAndQuery")}</Button><Button onClick={()=>void save()} disabled={busy}>{busy?t("mcp.saving"):t("mcp.save")}</Button></footer></div></div>,document.body)}
     </>
   );
 }

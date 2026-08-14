@@ -30,6 +30,9 @@ const resources = {
           "测试会向模型厂商发起一次最小真实请求，不保存响应内容。",
         apiKeyConfigured: "已安全保存；留空将继续使用现有密钥",
       },
+      mcp: {
+        title: "MCP工具", description: "集中管理可复用的 MCP Server 连接，并完成连接诊断、工具发现与输入 Schema 检查。", register: "注册 MCP Server", search: "搜索名称、标识或地址", server: "MCP SERVER", transport: "传输方式", tools: "工具", lastTest: "连接状态", status: "启用状态", actions: "操作", edit: "编辑", delete: "删除", empty: "还没有 MCP Server", close: "关闭", connectionConfig: "连接配置", toolDiscovery: "工具查询", name: "名称", descriptionLabel: "描述", onePerLine: "每行一个参数", requestTimeout: "请求超时（秒）", initTimeout: "初始化超时（秒）", discoveredTools: "已发现工具", noDescription: "暂无描述", queryHint: "测试连接后查询 Server 提供的工具", testing: "连接与查询中…", testAndQuery: "测试连接并查询工具", saving: "保存中…", save: "保存 MCP Server", saved: "MCP Server 已保存", saveFailed: "保存失败，请检查必填字段与 JSON 格式", loadFailed: "MCP Server 列表加载失败", connectionSucceeded: "连接成功，发现 {{count}} 个工具", connectionFailed: "连接失败", deleteConfirm: "确定删除 MCP Server“{{name}}”吗？", secretConfigured: "已安全保存：{{keys}}；留空将继续使用现有配置"
+      },
       skills: {
         title: "技能仓库",
         description:
@@ -124,6 +127,9 @@ const resources = {
           "The test sends one minimal request to the model provider and does not store its response.",
         apiKeyConfigured:
           "Stored securely; leave blank to continue using the existing key",
+      },
+      mcp: {
+        title: "MCP Tools", description: "Manage reusable MCP Server connections, diagnose connectivity, and inspect tools and input schemas.", register: "Register MCP Server", search: "Search name, key, or address", server: "MCP SERVER", transport: "Transport", tools: "Tools", lastTest: "Connection", status: "Enabled", actions: "Actions", edit: "Edit", delete: "Delete", empty: "No MCP Servers yet", close: "Close", connectionConfig: "Connection", toolDiscovery: "Tool discovery", name: "Name", descriptionLabel: "Description", onePerLine: "one argument per line", requestTimeout: "Request timeout (seconds)", initTimeout: "Initialization timeout (seconds)", discoveredTools: "Discovered tools", noDescription: "No description", queryHint: "Test the connection to discover tools", testing: "Connecting and discovering…", testAndQuery: "Test & discover tools", saving: "Saving…", save: "Save MCP Server", saved: "MCP Server saved", saveFailed: "Save failed. Check required fields and JSON.", loadFailed: "Failed to load MCP Servers", connectionSucceeded: "Connected; discovered {{count}} tools", connectionFailed: "Connection failed", deleteConfirm: "Delete MCP Server “{{name}}”?", secretConfigured: "Stored securely: {{keys}}; leave blank to retain"
       },
       skills: {
         title: "Skill Repository",

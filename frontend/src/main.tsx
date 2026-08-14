@@ -4,6 +4,7 @@ import App from "./App";
 import "./i18n";
 import "./styles.css";
 import "./model.css";
+import "./llm-provider.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

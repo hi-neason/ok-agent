@@ -1,0 +1,2 @@
+.model-editor .field select { width: 100%; height: 38px; border: 1px solid #cfe2f7; border-radius: 6px; background: #fbfdff; color: #315a84; padding: 0 10px; outline: none; }
+.model-editor .field select:focus { border-color: #2b83eb; box-shadow: 0 0 0 3px rgba(43, 131, 235, .11); }

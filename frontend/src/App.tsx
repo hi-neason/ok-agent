@@ -1584,7 +1584,7 @@ const mcpDraftToJson = (draft: McpDraft) => {
       },
     },
     null,
-    2,
+    4,
   );
 };
 
@@ -1704,6 +1704,15 @@ function McpPage() {
     };
   };
   const currentDraft = () => (configMode === "json" ? parseJsonDraft() : draft);
+  const formatJsonConfig = () => {
+    try {
+      const parsed: unknown = JSON.parse(jsonConfig);
+      setJsonConfig(JSON.stringify(parsed, null, 4));
+      setNotice({ ok: true, text: t("mcp.jsonFormatted") });
+    } catch {
+      setNotice({ ok: false, text: t("mcp.jsonFormatFailed") });
+    }
+  };
   const validateDraft = (value: McpDraft) => {
     if (!value.name.trim()) return t("mcp.nameRequired");
     if (!value.serverKey.trim()) return t("mcp.serverKeyRequired");
@@ -2226,14 +2235,33 @@ function McpPage() {
                     </div>
                   ) : (
                     <div className="mcp-json-config">
-                      <div>
-                        <p className="kicker">SINGLE MCP SERVER / JSON</p>
-                        <b>{t("mcp.jsonEditorTitle")}</b>
-                        <small>{t("mcp.jsonEditorHint")}</small>
+                      <div className="mcp-json-head">
+                        <div>
+                          <p className="kicker">SINGLE MCP SERVER / JSON</p>
+                          <b>{t("mcp.jsonEditorTitle")}</b>
+                          <small>{t("mcp.jsonEditorHint")}</small>
+                        </div>
+                        <button type="button" onClick={formatJsonConfig}>
+                          ✦ {t("mcp.formatJson")}
+                        </button>
                       </div>
                       <textarea
                         value={jsonConfig}
                         onChange={(event) => setJsonConfig(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key !== "Tab") return;
+                          event.preventDefault();
+                          const input = event.currentTarget;
+                          const start = input.selectionStart;
+                          const end = input.selectionEnd;
+                          setJsonConfig(
+                            `${jsonConfig.slice(0, start)}    ${jsonConfig.slice(end)}`,
+                          );
+                          requestAnimationFrame(() => {
+                            input.selectionStart = input.selectionEnd =
+                              start + 4;
+                          });
+                        }}
                         spellCheck={false}
                         aria-label={t("mcp.jsonEditorTitle")}
                       />

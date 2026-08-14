@@ -477,11 +477,21 @@ function ModelsPage() {
     if (!editing) return;
     setTestResult({ state: "testing", message: t("models.connectionTesting") });
     try {
-      const response = await fetch("/api/v1/models/test-connection", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editing),
-      });
+      const useSavedCredential = Boolean(editing.id && !editing.apiKey.trim());
+      const response = await fetch(
+        useSavedCredential
+          ? `/api/v1/models/${editing.id}/test-connection`
+          : "/api/v1/models/test-connection",
+        {
+          method: "POST",
+          ...(useSavedCredential
+            ? {}
+            : {
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(editing),
+              }),
+        },
+      );
       const responseText = await response.text();
       let result: {
         success?: boolean;
@@ -502,12 +512,16 @@ function ModelsPage() {
         result.title ||
         `请求失败（HTTP ${response.status}）`;
       const statusCode = result.statusCode || response.status;
+      const statusSuffix =
+        statusCode && !message.includes(`HTTP ${statusCode}`)
+          ? `（HTTP ${statusCode}）`
+          : "";
       setTestResult(
         success
           ? { state: "success", message: t("models.connectionSucceeded") }
           : {
               state: "error",
-              message: `${message || t("models.connectionFailed")}${statusCode ? `（HTTP ${statusCode}）` : ""}`,
+              message: `${message || t("models.connectionFailed")}${statusSuffix}`,
             },
       );
     } catch {
@@ -525,7 +539,8 @@ function ModelsPage() {
         description="统一管理文本、语音、视觉、OCR 和音视频模型。Agent 仅引用已启用的模型资产与其版本。"
         action={
           <Button
-            onClick={() =>
+            onClick={() => {
+              setTestResult(null);
               setEditing({
                 id: "",
                 name: "",
@@ -536,8 +551,8 @@ function ModelsPage() {
                 apiKey: "",
                 enabled: true,
                 updated: "now",
-              })
-            }
+              });
+            }}
           >
             ＋ 新增模型
           </Button>
@@ -592,7 +607,13 @@ function ModelsPage() {
               label={`Enable ${model.name}`}
             />
             <span className="model-actions">
-              <button className="link-button" onClick={() => setEditing(model)}>
+              <button
+                className="link-button"
+                onClick={() => {
+                  setTestResult(null);
+                  setEditing(model);
+                }}
+              >
                 编辑
               </button>
               <button
@@ -726,6 +747,11 @@ function ModelsPage() {
                     type="password"
                     autoComplete="new-password"
                     value={editing.apiKey}
+                    placeholder={
+                      editing.apiKeyConfigured
+                        ? t("models.apiKeyConfigured")
+                        : undefined
+                    }
                     onChange={(e) =>
                       setEditing({ ...editing, apiKey: e.target.value })
                     }

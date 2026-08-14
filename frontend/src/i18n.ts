@@ -26,6 +26,7 @@ const resources = {
         saveFailed: "保存失败，请检查服务连接和输入内容",
         connectionHint:
           "测试会向模型厂商发起一次最小真实请求，不保存响应内容。",
+        apiKeyConfigured: "已安全保存；留空将继续使用现有密钥",
       },
     },
   },
@@ -57,6 +58,8 @@ const resources = {
         saveFailed: "Save failed. Check the service connection and input.",
         connectionHint:
           "The test sends one minimal request to the model provider and does not store its response.",
+        apiKeyConfigured:
+          "Stored securely; leave blank to continue using the existing key",
       },
     },
   },

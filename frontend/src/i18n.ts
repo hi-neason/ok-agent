@@ -5,7 +5,7 @@ const resources = {
   'zh-CN': {
     translation: {
       navigation: {
-        models: '模型策略', skills: '技能仓库', mcp: 'MCP 与工具', knowledge: '知识库', workflows: '工作流',
+        models: '模型管理', skills: '技能仓库', mcp: 'MCP 与工具', knowledge: '知识库', workflows: '工作流',
         agents: '智能体', memory: '记忆与上下文', workspace: '工作空间', teams: '子 Agent 与协作',
         release: '发布与环境', observe: '运行观测', system: '账号与权限',
       },

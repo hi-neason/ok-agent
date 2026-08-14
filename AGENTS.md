@@ -12,6 +12,7 @@
 - Use Java 17 as the baseline and Spring Boot 4.x. Do not introduce pre-Java-17 compatibility patterns or unnecessary experimental APIs.
 - Organize packages by domain, for example `module/asset`, `module/agent`, `module/release`, `module/observe`, and `module/identity`. Put shared technical capabilities in `shared/`; do not create catch-all `util` packages.
 - Prefix APIs with `/api/v1`. Keep request/response DTOs separate from domain objects and validate all inputs with Bean Validation.
+- Every Controller endpoint method must have an English Javadoc comment that states its API responsibility and intended effect.
 - Any operation that changes configuration, release state, permissions, or secret references must enforce tenant/project isolation, authorization, auditable events, and explicit state-transition validation.
 - Store secrets as `SecretRef` only. Never expose them through entities, API responses, logs, exceptions, fixtures, or Git.
 - Manage MySQL schema changes through migrations. Do not rely on ORM schema generation for production changes. Include tenancy, creation/update audit fields, and an optimistic-concurrency strategy where applicable.

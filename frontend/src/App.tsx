@@ -2491,13 +2491,24 @@ function McpDebugPage({ serverId }: { serverId: string }) {
   return (
     <div className="mcp-debug-page">
       <header className="mcp-debug-header">
-        <div>
-          <button onClick={() => (window.location.href = "/mcp")}>
-            ← {t("mcp.backToRegistry")}
+        <div className="mcp-debug-identity">
+          <button
+            className="mcp-debug-back"
+            onClick={() => (window.location.href = "/mcp")}
+            aria-label={t("mcp.backToRegistry")}
+          >
+            ←
           </button>
-          <p className="kicker">MCP SERVER / DEBUG WORKBENCH</p>
-          <h1>{server?.name ?? t("mcp.loading")}</h1>
-          <code>{server?.serverUrl || server?.command}</code>
+          <div>
+            <div className="mcp-debug-eyebrow">
+              <p className="kicker">MCP DEBUG WORKBENCH</p>
+              <span>{server?.transport}</span>
+            </div>
+            <div className="mcp-debug-name-line">
+              <h1>{server?.name ?? t("mcp.loading")}</h1>
+              <code>{server?.serverUrl || server?.command}</code>
+            </div>
+          </div>
         </div>
         <div className="mcp-debug-connection">
           <span
@@ -2509,7 +2520,7 @@ function McpDebugPage({ serverId }: { serverId: string }) {
                 ? t("mcp.connected")
                 : t("mcp.notConnected")}
             </b>
-            <small>{server?.transport}</small>
+            <small>{t("mcp.toolCount", { count: tools.length })}</small>
           </div>
           <Button quiet onClick={() => void loadTools(true)} disabled={busy}>
             {busy ? t("mcp.refreshing") : t("mcp.reconnect")}
@@ -2520,7 +2531,7 @@ function McpDebugPage({ serverId }: { serverId: string }) {
       <div className="mcp-debug-workbench">
         <aside className="mcp-debug-tools">
           <div>
-            <span>TOOLS</span>
+            <span>TOOL CATALOG</span>
             <b>{tools.length}</b>
           </div>
           <input
@@ -2548,9 +2559,12 @@ function McpDebugPage({ serverId }: { serverId: string }) {
           {selected ? (
             <>
               <div className="debug-panel-title">
-                <p className="kicker">TOOL DEFINITION</p>
+                <div>
+                  <p className="kicker">TOOL DEFINITION</p>
+                  <span>JSON SCHEMA</span>
+                </div>
                 <h2>{selected.name}</h2>
-                <p>{selected.description}</p>
+                <p>{selected.description || t("mcp.noDescription")}</p>
               </div>
               <div className="schema-label">INPUT SCHEMA</div>
               <pre>{selected.inputSchemaJson}</pre>
@@ -2561,7 +2575,10 @@ function McpDebugPage({ serverId }: { serverId: string }) {
         </main>
         <aside className="mcp-debug-runner">
           <div className="debug-panel-title">
-            <p className="kicker">REQUEST LAB</p>
+            <div>
+              <p className="kicker">REQUEST LAB</p>
+              <span>JSON</span>
+            </div>
             <h2>{t("mcp.arguments")}</h2>
           </div>
           <textarea

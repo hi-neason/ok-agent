@@ -475,13 +475,28 @@ function ModelsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editing),
       });
-      const result = (await response.json()) as {
-        success: boolean;
-        statusCode: number;
-        message: string;
-      };
+      const responseText = await response.text();
+      let result: {
+        success?: boolean;
+        statusCode?: number;
+        message?: string;
+        detail?: string;
+        title?: string;
+      } = {};
+      try {
+        result = responseText ? JSON.parse(responseText) : {};
+      } catch {
+        result = { message: responseText };
+      }
+      const success = response.ok && result.success === true;
+      const message =
+        result.message ||
+        result.detail ||
+        result.title ||
+        `请求失败（HTTP ${response.status}）`;
+      const statusCode = result.statusCode || response.status;
       setTestResult(
-        `${result.success ? "✓" : "✕"} ${result.message}${result.statusCode ? `（HTTP ${result.statusCode}）` : ""}`,
+        `${success ? "✓" : "✕"} ${message}${statusCode ? `（HTTP ${statusCode}）` : ""}`,
       );
     } catch {
       setTestResult("✕ 无法连接后端服务");
@@ -693,6 +708,8 @@ function ModelsPage() {
                 <label className="field">
                   <span>API 密钥（API_KEY）</span>
                   <input
+                    type="password"
+                    autoComplete="new-password"
                     value={editing.apiKey}
                     onChange={(e) =>
                       setEditing({ ...editing, apiKey: e.target.value })

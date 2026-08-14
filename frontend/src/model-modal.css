@@ -1,0 +1,5 @@
+/* The app content is a positioned stacking context; expand the modal across the full viewport. */
+.model-modal-mask {
+  inset: 0 auto 0 -238px;
+  width: 100vw;
+}

@@ -18,6 +18,8 @@ import org.junit.jupiter.api.Test;
 class OpenAiCompatibleModelConnectionTesterTests {
     private HttpServer server;
     private String baseUrl;
+    private final io.agentscope.core.model.transport.HttpTransport transport =
+            io.agentscope.core.model.transport.OkHttpTransport.builder().build();
 
     @BeforeEach
     void startProviderStub() throws IOException {
@@ -57,7 +59,7 @@ class OpenAiCompatibleModelConnectionTesterTests {
         var asset = new ModelAsset(
                 UUID.randomUUID(), "Test model", ModelType.LLM, "Custom", "test-model", baseUrl, "encrypted", true);
 
-        var result = new OpenAiCompatibleModelConnectionTester().test(asset, "test-api-key");
+        var result = new OpenAiCompatibleModelConnectionTester(transport).test(asset, "test-api-key");
 
         assertThat(result.success()).isTrue();
         assertThat(result.statusCode()).isEqualTo(200);
@@ -72,7 +74,7 @@ class OpenAiCompatibleModelConnectionTesterTests {
         var asset = new ModelAsset(
                 UUID.randomUUID(), "Test model", ModelType.LLM, "Custom", "test-model", baseUrl, "encrypted", true);
 
-        var result = new OpenAiCompatibleModelConnectionTester().test(asset, "invalid-api-key");
+        var result = new OpenAiCompatibleModelConnectionTester(transport).test(asset, "invalid-api-key");
 
         assertThat(result.success()).isFalse();
         assertThat(result.statusCode()).isEqualTo(401);

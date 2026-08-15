@@ -14,6 +14,12 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class OpenAiCompatibleModelConnectionTester implements ModelConnectionTester {
+    private final io.agentscope.core.model.transport.HttpTransport httpTransport;
+
+    public OpenAiCompatibleModelConnectionTester(io.agentscope.core.model.transport.HttpTransport httpTransport) {
+        this.httpTransport = httpTransport;
+    }
+
     /**
      * Creates an AgentScope OpenAI-compatible model, sends a minimal prompt, and never returns the
      * provider response content.
@@ -25,13 +31,13 @@ public class OpenAiCompatibleModelConnectionTester implements ModelConnectionTes
         }
 
         try {
-            var model =
-                    OpenAIChatModel.builder()
-                            .apiKey(apiKey)
-                            .baseUrl(asset.getEndpoint())
-                            .modelName(asset.getModelId())
-                            .stream(false)
-                            .build();
+            var model = OpenAIChatModel.builder()
+                    .apiKey(apiKey)
+                    .baseUrl(asset.getEndpoint())
+                    .modelName(asset.getModelId())
+                    .httpTransport(httpTransport)
+                    .stream(false)
+                    .build();
             var prompt = Msg.builder()
                     .role(MsgRole.USER)
                     .content(List.of(TextBlock.builder().text("Reply with OK.").build()))

@@ -3,6 +3,7 @@ package io.okagent.service.agent;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.agentscope.core.model.GenerateOptions;
+import io.agentscope.core.model.transport.HttpTransport;
 import io.agentscope.core.skill.AgentSkill;
 import io.agentscope.core.skill.repository.AgentSkillRepository;
 import io.agentscope.core.state.InMemoryAgentStateStore;
@@ -33,17 +34,20 @@ public class HarnessAgentFactory {
     private final McpServerRepository mcpServers;
     private final SkillAssetRepository skills;
     private final ApiKeyCipher cipher;
+    private final HttpTransport httpTransport;
     private final ObjectMapper json = new ObjectMapper();
 
     public HarnessAgentFactory(
             ModelAssetRepository models,
             McpServerRepository mcpServers,
             SkillAssetRepository skills,
-            ApiKeyCipher cipher) {
+            ApiKeyCipher cipher,
+            HttpTransport httpTransport) {
         this.models = models;
         this.mcpServers = mcpServers;
         this.skills = skills;
         this.cipher = cipher;
+        this.httpTransport = httpTransport;
     }
 
     public HarnessAgent build(AgentAsset draft) {
@@ -99,6 +103,7 @@ public class HarnessAgentFactory {
                             .apiKey(cipher.decrypt(model.getApiKeyCiphertext()))
                             .baseUrl(model.getEndpoint())
                             .modelName(model.getModelId())
+                            .httpTransport(httpTransport)
                             .stream(false)
                             .generateOptions(options)
                             .build();

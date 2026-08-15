@@ -95,7 +95,7 @@ export function AgentRegistryPage({
   }, []);
 
   const openNew = () => {
-    setForm({ name: "", description: "", businessDomain: "GENERAL" });
+    setForm({ name: "", description: "", businessDomain: "" });
     setEditing("new");
     setError("");
   };
@@ -111,7 +111,7 @@ export function AgentRegistryPage({
   };
 
   const save = async () => {
-    if (!form.name.trim() || !form.businessDomain.trim()) {
+    if (!form.name.trim()) {
       setError(t("agents.nameRequired"));
       return;
     }
@@ -122,10 +122,15 @@ export function AgentRegistryPage({
       const id = isNew ? "" : (editing as AgentItem).id;
       const url = isNew ? "/api/v1/agents" : `/api/v1/agents/${id}`;
       const method = isNew ? "POST" : "PUT";
+      const payload = {
+        name: form.name.trim(),
+        description: form.description.trim(),
+        businessDomain: form.businessDomain.trim() || "GENERAL",
+      };
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error();
       await load();
@@ -223,29 +228,37 @@ export function AgentRegistryPage({
           title={editing === "new" ? t("agents.create") : t("agents.edit")}
           onClose={() => setEditing(null)}
         >
+          <p className="modal-intro">{t("agents.createIntro")}</p>
           <div className="field-grid">
             <label className="field wide">
-              <span>{t("agents.name")}</span>
+              <span>{t("agents.nameLabel")}</span>
               <input
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder={t("agents.namePlaceholder")}
                 autoFocus
               />
+              <small>{t("agents.nameHint")}</small>
             </label>
             <label className="field wide">
-              <span>{t("agents.description")}</span>
-              <input
+              <span>{t("agents.descriptionLabel")}</span>
+              <textarea
+                className="cfg-textarea"
+                rows={3}
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
+                placeholder={t("agents.descriptionPlaceholder")}
               />
+              <small>{t("agents.descriptionHint")}</small>
             </label>
             <label className="field wide">
-              <span>{t("agents.domain")}</span>
+              <span>{t("agents.domainLabel")}</span>
               <input
                 value={form.businessDomain}
                 onChange={(e) => setForm({ ...form, businessDomain: e.target.value })}
-                placeholder="GENERAL"
+                placeholder={t("agents.domainPlaceholder")}
               />
+              <small>{t("agents.domainHint")}</small>
             </label>
           </div>
           {error && <div className="skill-error">× {error}</div>}

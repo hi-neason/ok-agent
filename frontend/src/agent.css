@@ -1,5 +1,25 @@
 /* Agent registry + config workbench */
 
+.modal-intro {
+  margin: 0 0 18px;
+  padding: 11px 13px;
+  background: #f0f7ff;
+  border: 1px solid #d3e6fb;
+  border-radius: 9px;
+  color: #4a7198;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.field textarea.cfg-textarea {
+  min-height: 74px;
+  padding: 9px 10px;
+  font: inherit;
+  font-size: 11px;
+  resize: vertical;
+}
+
+
 .agent-registry {
   display: flex;
   flex-direction: column;

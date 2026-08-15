@@ -1,0 +1,23 @@
+CREATE TABLE agent_asset (
+  id BINARY(16) NOT NULL,
+  agent_key VARCHAR(128) NOT NULL,
+  name VARCHAR(128) NOT NULL,
+  description VARCHAR(1024) NOT NULL DEFAULT '',
+  business_domain VARCHAR(64) NOT NULL DEFAULT 'GENERAL',
+  system_prompt MEDIUMTEXT NOT NULL,
+  welcome_message VARCHAR(2048) NOT NULL DEFAULT '',
+  model_asset_id BINARY(16) NULL,
+  temperature DOUBLE NULL,
+  top_p DOUBLE NULL,
+  top_k INT NULL,
+  max_tokens INT NULL,
+  mcp_server_ids_json TEXT NOT NULL,
+  skill_ids_json TEXT NOT NULL,
+  enabled BOOLEAN NOT NULL DEFAULT TRUE,
+  version BIGINT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP(6) NOT NULL,
+  updated_at TIMESTAMP(6) NOT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_agent_key (agent_key),
+  KEY idx_agent_model (model_asset_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

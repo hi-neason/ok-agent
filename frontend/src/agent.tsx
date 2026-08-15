@@ -1,0 +1,663 @@
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
+
+export type AgentItem = {
+  id: string;
+  agentKey: string;
+  name: string;
+  description: string;
+  businessDomain: string;
+  systemPrompt: string;
+  welcomeMessage: string;
+  modelAssetId: string | null;
+  temperature: number | null;
+  topP: number | null;
+  topK: number | null;
+  maxTokens: number | null;
+  mcpServerIds: string[];
+  skillIds: string[];
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type Option = { id: string; name: string; sub?: string };
+
+const isJsonObject = (v: unknown): v is Record<string, unknown> =>
+  typeof v === "object" && v !== null && !Array.isArray(v);
+
+async function jsonOrThrow(res: Response) {
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(text || `HTTP ${res.status}`);
+  }
+  return res.status === 204 ? undefined : res.json();
+}
+
+function Modal({
+  title,
+  onClose,
+  children,
+}: {
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  return createPortal(
+    <div className="model-modal-mask" onMouseDown={onClose}>
+      <div
+        className="form-surface model-editor"
+        role="dialog"
+        aria-modal="true"
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        <div className="form-title">
+          <div>
+            <p className="kicker">AGENT</p>
+            <h2>{title}</h2>
+          </div>
+          <button className="link-button" onClick={onClose}>
+            ×
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+export function AgentRegistryPage({
+  onConfigure,
+}: {
+  onConfigure: (id: string) => void;
+}) {
+  const { t } = useTranslation();
+  const [agents, setAgents] = useState<AgentItem[]>([]);
+  const [error, setError] = useState("");
+  const [editing, setEditing] = useState<AgentItem | "new" | null>(null);
+  const [form, setForm] = useState({ name: "", description: "", businessDomain: "" });
+  const [saving, setSaving] = useState(false);
+
+  const load = async () => {
+    try {
+      const res = await fetch("/api/v1/agents");
+      if (!res.ok) throw new Error();
+      setAgents(await res.json());
+    } catch {
+      setError(t("agents.loadFailed"));
+    }
+  };
+
+  useEffect(() => {
+    void load();
+  }, []);
+
+  const openNew = () => {
+    setForm({ name: "", description: "", businessDomain: "GENERAL" });
+    setEditing("new");
+    setError("");
+  };
+
+  const openEdit = (a: AgentItem) => {
+    setForm({
+      name: a.name,
+      description: a.description,
+      businessDomain: a.businessDomain,
+    });
+    setEditing(a);
+    setError("");
+  };
+
+  const save = async () => {
+    if (!form.name.trim() || !form.businessDomain.trim()) {
+      setError(t("agents.nameRequired"));
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      const isNew = editing === "new";
+      const id = isNew ? "" : (editing as AgentItem).id;
+      const url = isNew ? "/api/v1/agents" : `/api/v1/agents/${id}`;
+      const method = isNew ? "POST" : "PUT";
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (!res.ok) throw new Error();
+      await load();
+      setEditing(null);
+    } catch {
+      setError(t("agents.saveFailed"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const remove = async (a: AgentItem) => {
+    if (!window.confirm(t("agents.deleteConfirm", { name: a.name }))) return;
+    const res = await fetch(`/api/v1/agents/${a.id}`, { method: "DELETE" });
+    if (res.ok) await load();
+  };
+
+  return (
+    <>
+      <header className="page-header">
+        <div>
+          <p className="kicker">HARNESS AGENT / REGISTRY</p>
+          <h1>{t("agents.title")}</h1>
+          <p className="page-description">{t("agents.description")}</p>
+        </div>
+        <button className="ui-button" onClick={openNew}>
+          ＋ {t("agents.create")}
+        </button>
+      </header>
+
+      {error && <div className="skill-error">× {error}</div>}
+
+      <section className="run-table">
+        <div className="table-tools">
+          <div className="search-mini">◌ {agents.length} AGENTS</div>
+        </div>
+        <div
+          className="table-head"
+          style={{ gridTemplateColumns: "1.8fr 1fr 1fr 110px auto" }}
+        >
+          <span>{t("agents.agent")}</span>
+          <span>{t("agents.domain")}</span>
+          <span>{t("agents.model")}</span>
+          <span>{t("agents.updated")}</span>
+          <span />
+        </div>
+        {agents.map((a) => (
+          <div
+            className="table-row"
+            key={a.id}
+            style={{ gridTemplateColumns: "1.8fr 1fr 1fr 110px auto" }}
+          >
+            <span>
+              <b>{a.name}</b>
+              <small>
+                {a.agentKey} · {a.description || "—"}
+              </small>
+            </span>
+            <span style={{ color: "#5b7aa6" }}>#{a.businessDomain}</span>
+            <span>
+              <small>{a.modelAssetId ? "configured" : "—"}</small>
+            </span>
+            <span>
+              <small>{new Date(a.updatedAt).toLocaleString()}</small>
+            </span>
+            <span style={{ display: "flex", gap: 8, whiteSpace: "nowrap" }}>
+              <button
+                className="link-button"
+                onClick={() => onConfigure(a.id)}
+                style={{ fontSize: 10 }}
+              >
+                {t("agents.configure")}
+              </button>
+              <button
+                className="link-button"
+                onClick={() => openEdit(a)}
+                style={{ fontSize: 10 }}
+              >
+                {t("agents.edit")}
+              </button>
+              <button
+                className="link-button danger-link"
+                onClick={() => void remove(a)}
+                style={{ fontSize: 10 }}
+              >
+                {t("agents.delete")}
+              </button>
+            </span>
+          </div>
+        ))}
+      </section>
+
+      {editing && (
+        <Modal
+          title={editing === "new" ? t("agents.create") : t("agents.edit")}
+          onClose={() => setEditing(null)}
+        >
+          <div className="field-grid">
+            <label className="field wide">
+              <span>{t("agents.name")}</span>
+              <input
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                autoFocus
+              />
+            </label>
+            <label className="field wide">
+              <span>{t("agents.description")}</span>
+              <input
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+              />
+            </label>
+            <label className="field wide">
+              <span>{t("agents.domain")}</span>
+              <input
+                value={form.businessDomain}
+                onChange={(e) => setForm({ ...form, businessDomain: e.target.value })}
+                placeholder="GENERAL"
+              />
+            </label>
+          </div>
+          {error && <div className="skill-error">× {error}</div>}
+          <div className="sticky-actions">
+            <button className="ui-button quiet" onClick={() => setEditing(null)}>
+              {t("agents.cancel")}
+            </button>
+            <button className="ui-button" onClick={save} disabled={saving}>
+              {saving ? t("agents.saving") : t("agents.save")}
+            </button>
+          </div>
+        </Modal>
+      )}
+    </>
+  );
+}
+
+type ChatMessage = { role: "user" | "assistant"; content: string; error?: boolean };
+
+export function AgentConfigPage({ agentId, onBack }: { agentId: string; onBack: () => void }) {
+  const { t } = useTranslation();
+  const [agent, setAgent] = useState<AgentItem | null>(null);
+  const [models, setModels] = useState<Option[]>([]);
+  const [mcpServers, setMcpServers] = useState<Option[]>([]);
+  const [skills, setSkills] = useState<Option[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
+
+  // editable draft
+  const [systemPrompt, setSystemPrompt] = useState("");
+  const [welcomeMessage, setWelcomeMessage] = useState("");
+  const [modelAssetId, setModelAssetId] = useState("");
+  const [temperature, setTemperature] = useState(0.7);
+  const [topP, setTopP] = useState(1);
+  const [maxTokens, setMaxTokens] = useState(2048);
+  const [boundMcp, setBoundMcp] = useState<Set<string>>(new Set());
+  const [boundSkills, setBoundSkills] = useState<Set<string>>(new Set());
+
+  // chat
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState("");
+  const [sending, setSending] = useState(false);
+  const sessionIdRef = useRef<string>("");
+  const threadRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    void (async () => {
+      setLoading(true);
+      try {
+        const [agentRes, modelRes, mcpRes, skillRes] = await Promise.all([
+          fetch(`/api/v1/agents/${agentId}`),
+          fetch("/api/v1/models"),
+          fetch("/api/v1/mcp-servers"),
+          fetch("/api/v1/skills"),
+        ]);
+        if (!agentRes.ok) throw new Error("agent not found");
+        const a: AgentItem = await agentRes.json();
+        setAgent(a);
+        setSystemPrompt(a.systemPrompt || "");
+        setWelcomeMessage(a.welcomeMessage || "");
+        setModelAssetId(a.modelAssetId || "");
+        setTemperature(a.temperature ?? 0.7);
+        setTopP(a.topP ?? 1);
+        setMaxTokens(a.maxTokens ?? 2048);
+        setBoundMcp(new Set(a.mcpServerIds));
+        setBoundSkills(new Set(a.skillIds));
+
+        const modelList: Array<Record<string, unknown>> = modelRes.ok ? await modelRes.json() : [];
+        setModels(
+          modelList
+            .filter((m) => m.enabled !== false)
+            .map((m) => ({
+              id: String(m.id),
+              name: String(m.name),
+              sub: `${m.provider} / ${m.modelId}`,
+            })),
+        );
+        const mcpList: Array<Record<string, unknown>> = mcpRes.ok ? await mcpRes.json() : [];
+        setMcpServers(
+          mcpList
+            .filter((m) => m.enabled !== false)
+            .map((m) => ({ id: String(m.id), name: String(m.name), sub: String(m.serverKey) })),
+        );
+        const skillList: Array<Record<string, unknown>> = skillRes.ok ? await skillRes.json() : [];
+        setSkills(
+          skillList
+            .filter((s) => s.enabled !== false)
+            .map((s) => ({
+              id: String(s.id),
+              name: String(s.name),
+              sub: String(s.skillKey),
+            })),
+        );
+
+        if (a.welcomeMessage) {
+          setMessages([{ role: "assistant", content: a.welcomeMessage }]);
+        }
+      } catch {
+        setNotice({ ok: false, text: t("agents.loadFailed") });
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [agentId, t]);
+
+  useEffect(() => {
+    threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight, behavior: "smooth" });
+  }, [messages, sending]);
+
+  const toggle = (set: (s: Set<string>) => void, current: Set<string>, id: string) => {
+    const next = new Set(current);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    set(next);
+  };
+
+  const save = async () => {
+    setSaving(true);
+    setNotice(null);
+    try {
+      const payload = {
+        systemPrompt,
+        welcomeMessage,
+        modelAssetId: modelAssetId || null,
+        temperature,
+        topP,
+        topK: null,
+        maxTokens,
+        mcpServerIds: [...boundMcp],
+        skillIds: [...boundSkills],
+      };
+      const res = await fetch(`/api/v1/agents/${agentId}/configuration`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error();
+      setAgent(await res.json());
+      setNotice({ ok: true, text: t("agents.configSaved") });
+    } catch {
+      setNotice({ ok: false, text: t("agents.saveFailed") });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const send = async () => {
+    const text = input.trim();
+    if (!text || sending) return;
+    setInput("");
+    const history = [...messages, { role: "user" as const, content: text }];
+    setMessages(history);
+    setSending(true);
+    try {
+      const res = await fetch(`/api/v1/agents/${agentId}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text, sessionId: sessionIdRef.current || null }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !isJsonObject(data)) {
+        const msg =
+          (isJsonObject(data) && typeof data.detail === "string" && data.detail) ||
+          (isJsonObject(data) && typeof data.message === "string" && data.message) ||
+          t("agents.chatFailed");
+        setMessages([...history, { role: "assistant", content: msg, error: true }]);
+        return;
+      }
+      if (data.sessionId) sessionIdRef.current = String(data.sessionId);
+      setMessages([
+        ...history,
+        { role: "assistant", content: String(data.reply ?? "") },
+      ]);
+    } catch {
+      setMessages([
+        ...history,
+        { role: "assistant", content: t("agents.chatFailed"), error: true },
+      ]);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  if (loading) return <div className="page-content">{t("agents.loading")}</div>;
+  if (!agent) return <div className="page-content">{t("agents.notFound")}</div>;
+
+  return (
+    <div className="agent-config-layout">
+      {/* LEFT: development panel */}
+      <section className="agent-dev-panel">
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <button className="link-button" onClick={onBack} style={{ fontSize: 12 }}>
+            ← {t("agents.back")}
+          </button>
+          <h2 style={{ margin: 0, fontSize: 18 }}>{agent.name}</h2>
+          <code style={{ fontSize: 11, color: "#7a9abc" }}>{agent.agentKey}</code>
+        </div>
+
+        <div className="config-section">
+          <div className="section-head">
+            <b>{t("agents.systemPrompt")}</b>
+            <small>{t("agents.systemPromptHint")}</small>
+          </div>
+          <textarea
+            className="cfg-textarea tall"
+            value={systemPrompt}
+            onChange={(e) => setSystemPrompt(e.target.value)}
+            placeholder={t("agents.systemPromptPlaceholder")}
+          />
+        </div>
+
+        <div className="config-section">
+          <div className="section-head">
+            <b>{t("agents.welcomeMessage")}</b>
+            <small>{t("agents.welcomeHint")}</small>
+          </div>
+          <textarea
+            className="cfg-textarea"
+            value={welcomeMessage}
+            onChange={(e) => setWelcomeMessage(e.target.value)}
+            placeholder={t("agents.welcomePlaceholder")}
+          />
+        </div>
+
+        <div className="config-section">
+          <div className="section-head">
+            <b>{t("agents.model")}</b>
+          </div>
+          <select
+            className="cfg-select"
+            value={modelAssetId}
+            onChange={(e) => setModelAssetId(e.target.value)}
+          >
+            <option value="">{t("agents.selectModel")}</option>
+            {models.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+                {m.sub ? ` — ${m.sub}` : ""}
+              </option>
+            ))}
+          </select>
+          <div className="param-grid">
+            <label className="param-row">
+              <span>
+                {t("agents.temperature")} <em>{temperature.toFixed(2)}</em>
+              </span>
+              <input
+                type="range"
+                min={0}
+                max={2}
+                step={0.05}
+                value={temperature}
+                onChange={(e) => setTemperature(Number(e.target.value))}
+              />
+            </label>
+            <label className="param-row">
+              <span>
+                {t("agents.topP")} <em>{topP.toFixed(2)}</em>
+              </span>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={topP}
+                onChange={(e) => setTopP(Number(e.target.value))}
+              />
+            </label>
+            <label className="param-row wide">
+              <span>
+                {t("agents.maxTokens")} <em>{maxTokens}</em>
+              </span>
+              <input
+                type="range"
+                min={256}
+                max={8192}
+                step={128}
+                value={maxTokens}
+                onChange={(e) => setMaxTokens(Number(e.target.value))}
+              />
+            </label>
+          </div>
+        </div>
+
+        <div className="config-section">
+          <div className="section-head">
+            <b>{t("agents.mcpServers")}</b>
+            <small>{t("agents.mcpHint")}</small>
+          </div>
+          <div className="binding-list">
+            {mcpServers.length === 0 && (
+              <small style={{ padding: 8 }}>{t("agents.noMcp")}</small>
+            )}
+            {mcpServers.map((m) => (
+              <label key={m.id} className="binding-item">
+                <input
+                  type="checkbox"
+                  checked={boundMcp.has(m.id)}
+                  onChange={() => toggle(setBoundMcp, boundMcp, m.id)}
+                />
+                <span className="meta">
+                  <b>{m.name}</b>
+                  {m.sub && <small>{m.sub}</small>}
+                </span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div className="config-section">
+          <div className="section-head">
+            <b>{t("agents.skills")}</b>
+            <small>{t("agents.skillsHint")}</small>
+          </div>
+          <div className="binding-list">
+            {skills.length === 0 && (
+              <small style={{ padding: 8 }}>{t("agents.noSkills")}</small>
+            )}
+            {skills.map((s) => (
+              <label key={s.id} className="binding-item">
+                <input
+                  type="checkbox"
+                  checked={boundSkills.has(s.id)}
+                  onChange={() => toggle(setBoundSkills, boundSkills, s.id)}
+                />
+                <span className="meta">
+                  <b>{s.name}</b>
+                  {s.sub && <small>{s.sub}</small>}
+                </span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {notice && (
+          <div
+            className={notice.ok ? "connection-result connection-result--success" : "skill-error"}
+          >
+            {notice.ok ? "✓" : "×"} {notice.text}
+          </div>
+        )}
+
+        <div className="config-save-bar">
+          <button className="ui-button" onClick={save} disabled={saving}>
+            {saving ? t("agents.saving") : t("agents.saveConfig")}
+          </button>
+        </div>
+      </section>
+
+      {/* RIGHT: chat test panel */}
+      <aside className="agent-chat-panel">
+        <header>
+          <b>{t("agents.debugChat")}</b>
+          <button
+            className="link-button"
+            onClick={() => {
+              if (sessionIdRef.current) {
+                fetch(`/api/v1/agents/sessions/${sessionIdRef.current}`, {
+                  method: "DELETE",
+                }).catch(() => undefined);
+                sessionIdRef.current = "";
+              }
+              setMessages(
+                welcomeMessage
+                  ? [{ role: "assistant", content: welcomeMessage }]
+                  : [],
+              );
+            }}
+            style={{ fontSize: 11 }}
+          >
+            ↻ {t("agents.newSession")}
+          </button>
+        </header>
+        <div className="chat-thread" ref={threadRef}>
+          {messages.length === 0 && (
+            <div className="chat-empty">
+              <i>◈</i>
+              {t("agents.chatEmpty")}
+            </div>
+          )}
+          {messages.map((m, i) => (
+            <div
+              key={i}
+              className={`chat-bubble ${m.error ? "error" : m.role}`}
+            >
+              {m.content}
+            </div>
+          ))}
+          {sending && <div className="chat-bubble assistant">···</div>}
+        </div>
+        <div className="chat-composer">
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                void send();
+              }
+            }}
+            placeholder={t("agents.typeMessage")}
+          />
+          <button
+            className="ui-button send"
+            onClick={send}
+            disabled={sending || !input.trim()}
+          >
+            {t("agents.send")}
+          </button>
+        </div>
+      </aside>
+    </div>
+  );
+}

@@ -1,6 +1,8 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
+import { AgentRegistryPage, AgentConfigPage } from "./agent";
+import "./agent.css";
 
 type Page =
   | "agents"
@@ -182,140 +184,6 @@ function PageHeader({
       </div>
       {action}
     </header>
-  );
-}
-
-function AgentPage({ go }: { go: (page: Page) => void }) {
-  const [selected, setSelected] = useState("customer-service");
-  const agents = [
-    ["customer-service", "客户服务中枢", "PROD", "24"],
-    ["knowledge-router", "知识路由器", "CANARY", "8"],
-    ["finance-analyst", "财务分析师", "DRAFT", "—"],
-  ];
-  return (
-    <>
-      <PageHeader
-        kicker="HARNESS AGENT / REGISTRY"
-        title="智能体编排台"
-        description="围绕 HarnessAgent 定义可发布的运行规格，并将配置固定为不可变快照。"
-        action={<Button>＋ 创建智能体</Button>}
-      />
-      <div className="agent-workbench">
-        <aside className="sub-rail">
-          <div className="search-mini">⌕ 搜索智能体</div>
-          <p>
-            AGENT REGISTRY <b>03</b>
-          </p>
-          {agents.map(([id, name, state, runs]) => (
-            <button
-              key={id}
-              onClick={() => setSelected(id)}
-              className={
-                selected === id ? "agent-select selected" : "agent-select"
-              }
-            >
-              <span className="agent-icon">◈</span>
-              <span>
-                <b>{name}</b>
-                <small>{id}</small>
-              </span>
-              <em className={state.toLowerCase()}>{state}</em>
-            </button>
-          ))}
-          <button className="add-list">＋ 新建 Draft</button>
-        </aside>
-        <section className="agent-detail">
-          <div className="detail-title">
-            <div className="large-agent-icon">◈</div>
-            <div>
-              <p className="kicker">AGENT / {selected.toUpperCase()}</p>
-              <h2>
-                客户服务中枢 <span className="tag blue">PROD</span>
-              </h2>
-              <small>customer-service · revision 18 · snapshot 8f1a09c</small>
-            </div>
-            <div className="detail-actions">
-              <Button quiet>◷ 历史版本</Button>
-              <Button>发布变更 →</Button>
-            </div>
-          </div>
-          <div className="agent-tabs">
-            <button className="tab active">概览</button>
-            <button className="tab" onClick={() => go("workspace")}>
-              工作空间
-            </button>
-            <button className="tab" onClick={() => go("mcp")}>
-              工具
-            </button>
-            <button className="tab" onClick={() => go("memory")}>
-              记忆
-            </button>
-            <button className="tab" onClick={() => go("observe")}>
-              运行记录
-            </button>
-          </div>
-          <div className="agent-overview">
-            <article className="harness-card blueprint">
-              <p className="kicker">HARNESS SPEC</p>
-              <div className="spec-flow">
-                <span>Prompt</span>
-                <i>→</i>
-                <span>Model</span>
-                <i>→</i>
-                <span>Tools</span>
-                <i>→</i>
-                <span>Memory</span>
-              </div>
-              <div className="spec-lines">
-                <p>
-                  <b>modelPolicy</b> <code>qwen-production@v3</code>
-                </p>
-                <p>
-                  <b>toolPolicy</b> <code>safe-crm@v2</code>
-                </p>
-                <p>
-                  <b>memoryPolicy</b> <code>user-profile@v4</code>
-                </p>
-                <p>
-                  <b>environment</b> <code>prod-cn-sh@v2</code>
-                </p>
-              </div>
-              <button onClick={() => go("release")} className="link-button">
-                查看 ReleaseSnapshot →
-              </button>
-            </article>
-            <article className="harness-card">
-              <p className="kicker">RUNTIME HEALTH</p>
-              <div className="health-score">
-                99.98<small>%</small>
-              </div>
-              <div className="health-bars">
-                <span>
-                  <i style={{ width: "96%" }} />
-                  模型
-                </span>
-                <span>
-                  <i style={{ width: "100%" }} />
-                  工具
-                </span>
-                <span>
-                  <i style={{ width: "83%" }} />
-                  上下文
-                </span>
-              </div>
-              <small>当前 24 个活跃会话 · P95 1.84s</small>
-            </article>
-            <article className="harness-card activity">
-              <p className="kicker">LATEST CHANGE</p>
-              <b>memory-policy@v4</b>
-              <p>更新每日记忆整合频率，从 30 分钟调整为 2 小时。</p>
-              <small>由 NEASON · 14:32:06</small>
-              <button className="link-button">查看差异 →</button>
-            </article>
-          </div>
-        </section>
-      </div>
-    </>
   );
 }
 
@@ -3226,18 +3094,31 @@ function ObservePage() {
 
 export default function App() {
   const { t, i18n } = useTranslation();
+  const agentConfigMatch = () =>
+    window.location.pathname.match(/^\/agents\/([^/]+)\/config$/);
   const pageForPath = (path: string): Page =>
-    path.startsWith("/mcp/") ? "mcp" : (pathPages[path] ?? "agents");
+    path.startsWith("/mcp/") || path.startsWith("/agents/")
+      ? path.startsWith("/mcp/")
+        ? "mcp"
+        : "agents"
+      : (pathPages[path] ?? "agents");
   const [page, setPage] = useState<Page>(() =>
     pageForPath(window.location.pathname),
+  );
+  const [agentConfigId, setAgentConfigId] = useState<string | null>(() =>
+    agentConfigMatch()?.[1] ?? null,
   );
   useEffect(() => {
     if (
       !pathPages[window.location.pathname] &&
-      !window.location.pathname.startsWith("/mcp/")
+      !window.location.pathname.startsWith("/mcp/") &&
+      !window.location.pathname.startsWith("/agents/")
     )
       window.history.replaceState({}, "", pagePaths.agents);
-    const syncPage = () => setPage(pageForPath(window.location.pathname));
+    const syncPage = () => {
+      setPage(pageForPath(window.location.pathname));
+      setAgentConfigId(agentConfigMatch()?.[1] ?? null);
+    };
     window.addEventListener("popstate", syncPage);
     return () => window.removeEventListener("popstate", syncPage);
   }, []);
@@ -3247,9 +3128,20 @@ export default function App() {
   const navigate = (next: Page) => {
     window.history.pushState({}, "", pagePaths[next]);
     setPage(next);
+    setAgentConfigId(null);
   };
+  const openAgentConfig = (id: string) => {
+    window.history.pushState({}, "", `/agents/${id}/config`);
+    setPage("agents");
+    setAgentConfigId(id);
+  };
+  const backToAgents = () => navigate("agents");
   const content = {
-    agents: <AgentPage go={navigate} />,
+    agents: agentConfigId ? (
+      <AgentConfigPage agentId={agentConfigId} onBack={backToAgents} />
+    ) : (
+      <AgentRegistryPage onConfigure={openAgentConfig} />
+    ),
     models: <ModelsPage />,
     skills: <SkillsPage />,
     mcp: <McpPage />,

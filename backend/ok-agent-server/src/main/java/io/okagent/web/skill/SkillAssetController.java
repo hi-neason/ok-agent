@@ -26,76 +26,74 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/api/v1/skills")
 public class SkillAssetController {
-  private final SkillAssetService service;
+    private final SkillAssetService service;
 
-  public SkillAssetController(SkillAssetService service) {
-    this.service = service;
-  }
+    public SkillAssetController(SkillAssetService service) {
+        this.service = service;
+    }
 
-  /** Returns all reusable skill assets in the current management scope. */
-  @GetMapping
-  public List<SkillAssetResponse> list() {
-    return service.list();
-  }
+    /** Returns all reusable skill assets in the current management scope. */
+    @GetMapping
+    public List<SkillAssetResponse> list() {
+        return service.list();
+    }
 
-  /** Imports one complete Skill ZIP archive and parses metadata from its root SKILL.md. */
-  @PostMapping(path = "/import", consumes = "multipart/form-data")
-  @ResponseStatus(HttpStatus.CREATED)
-  public SkillAssetResponse importArchive(
-      @RequestPart("file") MultipartFile file,
-      @RequestParam(defaultValue = "") String name,
-      @RequestParam(defaultValue = "") String description,
-      @RequestParam String businessDomain,
-      @RequestParam(defaultValue = "false") boolean overwrite)
-      throws IOException {
-    return service.importArchive(
-        file.getOriginalFilename(), file.getBytes(), name, description, businessDomain, overwrite);
-  }
+    /** Imports one complete Skill ZIP archive and parses metadata from its root SKILL.md. */
+    @PostMapping(path = "/import", consumes = "multipart/form-data")
+    @ResponseStatus(HttpStatus.CREATED)
+    public SkillAssetResponse importArchive(
+            @RequestPart("file") MultipartFile file,
+            @RequestParam(defaultValue = "") String name,
+            @RequestParam(defaultValue = "") String description,
+            @RequestParam String businessDomain,
+            @RequestParam(defaultValue = "false") boolean overwrite)
+            throws IOException {
+        return service.importArchive(
+                file.getOriginalFilename(), file.getBytes(), name, description, businessDomain, overwrite);
+    }
 
-  /** Updates only the editable name, description, and business domain of an imported Skill. */
-  @PutMapping("/{id}/metadata")
-  public SkillAssetResponse updateMetadata(
-      @PathVariable UUID id, @Valid @RequestBody SkillMetadataRequest request) {
-    return service.updateMetadata(id, request);
-  }
+    /** Updates only the editable name, description, and business domain of an imported Skill. */
+    @PutMapping("/{id}/metadata")
+    public SkillAssetResponse updateMetadata(@PathVariable UUID id, @Valid @RequestBody SkillMetadataRequest request) {
+        return service.updateMetadata(id, request);
+    }
 
-  /** Lists the complete file manifest of an imported Skill for directory-tree rendering. */
-  @GetMapping("/{id}/files")
-  public List<SkillFileResponse> listFiles(@PathVariable UUID id) {
-    return service.listFiles(id);
-  }
+    /** Lists the complete file manifest of an imported Skill for directory-tree rendering. */
+    @GetMapping("/{id}/files")
+    public List<SkillFileResponse> listFiles(@PathVariable UUID id) {
+        return service.listFiles(id);
+    }
 
-  /** Returns one Skill file for text preview without exposing unrelated archive content. */
-  @GetMapping("/{id}/file")
-  public SkillFileContentResponse getFile(@PathVariable UUID id, @RequestParam String path) {
-    return service.getFile(id, path);
-  }
+    /** Returns one Skill file for text preview without exposing unrelated archive content. */
+    @GetMapping("/{id}/file")
+    public SkillFileContentResponse getFile(@PathVariable UUID id, @RequestParam String path) {
+        return service.getFile(id, path);
+    }
 
-  /** Saves one UTF-8 Skill text file and synchronizes SKILL.md metadata when applicable. */
-  @PutMapping("/{id}/file")
-  public SkillFileContentResponse updateFile(
-      @PathVariable UUID id, @Valid @RequestBody SkillFileUpdateRequest request) {
-    return service.updateFile(id, request);
-  }
+    /** Saves one UTF-8 Skill text file and synchronizes SKILL.md metadata when applicable. */
+    @PutMapping("/{id}/file")
+    public SkillFileContentResponse updateFile(
+            @PathVariable UUID id, @Valid @RequestBody SkillFileUpdateRequest request) {
+        return service.updateFile(id, request);
+    }
 
-  /** Enables or disables a skill asset for new Agent configuration references. */
-  @PatchMapping("/{id}/enabled")
-  public SkillAssetResponse enabled(@PathVariable UUID id, @RequestParam boolean value) {
-    return service.enabled(id, value);
-  }
+    /** Enables or disables a skill asset for new Agent configuration references. */
+    @PatchMapping("/{id}/enabled")
+    public SkillAssetResponse enabled(@PathVariable UUID id, @RequestParam boolean value) {
+        return service.enabled(id, value);
+    }
 
-  /** Deletes a skill asset that is no longer managed by the platform. */
-  @DeleteMapping("/{id}")
-  @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void delete(@PathVariable UUID id) {
-    service.delete(id);
-  }
+    /** Deletes a skill asset that is no longer managed by the platform. */
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable UUID id) {
+        service.delete(id);
+    }
 
-  /** Returns a safe, actionable validation response for a rejected Skill archive. */
-  @ExceptionHandler(SkillArchiveValidationException.class)
-  public ResponseEntity<SkillImportErrorResponse> handleArchiveValidation(
-      SkillArchiveValidationException exception) {
-    return ResponseEntity.badRequest()
-        .body(new SkillImportErrorResponse(exception.getCode(), exception.getMessage()));
-  }
+    /** Returns a safe, actionable validation response for a rejected Skill archive. */
+    @ExceptionHandler(SkillArchiveValidationException.class)
+    public ResponseEntity<SkillImportErrorResponse> handleArchiveValidation(SkillArchiveValidationException exception) {
+        return ResponseEntity.badRequest()
+                .body(new SkillImportErrorResponse(exception.getCode(), exception.getMessage()));
+    }
 }

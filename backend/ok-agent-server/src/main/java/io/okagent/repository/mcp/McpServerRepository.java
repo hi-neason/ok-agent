@@ -5,5 +5,5 @@ import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface McpServerRepository extends JpaRepository<McpServer, UUID> {
-  boolean existsByServerKey(String serverKey);
+    boolean existsByServerKey(String serverKey);
 }

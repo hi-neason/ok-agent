@@ -16,32 +16,30 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class OpenAiCompatibleModelConnectionTesterTests {
-  private HttpServer server;
-  private String baseUrl;
+    private HttpServer server;
+    private String baseUrl;
 
-  @BeforeEach
-  void startProviderStub() throws IOException {
-    server = HttpServer.create(new InetSocketAddress(0), 0);
-    baseUrl = "http://127.0.0.1:" + server.getAddress().getPort() + "/v1";
-    server.start();
-  }
+    @BeforeEach
+    void startProviderStub() throws IOException {
+        server = HttpServer.create(new InetSocketAddress(0), 0);
+        baseUrl = "http://127.0.0.1:" + server.getAddress().getPort() + "/v1";
+        server.start();
+    }
 
-  @AfterEach
-  void stopProviderStub() {
-    server.stop(0);
-  }
+    @AfterEach
+    void stopProviderStub() {
+        server.stop(0);
+    }
 
-  @Test
-  void shouldTestConnectionThroughAgentScopeOpenAiModel() {
-    var authorization = new AtomicReference<String>();
-    server.createContext(
-        "/v1/chat/completions",
-        exchange -> {
-          authorization.set(exchange.getRequestHeaders().getFirst("Authorization"));
-          respond(
-              exchange,
-              200,
-              """
+    @Test
+    void shouldTestConnectionThroughAgentScopeOpenAiModel() {
+        var authorization = new AtomicReference<String>();
+        server.createContext("/v1/chat/completions", exchange -> {
+            authorization.set(exchange.getRequestHeaders().getFirst("Authorization"));
+            respond(
+                    exchange,
+                    200,
+                    """
               {
                 "id": "chatcmpl-test",
                 "object": "chat.completion",
@@ -56,53 +54,37 @@ class OpenAiCompatibleModelConnectionTesterTests {
               }
               """);
         });
-    var asset =
-        new ModelAsset(
-            UUID.randomUUID(),
-            "Test model",
-            ModelType.LLM,
-            "Custom",
-            "test-model",
-            baseUrl,
-            "encrypted",
-            true);
+        var asset = new ModelAsset(
+                UUID.randomUUID(), "Test model", ModelType.LLM, "Custom", "test-model", baseUrl, "encrypted", true);
 
-    var result = new OpenAiCompatibleModelConnectionTester().test(asset, "test-api-key");
+        var result = new OpenAiCompatibleModelConnectionTester().test(asset, "test-api-key");
 
-    assertThat(result.success()).isTrue();
-    assertThat(result.statusCode()).isEqualTo(200);
-    assertThat(authorization.get()).isEqualTo("Bearer test-api-key");
-  }
+        assertThat(result.success()).isTrue();
+        assertThat(result.statusCode()).isEqualTo(200);
+        assertThat(authorization.get()).isEqualTo("Bearer test-api-key");
+    }
 
-  @Test
-  void shouldExplainAuthenticationFailureWithoutExposingProviderResponse() {
-    server.createContext(
-        "/v1/chat/completions",
-        exchange -> respond(exchange, 401, "{\"error\":{\"message\":\"secret detail\"}}"));
-    var asset =
-        new ModelAsset(
-            UUID.randomUUID(),
-            "Test model",
-            ModelType.LLM,
-            "Custom",
-            "test-model",
-            baseUrl,
-            "encrypted",
-            true);
+    @Test
+    void shouldExplainAuthenticationFailureWithoutExposingProviderResponse() {
+        server.createContext(
+                "/v1/chat/completions",
+                exchange -> respond(exchange, 401, "{\"error\":{\"message\":\"secret detail\"}}"));
+        var asset = new ModelAsset(
+                UUID.randomUUID(), "Test model", ModelType.LLM, "Custom", "test-model", baseUrl, "encrypted", true);
 
-    var result = new OpenAiCompatibleModelConnectionTester().test(asset, "invalid-api-key");
+        var result = new OpenAiCompatibleModelConnectionTester().test(asset, "invalid-api-key");
 
-    assertThat(result.success()).isFalse();
-    assertThat(result.statusCode()).isEqualTo(401);
-    assertThat(result.message()).isEqualTo("API_KEY authentication failed.");
-    assertThat(result.message()).doesNotContain("secret detail");
-  }
+        assertThat(result.success()).isFalse();
+        assertThat(result.statusCode()).isEqualTo(401);
+        assertThat(result.message()).isEqualTo("API_KEY authentication failed.");
+        assertThat(result.message()).doesNotContain("secret detail");
+    }
 
-  private void respond(HttpExchange exchange, int statusCode, String body) throws IOException {
-    var bytes = body.getBytes(StandardCharsets.UTF_8);
-    exchange.getResponseHeaders().set("Content-Type", "application/json");
-    exchange.sendResponseHeaders(statusCode, bytes.length);
-    exchange.getResponseBody().write(bytes);
-    exchange.close();
-  }
+    private void respond(HttpExchange exchange, int statusCode, String body) throws IOException {
+        var bytes = body.getBytes(StandardCharsets.UTF_8);
+        exchange.getResponseHeaders().set("Content-Type", "application/json");
+        exchange.sendResponseHeaders(statusCode, bytes.length);
+        exchange.getResponseBody().write(bytes);
+        exchange.close();
+    }
 }

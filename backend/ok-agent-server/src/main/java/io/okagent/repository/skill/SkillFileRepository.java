@@ -7,7 +7,7 @@ import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface SkillFileRepository extends JpaRepository<SkillFile, UUID> {
-  List<SkillFile> findAllBySkillIdOrderByFilePath(UUID skillId);
+    List<SkillFile> findAllBySkillIdOrderByFilePath(UUID skillId);
 
-  Optional<SkillFile> findBySkillIdAndFilePath(UUID skillId, String filePath);
+    Optional<SkillFile> findBySkillIdAndFilePath(UUID skillId, String filePath);
 }

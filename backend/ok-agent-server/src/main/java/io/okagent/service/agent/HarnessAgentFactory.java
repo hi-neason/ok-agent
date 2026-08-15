@@ -151,7 +151,7 @@ public class HarnessAgentFactory {
                 }
             }
         }
-        return clientBuilder.buildSync();
+        return clientBuilder.buildAsync().block();
     }
 
     private String required(String value, String field) {

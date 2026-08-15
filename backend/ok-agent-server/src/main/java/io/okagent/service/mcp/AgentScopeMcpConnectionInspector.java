@@ -45,8 +45,10 @@ public class AgentScopeMcpConnectionInspector implements McpConnectionInspector 
     private McpClientWrapper client(McpServer server, Map<String, String> headers, Map<String, String> environment) {
         McpClientBuilder builder = McpClientBuilder.create(server.getServerKey());
         switch (server.getTransport()) {
-            case STREAMABLE_HTTP -> builder.streamableHttpTransport(required(server.getServerUrl(), "serverUrl"));
-            case SSE -> builder.sseTransport(required(server.getServerUrl(), "serverUrl"));
+            case STREAMABLE_HTTP -> builder.streamableHttpTransport(required(server.getServerUrl(), "serverUrl"))
+                    .customizeStreamableHttpClient(b -> b.version(java.net.http.HttpClient.Version.HTTP_1_1));
+            case SSE -> builder.sseTransport(required(server.getServerUrl(), "serverUrl"))
+                    .customizeSseClient(b -> b.version(java.net.http.HttpClient.Version.HTTP_1_1));
             case STDIO -> builder.stdioTransport(
                     required(server.getCommand(), "command"), arguments(server), environment);
         }

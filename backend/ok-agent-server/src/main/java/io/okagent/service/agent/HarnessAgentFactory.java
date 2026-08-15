@@ -7,10 +7,10 @@ import io.agentscope.core.model.transport.HttpTransport;
 import io.agentscope.core.skill.AgentSkill;
 import io.agentscope.core.skill.repository.AgentSkillRepository;
 import io.agentscope.core.state.InMemoryAgentStateStore;
-import io.agentscope.core.tool.Toolkit;
-import io.agentscope.core.tool.mcp.McpClientBuilder;
 import io.agentscope.extensions.model.openai.OpenAIChatModel;
 import io.agentscope.harness.agent.HarnessAgent;
+import io.agentscope.harness.agent.tools.McpServerConfig;
+import io.agentscope.harness.agent.tools.ToolsConfig;
 import io.okagent.domain.agent.AgentAsset;
 import io.okagent.domain.mcp.McpServer;
 import io.okagent.domain.model.ModelAsset;
@@ -55,18 +55,11 @@ public class HarnessAgentFactory {
     }
 
     public HarnessAgent build(AgentAsset draft) {
-        // Build our own toolkit so MCP clients use HTTP/1.1. The JDK HttpClient default
-        // (HTTP/2) causes intermittent "chunked transfer encoding / EOF" failures against some
-        // MCP gateways during tool calls.
-        var toolkit = new Toolkit();
-        registerMcpClients(toolkit, draft);
-
         var builder = HarnessAgent.builder()
                 .name(safeName(draft.getAgentKey()))
                 .description(draft.getDescription() == null ? "" : draft.getDescription())
                 .sysPrompt(systemPrompt(draft))
                 .stateStore(new InMemoryAgentStateStore())
-                .toolkit(toolkit)
                 // The debug runtime is a transient server-side sandbox; skip the
                 // workspace/memory/filesystem middlewares so a chat only depends on the
                 // configured model, prompt, MCP tools, and skills.
@@ -77,9 +70,8 @@ public class HarnessAgentFactory {
                 .disableSubagents()
                 .disableCompaction()
                 .disableToolResultEviction()
-                // MCP clients are registered directly on the toolkit; don't let the harness
-                // re-read workspace/tools.json and double-register with the default transport.
-                .disableToolsConfig();
+                // No workspace/tools.json file; register MCP servers programmatically.
+                .toolsConfig(toolsConfig(draft));
 
         resolveModel(draft).ifPresent(model -> builder.model(model));
 
@@ -93,72 +85,70 @@ public class HarnessAgentFactory {
         return builder.build();
     }
 
-    /** Builds MCP clients with HTTP/1.1 forced and registers them on the toolkit. */
-    private void registerMcpClients(Toolkit toolkit, AgentAsset draft) {
+    /**
+     * Builds the {@link ToolsConfig} for the bound MCP servers. Registered by the harness after it
+     * copies the toolkit, so MCP clients survive the copy and are reachable during tool execution.
+     */
+    private ToolsConfig toolsConfig(AgentAsset draft) {
         var ids = readUuidList(draft.getMcpServerIdsJson());
         if (ids.isEmpty()) {
-            return;
+            var empty = new ToolsConfig();
+            empty.setMcpServers(Map.of());
+            return empty;
         }
+        Map<String, McpServerConfig> servers = new LinkedHashMap<>();
         for (McpServer server : mcpServers.findAllById(ids)) {
-            try {
-                var wrapper = buildMcpClient(server);
-                toolkit.registration().mcpClient(wrapper).apply();
-                log.info(
-                        "Registered MCP server '{}' for agent debug session (transport={})",
-                        server.getServerKey(),
-                        server.getTransport());
-            } catch (Exception e) {
-                log.warn("Failed to register MCP server '{}' for agent: {}", server.getServerKey(), e.getMessage());
-            }
+            servers.put(server.getServerKey(), toMcpServerConfig(server));
         }
+        var config = new ToolsConfig();
+        config.setMcpServers(servers);
+        return config;
     }
 
-    private io.agentscope.core.tool.mcp.McpClientWrapper buildMcpClient(McpServer server) {
-        var clientBuilder = McpClientBuilder.create(server.getServerKey())
-                .timeout(Duration.ofSeconds(Math.max(1, server.getRequestTimeoutSeconds())))
-                .initializationTimeout(Duration.ofSeconds(Math.max(1, server.getInitializationTimeoutSeconds())));
-
+    private McpServerConfig toMcpServerConfig(McpServer server) {
+        var cfg = new McpServerConfig();
         var secrets = readSecrets(server);
         switch (server.getTransport()) {
             case STDIO -> {
-                var args = readStringList(server.getArgumentsJson());
+                cfg.setTransport("stdio");
+                cfg.setCommand(server.getCommand());
+                cfg.setArgs(readStringList(server.getArgumentsJson()));
                 @SuppressWarnings("unchecked")
                 var env = (Map<String, String>) secrets.getOrDefault("environment", Map.of());
-                clientBuilder.stdioTransport(required(server.getCommand(), "command"), args, env);
+                if (!env.isEmpty()) {
+                    cfg.setEnv(env);
+                }
             }
             case SSE -> {
-                clientBuilder.sseTransport(required(server.getServerUrl(), "serverUrl"));
+                cfg.setTransport("sse");
+                cfg.setUrl(server.getServerUrl());
                 @SuppressWarnings("unchecked")
                 var headers = (Map<String, String>) secrets.getOrDefault("headers", Map.of());
                 if (!headers.isEmpty()) {
-                    clientBuilder.headers(headers);
-                }
-                var params = readStringMap(server.getQueryParametersJson());
-                if (!params.isEmpty()) {
-                    clientBuilder.queryParams(params);
+                    cfg.setHeaders(headers);
                 }
             }
             case STREAMABLE_HTTP -> {
-                clientBuilder.streamableHttpTransport(required(server.getServerUrl(), "serverUrl"));
+                cfg.setTransport("http");
+                cfg.setUrl(server.getServerUrl());
                 @SuppressWarnings("unchecked")
                 var headers = (Map<String, String>) secrets.getOrDefault("headers", Map.of());
                 if (!headers.isEmpty()) {
-                    clientBuilder.headers(headers);
-                }
-                var params = readStringMap(server.getQueryParametersJson());
-                if (!params.isEmpty()) {
-                    clientBuilder.queryParams(params);
+                    cfg.setHeaders(headers);
                 }
             }
         }
-        return clientBuilder.buildAsync().block();
-    }
-
-    private String required(String value, String field) {
-        if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException(field + " is required for MCP transport");
+        var params = readStringMap(server.getQueryParametersJson());
+        if (!params.isEmpty()) {
+            cfg.setQueryParams(params);
         }
-        return value;
+        if (server.getRequestTimeoutSeconds() > 0) {
+            cfg.setTimeout(Duration.ofSeconds(server.getRequestTimeoutSeconds()));
+        }
+        if (server.getInitializationTimeoutSeconds() > 0) {
+            cfg.setInitializationTimeout(Duration.ofSeconds(server.getInitializationTimeoutSeconds()));
+        }
+        return cfg;
     }
 
     private String systemPrompt(AgentAsset draft) {

@@ -2,6 +2,7 @@ package io.okagent.service.agent;
 
 import io.agentscope.core.agent.RuntimeContext;
 import io.agentscope.core.event.AgentResultEvent;
+import io.agentscope.core.event.ToolCallEndEvent;
 import io.agentscope.core.event.ToolCallStartEvent;
 import io.agentscope.core.event.ToolResultEndEvent;
 import io.agentscope.core.message.Msg;
@@ -66,6 +67,7 @@ public class AgentDebugServiceImpl implements AgentDebugService {
             session.agent
                     .streamEvents(request.message(), ctx)
                     .doOnNext(event -> {
+                        log.info("Debug event: {} {}", event.getClass().getSimpleName(), describeEvent(event));
                         if (event instanceof ToolCallStartEvent) {
                             toolCalled.set(true);
                         } else if (event instanceof ToolResultEndEvent) {
@@ -157,6 +159,39 @@ public class AgentDebugServiceImpl implements AgentDebugService {
                     sessions.remove(entry.getKey());
                     closeQuietly(entry.getValue().agent);
                 });
+    }
+
+    private String describeEvent(Object event) {
+        if (event instanceof ToolCallStartEvent t) {
+            return "toolCallStart name=" + safe(t::getToolCallName);
+        }
+        if (event instanceof ToolCallEndEvent t) {
+            return "toolCallEnd name=" + safe(t::getToolCallName);
+        }
+        if (event instanceof ToolResultEndEvent) {
+            return "toolResultEnd";
+        }
+        if (event instanceof AgentResultEvent r) {
+            String blocks;
+            if (r.getResult() == null || r.getResult().getContent() == null) {
+                blocks = "null";
+            } else {
+                blocks = r.getResult().getContent().stream()
+                        .map(b -> b.getClass().getSimpleName())
+                        .toList()
+                        .toString();
+            }
+            return "agentResult blocks=" + blocks;
+        }
+        return "";
+    }
+
+    private String safe(java.util.function.Supplier<Object> s) {
+        try {
+            return String.valueOf(s.get());
+        } catch (Exception e) {
+            return "?";
+        }
     }
 
     private ResponseStatusException toUserFacingError(Exception e) {

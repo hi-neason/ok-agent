@@ -19,7 +19,6 @@ import io.okagent.repository.mcp.McpServerRepository;
 import io.okagent.repository.model.ModelAssetRepository;
 import io.okagent.repository.skill.SkillAssetRepository;
 import io.okagent.service.model.ApiKeyCipher;
-import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -128,9 +127,7 @@ public class HarnessAgentFactory {
                 clientBuilder.stdioTransport(required(server.getCommand(), "command"), args, env);
             }
             case SSE -> {
-                clientBuilder
-                        .sseTransport(required(server.getServerUrl(), "serverUrl"))
-                        .customizeSseClient(b -> b.version(HttpClient.Version.HTTP_1_1));
+                clientBuilder.sseTransport(required(server.getServerUrl(), "serverUrl"));
                 @SuppressWarnings("unchecked")
                 var headers = (Map<String, String>) secrets.getOrDefault("headers", Map.of());
                 if (!headers.isEmpty()) {
@@ -142,9 +139,7 @@ public class HarnessAgentFactory {
                 }
             }
             case STREAMABLE_HTTP -> {
-                clientBuilder
-                        .streamableHttpTransport(required(server.getServerUrl(), "serverUrl"))
-                        .customizeStreamableHttpClient(b -> b.version(HttpClient.Version.HTTP_1_1));
+                clientBuilder.streamableHttpTransport(required(server.getServerUrl(), "serverUrl"));
                 @SuppressWarnings("unchecked")
                 var headers = (Map<String, String>) secrets.getOrDefault("headers", Map.of());
                 if (!headers.isEmpty()) {
@@ -156,7 +151,7 @@ public class HarnessAgentFactory {
                 }
             }
         }
-        return clientBuilder.buildAsync().block();
+        return clientBuilder.buildSync();
     }
 
     private String required(String value, String field) {

@@ -1,6 +1,10 @@
 package io.okagent.service.agent;
 
 import io.agentscope.core.agent.RuntimeContext;
+import io.agentscope.core.event.AgentResultEvent;
+import io.agentscope.core.event.ToolCallStartEvent;
+import io.agentscope.core.event.ToolResultEndEvent;
+import io.agentscope.core.message.Msg;
 import io.agentscope.harness.agent.HarnessAgent;
 import io.okagent.domain.agent.AgentAsset;
 import io.okagent.repository.agent.AgentAssetRepository;
@@ -11,6 +15,8 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -52,11 +58,56 @@ public class AgentDebugServiceImpl implements AgentDebugService {
                     .userId("debug")
                     .sessionId(sessionId)
                     .build();
-            var reply = session.agent.call(request.message(), ctx).block(CALL_TIMEOUT);
-            if (reply == null) {
-                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "The agent returned no response");
+
+            var finalMsg = new AtomicReference<Msg>();
+            var toolCalled = new AtomicBoolean(false);
+            var toolResultSeen = new AtomicBoolean(false);
+
+            session.agent
+                    .streamEvents(request.message(), ctx)
+                    .doOnNext(event -> {
+                        if (event instanceof ToolCallStartEvent) {
+                            toolCalled.set(true);
+                        } else if (event instanceof ToolResultEndEvent) {
+                            toolResultSeen.set(true);
+                        } else if (event instanceof AgentResultEvent result) {
+                            finalMsg.set(result.getResult());
+                        }
+                    })
+                    .blockLast(CALL_TIMEOUT);
+
+            if (finalMsg.get() == null) {
+                // Fallback for event streams that end with AgentEndEvent without a result.
+                log.warn("Debug chat stream ended without an AgentResultEvent");
+                return new AgentChatResponse(sessionId, "The agent ended without producing a response.");
             }
-            return new AgentChatResponse(sessionId, reply.getTextContent());
+
+            String text = finalMsg.get().getTextContent();
+            if (text != null && !text.isBlank()) {
+                return new AgentChatResponse(sessionId, text);
+            }
+
+            log.warn("Debug chat empty text; toolCalled={} toolResultSeen={}", toolCalled.get(), toolResultSeen.get());
+
+            if (toolCalled.get() && !toolResultSeen.get()) {
+                return new AgentChatResponse(
+                        sessionId,
+                        "The model decided to call a tool but the call did not complete. Check that"
+                                + " the MCP server is reachable and that the model supports function"
+                                + " calling.");
+            }
+            if (toolResultSeen.get()) {
+                return new AgentChatResponse(
+                        sessionId,
+                        "The tool was called and returned a result, but the model did not produce a"
+                                + " final answer. This usually means the selected model does not fully"
+                                + " support multi-turn tool calling; try a model with confirmed"
+                                + " tool-calling support.");
+            }
+            return new AgentChatResponse(
+                    sessionId,
+                    "The model returned an empty response without calling any tool. Try rephrasing"
+                            + " your message or select a different model.");
         } catch (Exception e) {
             throw toUserFacingError(e);
         }

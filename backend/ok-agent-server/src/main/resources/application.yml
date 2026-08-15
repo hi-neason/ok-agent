@@ -32,3 +32,8 @@ ok-agent:
     agentscope-version: ${AGENTSCOPE_VERSION:2.0.2}
   storage:
     jdbc-url: ${OK_AGENT_JDBC_URL:}
+
+logging:
+  level:
+    io.agentscope: DEBUG
+    io.okagent.service.agent: DEBUG

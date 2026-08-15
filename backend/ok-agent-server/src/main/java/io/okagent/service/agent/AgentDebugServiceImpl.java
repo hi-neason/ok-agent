@@ -2,7 +2,7 @@ package io.okagent.service.agent;
 
 import io.agentscope.core.agent.RuntimeContext;
 import io.agentscope.core.event.AgentResultEvent;
-import io.agentscope.core.event.ToolCallEndEvent;
+import io.agentscope.core.event.TextBlockDeltaEvent;
 import io.agentscope.core.event.ToolCallStartEvent;
 import io.agentscope.core.event.ToolResultEndEvent;
 import io.agentscope.core.message.Msg;
@@ -60,6 +60,10 @@ public class AgentDebugServiceImpl implements AgentDebugService {
                     .sessionId(sessionId)
                     .build();
 
+            // Accumulate the final reply from text deltas (the demo's approach). Some models /
+            // transports emit the answer only via TextBlockDeltaEvent and leave the final
+            // AgentResultEvent text empty, especially across multi-turn tool calls.
+            var answer = new StringBuilder();
             var finalMsg = new AtomicReference<Msg>();
             var toolCalled = new AtomicBoolean(false);
             var toolResultSeen = new AtomicBoolean(false);
@@ -67,8 +71,9 @@ public class AgentDebugServiceImpl implements AgentDebugService {
             session.agent
                     .streamEvents(request.message(), ctx)
                     .doOnNext(event -> {
-                        log.info("Debug event: {} {}", event.getClass().getSimpleName(), describeEvent(event));
-                        if (event instanceof ToolCallStartEvent) {
+                        if (event instanceof TextBlockDeltaEvent delta) {
+                            answer.append(delta.getDelta());
+                        } else if (event instanceof ToolCallStartEvent) {
                             toolCalled.set(true);
                         } else if (event instanceof ToolResultEndEvent) {
                             toolResultSeen.set(true);
@@ -78,18 +83,20 @@ public class AgentDebugServiceImpl implements AgentDebugService {
                     })
                     .blockLast(CALL_TIMEOUT);
 
-            if (finalMsg.get() == null) {
-                // Fallback for event streams that end with AgentEndEvent without a result.
-                log.warn("Debug chat stream ended without an AgentResultEvent");
-                return new AgentChatResponse(sessionId, "The agent ended without producing a response.");
+            // Prefer the streamed text; fall back to the result message's text content.
+            String text = answer.toString();
+            if (text.isBlank() && finalMsg.get() != null) {
+                text = finalMsg.get().getTextContent();
             }
-
-            String text = finalMsg.get().getTextContent();
             if (text != null && !text.isBlank()) {
-                return new AgentChatResponse(sessionId, text);
+                return new AgentChatResponse(sessionId, text.trim());
             }
 
-            log.warn("Debug chat empty text; toolCalled={} toolResultSeen={}", toolCalled.get(), toolResultSeen.get());
+            log.warn(
+                    "Debug chat empty; toolCalled={} toolResultSeen={} finalMsg={}",
+                    toolCalled.get(),
+                    toolResultSeen.get(),
+                    finalMsg.get() != null);
 
             if (toolCalled.get() && !toolResultSeen.get()) {
                 return new AgentChatResponse(
@@ -159,39 +166,6 @@ public class AgentDebugServiceImpl implements AgentDebugService {
                     sessions.remove(entry.getKey());
                     closeQuietly(entry.getValue().agent);
                 });
-    }
-
-    private String describeEvent(Object event) {
-        if (event instanceof ToolCallStartEvent t) {
-            return "toolCallStart name=" + safe(t::getToolCallName);
-        }
-        if (event instanceof ToolCallEndEvent t) {
-            return "toolCallEnd name=" + safe(t::getToolCallName);
-        }
-        if (event instanceof ToolResultEndEvent) {
-            return "toolResultEnd";
-        }
-        if (event instanceof AgentResultEvent r) {
-            String blocks;
-            if (r.getResult() == null || r.getResult().getContent() == null) {
-                blocks = "null";
-            } else {
-                blocks = r.getResult().getContent().stream()
-                        .map(b -> b.getClass().getSimpleName())
-                        .toList()
-                        .toString();
-            }
-            return "agentResult blocks=" + blocks;
-        }
-        return "";
-    }
-
-    private String safe(java.util.function.Supplier<Object> s) {
-        try {
-            return String.valueOf(s.get());
-        } catch (Exception e) {
-            return "?";
-        }
     }
 
     private ResponseStatusException toUserFacingError(Exception e) {

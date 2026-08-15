@@ -4,7 +4,7 @@ spring:
   datasource:
     url: ${OK_AGENT_DB_URL:jdbc:mysql://127.0.0.1:3306/ok_agent?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai}
     username: ${OK_AGENT_DB_USERNAME:root}
-    password: ${OK_AGENT_DB_PASSWORD:}
+    password: ${OK_AGENT_DB_PASSWORD:root123456}
   jpa:
     hibernate:
       ddl-auto: validate

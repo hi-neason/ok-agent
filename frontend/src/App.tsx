@@ -11,9 +11,6 @@ type Page =
   | "mcp"
   | "knowledge"
   | "workflows"
-  | "memory"
-  | "workspace"
-  | "teams"
   | "release"
   | "observe"
   | "system";
@@ -40,9 +37,6 @@ const navItems: NavItem[] = [
   { id: "knowledge", icon: "◫", name: "知识库", kicker: "KNOWLEDGE BASE", wip: true },
   { id: "workflows", icon: "⌁", name: "工作流", kicker: "WORKFLOW LIBRARY", wip: true },
   { id: "agents", icon: "◈", name: "智能体", kicker: "HARNESS AGENT" },
-  { id: "memory", icon: "◫", name: "记忆与上下文", kicker: "MEMORY + CONTEXT" },
-  { id: "workspace", icon: "▤", name: "工作空间", kicker: "WORKSPACE" },
-  { id: "teams", icon: "⊹", name: "子 Agent 与协作", kicker: "COLLABORATION" },
   { id: "release", icon: "↗", name: "发布与环境", kicker: "RELEASE SNAPSHOT", wip: true },
   { id: "observe", icon: "◌", name: "运行观测", kicker: "RUNTIME OBSERVE", wip: true },
   { id: "system", icon: "◎", name: "账号与权限", kicker: "SYSTEM GOVERNANCE", wip: true },
@@ -81,9 +75,6 @@ const pagePaths: Record<Page, string> = {
   mcp: "/mcp",
   knowledge: "/knowledge",
   workflows: "/workflows",
-  memory: "/memory",
-  workspace: "/workspace",
-  teams: "/teams",
   release: "/releases",
   observe: "/observability",
   system: "/system",
@@ -2644,285 +2635,6 @@ function SystemPage() {
   );
 }
 
-function MemoryPage() {
-  const [tab, setTab] = useState<"memory" | "context">("memory");
-  return (
-    <>
-      <PageHeader
-        kicker="MEMORY + CONTEXT POLICY"
-        title="记忆与上下文"
-        description="区分跨会话长期记忆和会话内上下文压缩，分别控制成本、保留与可恢复性。"
-      />
-      <div className="tab-switch">
-        <button
-          onClick={() => setTab("memory")}
-          className={tab === "memory" ? "active" : ""}
-        >
-          长期记忆 / MemoryConfig
-        </button>
-        <button
-          onClick={() => setTab("context")}
-          className={tab === "context" ? "active" : ""}
-        >
-          上下文压缩 / CompactionConfig
-        </button>
-      </div>
-      {tab === "memory" ? (
-        <section className="policy-canvas">
-          <article className="pipeline-card">
-            <p className="kicker">LONG-TERM MEMORY PIPELINE</p>
-            <div className="memory-flow">
-              <span>对话结束</span>
-              <i>→</i>
-              <span>Flush</span>
-              <i>→</i>
-              <span>Daily Ledger</span>
-              <i>→</i>
-              <span>Consolidation</span>
-              <i>→</i>
-              <span>MEMORY.md</span>
-            </div>
-            <small>
-              MEMORY.md 会在每个 reasoning step
-              注入系统提示词；每日日志仅作为可审计原始事实。
-            </small>
-          </article>
-          <div className="form-columns">
-            <section className="form-surface compact">
-              <div className="section-label">
-                <b>记忆抽取</b>
-                <small>MemoryFlushMiddleware</small>
-              </div>
-              <Field label="辅助模型" value="qwen-turbo" />
-              <Field label="Flush Trigger" value="THROTTLED / PT10M" />
-              <Field
-                label="抽取提示词"
-                value="提取长期有效的用户偏好、任务事实和明确决策。"
-                wide
-              />
-              <div className="switch-line">
-                <div>
-                  <b>每次调用后抽取</b>
-                  <small>关闭后仍会在压缩前和溢出恢复时执行</small>
-                </div>
-                <Toggle on={false} setOn={() => {}} />
-              </div>
-            </section>
-            <section className="form-surface compact">
-              <div className="section-label">
-                <b>整合与保留</b>
-                <small>MemoryMaintenanceMiddleware</small>
-              </div>
-              <Field label="MEMORY.md token 上限" value="4000" />
-              <Field label="最小整合间隔" value="PT2H" />
-              <Field label="每日账本保留" value="90 days" />
-              <Field label="会话日志保留" value="180 days" />
-            </section>
-          </div>
-        </section>
-      ) : (
-        <section className="policy-canvas">
-          <article className="pipeline-card blue-tone">
-            <p className="kicker">CONVERSATION COMPACTION</p>
-            <div className="memory-flow">
-              <span>Context Window</span>
-              <i>→</i>
-              <span>Flush</span>
-              <i>→</i>
-              <span>Offload</span>
-              <i>→</i>
-              <span>Summary</span>
-              <i>→</i>
-              <span>Recent Tail</span>
-            </div>
-            <small>
-              默认动态依据模型 context window 触发，并保留按 token
-              计算的最近消息尾部。
-            </small>
-          </article>
-          <div className="form-columns">
-            <section className="form-surface compact">
-              <Field label="压缩触发 token" value="dynamic (window - 20k)" />
-              <Field label="最近上下文保留" value="dynamic / 25% usable" />
-              <Field label="摘要模型" value="qwen-turbo" />
-            </section>
-            <section className="form-surface compact">
-              <Field label="工具结果卸载阈值" value="80,000 chars" />
-              <Field label="参数截断" value="2,000 chars" />
-              <div className="switch-line">
-                <div>
-                  <b>压缩前写入原始消息</b>
-                  <small>保留 JSONL 用于运行审计与 session_search</small>
-                </div>
-                <Toggle on={true} setOn={() => {}} />
-              </div>
-            </section>
-          </div>
-        </section>
-      )}
-    </>
-  );
-}
-
-function WorkspacePage() {
-  return (
-    <>
-      <PageHeader
-        kicker="WORKSPACE / FILESYSTEM"
-        title="工作空间与执行环境"
-        description="将 Workspace Context、文件系统隔离和 Sandbox 能力绑定到部署环境，而非暴露给普通编辑者。"
-        action={<Button>编辑环境模板</Button>}
-      />
-      <div className="workspace-grid">
-        <section className="file-tree panel-lite">
-          <div className="tree-title">
-            <b>workspace / customer-service</b>
-            <span className="tag blue">REMOTE FS</span>
-          </div>
-          {[
-            "AGENTS.md",
-            "MEMORY.md",
-            "tools.json",
-            "knowledge/",
-            "skills/",
-            "subagents/",
-            "plans/",
-            "agents/customer-service/sessions/",
-          ].map((x, index) => (
-            <p key={x} className={index < 3 ? "file" : "folder"}>
-              <span>{index < 3 ? "□" : "⌁"}</span>
-              {x}
-              {index === 1 && <em>injected</em>}
-            </p>
-          ))}
-        </section>
-        <section className="workspace-config">
-          <article className="form-surface">
-            <div className="section-label">
-              <b>运行时投影</b>
-              <small>WorkspaceContextMiddleware</small>
-            </div>
-            <Field
-              label="Workspace Template"
-              value="workspace-template/customer-service@v5"
-              wide
-            />
-            <Field
-              label="额外上下文文件"
-              value="knowledge/product.md, knowledge/ticket-rules.md"
-              wide
-            />
-            <Field label="最大上下文预算" value="8,000 tokens" />
-            <div className="switch-line">
-              <div>
-                <b>@ 路径展开</b>
-                <small>将 @file 指向的 workspace 内容安全地载入上下文</small>
-              </div>
-              <Toggle on={true} setOn={() => {}} />
-            </div>
-          </article>
-          <article className="form-surface">
-            <div className="section-label">
-              <b>隔离与 Sandbox</b>
-              <small>SandboxFilesystemSpec</small>
-            </div>
-            <div className="environment-card">
-              <span>ISOLATION SCOPE</span>
-              <b>USER</b>
-              <small>
-                同一用户跨 Session 共享受控文件视图；生产环境禁止
-                LocalFilesystemSpec。
-              </small>
-            </div>
-            <div className="switch-line">
-              <div>
-                <b>工作空间投影</b>
-                <small>
-                  启动 sandbox 时投影 AGENTS.md、skills、knowledge 等根目录
-                </small>
-              </div>
-              <Toggle on={true} setOn={() => {}} />
-            </div>
-          </article>
-        </section>
-      </div>
-    </>
-  );
-}
-
-function TeamsPage() {
-  const [plan, setPlan] = useState(false);
-  return (
-    <>
-      <PageHeader
-        kicker="COLLABORATION / PLAN MODE"
-        title="子 Agent 与协作"
-        description="声明受限角色、后台任务和计划模式；复杂协作在发布前完成权限与最大深度校验。"
-        action={<Button>＋ 添加子 Agent</Button>}
-      />
-      <div className="team-canvas">
-        <section className="team-map">
-          <div className="parent-node">
-            <i>◈</i>
-            <b>客户服务中枢</b>
-            <small>lead / qwen-plus</small>
-          </div>
-          <div className="branch one" />
-          <div className="branch two" />
-          <div className="child-node node-one">
-            <i>◫</i>
-            <b>知识检索</b>
-            <small>sync · read-only tools</small>
-          </div>
-          <div className="child-node node-two">
-            <i>⌘</i>
-            <b>工单执行</b>
-            <small>background · HITL</small>
-          </div>
-          <p className="kicker map-label">SUBAGENT DECLARATIONS</p>
-        </section>
-        <section className="form-surface">
-          <div className="section-label">
-            <b>协作运行策略</b>
-            <small>SubagentsMiddleware / MessageBus</small>
-          </div>
-          <Field label="最大委派深度" value="2" />
-          <Field label="后台任务超时" value="PT5M" />
-          <Field
-            label="Task Repository"
-            value="distributed/task-store@v1"
-            wide
-          />
-          <div className="switch-line">
-            <div>
-              <b>动态子 Agent</b>
-              <small>
-                读取 workspace/subagents 下的声明，并在每个 call 前重载
-              </small>
-            </div>
-            <Toggle on={true} setOn={() => {}} />
-          </div>
-          <div className="switch-line">
-            <div>
-              <b>Plan Mode</b>
-              <small>
-                为会话注册 plan_enter / plan_write / plan_exit；默认严格只读
-              </small>
-            </div>
-            <Toggle on={plan} setOn={setPlan} />
-          </div>
-          {plan && (
-            <div className="warning-note">
-              Plan Mode 当前启用。Shell
-              仍保持拒绝；退出计划模式后才允许修改或执行敏感工具。
-            </div>
-          )}
-        </section>
-      </div>
-    </>
-  );
-}
-
 function ReleasePage() {
   const [step, setStep] = useState(2);
   return (
@@ -3140,9 +2852,6 @@ export default function App() {
     mcp: <McpPage />,
     knowledge: <KnowledgePage />,
     workflows: <WorkflowsPage />,
-    memory: <MemoryPage />,
-    workspace: <WorkspacePage />,
-    teams: <TeamsPage />,
     release: <ReleasePage />,
     observe: <ObservePage />,
     system: <SystemPage />,

@@ -18,72 +18,62 @@ type Page =
   | "observe"
   | "system";
 
+type NavItem = {
+  id: Page;
+  icon: string;
+  name: string;
+  kicker: string;
+  wip?: boolean;
+};
+
 type NavigationGroup = {
   title: string;
-  items: { id: Page; icon: string; name: string; kicker: string }[];
+  items: NavItem[];
 };
+
+// Full catalog of top-level modules. `wip` marks modules still under construction;
+// a few are intentionally hidden from the primary navigation (see `hiddenNavIds`).
+const navItems: NavItem[] = [
+  { id: "models", icon: "◌", name: "模型管理", kicker: "MODEL REGISTRY" },
+  { id: "skills", icon: "✦", name: "技能仓库", kicker: "SKILL MARKET" },
+  { id: "mcp", icon: "⌘", name: "MCP 与工具", kicker: "TOOLS CONFIG" },
+  { id: "knowledge", icon: "◫", name: "知识库", kicker: "KNOWLEDGE BASE", wip: true },
+  { id: "workflows", icon: "⌁", name: "工作流", kicker: "WORKFLOW LIBRARY", wip: true },
+  { id: "agents", icon: "◈", name: "智能体", kicker: "HARNESS AGENT" },
+  { id: "memory", icon: "◫", name: "记忆与上下文", kicker: "MEMORY + CONTEXT" },
+  { id: "workspace", icon: "▤", name: "工作空间", kicker: "WORKSPACE" },
+  { id: "teams", icon: "⊹", name: "子 Agent 与协作", kicker: "COLLABORATION" },
+  { id: "release", icon: "↗", name: "发布与环境", kicker: "RELEASE SNAPSHOT", wip: true },
+  { id: "observe", icon: "◌", name: "运行观测", kicker: "RUNTIME OBSERVE", wip: true },
+  { id: "system", icon: "◎", name: "账号与权限", kicker: "SYSTEM GOVERNANCE", wip: true },
+];
+
+const navItemById = Object.fromEntries(
+  navItems.map((n) => [n.id, n]),
+) as Record<Page, NavItem>;
 
 const navigationGroups: NavigationGroup[] = [
   {
     title: "组件管理",
-    items: [
-      { id: "models", icon: "◌", name: "模型管理", kicker: "MODEL REGISTRY" },
-      { id: "skills", icon: "✦", name: "技能仓库", kicker: "SKILL MARKET" },
-      { id: "mcp", icon: "⌘", name: "MCP 与工具", kicker: "TOOLS CONFIG" },
-      { id: "knowledge", icon: "◫", name: "知识库", kicker: "KNOWLEDGE BASE" },
-      {
-        id: "workflows",
-        icon: "⌁",
-        name: "工作流",
-        kicker: "WORKFLOW LIBRARY",
-      },
-    ],
+    items: (["models", "skills", "mcp", "knowledge", "workflows"] as Page[]).map(
+      (id) => navItemById[id],
+    ),
   },
   {
     title: "智能体管理",
-    items: [
-      { id: "agents", icon: "◈", name: "智能体", kicker: "HARNESS AGENT" },
-      {
-        id: "memory",
-        icon: "◫",
-        name: "记忆与上下文",
-        kicker: "MEMORY + CONTEXT",
-      },
-      { id: "workspace", icon: "▤", name: "工作空间", kicker: "WORKSPACE" },
-      {
-        id: "teams",
-        icon: "⊹",
-        name: "子 Agent 与协作",
-        kicker: "COLLABORATION",
-      },
-    ],
+    items: (["agents"] as Page[]).map((id) => navItemById[id]),
   },
   {
     title: "发布与可观测",
-    items: [
-      {
-        id: "release",
-        icon: "↗",
-        name: "发布与环境",
-        kicker: "RELEASE SNAPSHOT",
-      },
-      { id: "observe", icon: "◌", name: "运行观测", kicker: "RUNTIME OBSERVE" },
-    ],
+    items: (["release", "observe"] as Page[]).map((id) => navItemById[id]),
   },
   {
     title: "系统管理",
-    items: [
-      {
-        id: "system",
-        icon: "◎",
-        name: "账号与权限",
-        kicker: "SYSTEM GOVERNANCE",
-      },
-    ],
+    items: (["system"] as Page[]).map((id) => navItemById[id]),
   },
 ];
 
-const modules = navigationGroups.flatMap((group) => group.items);
+const modules = navItems;
 const pagePaths: Record<Page, string> = {
   agents: "/agents",
   models: "/models",
@@ -3200,6 +3190,7 @@ export default function App() {
                 >
                   <i>{module.icon}</i>
                   <span>{moduleName(module)}</span>
+                  {module.wip && <span className="wip-badge">WIP</span>}
                 </button>
               ))}
             </section>

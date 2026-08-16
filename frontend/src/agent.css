@@ -622,3 +622,18 @@ select.cfg-select,
   .agent-panel-resizer { display: none; }
   .agent-chat-panel { height: 620px; }
 }
+
+/* Primary navigation: WIP badge for modules under construction */
+.module-link {
+  grid-template-columns: 27px 1fr auto;
+}
+.wip-badge {
+  justify-self: end;
+  font: 8px "DM Mono", monospace;
+  letter-spacing: 0.5px;
+  color: #b0701a;
+  background: #fff3df;
+  border: 1px solid #f3d9a8;
+  border-radius: 4px;
+  padding: 2px 5px;
+}

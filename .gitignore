@@ -31,3 +31,8 @@ dist/
 **/dist/
 target/
 **/target/
+
+# Local AgentScope runtime workspaces and developer MCP connections
+.agentscope/
+**/.agentscope/
+.mcp.json

@@ -10,8 +10,13 @@ import io.agentscope.core.skill.repository.AgentSkillRepository;
 import io.agentscope.core.state.InMemoryAgentStateStore;
 import io.agentscope.extensions.model.openai.OpenAIChatModel;
 import io.agentscope.harness.agent.HarnessAgent;
+import io.agentscope.harness.agent.IsolationScope;
+import io.agentscope.harness.agent.filesystem.spec.LocalFilesystemSpec;
+import io.agentscope.harness.agent.memory.MemoryConfig;
+import io.agentscope.harness.agent.sandbox.impl.docker.DockerFilesystemSpec;
 import io.agentscope.harness.agent.tools.McpServerConfig;
 import io.agentscope.harness.agent.tools.ToolsConfig;
+import io.agentscope.harness.agent.workspace.LocalFsMode;
 import io.okagent.domain.agent.AgentAsset;
 import io.okagent.domain.mcp.McpServer;
 import io.okagent.domain.model.ModelAsset;
@@ -20,6 +25,7 @@ import io.okagent.repository.mcp.McpServerRepository;
 import io.okagent.repository.model.ModelAssetRepository;
 import io.okagent.repository.skill.SkillAssetRepository;
 import io.okagent.service.model.ApiKeyCipher;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -66,16 +72,12 @@ public class HarnessAgentFactory {
                 .maxContextTokens(draft.getMaxContextTokens())
                 .enableAgentTracingLog(draft.isTracingEnabled())
                 .stateStore(new InMemoryAgentStateStore())
-                // The debug runtime is a transient server-side sandbox; skip the
-                // workspace/memory/filesystem middlewares so a chat only depends on the
-                // configured model, prompt, MCP tools, and skills.
-                .disableWorkspaceContext()
-                .disableMemoryTools()
-                .disableMemoryHooks()
-                .disableFilesystemTools()
                 .disableSubagents()
                 // No workspace/tools.json file; register MCP servers programmatically.
                 .toolsConfig(toolsConfig(draft));
+
+        configureWorkspace(builder, draft);
+        configureMemory(builder, draft);
 
         if (!draft.isCompactionEnabled()) {
             builder.disableCompaction();
@@ -108,12 +110,72 @@ public class HarnessAgentFactory {
             return empty;
         }
         Map<String, McpServerConfig> servers = new LinkedHashMap<>();
+        var toolFilters = readToolFilters(draft.getMcpToolFiltersJson());
         for (McpServer server : mcpServers.findAllById(ids)) {
-            servers.put(server.getServerKey(), toMcpServerConfig(server));
+            var serverConfig = toMcpServerConfig(server);
+            var allowlist = toolFilters.getOrDefault(server.getId().toString(), List.of());
+            if (!allowlist.isEmpty()) {
+                serverConfig.setEnableTools(allowlist);
+            }
+            servers.put(server.getServerKey(), serverConfig);
         }
         var config = new ToolsConfig();
         config.setMcpServers(servers);
         return config;
+    }
+
+    private void configureWorkspace(HarnessAgent.Builder builder, AgentAsset draft) {
+        if (draft.getWorkspaceMode() == io.okagent.domain.agent.AgentWorkspaceMode.DISABLED) {
+            builder.disableWorkspaceContext().disableFilesystemTools().disableShellTool();
+            return;
+        }
+
+        var workspace =
+                Path.of(System.getProperty("user.dir"), ".agentscope", "workspaces", safeName(draft.getAgentKey()));
+        var isolationScope = IsolationScope.valueOf(draft.getWorkspaceIsolationScope());
+        builder.workspace(workspace);
+        switch (draft.getWorkspaceMode()) {
+            case LOCAL_ROOTED -> builder.filesystem(new LocalFilesystemSpec()
+                    .mode(LocalFsMode.SANDBOXED)
+                    .isolationScope(isolationScope)
+                    .inheritEnv(false)
+                    .projectWritable(false));
+            case DOCKER_SANDBOX -> {
+                var spec = new DockerFilesystemSpec()
+                        .image(draft.getDockerImage())
+                        .memorySizeBytes((long) draft.getSandboxMemoryMb() * 1024 * 1024)
+                        .cpuCount((long) draft.getSandboxCpuCount());
+                spec.isolationScope(isolationScope);
+                builder.filesystem(spec);
+            }
+            case DISABLED -> throw new IllegalStateException("Disabled workspace handled above");
+        }
+        if (!draft.isWorkspaceContextEnabled()) {
+            builder.disableWorkspaceContext();
+        }
+        if (!draft.isShellEnabled()) {
+            builder.disableShellTool();
+        }
+    }
+
+    private void configureMemory(HarnessAgent.Builder builder, AgentAsset draft) {
+        if (!draft.isMemoryEnabled()) {
+            builder.disableMemoryTools().disableMemoryHooks();
+            return;
+        }
+        var flushTrigger =
+                switch (draft.getMemoryFlushMode()) {
+                    case ALWAYS -> MemoryConfig.FlushTrigger.always();
+                    case NEVER -> MemoryConfig.FlushTrigger.never();
+                    case THROTTLED -> MemoryConfig.FlushTrigger.throttled(
+                            Duration.ofMinutes(draft.getMemoryFlushIntervalMinutes()));
+                };
+        builder.memory(MemoryConfig.builder()
+                .flushTrigger(flushTrigger)
+                .consolidationMinGap(Duration.ofMinutes(draft.getMemoryConsolidationIntervalMinutes()))
+                .dailyFileRetentionDays(draft.getMemoryDailyRetentionDays())
+                .sessionRetentionDays(draft.getMemorySessionRetentionDays())
+                .build());
     }
 
     private McpServerConfig toMcpServerConfig(McpServer server) {
@@ -259,6 +321,17 @@ public class HarnessAgentFactory {
         }
         try {
             return json.readValue(value, new TypeReference<Map<String, String>>() {});
+        } catch (Exception e) {
+            return Map.of();
+        }
+    }
+
+    private Map<String, List<String>> readToolFilters(String value) {
+        if (value == null || value.isBlank()) {
+            return Map.of();
+        }
+        try {
+            return json.readValue(value, new TypeReference<Map<String, List<String>>>() {});
         } catch (Exception e) {
             return Map.of();
         }

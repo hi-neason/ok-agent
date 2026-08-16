@@ -13,6 +13,8 @@ import io.okagent.web.agent.AgentUpdateRequest;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -110,6 +112,22 @@ public class AgentAssetServiceImpl implements AgentAssetService {
                 request.maxContextTokens(),
                 request.toolResultEvictionEnabled(),
                 request.tracingEnabled());
+        validateCapabilities(request);
+        agent.updateCapabilities(
+                writeToolFilters(request.mcpToolFilters()),
+                request.memoryEnabled(),
+                request.memoryFlushMode(),
+                request.memoryFlushIntervalMinutes(),
+                request.memoryConsolidationIntervalMinutes(),
+                request.memoryDailyRetentionDays(),
+                request.memorySessionRetentionDays(),
+                request.workspaceMode(),
+                request.workspaceIsolationScope(),
+                request.workspaceContextEnabled(),
+                request.shellEnabled(),
+                text(request.dockerImage()),
+                request.sandboxMemoryMb(),
+                request.sandboxCpuCount());
         var saved = agents.save(agent);
         log.info(
                 "Agent configuration updated: agentId={} permissionMode={} maxIters={} modelTimeoutSeconds={} toolTimeoutSeconds={}",
@@ -158,6 +176,31 @@ public class AgentAssetServiceImpl implements AgentAssetService {
         }
     }
 
+    private void validateCapabilities(AgentConfigRequest request) {
+        var boundServers = Set.copyOf(safeList(request.mcpServerIds()));
+        for (String serverId : safeMap(request.mcpToolFilters()).keySet()) {
+            try {
+                if (!boundServers.contains(UUID.fromString(serverId))) {
+                    throw new ResponseStatusException(
+                            HttpStatus.BAD_REQUEST, "MCP tool filter references an unbound server");
+                }
+            } catch (IllegalArgumentException e) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid MCP server id in tool filter");
+            }
+        }
+        if (request.memoryEnabled() && request.workspaceMode() == io.okagent.domain.agent.AgentWorkspaceMode.DISABLED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Memory requires an enabled workspace");
+        }
+        if (request.workspaceMode() == io.okagent.domain.agent.AgentWorkspaceMode.DOCKER_SANDBOX
+                && text(request.dockerImage()).isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Docker image is required for Docker sandbox mode");
+        }
+        if (!Set.of("SESSION", "USER", "AGENT", "GLOBAL").contains(request.workspaceIsolationScope())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported workspace isolation scope");
+        }
+    }
+
     private List<UUID> safeList(List<UUID> value) {
         return value == null ? List.of() : value;
     }
@@ -167,6 +210,18 @@ public class AgentAssetServiceImpl implements AgentAssetService {
             return json.writeValueAsString(safeList(value));
         } catch (Exception e) {
             throw new IllegalStateException("Failed to serialize binding list", e);
+        }
+    }
+
+    private Map<String, List<String>> safeMap(Map<String, List<String>> value) {
+        return value == null ? Map.of() : value;
+    }
+
+    private String writeToolFilters(Map<String, List<String>> value) {
+        try {
+            return json.writeValueAsString(safeMap(value));
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to serialize MCP tool filters", e);
         }
     }
 

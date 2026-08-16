@@ -1,6 +1,8 @@
 package io.okagent.web.agent;
 
+import io.okagent.domain.agent.AgentMemoryFlushMode;
 import io.okagent.domain.agent.AgentPermissionMode;
+import io.okagent.domain.agent.AgentWorkspaceMode;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
@@ -8,6 +10,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public record AgentConfigRequest(
@@ -29,4 +32,18 @@ public record AgentConfigRequest(
         boolean toolResultEvictionEnabled,
         boolean tracingEnabled,
         List<UUID> mcpServerIds,
-        List<UUID> skillIds) {}
+        List<UUID> skillIds,
+        Map<String, List<String>> mcpToolFilters,
+        boolean memoryEnabled,
+        @NotNull AgentMemoryFlushMode memoryFlushMode,
+        @Min(1) @Max(1440) int memoryFlushIntervalMinutes,
+        @Min(1) @Max(1440) int memoryConsolidationIntervalMinutes,
+        @Min(1) @Max(3650) int memoryDailyRetentionDays,
+        @Min(1) @Max(3650) int memorySessionRetentionDays,
+        @NotNull AgentWorkspaceMode workspaceMode,
+        @NotNull String workspaceIsolationScope,
+        boolean workspaceContextEnabled,
+        boolean shellEnabled,
+        @Size(max = 255) String dockerImage,
+        @Min(128) @Max(32768) int sandboxMemoryMb,
+        @Min(1) @Max(64) int sandboxCpuCount) {}

@@ -91,6 +91,51 @@ public class AgentAsset {
     @Column(name = "skill_ids_json", nullable = false, columnDefinition = "TEXT")
     private String skillIdsJson;
 
+    /** JSON object keyed by MCP server id with an allowlist of tool names. */
+    @Column(name = "mcp_tool_filters_json", nullable = false, columnDefinition = "TEXT")
+    private String mcpToolFiltersJson;
+
+    @Column(name = "memory_enabled", nullable = false)
+    private boolean memoryEnabled;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "memory_flush_mode", nullable = false, length = 32)
+    private AgentMemoryFlushMode memoryFlushMode;
+
+    @Column(name = "memory_flush_interval_minutes", nullable = false)
+    private int memoryFlushIntervalMinutes;
+
+    @Column(name = "memory_consolidation_interval_minutes", nullable = false)
+    private int memoryConsolidationIntervalMinutes;
+
+    @Column(name = "memory_daily_retention_days", nullable = false)
+    private int memoryDailyRetentionDays;
+
+    @Column(name = "memory_session_retention_days", nullable = false)
+    private int memorySessionRetentionDays;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "workspace_mode", nullable = false, length = 32)
+    private AgentWorkspaceMode workspaceMode;
+
+    @Column(name = "workspace_isolation_scope", nullable = false, length = 16)
+    private String workspaceIsolationScope;
+
+    @Column(name = "workspace_context_enabled", nullable = false)
+    private boolean workspaceContextEnabled;
+
+    @Column(name = "shell_enabled", nullable = false)
+    private boolean shellEnabled;
+
+    @Column(name = "docker_image", nullable = false, length = 255)
+    private String dockerImage;
+
+    @Column(name = "sandbox_memory_mb", nullable = false)
+    private int sandboxMemoryMb;
+
+    @Column(name = "sandbox_cpu_count", nullable = false)
+    private int sandboxCpuCount;
+
     @Column(nullable = false)
     private boolean enabled;
 
@@ -129,6 +174,20 @@ public class AgentAsset {
         this.tracingEnabled = true;
         this.mcpServerIdsJson = "[]";
         this.skillIdsJson = "[]";
+        this.mcpToolFiltersJson = "{}";
+        this.memoryEnabled = false;
+        this.memoryFlushMode = AgentMemoryFlushMode.THROTTLED;
+        this.memoryFlushIntervalMinutes = 30;
+        this.memoryConsolidationIntervalMinutes = 30;
+        this.memoryDailyRetentionDays = 90;
+        this.memorySessionRetentionDays = 180;
+        this.workspaceMode = AgentWorkspaceMode.DISABLED;
+        this.workspaceIsolationScope = "SESSION";
+        this.workspaceContextEnabled = true;
+        this.shellEnabled = false;
+        this.dockerImage = "";
+        this.sandboxMemoryMb = 512;
+        this.sandboxCpuCount = 1;
         this.enabled = true;
         this.createdAt = Instant.now();
         this.updatedAt = createdAt;
@@ -191,6 +250,39 @@ public class AgentAsset {
         this.maxContextTokens = maxContextTokens;
         this.toolResultEvictionEnabled = toolResultEvictionEnabled;
         this.tracingEnabled = tracingEnabled;
+        this.updatedAt = Instant.now();
+    }
+
+    /** Applies MCP tool restrictions, memory policy, and workspace isolation settings. */
+    public void updateCapabilities(
+            String mcpToolFiltersJson,
+            boolean memoryEnabled,
+            AgentMemoryFlushMode memoryFlushMode,
+            int memoryFlushIntervalMinutes,
+            int memoryConsolidationIntervalMinutes,
+            int memoryDailyRetentionDays,
+            int memorySessionRetentionDays,
+            AgentWorkspaceMode workspaceMode,
+            String workspaceIsolationScope,
+            boolean workspaceContextEnabled,
+            boolean shellEnabled,
+            String dockerImage,
+            int sandboxMemoryMb,
+            int sandboxCpuCount) {
+        this.mcpToolFiltersJson = mcpToolFiltersJson;
+        this.memoryEnabled = memoryEnabled;
+        this.memoryFlushMode = memoryFlushMode;
+        this.memoryFlushIntervalMinutes = memoryFlushIntervalMinutes;
+        this.memoryConsolidationIntervalMinutes = memoryConsolidationIntervalMinutes;
+        this.memoryDailyRetentionDays = memoryDailyRetentionDays;
+        this.memorySessionRetentionDays = memorySessionRetentionDays;
+        this.workspaceMode = workspaceMode;
+        this.workspaceIsolationScope = workspaceIsolationScope;
+        this.workspaceContextEnabled = workspaceContextEnabled;
+        this.shellEnabled = shellEnabled;
+        this.dockerImage = dockerImage;
+        this.sandboxMemoryMb = sandboxMemoryMb;
+        this.sandboxCpuCount = sandboxCpuCount;
         this.updatedAt = Instant.now();
     }
 
@@ -288,6 +380,62 @@ public class AgentAsset {
 
     public String getSkillIdsJson() {
         return skillIdsJson;
+    }
+
+    public String getMcpToolFiltersJson() {
+        return mcpToolFiltersJson;
+    }
+
+    public boolean isMemoryEnabled() {
+        return memoryEnabled;
+    }
+
+    public AgentMemoryFlushMode getMemoryFlushMode() {
+        return memoryFlushMode;
+    }
+
+    public int getMemoryFlushIntervalMinutes() {
+        return memoryFlushIntervalMinutes;
+    }
+
+    public int getMemoryConsolidationIntervalMinutes() {
+        return memoryConsolidationIntervalMinutes;
+    }
+
+    public int getMemoryDailyRetentionDays() {
+        return memoryDailyRetentionDays;
+    }
+
+    public int getMemorySessionRetentionDays() {
+        return memorySessionRetentionDays;
+    }
+
+    public AgentWorkspaceMode getWorkspaceMode() {
+        return workspaceMode;
+    }
+
+    public String getWorkspaceIsolationScope() {
+        return workspaceIsolationScope;
+    }
+
+    public boolean isWorkspaceContextEnabled() {
+        return workspaceContextEnabled;
+    }
+
+    public boolean isShellEnabled() {
+        return shellEnabled;
+    }
+
+    public String getDockerImage() {
+        return dockerImage;
+    }
+
+    public int getSandboxMemoryMb() {
+        return sandboxMemoryMb;
+    }
+
+    public int getSandboxCpuCount() {
+        return sandboxCpuCount;
     }
 
     public boolean isEnabled() {

@@ -27,6 +27,20 @@ export type AgentItem = {
   tracingEnabled: boolean;
   mcpServerIds: string[];
   skillIds: string[];
+  mcpToolFilters: Record<string, string[]>;
+  memoryEnabled: boolean;
+  memoryFlushMode: "ALWAYS" | "THROTTLED" | "NEVER";
+  memoryFlushIntervalMinutes: number;
+  memoryConsolidationIntervalMinutes: number;
+  memoryDailyRetentionDays: number;
+  memorySessionRetentionDays: number;
+  workspaceMode: "DISABLED" | "LOCAL_ROOTED" | "DOCKER_SANDBOX";
+  workspaceIsolationScope: "SESSION" | "USER" | "AGENT" | "GLOBAL";
+  workspaceContextEnabled: boolean;
+  shellEnabled: boolean;
+  dockerImage: string;
+  sandboxMemoryMb: number;
+  sandboxCpuCount: number;
   enabled: boolean;
   createdAt: string;
   updatedAt: string;
@@ -297,6 +311,7 @@ export function AgentConfigPage({ agentId, onBack }: { agentId: string; onBack: 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
+  const [activeTab, setActiveTab] = useState<"core" | "skills" | "mcp" | "memory" | "workspace" | "runtime">("core");
 
   // editable draft
   const [systemPrompt, setSystemPrompt] = useState("");
@@ -318,6 +333,21 @@ export function AgentConfigPage({ agentId, onBack }: { agentId: string; onBack: 
   const [tracingEnabled, setTracingEnabled] = useState(true);
   const [boundMcp, setBoundMcp] = useState<Set<string>>(new Set());
   const [boundSkills, setBoundSkills] = useState<Set<string>>(new Set());
+  const [mcpToolFilters, setMcpToolFilters] = useState<Record<string, string[]>>({});
+  const [mcpTools, setMcpTools] = useState<Record<string, string[]>>({});
+  const [memoryEnabled, setMemoryEnabled] = useState(false);
+  const [memoryFlushMode, setMemoryFlushMode] = useState<AgentItem["memoryFlushMode"]>("THROTTLED");
+  const [memoryFlushIntervalMinutes, setMemoryFlushIntervalMinutes] = useState(30);
+  const [memoryConsolidationIntervalMinutes, setMemoryConsolidationIntervalMinutes] = useState(30);
+  const [memoryDailyRetentionDays, setMemoryDailyRetentionDays] = useState(90);
+  const [memorySessionRetentionDays, setMemorySessionRetentionDays] = useState(180);
+  const [workspaceMode, setWorkspaceMode] = useState<AgentItem["workspaceMode"]>("DISABLED");
+  const [workspaceIsolationScope, setWorkspaceIsolationScope] = useState<AgentItem["workspaceIsolationScope"]>("SESSION");
+  const [workspaceContextEnabled, setWorkspaceContextEnabled] = useState(true);
+  const [shellEnabled, setShellEnabled] = useState(false);
+  const [dockerImage, setDockerImage] = useState("");
+  const [sandboxMemoryMb, setSandboxMemoryMb] = useState(512);
+  const [sandboxCpuCount, setSandboxCpuCount] = useState(1);
 
   // chat
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -358,6 +388,20 @@ export function AgentConfigPage({ agentId, onBack }: { agentId: string; onBack: 
         setTracingEnabled(a.tracingEnabled ?? true);
         setBoundMcp(new Set(a.mcpServerIds));
         setBoundSkills(new Set(a.skillIds));
+        setMcpToolFilters(a.mcpToolFilters ?? {});
+        setMemoryEnabled(a.memoryEnabled ?? false);
+        setMemoryFlushMode(a.memoryFlushMode ?? "THROTTLED");
+        setMemoryFlushIntervalMinutes(a.memoryFlushIntervalMinutes ?? 30);
+        setMemoryConsolidationIntervalMinutes(a.memoryConsolidationIntervalMinutes ?? 30);
+        setMemoryDailyRetentionDays(a.memoryDailyRetentionDays ?? 90);
+        setMemorySessionRetentionDays(a.memorySessionRetentionDays ?? 180);
+        setWorkspaceMode(a.workspaceMode ?? "DISABLED");
+        setWorkspaceIsolationScope(a.workspaceIsolationScope ?? "SESSION");
+        setWorkspaceContextEnabled(a.workspaceContextEnabled ?? true);
+        setShellEnabled(a.shellEnabled ?? false);
+        setDockerImage(a.dockerImage ?? "");
+        setSandboxMemoryMb(a.sandboxMemoryMb ?? 512);
+        setSandboxCpuCount(a.sandboxCpuCount ?? 1);
 
         const modelList: Array<Record<string, unknown>> = modelRes.ok ? await modelRes.json() : [];
         setModels(
@@ -375,6 +419,15 @@ export function AgentConfigPage({ agentId, onBack }: { agentId: string; onBack: 
             .filter((m) => m.enabled !== false)
             .map((m) => ({ id: String(m.id), name: String(m.name), sub: String(m.serverKey) })),
         );
+        const toolEntries = await Promise.all(
+          mcpList.map(async (m) => {
+            const id = String(m.id);
+            const response = await fetch(`/api/v1/mcp-servers/${id}/tools`);
+            const tools: Array<Record<string, unknown>> = response.ok ? await response.json() : [];
+            return [id, tools.map((tool) => String(tool.name))] as const;
+          }),
+        );
+        setMcpTools(Object.fromEntries(toolEntries));
         const skillList: Array<Record<string, unknown>> = skillRes.ok ? await skillRes.json() : [];
         setSkills(
           skillList
@@ -422,6 +475,11 @@ export function AgentConfigPage({ agentId, onBack }: { agentId: string; onBack: 
     ) {
       return;
     }
+    if (
+      agent &&
+      (workspaceMode !== agent.workspaceMode || shellEnabled !== agent.shellEnabled) &&
+      !window.confirm(t("agents.workspaceChangeConfirm", { name: agent.name }))
+    ) return;
     setSaving(true);
     setNotice(null);
     try {
@@ -445,6 +503,20 @@ export function AgentConfigPage({ agentId, onBack }: { agentId: string; onBack: 
         tracingEnabled,
         mcpServerIds: [...boundMcp],
         skillIds: [...boundSkills],
+        mcpToolFilters,
+        memoryEnabled,
+        memoryFlushMode,
+        memoryFlushIntervalMinutes,
+        memoryConsolidationIntervalMinutes,
+        memoryDailyRetentionDays,
+        memorySessionRetentionDays,
+        workspaceMode,
+        workspaceIsolationScope,
+        workspaceContextEnabled,
+        shellEnabled,
+        dockerImage,
+        sandboxMemoryMb,
+        sandboxCpuCount,
       };
       const res = await fetch(`/api/v1/agents/${agentId}/configuration`, {
         method: "PUT",
@@ -513,7 +585,17 @@ export function AgentConfigPage({ agentId, onBack }: { agentId: string; onBack: 
           <code style={{ fontSize: 11, color: "#7a9abc" }}>{agent.agentKey}</code>
         </div>
 
-        <div className="config-section">
+        <nav className="agent-config-tabs" aria-label={t("agents.configTabs") }>
+          {(["core", "skills", "mcp", "memory", "workspace", "runtime"] as const).map((tab) => (
+            <button key={tab} className={activeTab === tab ? "active" : ""} onClick={() => setActiveTab(tab)}>
+              <span>{tab === "core" ? "01" : tab === "skills" ? "02" : tab === "mcp" ? "03" : tab === "memory" ? "04" : tab === "workspace" ? "05" : "06"}</span>
+              {t(`agents.tab.${tab}`)}
+              {tab === "mcp" && boundMcp.size > 0 && <em>{boundMcp.size}</em>}
+            </button>
+          ))}
+        </nav>
+
+        <div className="config-section" hidden={activeTab !== "core"}>
           <div className="section-head">
             <b>{t("agents.systemPrompt")}</b>
             <small>{t("agents.systemPromptHint")}</small>
@@ -526,7 +608,7 @@ export function AgentConfigPage({ agentId, onBack }: { agentId: string; onBack: 
           />
         </div>
 
-        <div className="config-section">
+        <div className="config-section" hidden={activeTab !== "core"}>
           <div className="section-head">
             <b>{t("agents.welcomeMessage")}</b>
             <small>{t("agents.welcomeHint")}</small>
@@ -539,7 +621,7 @@ export function AgentConfigPage({ agentId, onBack }: { agentId: string; onBack: 
           />
         </div>
 
-        <div className="config-section">
+        <div className="config-section" hidden={activeTab !== "core"}>
           <div className="section-head">
             <b>{t("agents.model")}</b>
           </div>
@@ -609,7 +691,7 @@ export function AgentConfigPage({ agentId, onBack }: { agentId: string; onBack: 
           </div>
         </div>
 
-        <div className="config-section runtime-policy-card">
+        <div className="config-section runtime-policy-card" hidden={activeTab !== "runtime"}>
           <div className="section-head runtime-policy-head">
             <span className="runtime-icon">⌁</span>
             <div>
@@ -658,7 +740,7 @@ export function AgentConfigPage({ agentId, onBack }: { agentId: string; onBack: 
           </div>
         </div>
 
-        <div className="config-section">
+        <div className="config-section" hidden={activeTab !== "mcp"}>
           <div className="section-head">
             <b>{t("agents.mcpServers")}</b>
             <small>{t("agents.mcpHint")}</small>
@@ -668,22 +750,55 @@ export function AgentConfigPage({ agentId, onBack }: { agentId: string; onBack: 
               <small style={{ padding: 8 }}>{t("agents.noMcp")}</small>
             )}
             {mcpServers.map((m) => (
-              <label key={m.id} className="binding-item">
+              <div key={m.id} className={`binding-item binding-card ${boundMcp.has(m.id) ? "selected" : ""}`}>
                 <input
                   type="checkbox"
                   checked={boundMcp.has(m.id)}
-                  onChange={() => toggle(setBoundMcp, boundMcp, m.id)}
+                  onChange={() => {
+                    const wasBound = boundMcp.has(m.id);
+                    toggle(setBoundMcp, boundMcp, m.id);
+                    if (wasBound) setMcpToolFilters((previous) => {
+                      const updated = { ...previous };
+                      delete updated[m.id];
+                      return updated;
+                    });
+                  }}
                 />
                 <span className="meta">
                   <b>{m.name}</b>
                   {m.sub && <small>{m.sub}</small>}
                 </span>
-              </label>
+                {boundMcp.has(m.id) && (mcpTools[m.id] ?? []).length > 0 && (
+                  <div className="tool-allowlist">
+                    <small>{t("agents.toolAccess")}</small>
+                    {(mcpTools[m.id] ?? []).map((tool) => {
+                      const filter = mcpToolFilters[m.id];
+                      const checked = !filter || filter.includes(tool);
+                      return <label key={tool}><input type="checkbox" checked={checked} onChange={() => {
+                        const all = mcpTools[m.id] ?? [];
+                        const current = filter ?? all;
+                        const next = checked ? current.filter((name) => name !== tool) : [...current, tool];
+                        if (next.length === 0) {
+                          const selectedServers = new Set(boundMcp);
+                          selectedServers.delete(m.id);
+                          setBoundMcp(selectedServers);
+                        }
+                        setMcpToolFilters((previous) => {
+                          const updated = { ...previous };
+                          if (next.length === 0 || next.length === all.length) delete updated[m.id];
+                          else updated[m.id] = next;
+                          return updated;
+                        });
+                      }} />{tool}</label>;
+                    })}
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         </div>
 
-        <div className="config-section">
+        <div className="config-section" hidden={activeTab !== "skills"}>
           <div className="section-head">
             <b>{t("agents.skills")}</b>
             <small>{t("agents.skillsHint")}</small>
@@ -706,6 +821,34 @@ export function AgentConfigPage({ agentId, onBack }: { agentId: string; onBack: 
               </label>
             ))}
           </div>
+        </div>
+
+        <div className="config-section capability-card" hidden={activeTab !== "memory"}>
+          <div className="capability-hero"><span>MEM</span><div><b>{t("agents.memoryTitle")}</b><small>{t("agents.memoryHint")}</small></div><label className="switch-line"><input type="checkbox" checked={memoryEnabled} onChange={(e) => { setMemoryEnabled(e.target.checked); if (e.target.checked && workspaceMode === "DISABLED") setWorkspaceMode("LOCAL_ROOTED"); }} />{t("agents.enabled")}</label></div>
+          <div className="runtime-grid muted-when-disabled" aria-disabled={!memoryEnabled}>
+            <label className="runtime-field"><span>{t("agents.memoryFlushMode")}</span><select disabled={!memoryEnabled} value={memoryFlushMode} onChange={(e) => setMemoryFlushMode(e.target.value as AgentItem["memoryFlushMode"])}><option value="ALWAYS">ALWAYS</option><option value="THROTTLED">THROTTLED</option><option value="NEVER">NEVER</option></select></label>
+            <label className="runtime-field"><span>{t("agents.memoryFlushInterval")}</span><input disabled={!memoryEnabled || memoryFlushMode !== "THROTTLED"} type="number" min={1} max={1440} value={memoryFlushIntervalMinutes} onChange={(e) => setMemoryFlushIntervalMinutes(Number(e.target.value))} /></label>
+            <label className="runtime-field"><span>{t("agents.memoryConsolidation")}</span><input disabled={!memoryEnabled} type="number" min={1} max={1440} value={memoryConsolidationIntervalMinutes} onChange={(e) => setMemoryConsolidationIntervalMinutes(Number(e.target.value))} /></label>
+            <label className="runtime-field"><span>{t("agents.dailyRetention")}</span><input disabled={!memoryEnabled} type="number" min={1} max={3650} value={memoryDailyRetentionDays} onChange={(e) => setMemoryDailyRetentionDays(Number(e.target.value))} /></label>
+            <label className="runtime-field"><span>{t("agents.sessionRetention")}</span><input disabled={!memoryEnabled} type="number" min={1} max={3650} value={memorySessionRetentionDays} onChange={(e) => setMemorySessionRetentionDays(Number(e.target.value))} /></label>
+          </div>
+          {memoryEnabled && <div className="info-strip">✓ {t("agents.memoryWorkspaceNotice")}</div>}
+        </div>
+
+        <div className="config-section capability-card" hidden={activeTab !== "workspace"}>
+          <div className="capability-hero"><span>FS</span><div><b>{t("agents.workspaceTitle")}</b><small>{t("agents.workspaceHint")}</small></div></div>
+          <div className="workspace-modes">
+            {(["DISABLED", "LOCAL_ROOTED", "DOCKER_SANDBOX"] as const).map((mode) => <button key={mode} className={workspaceMode === mode ? "active" : ""} onClick={() => { setWorkspaceMode(mode); if (mode === "DISABLED") { setMemoryEnabled(false); setShellEnabled(false); } }}>{t(`agents.workspaceMode.${mode}`)}</button>)}
+          </div>
+          {workspaceMode !== "DISABLED" && <>
+            <div className="runtime-grid">
+              <label className="runtime-field"><span>{t("agents.isolationScope")}</span><select value={workspaceIsolationScope} onChange={(e) => setWorkspaceIsolationScope(e.target.value as AgentItem["workspaceIsolationScope"])}><option value="SESSION">SESSION</option><option value="USER">USER</option><option value="AGENT">AGENT</option><option value="GLOBAL">GLOBAL</option></select></label>
+              {workspaceMode === "DOCKER_SANDBOX" && <><label className="runtime-field"><span>{t("agents.dockerImage")}</span><input value={dockerImage} onChange={(e) => setDockerImage(e.target.value)} placeholder="ubuntu:24.04" /></label><label className="runtime-field"><span>{t("agents.sandboxMemory")}</span><input type="number" min={128} max={32768} value={sandboxMemoryMb} onChange={(e) => setSandboxMemoryMb(Number(e.target.value))} /></label><label className="runtime-field"><span>{t("agents.sandboxCpu")}</span><input type="number" min={1} max={64} value={sandboxCpuCount} onChange={(e) => setSandboxCpuCount(Number(e.target.value))} /></label></>}
+            </div>
+            <div className="runtime-switches"><label><input type="checkbox" checked={workspaceContextEnabled} onChange={(e) => setWorkspaceContextEnabled(e.target.checked)} /><span>{t("agents.workspaceContext")}</span></label><label><input type="checkbox" checked={shellEnabled} onChange={(e) => setShellEnabled(e.target.checked)} /><span>{t("agents.shellTool")}</span></label></div>
+            {shellEnabled && <div className="runtime-warning">△ {t("agents.shellWarning")}</div>}
+          </>}
+          <div className="info-strip">{t("agents.workspaceManagedPath")}</div>
         </div>
 
         {notice && (

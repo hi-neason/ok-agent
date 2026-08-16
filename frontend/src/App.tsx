@@ -54,14 +54,14 @@ const navItemById = Object.fromEntries(
 
 const navigationGroups: NavigationGroup[] = [
   {
+    title: "智能体管理",
+    items: (["agents"] as Page[]).map((id) => navItemById[id]),
+  },
+  {
     title: "组件管理",
     items: (["models", "skills", "mcp", "knowledge", "workflows"] as Page[]).map(
       (id) => navItemById[id],
     ),
-  },
-  {
-    title: "智能体管理",
-    items: (["agents"] as Page[]).map((id) => navItemById[id]),
   },
   {
     title: "发布与可观测",

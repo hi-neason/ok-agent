@@ -20,6 +20,8 @@ import io.okagent.repository.model.ModelAssetRepository;
 import io.okagent.repository.skill.SkillAssetRepository;
 import io.okagent.web.agent.AgentConfigRequest;
 import io.okagent.web.agent.AgentConfigValidationResponse;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -80,8 +82,11 @@ class AgentConfigurationValidationTests {
         when(mcpToolSnapshots.findByServerIdOrderByName(mcpId)).thenReturn(List.of(tool));
     }
 
+    private final Validator validator =
+            Validation.buildDefaultValidatorFactory().getValidator();
+
     private AgentAssetServiceImpl service() {
-        return new AgentAssetServiceImpl(agents, models, mcpServers, skills, mcpToolSnapshots);
+        return new AgentAssetServiceImpl(agents, models, mcpServers, skills, mcpToolSnapshots, validator);
     }
 
     private Req validReq() {
@@ -189,6 +194,19 @@ class AgentConfigurationValidationTests {
 
         assertThat(response.valid()).isFalse();
         assertThat(response.errors()).anyMatch(e -> "CONTEXT_BUDGET_INVALID".equals(e.code()));
+    }
+
+    @Test
+    void reportsBeanValidationViolationsAsStructuredErrors() {
+        Req r = validReq();
+        r.maxContextTokens = 0;
+        r.maxTokens = 0;
+
+        AgentConfigValidationResponse response = service().validateConfiguration(agentId, r.build());
+
+        assertThat(response.valid()).isFalse();
+        assertThat(response.errors()).anyMatch(e -> "maxContextTokens".equals(e.field()) && "runtime".equals(e.tab()));
+        assertThat(response.errors()).anyMatch(e -> "maxTokens".equals(e.field()) && "core".equals(e.tab()));
     }
 
     /** Mutable holder for the 33-field {@link AgentConfigRequest} record. */

@@ -15,6 +15,8 @@ import io.okagent.web.agent.AgentConfigValidationIssue;
 import io.okagent.web.agent.AgentConfigValidationResponse;
 import io.okagent.web.agent.AgentCreateRequest;
 import io.okagent.web.agent.AgentUpdateRequest;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validator;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -41,6 +43,7 @@ public class AgentAssetServiceImpl implements AgentAssetService {
     private final McpServerRepository mcpServers;
     private final SkillAssetRepository skills;
     private final McpToolSnapshotRepository mcpToolSnapshots;
+    private final Validator validator;
     private final ObjectMapper json = new ObjectMapper();
 
     public AgentAssetServiceImpl(
@@ -48,12 +51,14 @@ public class AgentAssetServiceImpl implements AgentAssetService {
             ModelAssetRepository models,
             McpServerRepository mcpServers,
             SkillAssetRepository skills,
-            McpToolSnapshotRepository mcpToolSnapshots) {
+            McpToolSnapshotRepository mcpToolSnapshots,
+            Validator validator) {
         this.agents = agents;
         this.models = models;
         this.mcpServers = mcpServers;
         this.skills = skills;
         this.mcpToolSnapshots = mcpToolSnapshots;
+        this.validator = validator;
     }
 
     @Override
@@ -170,6 +175,7 @@ public class AgentAssetServiceImpl implements AgentAssetService {
     public AgentConfigValidationResponse validateConfiguration(UUID id, AgentConfigRequest request) {
         long start = System.nanoTime();
         var report = new ValidationReport();
+        collectBeanValidationIssues(request, report);
         var agent = agents.findById(id).orElse(null);
         if (agent == null) {
             report.error("agent", "AGENT_NOT_FOUND", "Agent not found", "core");
@@ -182,6 +188,39 @@ public class AgentAssetServiceImpl implements AgentAssetService {
         collectCapabilityIssues(request, report);
         collectRuntimeIssues(request, report);
         return report.toResponse(start);
+    }
+
+    private void collectBeanValidationIssues(AgentConfigRequest request, ValidationReport report) {
+        for (ConstraintViolation<AgentConfigRequest> v : validator.validate(request)) {
+            var field = v.getPropertyPath().toString();
+            report.error(
+                    field,
+                    v.getConstraintDescriptor().getAnnotation().annotationType().getSimpleName(),
+                    v.getMessage(),
+                    tabForField(field));
+        }
+    }
+
+    private static String tabForField(String field) {
+        return switch (field) {
+            case "systemPrompt", "welcomeMessage", "modelAssetId", "temperature", "topP", "topK", "maxTokens" -> "core";
+            case "mcpServerIds", "mcpToolFilters" -> "mcp";
+            case "skillIds" -> "skills";
+            case "memoryEnabled",
+                    "memoryFlushMode",
+                    "memoryFlushIntervalMinutes",
+                    "memoryConsolidationIntervalMinutes",
+                    "memoryDailyRetentionDays",
+                    "memorySessionRetentionDays" -> "memory";
+            case "workspaceMode",
+                    "workspaceIsolationScope",
+                    "workspaceContextEnabled",
+                    "shellEnabled",
+                    "dockerImage",
+                    "sandboxMemoryMb",
+                    "sandboxCpuCount" -> "workspace";
+            default -> "runtime";
+        };
     }
 
     private static final Set<String> BUILTIN_TOOL_NAMES = Set.of(

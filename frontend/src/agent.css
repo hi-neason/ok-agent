@@ -201,6 +201,10 @@
   gap: 10px;
 }
 
+.agent-dev-panel > .config-section[hidden] {
+  display: none !important;
+}
+
 .config-section > .section-head {
   display: flex;
   align-items: baseline;

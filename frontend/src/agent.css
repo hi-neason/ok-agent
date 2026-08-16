@@ -637,3 +637,47 @@ select.cfg-select,
   border-radius: 4px;
   padding: 2px 5px;
 }
+
+/* Topbar breadcrumb: secondary (group) level */
+.crumb-sub {
+  color: #92a0b5;
+  font-weight: 500;
+}
+
+/* WIP placeholder page shown for modules under construction */
+.wip-placeholder {
+  max-width: 520px;
+  margin: 12vh auto;
+  padding: 38px 40px;
+  text-align: center;
+  background: #ffffff;
+  border: 1px solid #e7ecf3;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(20, 33, 61, 0.06);
+}
+.wip-placeholder-mark {
+  display: inline-block;
+  font: 11px "DM Mono", monospace;
+  letter-spacing: 1px;
+  color: #b0701a;
+  background: #fff3df;
+  border: 1px solid #f3d9a8;
+  border-radius: 5px;
+  padding: 4px 10px;
+  margin-bottom: 18px;
+}
+.wip-placeholder h1 {
+  margin: 0 0 10px;
+  font-size: 22px;
+  color: #1c2740;
+}
+.wip-placeholder p {
+  margin: 0 0 14px;
+  color: #6b7890;
+}
+.wip-placeholder small {
+  font: 10px "DM Mono", monospace;
+  letter-spacing: 0.12em;
+  color: #aab4c5;
+}
+

@@ -13,7 +13,10 @@ type Page =
   | "workflows"
   | "release"
   | "observe"
-  | "system";
+  | "system"
+  | "persona"
+  | "insight"
+  | "sysconfig";
 
 type NavItem = {
   id: Page;
@@ -31,15 +34,18 @@ type NavigationGroup = {
 // Full catalog of top-level modules. `wip` marks modules still under construction;
 // a few are intentionally hidden from the primary navigation (see `hiddenNavIds`).
 const navItems: NavItem[] = [
-  { id: "models", icon: "◌", name: "模型管理", kicker: "MODEL REGISTRY" },
-  { id: "skills", icon: "✦", name: "技能仓库", kicker: "SKILL MARKET" },
-  { id: "mcp", icon: "⌘", name: "MCP 与工具", kicker: "TOOLS CONFIG" },
-  { id: "knowledge", icon: "◫", name: "知识库", kicker: "KNOWLEDGE BASE", wip: true },
-  { id: "workflows", icon: "⌁", name: "工作流", kicker: "WORKFLOW LIBRARY", wip: true },
-  { id: "agents", icon: "◈", name: "智能体", kicker: "HARNESS AGENT" },
-  { id: "release", icon: "↗", name: "发布与环境", kicker: "RELEASE SNAPSHOT", wip: true },
-  { id: "observe", icon: "◌", name: "运行观测", kicker: "RUNTIME OBSERVE", wip: true },
-  { id: "system", icon: "◎", name: "账号与权限", kicker: "SYSTEM GOVERNANCE", wip: true },
+  { id: "agents", icon: "◈", name: "配置调试", kicker: "AGENT CONFIG" },
+  { id: "release", icon: "↗", name: "发布管理", kicker: "RELEASE", wip: true },
+  { id: "observe", icon: "◌", name: "运行观测", kicker: "OBSERVE", wip: true },
+  { id: "models", icon: "◌", name: "模型", kicker: "MODEL" },
+  { id: "skills", icon: "✦", name: "技能", kicker: "SKILL" },
+  { id: "mcp", icon: "⌘", name: "工具", kicker: "MCP" },
+  { id: "knowledge", icon: "◫", name: "知识库", kicker: "KNOWLEDGE", wip: true },
+  { id: "workflows", icon: "⌁", name: "工作流", kicker: "WORKFLOW", wip: true },
+  { id: "persona", icon: "◑", name: "用户画像", kicker: "PERSONA", wip: true },
+  { id: "insight", icon: "◍", name: "对话洞察", kicker: "INSIGHT", wip: true },
+  { id: "system", icon: "◎", name: "账号权限", kicker: "ACCESS", wip: true },
+  { id: "sysconfig", icon: "⚙", name: "系统配置", kicker: "SETTINGS", wip: true },
 ];
 
 const navItemById = Object.fromEntries(
@@ -48,22 +54,22 @@ const navItemById = Object.fromEntries(
 
 const navigationGroups: NavigationGroup[] = [
   {
-    title: "智能体管理",
-    items: (["agents"] as Page[]).map((id) => navItemById[id]),
+    title: "Agent管理",
+    items: (["agents", "release", "observe"] as Page[]).map((id) => navItemById[id]),
   },
   {
-    title: "组件管理",
+    title: "Component管理",
     items: (["models", "skills", "mcp", "knowledge", "workflows"] as Page[]).map(
       (id) => navItemById[id],
     ),
   },
   {
-    title: "发布与可观测",
-    items: (["release", "observe"] as Page[]).map((id) => navItemById[id]),
+    title: "业务管理",
+    items: (["persona", "insight"] as Page[]).map((id) => navItemById[id]),
   },
   {
     title: "系统管理",
-    items: (["system"] as Page[]).map((id) => navItemById[id]),
+    items: (["system", "sysconfig"] as Page[]).map((id) => navItemById[id]),
   },
 ];
 
@@ -78,6 +84,9 @@ const pagePaths: Record<Page, string> = {
   release: "/releases",
   observe: "/observability",
   system: "/system",
+  persona: "/persona",
+  insight: "/insight",
+  sysconfig: "/sysconfig",
 };
 const pathPages = Object.fromEntries(
   Object.entries(pagePaths).map(([page, path]) => [path, page]),
@@ -2830,6 +2839,8 @@ export default function App() {
   const selected = modules.find((x) => x.id === page)!;
   const moduleName = (module: { id: Page; name: string }) =>
     t(`navigation.${module.id}`, { defaultValue: module.name });
+  const groupTitleOf = (p: Page | undefined) =>
+    p ? navigationGroups.find((g) => g.items.some((it) => it.id === p))?.title : undefined;
   const navigate = (next: Page) => {
     window.history.pushState({}, "", pagePaths[next]);
     setPage(next);
@@ -2841,6 +2852,14 @@ export default function App() {
     setAgentConfigId(id);
   };
   const backToAgents = () => navigate("agents");
+  const WipPlaceholder = ({ name, kicker }: { name: string; kicker: string }) => (
+    <div className="wip-placeholder">
+      <div className="wip-placeholder-mark">WIP</div>
+      <h1>{name}</h1>
+      <p>该模块正在建设中，暂未开放。</p>
+      <small>{kicker}</small>
+    </div>
+  );
   const content = {
     agents: agentConfigId ? (
       <AgentConfigPage agentId={agentConfigId} onBack={backToAgents} />
@@ -2855,6 +2874,9 @@ export default function App() {
     release: <ReleasePage />,
     observe: <ObservePage />,
     system: <SystemPage />,
+    persona: <WipPlaceholder name="用户画像" kicker="PERSONA" />,
+    insight: <WipPlaceholder name="对话洞察" kicker="INSIGHT" />,
+    sysconfig: <WipPlaceholder name="系统配置" kicker="SETTINGS" />,
   }[page];
   return (
     <main className={`console-shell ${navCollapsed ? "nav-collapsed" : ""}`}>
@@ -2916,6 +2938,12 @@ export default function App() {
           <div>
             <span className="crumb">{t("common.controlPlane")}</span>
             <i>/</i>
+            {groupTitleOf(selected.id) && (
+              <>
+                <span className="crumb-sub">{groupTitleOf(selected.id)}</span>
+                <i>/</i>
+              </>
+            )}
             <b>{moduleName(selected)}</b>
           </div>
           <div>

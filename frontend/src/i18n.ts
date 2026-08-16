@@ -5,15 +5,18 @@ const resources = {
   "zh-CN": {
     translation: {
       navigation: {
-        models: "模型管理",
-        skills: "技能仓库",
-        mcp: "MCP工具",
+        agents: "配置调试",
+        release: "发布管理",
+        observe: "运行观测",
+        models: "模型",
+        skills: "技能",
+        mcp: "工具",
         knowledge: "知识库",
         workflows: "工作流",
-        agents: "智能体",
-        release: "发布与环境",
-        observe: "运行观测",
-        system: "账号与权限",
+        persona: "用户画像",
+        insight: "对话洞察",
+        system: "账号权限",
+        sysconfig: "系统配置",
       },
       common: { controlPlane: "控制面", search: "搜索", language: "语言", collapseNavigation: "收起或展开一级菜单" },
       models: {
@@ -313,15 +316,18 @@ const resources = {
   "en-US": {
     translation: {
       navigation: {
-        models: "Model Policies",
-        skills: "Skill Library",
-        mcp: "MCP & Tools",
+        agents: "Agent Config & Debug",
+        release: "Release Management",
+        observe: "Runtime Observability",
+        models: "Models",
+        skills: "Skills",
+        mcp: "Tools (MCP)",
         knowledge: "Knowledge Bases",
         workflows: "Workflows",
-        agents: "Agents",
-        release: "Releases & Environments",
-        observe: "Runtime Observability",
-        system: "Accounts & Permissions",
+        persona: "User Personas",
+        insight: "Conversation Insights",
+        system: "Access & Permissions",
+        sysconfig: "System Settings",
       },
       common: {
         controlPlane: "Control Plane",

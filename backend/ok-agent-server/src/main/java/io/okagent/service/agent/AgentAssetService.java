@@ -2,6 +2,7 @@ package io.okagent.service.agent;
 
 import io.okagent.web.agent.AgentAssetResponse;
 import io.okagent.web.agent.AgentConfigRequest;
+import io.okagent.web.agent.AgentConfigValidationResponse;
 import io.okagent.web.agent.AgentCreateRequest;
 import io.okagent.web.agent.AgentUpdateRequest;
 import java.util.List;
@@ -28,4 +29,18 @@ public interface AgentAssetService {
 
     /** Deletes an agent draft. */
     void delete(UUID id);
+
+    /**
+     * Validates an agent configuration without persisting it.
+     *
+     * <p>Resolves referenced models, MCP servers, and skills; checks MCP tool allowlists against the
+     * latest tool snapshots; enforces memory/workspace, docker, isolation-scope, permission, and
+     * context-budget constraints. Returns a structured result with field-level errors, warnings, and
+     * per-area checks so the UI can group issues by configuration tab.
+     *
+     * @param id the agent draft being validated
+     * @param request the candidate configuration
+     * @return a non-mutating validation result (always 200, never throws for an invalid payload)
+     */
+    AgentConfigValidationResponse validateConfiguration(UUID id, AgentConfigRequest request);
 }

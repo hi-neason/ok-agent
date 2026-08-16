@@ -195,6 +195,98 @@
   box-shadow: 0 0 0 4px rgba(24, 128, 238, .1);
 }
 
+/* drag highlight + collapse controls */
+.agent-panel-resizer.dragging i {
+  background: #1680ee;
+  box-shadow: 0 0 0 6px rgba(24, 128, 238, .18);
+}
+.agent-config-layout.is-dragging {
+  cursor: col-resize;
+}
+.agent-panel-resizer .resizer-collapse {
+  position: absolute;
+  border: 1px solid #c8def5;
+  background: #fff;
+  color: #1976df;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  font: 700 12px/1 monospace;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(32, 101, 174, .14);
+}
+.agent-panel-resizer .resizer-collapse--left { top: 8px; }
+.agent-panel-resizer .resizer-collapse--right { bottom: 8px; }
+.agent-panel-resizer .resizer-collapse:hover { background: #edf7ff; }
+
+.agent-pane-collapsed {
+  display: grid;
+  place-items: center;
+  background: #f3f8fe;
+  border-right: 1px solid #e1edf8;
+}
+.agent-pane-collapsed--right { border-right: none; border-left: 1px solid #e1edf8; }
+.agent-pane-collapsed .link-button { font-size: 18px; }
+
+/* tab error badge */
+.agent-config-tabs button .tab-error-badge {
+  margin-left: auto;
+  background: #e5484d;
+  color: #fff;
+  border-radius: 10px;
+  font-style: normal;
+  font-size: 10px;
+  line-height: 16px;
+  min-width: 16px;
+  text-align: center;
+  padding: 0 5px;
+}
+
+/* field-level + validation messages */
+.field-error {
+  color: #e5484d;
+  font-size: 12px;
+  background: #fff1f1;
+  border: 1px solid #f6c9c9;
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+.dirty-flag {
+  font-size: 11px;
+  color: #b15c00;
+  background: #fff5e6;
+  border: 1px solid #ffd79a;
+  border-radius: 8px;
+  padding: 4px 8px;
+}
+.validation-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.validation-group {
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.validation-group--error {
+  background: #fff1f1;
+  border: 1px solid #f6c9c9;
+}
+.validation-group--warning {
+  background: #fff8e8;
+  border: 1px solid #ffe1a8;
+}
+.validation-group ul {
+  margin: 6px 0 0;
+  padding-left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.validation-group b { font-size: 12px; }
+
 .config-section {
   display: flex;
   flex-direction: column;

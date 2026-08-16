@@ -58,6 +58,13 @@ public class AgentAssetController {
         return service.updateConfiguration(id, request);
     }
 
+    /** Validates an agent configuration and returns field-level errors, warnings, and checks. */
+    @PostMapping("/{id}/configuration/validate")
+    public AgentConfigValidationResponse validateConfiguration(
+            @PathVariable UUID id, @Valid @RequestBody AgentConfigRequest request) {
+        return service.validateConfiguration(id, request);
+    }
+
     /** Enables or disables an agent draft. */
     @PatchMapping("/{id}/enabled")
     public AgentAssetResponse enabled(@PathVariable UUID id, @RequestParam boolean value) {

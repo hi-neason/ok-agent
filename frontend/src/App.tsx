@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { AgentRegistryPage, AgentConfigPage } from "./agent";
+import { AgentRegistryPage, AgentConfigPage } from "./modules/agent";
 import "./agent.css";
 
 type Page =
@@ -3098,7 +3098,7 @@ export default function App() {
     () => window.localStorage.getItem("ok-agent.nav-collapsed") === "true",
   );
   const agentConfigMatch = () =>
-    window.location.pathname.match(/^\/agents\/([^/]+)\/config$/);
+    window.location.pathname.match(/^\/agents\/([^/]+)\/config(?:\/([a-z]+))?$/);
   const pageForPath = (path: string): Page =>
     path.startsWith("/mcp/") || path.startsWith("/agents/")
       ? path.startsWith("/mcp/")

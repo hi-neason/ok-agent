@@ -6,6 +6,7 @@ import io.agentscope.core.event.TextBlockDeltaEvent;
 import io.agentscope.core.event.ToolCallStartEvent;
 import io.agentscope.core.event.ToolResultEndEvent;
 import io.agentscope.core.message.Msg;
+import io.agentscope.core.permission.PermissionMode;
 import io.agentscope.harness.agent.HarnessAgent;
 import io.okagent.domain.agent.AgentAsset;
 import io.okagent.repository.agent.AgentAssetRepository;
@@ -59,6 +60,9 @@ public class AgentDebugServiceImpl implements AgentDebugService {
                     .userId("debug")
                     .sessionId(sessionId)
                     .build();
+            // The synchronous debug API has no human-in-the-loop confirmation round trip. Allow
+            // registered debug tools to run instead of ending MCP calls with PERMISSION_ASKING.
+            session.agent.setPermissionMode(ctx, PermissionMode.BYPASS);
 
             // Accumulate the final reply from text deltas (the demo's approach). Some models /
             // transports emit the answer only via TextBlockDeltaEvent and leave the final

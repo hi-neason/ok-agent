@@ -18,7 +18,7 @@ const resources = {
         observe: "运行观测",
         system: "账号与权限",
       },
-      common: { controlPlane: "控制面", search: "搜索", language: "语言" },
+      common: { controlPlane: "控制面", search: "搜索", language: "语言", collapseNavigation: "收起或展开一级菜单" },
       models: {
         connectionSucceeded: "连接成功",
         connectionTesting: "正在验证连接…",
@@ -61,6 +61,7 @@ const resources = {
         saveFailed: "保存失败，请检查服务连接和输入内容",
         configSaved: "配置已保存",
         configTabs: "智能体配置分区",
+        resizePanels: "拖动调整配置区和调试区宽度",
         tab: { core: "指令与模型", skills: "Skills", mcp: "MCP", memory: "Memory", workspace: "工作空间", runtime: "运行策略" },
         back: "返回列表",
         loading: "加载中…",
@@ -299,6 +300,7 @@ const resources = {
         controlPlane: "Control Plane",
         search: "Search",
         language: "Language",
+        collapseNavigation: "Collapse or expand navigation",
       },
       models: {
         connectionSucceeded: "Connection succeeded",
@@ -345,6 +347,7 @@ const resources = {
         saveFailed: "Save failed. Check the service connection and input.",
         configSaved: "Configuration saved",
         configTabs: "Agent configuration sections",
+        resizePanels: "Drag to resize configuration and debug panels",
         tab: { core: "Prompt & Model", skills: "Skills", mcp: "MCP", memory: "Memory", workspace: "Workspace", runtime: "Runtime" },
         back: "Back to list",
         loading: "Loading…",

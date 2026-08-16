@@ -353,6 +353,8 @@ export function AgentConfigPage({ agentId, onBack }: { agentId: string; onBack: 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [configWidth, setConfigWidth] = useState(54);
+  const layoutRef = useRef<HTMLDivElement>(null);
   const sessionIdRef = useRef<string>("");
   const threadRef = useRef<HTMLDivElement>(null);
 
@@ -573,9 +575,30 @@ export function AgentConfigPage({ agentId, onBack }: { agentId: string; onBack: 
   if (loading) return <div className="page-content">{t("agents.loading")}</div>;
   if (!agent) return <div className="page-content">{t("agents.notFound")}</div>;
 
+  const resizeWorkbench = (clientX: number) => {
+    const bounds = layoutRef.current?.getBoundingClientRect();
+    if (!bounds) return;
+    const percentage = ((clientX - bounds.left) / bounds.width) * 100;
+    setConfigWidth(Math.min(72, Math.max(34, percentage)));
+  };
+
   return (
-    <div className="agent-config-layout">
+    <div
+      className="agent-config-layout"
+      ref={layoutRef}
+      style={{ gridTemplateColumns: `minmax(0, ${configWidth}fr) 10px minmax(0, ${100 - configWidth}fr)` }}
+    >
       {/* LEFT: development panel */}
+      <div className="agent-config-workbench">
+        <nav className="agent-config-tabs" aria-label={t("agents.configTabs") }>
+          {(["core", "skills", "mcp", "memory", "workspace", "runtime"] as const).map((tab) => (
+            <button key={tab} className={activeTab === tab ? "active" : ""} onClick={() => setActiveTab(tab)}>
+              <span>{tab === "core" ? "01" : tab === "skills" ? "02" : tab === "mcp" ? "03" : tab === "memory" ? "04" : tab === "workspace" ? "05" : "06"}</span>
+              <strong>{t(`agents.tab.${tab}`)}</strong>
+              {tab === "mcp" && boundMcp.size > 0 && <em>{boundMcp.size}</em>}
+            </button>
+          ))}
+        </nav>
       <section className="agent-dev-panel">
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <button className="link-button" onClick={onBack} style={{ fontSize: 12 }}>
@@ -584,16 +607,6 @@ export function AgentConfigPage({ agentId, onBack }: { agentId: string; onBack: 
           <h2 style={{ margin: 0, fontSize: 18 }}>{agent.name}</h2>
           <code style={{ fontSize: 11, color: "#7a9abc" }}>{agent.agentKey}</code>
         </div>
-
-        <nav className="agent-config-tabs" aria-label={t("agents.configTabs") }>
-          {(["core", "skills", "mcp", "memory", "workspace", "runtime"] as const).map((tab) => (
-            <button key={tab} className={activeTab === tab ? "active" : ""} onClick={() => setActiveTab(tab)}>
-              <span>{tab === "core" ? "01" : tab === "skills" ? "02" : tab === "mcp" ? "03" : tab === "memory" ? "04" : tab === "workspace" ? "05" : "06"}</span>
-              {t(`agents.tab.${tab}`)}
-              {tab === "mcp" && boundMcp.size > 0 && <em>{boundMcp.size}</em>}
-            </button>
-          ))}
-        </nav>
 
         <div className="config-section" hidden={activeTab !== "core"}>
           <div className="section-head">
@@ -865,6 +878,29 @@ export function AgentConfigPage({ agentId, onBack }: { agentId: string; onBack: 
           </button>
         </div>
       </section>
+      </div>
+
+      <div
+        className="agent-panel-resizer"
+        role="separator"
+        aria-label={t("agents.resizePanels")}
+        aria-orientation="vertical"
+        tabIndex={0}
+        onPointerDown={(event) => {
+          event.currentTarget.setPointerCapture(event.pointerId);
+          const move = (moveEvent: PointerEvent) => resizeWorkbench(moveEvent.clientX);
+          const finish = () => {
+            window.removeEventListener("pointermove", move);
+            window.removeEventListener("pointerup", finish);
+          };
+          window.addEventListener("pointermove", move);
+          window.addEventListener("pointerup", finish);
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowLeft") setConfigWidth((value) => Math.max(34, value - 2));
+          if (event.key === "ArrowRight") setConfigWidth((value) => Math.min(72, value + 2));
+        }}
+      ><i /></div>
 
       {/* RIGHT: chat test panel */}
       <aside className="agent-chat-panel">

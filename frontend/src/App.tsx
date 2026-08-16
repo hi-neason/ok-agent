@@ -3094,6 +3094,9 @@ function ObservePage() {
 
 export default function App() {
   const { t, i18n } = useTranslation();
+  const [navCollapsed, setNavCollapsed] = useState(
+    () => window.localStorage.getItem("ok-agent.nav-collapsed") === "true",
+  );
   const agentConfigMatch = () =>
     window.location.pathname.match(/^\/agents\/([^/]+)\/config$/);
   const pageForPath = (path: string): Page =>
@@ -3155,17 +3158,29 @@ export default function App() {
     system: <SystemPage />,
   }[page];
   return (
-    <main className="console-shell">
+    <main className={`console-shell ${navCollapsed ? "nav-collapsed" : ""}`}>
       <aside className="main-nav">
         <div className="brand">
           <span className="brand-mark">ok</span>
-          <span>AGENT</span>
+          <span className="brand-name">AGENT</span>
         </div>
+        <button
+          className="nav-collapse-button"
+          aria-label={t("common.collapseNavigation")}
+          title={t("common.collapseNavigation")}
+          onClick={() => {
+            const next = !navCollapsed;
+            setNavCollapsed(next);
+            window.localStorage.setItem("ok-agent.nav-collapsed", String(next));
+          }}
+        >
+          {navCollapsed ? "›" : "‹"}
+        </button>
         <p className="nav-caption">HARNESS CONTROL PLANE</p>
         <nav>
           {navigationGroups.map((group) => (
             <section key={group.title} style={{ marginBottom: 12 }}>
-              <p
+              <p className="nav-group-title"
                 style={{
                   margin: "12px 10px 5px",
                   color: "#92a0b5",

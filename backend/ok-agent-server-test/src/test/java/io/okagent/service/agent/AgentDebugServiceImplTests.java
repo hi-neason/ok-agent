@@ -14,6 +14,7 @@ import io.agentscope.core.message.AssistantMessage;
 import io.agentscope.core.permission.PermissionMode;
 import io.agentscope.harness.agent.HarnessAgent;
 import io.okagent.domain.agent.AgentAsset;
+import io.okagent.domain.agent.AgentPermissionMode;
 import io.okagent.repository.agent.AgentAssetRepository;
 import io.okagent.web.agent.AgentChatRequest;
 import java.util.Optional;
@@ -27,6 +28,7 @@ class AgentDebugServiceImplTests {
         var agentId = UUID.randomUUID();
         var asset = new AgentAsset(agentId, "time-agent", "Time agent", "", "testing");
         asset.updateConfiguration("", "", UUID.randomUUID(), 0.7, null, null, 2048, "[]", "[]");
+        asset.updateRuntimePolicy(12, 90, 45, 1, AgentPermissionMode.EXPLORE, false, true, 16000, true, false);
 
         var agents = mock(AgentAssetRepository.class);
         var factory = mock(HarnessAgentFactory.class);
@@ -43,7 +45,7 @@ class AgentDebugServiceImplTests {
                 .setPermissionMode(
                         argThat(context ->
                                 "debug".equals(context.getUserId()) && "debug-session".equals(context.getSessionId())),
-                        eq(PermissionMode.BYPASS));
+                        eq(PermissionMode.EXPLORE));
         assertThat(response.reply()).isEqualTo("Current time returned by tool");
     }
 }

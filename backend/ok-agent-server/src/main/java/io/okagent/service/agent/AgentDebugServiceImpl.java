@@ -60,9 +60,10 @@ public class AgentDebugServiceImpl implements AgentDebugService {
                     .userId("debug")
                     .sessionId(sessionId)
                     .build();
-            // The synchronous debug API has no human-in-the-loop confirmation round trip. Allow
-            // registered debug tools to run instead of ending MCP calls with PERMISSION_ASKING.
-            session.agent.setPermissionMode(ctx, PermissionMode.BYPASS);
+            // The synchronous debug API has no human-in-the-loop confirmation round trip. The
+            // configured policy therefore decides whether tool calls run or stop for approval.
+            session.agent.setPermissionMode(
+                    ctx, PermissionMode.valueOf(draft.getPermissionMode().name()));
 
             // Accumulate the final reply from text deltas (the demo's approach). Some models /
             // transports emit the answer only via TextBlockDeltaEvent and leave the final

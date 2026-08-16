@@ -2,6 +2,8 @@ package io.okagent.domain.agent;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
@@ -50,6 +52,37 @@ public class AgentAsset {
     @Column(name = "max_tokens")
     private Integer maxTokens;
 
+    @Column(name = "max_iters", nullable = false)
+    private int maxIters;
+
+    @Column(name = "model_timeout_seconds", nullable = false)
+    private int modelTimeoutSeconds;
+
+    @Column(name = "tool_timeout_seconds", nullable = false)
+    private int toolTimeoutSeconds;
+
+    @Column(name = "max_retries", nullable = false)
+    private int maxRetries;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "permission_mode", nullable = false, length = 32)
+    private AgentPermissionMode permissionMode;
+
+    @Column(name = "parallel_tool_calls", nullable = false)
+    private boolean parallelToolCalls;
+
+    @Column(name = "compaction_enabled", nullable = false)
+    private boolean compactionEnabled;
+
+    @Column(name = "max_context_tokens", nullable = false)
+    private int maxContextTokens;
+
+    @Column(name = "tool_result_eviction_enabled", nullable = false)
+    private boolean toolResultEvictionEnabled;
+
+    @Column(name = "tracing_enabled", nullable = false)
+    private boolean tracingEnabled;
+
     /** JSON array of bound MCP server ids. */
     @Column(name = "mcp_server_ids_json", nullable = false, columnDefinition = "TEXT")
     private String mcpServerIdsJson;
@@ -84,6 +117,16 @@ public class AgentAsset {
         this.topP = null;
         this.topK = null;
         this.maxTokens = null;
+        this.maxIters = 10;
+        this.modelTimeoutSeconds = 120;
+        this.toolTimeoutSeconds = 60;
+        this.maxRetries = 2;
+        this.permissionMode = AgentPermissionMode.BYPASS;
+        this.parallelToolCalls = true;
+        this.compactionEnabled = true;
+        this.maxContextTokens = 8000;
+        this.toolResultEvictionEnabled = true;
+        this.tracingEnabled = true;
         this.mcpServerIdsJson = "[]";
         this.skillIdsJson = "[]";
         this.enabled = true;
@@ -123,6 +166,31 @@ public class AgentAsset {
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+        this.updatedAt = Instant.now();
+    }
+
+    /** Applies HarnessAgent execution limits, permissions, context, and observability settings. */
+    public void updateRuntimePolicy(
+            int maxIters,
+            int modelTimeoutSeconds,
+            int toolTimeoutSeconds,
+            int maxRetries,
+            AgentPermissionMode permissionMode,
+            boolean parallelToolCalls,
+            boolean compactionEnabled,
+            int maxContextTokens,
+            boolean toolResultEvictionEnabled,
+            boolean tracingEnabled) {
+        this.maxIters = maxIters;
+        this.modelTimeoutSeconds = modelTimeoutSeconds;
+        this.toolTimeoutSeconds = toolTimeoutSeconds;
+        this.maxRetries = maxRetries;
+        this.permissionMode = permissionMode;
+        this.parallelToolCalls = parallelToolCalls;
+        this.compactionEnabled = compactionEnabled;
+        this.maxContextTokens = maxContextTokens;
+        this.toolResultEvictionEnabled = toolResultEvictionEnabled;
+        this.tracingEnabled = tracingEnabled;
         this.updatedAt = Instant.now();
     }
 
@@ -172,6 +240,46 @@ public class AgentAsset {
 
     public Integer getMaxTokens() {
         return maxTokens;
+    }
+
+    public int getMaxIters() {
+        return maxIters;
+    }
+
+    public int getModelTimeoutSeconds() {
+        return modelTimeoutSeconds;
+    }
+
+    public int getToolTimeoutSeconds() {
+        return toolTimeoutSeconds;
+    }
+
+    public int getMaxRetries() {
+        return maxRetries;
+    }
+
+    public AgentPermissionMode getPermissionMode() {
+        return permissionMode;
+    }
+
+    public boolean isParallelToolCalls() {
+        return parallelToolCalls;
+    }
+
+    public boolean isCompactionEnabled() {
+        return compactionEnabled;
+    }
+
+    public int getMaxContextTokens() {
+        return maxContextTokens;
+    }
+
+    public boolean isToolResultEvictionEnabled() {
+        return toolResultEvictionEnabled;
+    }
+
+    public boolean isTracingEnabled() {
+        return tracingEnabled;
     }
 
     public String getMcpServerIdsJson() {

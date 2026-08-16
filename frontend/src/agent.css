@@ -321,3 +321,94 @@ select.cfg-select,
   font: inherit;
   background: #fff;
 }
+
+.runtime-policy-card {
+  padding: 14px;
+  border: 1px solid #cfe2f8;
+  border-radius: 13px;
+  background:
+    linear-gradient(135deg, rgba(236, 246, 255, 0.9), rgba(255, 255, 255, 0.96)),
+    repeating-linear-gradient(90deg, transparent 0 31px, rgba(36, 125, 226, 0.04) 32px);
+}
+
+.runtime-policy-head {
+  align-items: center !important;
+}
+
+.runtime-policy-head > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.runtime-icon {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #1677e8;
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(22, 119, 232, 0.22);
+}
+
+.runtime-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.runtime-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: #5b7391;
+  font-size: 11px;
+}
+
+.runtime-field input,
+.runtime-field select {
+  min-width: 0;
+  height: 35px;
+  box-sizing: border-box;
+  border: 1px solid #cbdff5;
+  border-radius: 8px;
+  padding: 0 9px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #173f6d;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+.runtime-switches {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px 12px;
+}
+
+.runtime-switches label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 9px;
+  border: 1px solid rgba(203, 223, 245, 0.9);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.65);
+  color: #315b86;
+  font-size: 11px;
+}
+
+.runtime-warning {
+  padding: 8px 10px;
+  border-left: 3px solid #e4a11b;
+  background: #fff9e9;
+  color: #8a641a;
+  font-size: 10.5px;
+  line-height: 1.5;
+}
+
+@media (max-width: 1100px) {
+  .runtime-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

@@ -14,6 +14,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +23,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class AgentAssetServiceImpl implements AgentAssetService {
+    private static final Logger log = LoggerFactory.getLogger(AgentAssetServiceImpl.class);
+
     private final AgentAssetRepository agents;
     private final ModelAssetRepository models;
     private final McpServerRepository mcpServers;
@@ -95,7 +99,26 @@ public class AgentAssetServiceImpl implements AgentAssetService {
                 request.maxTokens(),
                 writeUuidList(request.mcpServerIds()),
                 writeUuidList(request.skillIds()));
-        return AgentAssetResponse.from(agents.save(agent));
+        agent.updateRuntimePolicy(
+                request.maxIters(),
+                request.modelTimeoutSeconds(),
+                request.toolTimeoutSeconds(),
+                request.maxRetries(),
+                request.permissionMode(),
+                request.parallelToolCalls(),
+                request.compactionEnabled(),
+                request.maxContextTokens(),
+                request.toolResultEvictionEnabled(),
+                request.tracingEnabled());
+        var saved = agents.save(agent);
+        log.info(
+                "Agent configuration updated: agentId={} permissionMode={} maxIters={} modelTimeoutSeconds={} toolTimeoutSeconds={}",
+                saved.getId(),
+                saved.getPermissionMode(),
+                saved.getMaxIters(),
+                saved.getModelTimeoutSeconds(),
+                saved.getToolTimeoutSeconds());
+        return AgentAssetResponse.from(saved);
     }
 
     @Override

@@ -3,6 +3,7 @@ package io.okagent.web.agent;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.okagent.domain.agent.AgentAsset;
+import io.okagent.domain.agent.AgentPermissionMode;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -20,6 +21,16 @@ public record AgentAssetResponse(
         Double topP,
         Integer topK,
         Integer maxTokens,
+        int maxIters,
+        int modelTimeoutSeconds,
+        int toolTimeoutSeconds,
+        int maxRetries,
+        AgentPermissionMode permissionMode,
+        boolean parallelToolCalls,
+        boolean compactionEnabled,
+        int maxContextTokens,
+        boolean toolResultEvictionEnabled,
+        boolean tracingEnabled,
         List<UUID> mcpServerIds,
         List<UUID> skillIds,
         boolean enabled,
@@ -43,6 +54,16 @@ public record AgentAssetResponse(
                 a.getTopP(),
                 a.getTopK(),
                 a.getMaxTokens(),
+                a.getMaxIters(),
+                a.getModelTimeoutSeconds(),
+                a.getToolTimeoutSeconds(),
+                a.getMaxRetries(),
+                a.getPermissionMode(),
+                a.isParallelToolCalls(),
+                a.isCompactionEnabled(),
+                a.getMaxContextTokens(),
+                a.isToolResultEvictionEnabled(),
+                a.isTracingEnabled(),
                 readUuidList(a.getMcpServerIdsJson()),
                 readUuidList(a.getSkillIdsJson()),
                 a.isEnabled(),

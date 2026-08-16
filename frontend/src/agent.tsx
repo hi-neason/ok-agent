@@ -15,6 +15,16 @@ export type AgentItem = {
   topP: number | null;
   topK: number | null;
   maxTokens: number | null;
+  maxIters: number;
+  modelTimeoutSeconds: number;
+  toolTimeoutSeconds: number;
+  maxRetries: number;
+  permissionMode: "DEFAULT" | "EXPLORE" | "ACCEPT_EDITS" | "DONT_ASK" | "BYPASS";
+  parallelToolCalls: boolean;
+  compactionEnabled: boolean;
+  maxContextTokens: number;
+  toolResultEvictionEnabled: boolean;
+  tracingEnabled: boolean;
   mcpServerIds: string[];
   skillIds: string[];
   enabled: boolean;
@@ -294,7 +304,18 @@ export function AgentConfigPage({ agentId, onBack }: { agentId: string; onBack: 
   const [modelAssetId, setModelAssetId] = useState("");
   const [temperature, setTemperature] = useState(0.7);
   const [topP, setTopP] = useState(1);
+  const [topK, setTopK] = useState(40);
   const [maxTokens, setMaxTokens] = useState(2048);
+  const [maxIters, setMaxIters] = useState(10);
+  const [modelTimeoutSeconds, setModelTimeoutSeconds] = useState(120);
+  const [toolTimeoutSeconds, setToolTimeoutSeconds] = useState(60);
+  const [maxRetries, setMaxRetries] = useState(2);
+  const [permissionMode, setPermissionMode] = useState<AgentItem["permissionMode"]>("BYPASS");
+  const [parallelToolCalls, setParallelToolCalls] = useState(true);
+  const [compactionEnabled, setCompactionEnabled] = useState(true);
+  const [maxContextTokens, setMaxContextTokens] = useState(8000);
+  const [toolResultEvictionEnabled, setToolResultEvictionEnabled] = useState(true);
+  const [tracingEnabled, setTracingEnabled] = useState(true);
   const [boundMcp, setBoundMcp] = useState<Set<string>>(new Set());
   const [boundSkills, setBoundSkills] = useState<Set<string>>(new Set());
 
@@ -323,7 +344,18 @@ export function AgentConfigPage({ agentId, onBack }: { agentId: string; onBack: 
         setModelAssetId(a.modelAssetId || "");
         setTemperature(a.temperature ?? 0.7);
         setTopP(a.topP ?? 1);
+        setTopK(a.topK ?? 40);
         setMaxTokens(a.maxTokens ?? 2048);
+        setMaxIters(a.maxIters ?? 10);
+        setModelTimeoutSeconds(a.modelTimeoutSeconds ?? 120);
+        setToolTimeoutSeconds(a.toolTimeoutSeconds ?? 60);
+        setMaxRetries(a.maxRetries ?? 2);
+        setPermissionMode(a.permissionMode ?? "BYPASS");
+        setParallelToolCalls(a.parallelToolCalls ?? true);
+        setCompactionEnabled(a.compactionEnabled ?? true);
+        setMaxContextTokens(a.maxContextTokens ?? 8000);
+        setToolResultEvictionEnabled(a.toolResultEvictionEnabled ?? true);
+        setTracingEnabled(a.tracingEnabled ?? true);
         setBoundMcp(new Set(a.mcpServerIds));
         setBoundSkills(new Set(a.skillIds));
 
@@ -377,6 +409,19 @@ export function AgentConfigPage({ agentId, onBack }: { agentId: string; onBack: 
   };
 
   const save = async () => {
+    if (
+      agent &&
+      permissionMode !== agent.permissionMode &&
+      !window.confirm(
+        t("agents.permissionChangeConfirm", {
+          from: agent.permissionMode,
+          to: permissionMode,
+          name: agent.name,
+        }),
+      )
+    ) {
+      return;
+    }
     setSaving(true);
     setNotice(null);
     try {
@@ -386,8 +431,18 @@ export function AgentConfigPage({ agentId, onBack }: { agentId: string; onBack: 
         modelAssetId: modelAssetId || null,
         temperature,
         topP,
-        topK: null,
+        topK,
         maxTokens,
+        maxIters,
+        modelTimeoutSeconds,
+        toolTimeoutSeconds,
+        maxRetries,
+        permissionMode,
+        parallelToolCalls,
+        compactionEnabled,
+        maxContextTokens,
+        toolResultEvictionEnabled,
+        tracingEnabled,
         mcpServerIds: [...boundMcp],
         skillIds: [...boundSkills],
       };
@@ -541,6 +596,65 @@ export function AgentConfigPage({ agentId, onBack }: { agentId: string; onBack: 
                 onChange={(e) => setMaxTokens(Number(e.target.value))}
               />
             </label>
+            <label className="runtime-field">
+              <span>{t("agents.topK")}</span>
+              <input
+                type="number"
+                min={1}
+                max={1000}
+                value={topK}
+                onChange={(e) => setTopK(Number(e.target.value))}
+              />
+            </label>
+          </div>
+        </div>
+
+        <div className="config-section runtime-policy-card">
+          <div className="section-head runtime-policy-head">
+            <span className="runtime-icon">⌁</span>
+            <div>
+              <b>{t("agents.runtimePolicy")}</b>
+              <small>{t("agents.runtimePolicyHint")}</small>
+            </div>
+          </div>
+          <div className="runtime-grid">
+            <label className="runtime-field">
+              <span>{t("agents.maxIters")}</span>
+              <input type="number" min={1} max={100} value={maxIters} onChange={(e) => setMaxIters(Number(e.target.value))} />
+            </label>
+            <label className="runtime-field">
+              <span>{t("agents.maxRetries")}</span>
+              <input type="number" min={0} max={10} value={maxRetries} onChange={(e) => setMaxRetries(Number(e.target.value))} />
+            </label>
+            <label className="runtime-field">
+              <span>{t("agents.modelTimeout")}</span>
+              <input type="number" min={1} max={1800} value={modelTimeoutSeconds} onChange={(e) => setModelTimeoutSeconds(Number(e.target.value))} />
+            </label>
+            <label className="runtime-field">
+              <span>{t("agents.toolTimeout")}</span>
+              <input type="number" min={1} max={1800} value={toolTimeoutSeconds} onChange={(e) => setToolTimeoutSeconds(Number(e.target.value))} />
+            </label>
+            <label className="runtime-field">
+              <span>{t("agents.maxContextTokens")}</span>
+              <input type="number" min={1000} max={2000000} step={1000} value={maxContextTokens} onChange={(e) => setMaxContextTokens(Number(e.target.value))} />
+            </label>
+            <label className="runtime-field">
+              <span>{t("agents.permissionMode")}</span>
+              <select value={permissionMode} onChange={(e) => setPermissionMode(e.target.value as AgentItem["permissionMode"])}>
+                <option value="DEFAULT">DEFAULT</option>
+                <option value="EXPLORE">EXPLORE</option>
+                <option value="ACCEPT_EDITS">ACCEPT_EDITS</option>
+                <option value="DONT_ASK">DONT_ASK</option>
+                <option value="BYPASS">BYPASS</option>
+              </select>
+            </label>
+          </div>
+          {permissionMode === "BYPASS" && <div className="runtime-warning">△ {t("agents.bypassWarning")}</div>}
+          <div className="runtime-switches">
+            <label><input type="checkbox" checked={parallelToolCalls} onChange={(e) => setParallelToolCalls(e.target.checked)} /><span>{t("agents.parallelToolCalls")}</span></label>
+            <label><input type="checkbox" checked={compactionEnabled} onChange={(e) => setCompactionEnabled(e.target.checked)} /><span>{t("agents.compaction")}</span></label>
+            <label><input type="checkbox" checked={toolResultEvictionEnabled} onChange={(e) => setToolResultEvictionEnabled(e.target.checked)} /><span>{t("agents.toolResultEviction")}</span></label>
+            <label><input type="checkbox" checked={tracingEnabled} onChange={(e) => setTracingEnabled(e.target.checked)} /><span>{t("agents.tracing")}</span></label>
           </div>
         </div>
 

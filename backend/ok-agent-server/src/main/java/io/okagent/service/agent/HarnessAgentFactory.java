@@ -2,6 +2,7 @@ package io.okagent.service.agent;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.agentscope.core.model.ExecutionConfig;
 import io.agentscope.core.model.GenerateOptions;
 import io.agentscope.core.model.transport.HttpTransport;
 import io.agentscope.core.skill.AgentSkill;
@@ -59,6 +60,11 @@ public class HarnessAgentFactory {
                 .name(safeName(draft.getAgentKey()))
                 .description(draft.getDescription() == null ? "" : draft.getDescription())
                 .sysPrompt(systemPrompt(draft))
+                .maxIters(draft.getMaxIters())
+                .modelExecutionConfig(modelExecutionConfig(draft))
+                .toolExecutionConfig(toolExecutionConfig(draft))
+                .maxContextTokens(draft.getMaxContextTokens())
+                .enableAgentTracingLog(draft.isTracingEnabled())
                 .stateStore(new InMemoryAgentStateStore())
                 // The debug runtime is a transient server-side sandbox; skip the
                 // workspace/memory/filesystem middlewares so a chat only depends on the
@@ -68,10 +74,15 @@ public class HarnessAgentFactory {
                 .disableMemoryHooks()
                 .disableFilesystemTools()
                 .disableSubagents()
-                .disableCompaction()
-                .disableToolResultEviction()
                 // No workspace/tools.json file; register MCP servers programmatically.
                 .toolsConfig(toolsConfig(draft));
+
+        if (!draft.isCompactionEnabled()) {
+            builder.disableCompaction();
+        }
+        if (!draft.isToolResultEvictionEnabled()) {
+            builder.disableToolResultEviction();
+        }
 
         resolveModel(draft).ifPresent(model -> builder.model(model));
 
@@ -169,6 +180,7 @@ public class HarnessAgentFactory {
                             .topP(draft.getTopP())
                             .topK(draft.getTopK())
                             .maxTokens(draft.getMaxTokens())
+                            .parallelToolCalls(draft.isParallelToolCalls())
                             .build();
                     return OpenAIChatModel.builder()
                             .apiKey(cipher.decrypt(model.getApiKeyCiphertext()))
@@ -179,6 +191,24 @@ public class HarnessAgentFactory {
                             .generateOptions(options)
                             .build();
                 });
+    }
+
+    private ExecutionConfig modelExecutionConfig(AgentAsset draft) {
+        return ExecutionConfig.builder()
+                .timeout(Duration.ofSeconds(draft.getModelTimeoutSeconds()))
+                .maxAttempts(draft.getMaxRetries() + 1)
+                .initialBackoff(Duration.ofSeconds(2))
+                .maxBackoff(Duration.ofSeconds(30))
+                .backoffMultiplier(2.0)
+                .retryOn(ExecutionConfig.RETRYABLE_ERRORS)
+                .build();
+    }
+
+    private ExecutionConfig toolExecutionConfig(AgentAsset draft) {
+        return ExecutionConfig.builder()
+                .timeout(Duration.ofSeconds(draft.getToolTimeoutSeconds()))
+                .maxAttempts(1)
+                .build();
     }
 
     private AgentSkillRepository skillRepository(AgentAsset draft) {

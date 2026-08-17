@@ -2,30 +2,37 @@ package io.okagent.service.persona;
 
 import io.okagent.web.persona.UpsertPersonaRequest;
 import io.okagent.web.persona.UserPersonaResponse;
-import java.util.Map;
+import java.util.List;
+import java.util.UUID;
 
 public interface UserPersonaService {
 
     /**
-     * Returns the persona for a user, or an empty shell (no stored structured fields) when none
-     * exists yet. The free-form MEMORY.md content is included when present.
+     * Returns the persona that {@code agentId} holds for {@code userId} (empty shell when none).
      */
-    UserPersonaResponse getOrInit(String userId);
-
-    /** Replaces the structured persona fields (null fields are left unchanged). */
-    UserPersonaResponse upsert(String userId, UpsertPersonaRequest request);
-
-    /** Reads the free-form long-term memory (MEMORY.md) for a user. */
-    String readMemory(String userId);
-
-    /** Appends a delta to the user's long-term memory, stamped with the current time. */
-    void appendMemory(String userId, String delta);
+    UserPersonaResponse getOrInit(String userId, UUID agentId);
 
     /**
-     * Renders the persona as a text block for injection into an agent's system prompt. When
-     * {@code template} is non-blank, simple {@code {summary}/{tags}/{preferences}/{facts}/{memory}}
-     * placeholders are substituted; otherwise a default format is used. Returns empty string when the
-     * user has neither structured persona nor memory.
+     * Returns all per-agent personas stored for {@code userId} (one entry per agent that has
+     * extracted or stored one). Used by the management UI and for GLOBAL injection merges.
      */
-    String getProfileBlock(String userId, String template);
+    List<UserPersonaResponse> listForUser(String userId);
+
+    /** Replaces the structured persona fields for a (user, agent) (null fields are left unchanged). */
+    UserPersonaResponse upsert(String userId, UUID agentId, UpsertPersonaRequest request);
+
+    /** Reads the free-form long-term memory a specific agent holds for a user. */
+    String readMemory(String userId, UUID agentId);
+
+    /** Appends a delta to a (user, agent) long-term memory, stamped with the current time. */
+    void appendMemory(String userId, UUID agentId, String delta);
+
+    /**
+     * Renders the persona block to inject for {@code agentId}.
+     *
+     * @param mode SELF_ONLY renders only this agent's persona; GLOBAL merges across all agents for
+     *     the user; NONE yields an empty string.
+     * @param template optional {@code {summary}/{tags}/{preferences}/{facts}/{memory}} template.
+     */
+    String getProfileBlock(String userId, UUID agentId, String mode, String template);
 }

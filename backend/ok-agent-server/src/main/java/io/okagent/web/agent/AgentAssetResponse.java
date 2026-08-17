@@ -6,6 +6,7 @@ import io.okagent.domain.agent.AgentAsset;
 import io.okagent.domain.agent.AgentMemoryFlushMode;
 import io.okagent.domain.agent.AgentPermissionMode;
 import io.okagent.domain.agent.AgentWorkspaceMode;
+import io.okagent.domain.agent.PersonaInjectionMode;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +45,8 @@ public record AgentAssetResponse(
         int memoryConsolidationIntervalMinutes,
         int memoryDailyRetentionDays,
         int memorySessionRetentionDays,
-        boolean personaMemoryEnabled,
+        boolean personaExtractEnabled,
+        PersonaInjectionMode personaInjectionMode,
         String personaPromptTemplate,
         AgentWorkspaceMode workspaceMode,
         String workspaceIsolationScope,
@@ -96,7 +98,8 @@ public record AgentAssetResponse(
                 a.getMemoryConsolidationIntervalMinutes(),
                 a.getMemoryDailyRetentionDays(),
                 a.getMemorySessionRetentionDays(),
-                a.isPersonaMemoryEnabled(),
+                a.isPersonaExtractEnabled(),
+                a.getPersonaInjectionMode(),
                 a.getPersonaPromptTemplate(),
                 a.getWorkspaceMode(),
                 a.getWorkspaceIsolationScope(),

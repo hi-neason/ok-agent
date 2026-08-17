@@ -118,9 +118,14 @@ public class AgentAsset {
     @Column(name = "memory_session_retention_days", nullable = false)
     private int memorySessionRetentionDays;
 
-    /** When true, the agent injects the target user's persona into its system prompt at runtime. */
-    @Column(name = "persona_memory_enabled", nullable = false)
-    private boolean personaMemoryEnabled;
+    /** When true, this agent asynchronously extracts a persona from its conversations with a user. */
+    @Column(name = "persona_extract_enabled", nullable = false)
+    private boolean personaExtractEnabled;
+
+    /** How the target user's persona is injected: NONE / SELF_ONLY / GLOBAL. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "persona_injection_mode", nullable = false, length = 32)
+    private PersonaInjectionMode personaInjectionMode;
 
     /** Template rendering the persona block injected into the system prompt. Supports
      *  {summary}/{tags}/{preferences}/{facts}/{memory} placeholders. */
@@ -197,7 +202,8 @@ public class AgentAsset {
         this.memoryConsolidationIntervalMinutes = 30;
         this.memoryDailyRetentionDays = 90;
         this.memorySessionRetentionDays = 180;
-        this.personaMemoryEnabled = false;
+        this.personaExtractEnabled = false;
+        this.personaInjectionMode = PersonaInjectionMode.NONE;
         this.personaPromptTemplate = DEFAULT_PERSONA_PROMPT_TEMPLATE;
         this.workspaceMode = AgentWorkspaceMode.DISABLED;
         this.workspaceIsolationScope = "SESSION";
@@ -305,9 +311,14 @@ public class AgentAsset {
         this.updatedAt = Instant.now();
     }
 
-    /** Applies the user-persona injection configuration. */
-    public void applyPersonaConfig(boolean personaMemoryEnabled, String personaPromptTemplate) {
-        this.personaMemoryEnabled = personaMemoryEnabled;
+    /** Applies the user-persona configuration: extraction switch, injection mode, prompt template. */
+    public void applyPersonaConfig(
+            boolean personaExtractEnabled,
+            PersonaInjectionMode personaInjectionMode,
+            String personaPromptTemplate) {
+        this.personaExtractEnabled = personaExtractEnabled;
+        this.personaInjectionMode =
+                personaInjectionMode == null ? PersonaInjectionMode.NONE : personaInjectionMode;
         this.personaPromptTemplate = personaPromptTemplate;
         this.updatedAt = Instant.now();
     }
@@ -416,8 +427,12 @@ public class AgentAsset {
         return memoryEnabled;
     }
 
-    public boolean isPersonaMemoryEnabled() {
-        return personaMemoryEnabled;
+    public boolean isPersonaExtractEnabled() {
+        return personaExtractEnabled;
+    }
+
+    public PersonaInjectionMode getPersonaInjectionMode() {
+        return personaInjectionMode;
     }
 
     public String getPersonaPromptTemplate() {

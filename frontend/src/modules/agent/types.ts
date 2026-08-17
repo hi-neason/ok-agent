@@ -42,7 +42,8 @@ export type AgentItem = {
   memoryConsolidationIntervalMinutes: number;
   memoryDailyRetentionDays: number;
   memorySessionRetentionDays: number;
-  personaMemoryEnabled: boolean;
+  personaExtractEnabled: boolean;
+  personaInjectionMode: "NONE" | "SELF_ONLY" | "GLOBAL";
   personaPromptTemplate: string;
   workspaceMode: "DISABLED" | "LOCAL_ROOTED" | "DOCKER_SANDBOX";
   workspaceIsolationScope: "SESSION" | "USER" | "AGENT" | "GLOBAL";
@@ -113,7 +114,8 @@ export type AgentForm = {
   memoryConsolidationIntervalMinutes: number;
   memoryDailyRetentionDays: number;
   memorySessionRetentionDays: number;
-  personaMemoryEnabled: boolean;
+  personaExtractEnabled: boolean;
+  personaInjectionMode: "NONE" | "SELF_ONLY" | "GLOBAL";
   personaPromptTemplate: string;
   workspaceMode: AgentItem["workspaceMode"];
   workspaceIsolationScope: AgentItem["workspaceIsolationScope"];

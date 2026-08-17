@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -84,26 +85,28 @@ public class PersonaExtractionService {
         this.personaService = personaService;
     }
 
-    /** Fires extraction asynchronously after a chat round; no-op when the agent has persona disabled. */
-    public void extractAsync(java.util.UUID agentId, String userId, String sessionId) {
+    /** Fires extraction asynchronously after a chat round; no-op when the agent has extraction disabled. */
+    public void extractAsync(UUID agentId, String userId, String sessionId) {
         if (userId == null || userId.isBlank()) return;
         AgentAsset agent = agents.findById(agentId).orElse(null);
-        if (agent == null || !agent.isPersonaMemoryEnabled()) return;
+        if (agent == null || !agent.isPersonaExtractEnabled()) return;
         if (agent.getModelAssetId() == null) return;
         executor.submit(() -> {
             try {
                 runExtraction(agent, userId, sessionId);
             } catch (Exception e) {
-                log.warn("Persona extraction failed for userId={}: {}", userId, e.getMessage());
+                log.warn("Persona extraction failed for agent={}, userId={}: {}",
+                        agentId, userId, e.getMessage());
             }
         });
     }
 
     private void runExtraction(AgentAsset agent, String userId, String sessionId) {
-        UserPersona persona = personas.findById(userId).orElse(null);
+        UUID agentId = agent.getId();
+        UserPersona persona = personas.findByIdUserIdAndIdAgentId(userId, agentId).orElse(null);
         if (persona != null && persona.getLastExtractedAt() != null
                 && Duration.between(persona.getLastExtractedAt(), Instant.now()).compareTo(THROTTLE) < 0) {
-            log.debug("Persona extraction throttled for userId={}", userId);
+            log.debug("Persona extraction throttled for agent={}, userId={}", agentId, userId);
             return;
         }
 
@@ -120,7 +123,7 @@ public class PersonaExtractionService {
         String extraction = callLlm(model, buildPrompt(transcript, existing));
         if (extraction == null || extraction.isBlank()) return;
 
-        applyExtraction(userId, extraction);
+        applyExtraction(userId, agentId, extraction);
     }
 
     private String renderTranscript(List<DialogueTurn> turns) {
@@ -205,7 +208,7 @@ public class PersonaExtractionService {
         return base + "/chat/completions";
     }
 
-    private void applyExtraction(String userId, String raw) {
+    private void applyExtraction(String userId, UUID agentId, String raw) {
         try {
             String jsonText = stripCodeFences(raw);
             JsonNode node = json.readTree(jsonText);
@@ -215,16 +218,16 @@ public class PersonaExtractionService {
             String summary = textOrNull(node.path("summary"));
             String memoryDelta = textOrNull(node.path("memoryDelta"));
 
-            personaService.upsert(userId, new UpsertPersonaRequest(tags, prefs, facts, summary));
+            personaService.upsert(userId, agentId, new UpsertPersonaRequest(tags, prefs, facts, summary));
             if (memoryDelta != null) {
-                personaService.appendMemory(userId, memoryDelta);
+                personaService.appendMemory(userId, agentId, memoryDelta);
             }
-            personas.findById(userId).ifPresent(p -> {
+            personas.findByIdUserIdAndIdAgentId(userId, agentId).ifPresent(p -> {
                 p.setLastExtractedAt(Instant.now());
                 personas.save(p);
             });
-            log.info("Persona extracted for userId={} (tags={}, facts_len={})",
-                    userId, tags.size(), facts == null ? 0 : facts.length());
+            log.info("Persona extracted for agent={}, userId={} (tags={}, facts_len={})",
+                    agentId, userId, tags.size(), facts == null ? 0 : facts.length());
         } catch (Exception e) {
             log.warn("Failed to apply persona extraction: {}", e.getMessage());
         }

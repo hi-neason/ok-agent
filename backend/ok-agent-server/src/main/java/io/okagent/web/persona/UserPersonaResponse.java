@@ -6,9 +6,11 @@ import io.okagent.domain.persona.UserPersona;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 public record UserPersonaResponse(
         String userId,
+        UUID agentId,
         List<String> tags,
         Map<String, String> preferences,
         String facts,
@@ -19,6 +21,7 @@ public record UserPersonaResponse(
     public static UserPersonaResponse from(UserPersona p, String memory, ObjectMapper json) {
         return new UserPersonaResponse(
                 p.getUserId(),
+                p.getAgentId(),
                 parseTags(p.getTagsJson(), json),
                 parsePreferences(p.getPreferencesJson(), json),
                 p.getFacts(),
@@ -27,8 +30,8 @@ public record UserPersonaResponse(
                 p.getUpdatedAt());
     }
 
-    public static UserPersonaResponse empty(String userId, String memory) {
-        return new UserPersonaResponse(userId, List.of(), Map.of(), null, null, memory, null);
+    public static UserPersonaResponse empty(String userId, UUID agentId, String memory) {
+        return new UserPersonaResponse(userId, agentId, List.of(), Map.of(), null, null, memory, null);
     }
 
     private static List<String> parseTags(String value, ObjectMapper json) {

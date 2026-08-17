@@ -146,7 +146,10 @@ public class AgentAssetServiceImpl implements AgentAssetService {
                 text(request.dockerImage()),
                 request.sandboxMemoryMb(),
                 request.sandboxCpuCount());
-        agent.applyPersonaConfig(request.personaMemoryEnabled(), text(request.personaPromptTemplate()));
+        agent.applyPersonaConfig(
+                request.personaExtractEnabled(),
+                request.personaInjectionMode(),
+                text(request.personaPromptTemplate()));
         agent.setUpdatedBy("system");
         var saved = agents.save(agent);
         log.info(

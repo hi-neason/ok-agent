@@ -3,6 +3,7 @@ package io.okagent.web.agent;
 import io.okagent.domain.agent.AgentMemoryFlushMode;
 import io.okagent.domain.agent.AgentPermissionMode;
 import io.okagent.domain.agent.AgentWorkspaceMode;
+import io.okagent.domain.agent.PersonaInjectionMode;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
@@ -40,7 +41,8 @@ public record AgentConfigRequest(
         @Min(1) @Max(1440) int memoryConsolidationIntervalMinutes,
         @Min(1) @Max(3650) int memoryDailyRetentionDays,
         @Min(1) @Max(3650) int memorySessionRetentionDays,
-        boolean personaMemoryEnabled,
+        boolean personaExtractEnabled,
+        PersonaInjectionMode personaInjectionMode,
         @Size(max = 8000) String personaPromptTemplate,
         @NotNull AgentWorkspaceMode workspaceMode,
         @NotNull String workspaceIsolationScope,

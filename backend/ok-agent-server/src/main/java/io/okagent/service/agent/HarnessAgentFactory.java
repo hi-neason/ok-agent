@@ -259,10 +259,13 @@ public class HarnessAgentFactory {
     private String systemPrompt(AgentAsset draft, String userId) {
         var prompt = draft.getSystemPrompt() == null ? "" : draft.getSystemPrompt().trim();
         var base = prompt.isEmpty() ? "You are a helpful assistant." : prompt;
-        if (!draft.isPersonaMemoryEnabled() || userId == null || userId.isBlank()) {
+        var mode = draft.getPersonaInjectionMode();
+        if (mode == null || mode == io.okagent.domain.agent.PersonaInjectionMode.NONE
+                || userId == null || userId.isBlank() || draft.getId() == null) {
             return base;
         }
-        var block = personaService.getProfileBlock(userId, draft.getPersonaPromptTemplate());
+        var block = personaService.getProfileBlock(
+                userId, draft.getId(), mode.name(), draft.getPersonaPromptTemplate());
         if (block == null || block.isBlank()) {
             return base;
         }

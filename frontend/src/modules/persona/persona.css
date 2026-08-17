@@ -106,3 +106,54 @@
 .persona-notice.err {
   color: #d85a30;
 }
+
+.persona-agent-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0 12px;
+}
+
+.persona-agent-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid #d9e7f7;
+  background: #fff;
+  color: #315a83;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all .15s ease;
+}
+
+.persona-agent-tab:hover {
+  border-color: #196be8;
+  color: #196be8;
+}
+
+.persona-agent-tab.active {
+  background: #196be8;
+  border-color: #196be8;
+  color: #fff;
+}
+
+.persona-agent-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.persona-agent-dot.has {
+  background: #1a996d;
+}
+
+.persona-agent-tab.active .persona-agent-dot.has {
+  background: #bff0dd;
+}
+
+.persona-agent-dot.empty {
+  background: #c7d6e8;
+}

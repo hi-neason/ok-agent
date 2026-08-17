@@ -261,7 +261,7 @@ export function UserManagementPage() {
                 <span>
                   <b>{u.username}</b>
                 </span>
-                <code>{u.userKey}</code>
+                <code>{u.userId}</code>
                 <span>{u.displayName}</span>
                 <span>{u.email || "—"}</span>
                 <span>{u.phone || "—"}</span>

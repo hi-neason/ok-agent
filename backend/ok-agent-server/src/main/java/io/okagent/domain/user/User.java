@@ -14,8 +14,8 @@ public class User {
     @Id
     private UUID id;
 
-    @Column(name = "user_key", nullable = false, unique = true, length = 128)
-    private String userKey;
+    @Column(name = "user_id", nullable = false, unique = true, length = 128)
+    private String userId;
 
     @Column(name = "username", nullable = false, unique = true, length = 128)
     private String username;
@@ -48,7 +48,7 @@ public class User {
 
     public User(
             UUID id,
-            String userKey,
+            String userId,
             String username,
             String displayName,
             String email,
@@ -56,7 +56,7 @@ public class User {
             UUID groupId,
             boolean enabled) {
         this.id = id;
-        this.userKey = userKey;
+        this.userId = userId;
         this.username = username;
         this.displayName = displayName;
         this.email = email;
@@ -87,8 +87,8 @@ public class User {
         return id;
     }
 
-    public String getUserKey() {
-        return userKey;
+    public String getUserId() {
+        return userId;
     }
 
     public String getUsername() {

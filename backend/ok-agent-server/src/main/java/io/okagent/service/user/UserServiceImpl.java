@@ -45,10 +45,10 @@ public class UserServiceImpl implements UserService {
         if (groupId != null && !groupRepository.existsById(groupId)) {
             throw new UserConflictException("GROUP_NOT_FOUND");
         }
-        String userKey = UUID.randomUUID().toString();
+        String userId = UUID.randomUUID().toString();
         User user = new User(
                 UUID.randomUUID(),
-                userKey,
+                userId,
                 request.username(),
                 request.displayName(),
                 request.email(),

@@ -102,7 +102,7 @@ export function AgentConfigPage({
   const sessionIdRef = useRef<string>("");
 
   const [users, setUsers] = useState<DebugUser[]>([]);
-  const [selectedUserKey, setSelectedUserKey] = useState<string | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [sessions, setSessions] = useState<DialogueSummary[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
 
@@ -138,8 +138,8 @@ export function AgentConfigPage({
         setUsers(userList);
         const debugUser = userList.find((u) => u.username === "debug");
         const initialUser = debugUser ?? userList[0] ?? null;
-        const initialKey = initialUser?.userKey ?? null;
-        setSelectedUserKey(initialKey);
+        const initialKey = initialUser?.userId ?? null;
+        setSelectedUserId(initialKey);
         if (initialKey) {
           const page = await searchSessions({ agentId, userId: initialKey, size: 50 });
           setSessions(page.content);
@@ -290,16 +290,16 @@ export function AgentConfigPage({
 
   const send = async () => {
     const text = input.trim();
-    if (!text || sending || !form || !selectedUserKey) return;
+    if (!text || sending || !form || !selectedUserId) return;
     setInput("");
     const history = [...messages, { role: "user" as const, content: text }];
     setMessages(history);
     setSending(true);
     try {
-      const data = await sendChat(agentId, text, sessionIdRef.current || null, selectedUserKey);
+      const data = await sendChat(agentId, text, sessionIdRef.current || null, selectedUserId);
       if (data.sessionId) sessionIdRef.current = data.sessionId;
       setMessages([...history, { role: "assistant", content: data.reply }]);
-      const page = await searchSessions({ agentId, userId: selectedUserKey, size: 50 });
+      const page = await searchSessions({ agentId, userId: selectedUserId, size: 50 });
       setSessions(page.content);
     } catch (err) {
       const message = err instanceof Error ? err.message : t("agents.chatFailed");
@@ -310,7 +310,7 @@ export function AgentConfigPage({
   };
 
   const newSession = () => {
-    if (!selectedUserKey) {
+    if (!selectedUserId) {
       setNotice({ ok: false, text: "请先选择调试用户" });
       return;
     }
@@ -322,13 +322,13 @@ export function AgentConfigPage({
     setMessages(form?.welcomeMessage ? [{ role: "assistant", content: form.welcomeMessage }] : []);
   };
 
-  const selectUser = async (userKey: string) => {
-    setSelectedUserKey(userKey);
+  const selectUser = async (userId: string) => {
+    setSelectedUserId(userId);
     setSelectedSessionId(null);
     sessionIdRef.current = "";
     setMessages(form?.welcomeMessage ? [{ role: "assistant", content: form.welcomeMessage }] : []);
     try {
-      const page = await searchSessions({ agentId, userId: userKey, size: 50 });
+      const page = await searchSessions({ agentId, userId, size: 50 });
       setSessions(page.content);
     } catch {
       setSessions([]);
@@ -446,7 +446,7 @@ export function AgentConfigPage({
           onSend={send}
           onNewSession={newSession}
           users={users}
-          selectedUserKey={selectedUserKey}
+          selectedUserId={selectedUserId}
           onSelectUser={selectUser}
           sessions={sessions}
           selectedSessionId={selectedSessionId}

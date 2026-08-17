@@ -21,7 +21,7 @@ export function AgentDebugPanel({
   onSend,
   onNewSession,
   users,
-  selectedUserKey,
+  selectedUserId,
   onSelectUser,
   sessions,
   selectedSessionId,
@@ -33,9 +33,9 @@ export function AgentDebugPanel({
   onInputChange: (value: string) => void;
   onSend: () => void;
   onNewSession: () => void;
-  users: { userKey: string; username: string; displayName: string }[];
-  selectedUserKey: string | null;
-  onSelectUser: (userKey: string) => void;
+  users: { userId: string; username: string; displayName: string }[];
+  selectedUserId: string | null;
+  onSelectUser: (userId: string) => void;
   sessions: { sessionId: string; title: string; turnCount: number }[];
   selectedSessionId: string | null;
   onSelectSession: (sessionId: string) => void;
@@ -47,7 +47,7 @@ export function AgentDebugPanel({
     threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, sending]);
 
-  const userHasNoSelection = !selectedUserKey;
+  const userHasNoSelection = !selectedUserId;
 
   return (
     <>
@@ -73,12 +73,12 @@ export function AgentDebugPanel({
           调试用户
           <select
             style={selectStyle}
-            value={selectedUserKey ?? ""}
+            value={selectedUserId ?? ""}
             onChange={(e) => onSelectUser(e.target.value)}
           >
             {users.length === 0 && <option value="">（无用户）</option>}
             {users.map((u) => (
-              <option key={u.userKey} value={u.userKey}>
+              <option key={u.userId} value={u.userId}>
                 {u.username === "debug" ? "DEBUG用户（内置）" : u.displayName || u.username}
               </option>
             ))}

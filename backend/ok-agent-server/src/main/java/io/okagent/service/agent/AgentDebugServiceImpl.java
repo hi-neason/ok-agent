@@ -65,16 +65,16 @@ public class AgentDebugServiceImpl implements AgentDebugService {
                     HttpStatus.BAD_REQUEST, "Select a model in the agent configuration before starting a debug chat");
         }
 
-        var userKey = request.userKey();
+        var userId = request.userId();
         var sessionId = resolveSessionId(request.sessionId());
-        var session = sessions.compute(sessionId, (key, existing) -> resolveSession(sessionId, existing, draft, userKey));
+        var session = sessions.compute(sessionId, (key, existing) -> resolveSession(sessionId, existing, draft, userId));
         if (session == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Debug session not found or invalid");
         }
 
         try {
             var ctx = RuntimeContext.builder()
-                    .userId(userKey)
+                    .userId(userId)
                     .sessionId(sessionId)
                     .build();
             // The synchronous debug API has no human-in-the-loop confirmation round trip. The
@@ -82,7 +82,7 @@ public class AgentDebugServiceImpl implements AgentDebugService {
             session.agent.setPermissionMode(
                     ctx, PermissionMode.valueOf(draft.getPermissionMode().name()));
 
-            ensureSession(sessionId, draft, request.message(), userKey);
+            ensureSession(sessionId, draft, request.message(), userId);
             recordTurn(sessionId, "user", request.message(), null, null);
 
             // Accumulate the final reply from text deltas (the demo's approach). Some models /
@@ -171,7 +171,7 @@ public class AgentDebugServiceImpl implements AgentDebugService {
     }
 
     /** Rebuilds the HarnessAgent when missing, bound to another agent, or when config changed. */
-    private Session resolveSession(String sessionId, Session existing, AgentAsset draft, String userKey) {
+    private Session resolveSession(String sessionId, Session existing, AgentAsset draft, String userId) {
         if (existing != null
                 && existing.agentId.equals(draft.getId())
                 && existing.configChangedAt.equals(draft.getUpdatedAt())) {
@@ -184,7 +184,7 @@ public class AgentDebugServiceImpl implements AgentDebugService {
             purgeSession(sessionId, existing.userId);
         }
         evictIfFull();
-        return new Session(draft.getId(), draft.getUpdatedAt(), factory.build(draft), userKey);
+        return new Session(draft.getId(), draft.getUpdatedAt(), factory.build(draft), userId);
     }
 
     private void evictIfFull() {
@@ -214,7 +214,7 @@ public class AgentDebugServiceImpl implements AgentDebugService {
         }
     }
 
-    private void ensureSession(String sessionId, AgentAsset draft, String firstUserMessage, String userKey) {
+    private void ensureSession(String sessionId, AgentAsset draft, String firstUserMessage, String userId) {
         if (dialogue.sessionExists(sessionId)) {
             return;
         }
@@ -223,7 +223,7 @@ public class AgentDebugServiceImpl implements AgentDebugService {
                 : (firstUserMessage.length() <= 50
                         ? firstUserMessage
                         : firstUserMessage.substring(0, 50) + "...");
-        dialogue.ensureSession(sessionId, draft.getId(), userKey, title);
+        dialogue.ensureSession(sessionId, draft.getId(), userId, title);
     }
 
     private void recordTurn(

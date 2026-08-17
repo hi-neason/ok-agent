@@ -6,4 +6,4 @@ import jakarta.validation.constraints.Size;
 public record AgentChatRequest(
         @NotBlank @Size(max = 20000) String message,
         @Size(max = 64) String sessionId,
-        @NotBlank @Size(max = 128) String userKey) {}
+        @NotBlank @Size(max = 128) String userId) {}

@@ -10,7 +10,7 @@ export type UserGroupItem = {
 
 export type UserItem = {
   id: string;
-  userKey: string;
+  userId: string;
   username: string;
   displayName: string;
   email: string;

@@ -74,7 +74,7 @@ export async function loadSkills(): Promise<Option[]> {
     }));
 }
 
-export type DebugUser = { userKey: string; username: string; displayName: string };
+export type DebugUser = { userId: string; username: string; displayName: string };
 
 export async function loadUsers(): Promise<DebugUser[]> {
   const res = await fetch("/api/v1/users");
@@ -83,7 +83,7 @@ export async function loadUsers(): Promise<DebugUser[]> {
   return list
     .filter((u) => u.enabled !== false)
     .map((u) => ({
-      userKey: String(u.userKey),
+      userId: String(u.userId),
       username: String(u.username),
       displayName: String(u.displayName),
     }));
@@ -106,12 +106,12 @@ export async function sendChat(
   agentId: string,
   message: string,
   sessionId: string | null,
-  userKey: string,
+  userId: string,
 ): Promise<{ reply: string; sessionId?: string }> {
   const res = await fetch(`/api/v1/agents/${agentId}/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, sessionId, userKey }),
+    body: JSON.stringify({ message, sessionId, userId }),
   });
   const data = (await res.json().catch(() => null)) as
     | { reply?: string; sessionId?: string; detail?: string; message?: string }

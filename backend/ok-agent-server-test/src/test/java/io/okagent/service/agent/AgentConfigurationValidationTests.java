@@ -122,19 +122,6 @@ class AgentConfigurationValidationTests {
     }
 
     @Test
-    void rejectsMemoryWithoutWorkspace() {
-        Req r = validReq();
-        r.memoryEnabled = true;
-        r.workspaceMode = AgentWorkspaceMode.DISABLED;
-
-        AgentConfigValidationResponse response = service().validateConfiguration(agentId, r.build());
-
-        assertThat(response.valid()).isFalse();
-        assertThat(response.errors())
-                .anyMatch(e -> "MEMORY_REQUIRES_WORKSPACE".equals(e.code()) && "memory".equals(e.tab()));
-    }
-
-    @Test
     void rejectsDockerSandboxWithoutImage() {
         Req r = validReq();
         r.workspaceMode = AgentWorkspaceMode.DOCKER_SANDBOX;

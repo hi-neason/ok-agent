@@ -2,41 +2,26 @@ import { useTranslation } from "react-i18next";
 import type { AgentItem } from "../../types";
 import { AgentTabProps } from "./AgentPromptTab";
 
-export function AgentMemoryTab({ form, setField, errorsByField }: AgentTabProps) {
+export function AgentMemoryTab({ form, setField }: AgentTabProps) {
   const { t } = useTranslation();
 
   return (
     <div className="config-section capability-card">
-      <div className="capability-hero">
+      <div className="capability-hero capability-deprecated">
         <span>MEM</span>
         <div>
           <b>{t("agents.memoryTitle")}</b>
           <small>{t("agents.memoryHint")}</small>
         </div>
-        <label className="switch-line">
-          <input
-            type="checkbox"
-            data-field="memoryEnabled"
-            checked={form.memoryEnabled}
-            onChange={(e) => {
-              setField("memoryEnabled", e.target.checked);
-              if (e.target.checked && form.workspaceMode === "DISABLED")
-                setField("workspaceMode", "LOCAL_ROOTED");
-            }}
-          />
-          {t("agents.enabled")}
+        <label className="switch-line" aria-disabled>
+          <input type="checkbox" disabled checked={false} />
+          <span className="deprecated-badge">{t("agents.memoryDeprecatedBadge")}</span>
         </label>
       </div>
-      <div className="runtime-grid muted-when-disabled" aria-disabled={!form.memoryEnabled}>
+      <div className="runtime-grid muted-when-disabled" aria-disabled>
         <label className="runtime-field">
           <span>{t("agents.memoryFlushMode")}</span>
-          <select
-            disabled={!form.memoryEnabled}
-            value={form.memoryFlushMode}
-            onChange={(e) =>
-              setField("memoryFlushMode", e.target.value as AgentItem["memoryFlushMode"])
-            }
-          >
+          <select disabled value={form.memoryFlushMode}>
             <option value="ALWAYS">ALWAYS</option>
             <option value="THROTTLED">THROTTLED</option>
             <option value="NEVER">NEVER</option>
@@ -44,61 +29,24 @@ export function AgentMemoryTab({ form, setField, errorsByField }: AgentTabProps)
         </label>
         <label className="runtime-field">
           <span>{t("agents.memoryFlushInterval")}</span>
-          <input
-            disabled={!form.memoryEnabled || form.memoryFlushMode !== "THROTTLED"}
-            type="number"
-            min={1}
-            max={1440}
-            value={form.memoryFlushIntervalMinutes}
-            onChange={(e) =>
-              setField("memoryFlushIntervalMinutes", Number(e.target.value))
-            }
-          />
+          <input disabled type="number" value={form.memoryFlushIntervalMinutes} />
         </label>
         <label className="runtime-field">
           <span>{t("agents.memoryConsolidation")}</span>
-          <input
-            disabled={!form.memoryEnabled}
-            type="number"
-            min={1}
-            max={1440}
-            value={form.memoryConsolidationIntervalMinutes}
-            onChange={(e) =>
-              setField("memoryConsolidationIntervalMinutes", Number(e.target.value))
-            }
-          />
+          <input disabled type="number" value={form.memoryConsolidationIntervalMinutes} />
         </label>
         <label className="runtime-field">
           <span>{t("agents.dailyRetention")}</span>
-          <input
-            disabled={!form.memoryEnabled}
-            type="number"
-            min={1}
-            max={3650}
-            value={form.memoryDailyRetentionDays}
-            onChange={(e) => setField("memoryDailyRetentionDays", Number(e.target.value))}
-          />
+          <input disabled type="number" value={form.memoryDailyRetentionDays} />
         </label>
         <label className="runtime-field">
           <span>{t("agents.sessionRetention")}</span>
-          <input
-            disabled={!form.memoryEnabled}
-            type="number"
-            min={1}
-            max={3650}
-            value={form.memorySessionRetentionDays}
-            onChange={(e) =>
-              setField("memorySessionRetentionDays", Number(e.target.value))
-            }
-          />
+          <input disabled type="number" value={form.memorySessionRetentionDays} />
         </label>
       </div>
-      {form.memoryEnabled && (
-        <div className="info-strip">✓ {t("agents.memoryWorkspaceNotice")}</div>
-      )}
-      {errorsByField["memoryEnabled"]?.[0]?.message && (
-        <div className="field-error">{errorsByField["memoryEnabled"][0].message}</div>
-      )}
+      <div className="info-strip deprecated-strip">
+        ⊘ {t("agents.memoryDeprecatedNotice")}
+      </div>
 
       <div className="config-section capability-card">
         <div className="capability-hero">

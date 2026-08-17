@@ -391,10 +391,6 @@ public class AgentAssetServiceImpl implements AgentAssetService {
     }
 
     private void collectCapabilityIssues(AgentConfigRequest request, ValidationReport report) {
-        if (request.memoryEnabled() && request.workspaceMode() == io.okagent.domain.agent.AgentWorkspaceMode.DISABLED) {
-            report.error(
-                    "memoryEnabled", "MEMORY_REQUIRES_WORKSPACE", "Memory requires an enabled workspace", "memory");
-        }
         if (request.workspaceMode() == io.okagent.domain.agent.AgentWorkspaceMode.DOCKER_SANDBOX
                 && text(request.dockerImage()).isBlank()) {
             report.error(
@@ -418,10 +414,9 @@ public class AgentAssetServiceImpl implements AgentAssetService {
         }
         report.check(
                 "capabilities.consistent",
-                !report.hasError("MEMORY_REQUIRES_WORKSPACE")
-                        && !report.hasError("DOCKER_IMAGE_REQUIRED")
+                !report.hasError("DOCKER_IMAGE_REQUIRED")
                         && !report.hasError("ISOLATION_SCOPE_INVALID"),
-                "Memory/workspace/docker/isolation constraints satisfied");
+                "Workspace/docker/isolation constraints satisfied");
     }
 
     private void collectRuntimeIssues(AgentConfigRequest request, ValidationReport report) {
@@ -532,9 +527,6 @@ public class AgentAssetServiceImpl implements AgentAssetService {
             } catch (IllegalArgumentException e) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid MCP server id in tool filter");
             }
-        }
-        if (request.memoryEnabled() && request.workspaceMode() == io.okagent.domain.agent.AgentWorkspaceMode.DISABLED) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Memory requires an enabled workspace");
         }
         if (request.workspaceMode() == io.okagent.domain.agent.AgentWorkspaceMode.DOCKER_SANDBOX
                 && text(request.dockerImage()).isBlank()) {

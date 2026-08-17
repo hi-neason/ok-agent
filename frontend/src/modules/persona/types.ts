@@ -9,6 +9,7 @@ export type Persona = {
   summary: string;
   memory: string;
   updatedAt: string;
+  lastExtractedAt: string | null;
 };
 
 export type UpsertPersona = {

@@ -16,7 +16,8 @@ public record UserPersonaResponse(
         String facts,
         String summary,
         String memory,
-        Instant updatedAt) {
+        Instant updatedAt,
+        Instant lastExtractedAt) {
 
     public static UserPersonaResponse from(UserPersona p, String memory, ObjectMapper json) {
         return new UserPersonaResponse(
@@ -27,11 +28,13 @@ public record UserPersonaResponse(
                 p.getFacts(),
                 p.getSummary(),
                 memory,
-                p.getUpdatedAt());
+                p.getUpdatedAt(),
+                p.getLastExtractedAt());
     }
 
     public static UserPersonaResponse empty(String userId, UUID agentId, String memory) {
-        return new UserPersonaResponse(userId, agentId, List.of(), Map.of(), null, null, memory, null);
+        return new UserPersonaResponse(
+                userId, agentId, List.of(), Map.of(), null, null, memory, null, null);
     }
 
     private static List<String> parseTags(String value, ObjectMapper json) {

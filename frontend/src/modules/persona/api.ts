@@ -2,6 +2,13 @@ import type { Persona, UpsertPersona } from "./types";
 
 const BASE = "/api/v1";
 
+/** Coverage map: userId -> agentIds that hold a persona. */
+export async function fetchPersonaCoverage(): Promise<Record<string, string[]>> {
+  const response = await fetch(`${BASE}/persona/coverage`);
+  if (!response.ok) throw new Error("fetch coverage failed");
+  return (await response.json()) as Record<string, string[]>;
+}
+
 /** Lists every per-agent persona stored for a user. */
 export async function listPersonas(userId: string): Promise<Persona[]> {
   const response = await fetch(
@@ -9,6 +16,18 @@ export async function listPersonas(userId: string): Promise<Persona[]> {
   );
   if (!response.ok) throw new Error("list personas failed");
   return (await response.json()) as Persona[];
+}
+
+/** WYSIWYG preview of the persona block actually injected for an agent. */
+export async function fetchInjectionPreview(
+  userId: string,
+  agentId: string,
+): Promise<{ mode: string; block: string }> {
+  const response = await fetch(
+    `${BASE}/persona/users/${encodeURIComponent(userId)}/agents/${encodeURIComponent(agentId)}/injection-preview`,
+  );
+  if (!response.ok) throw new Error("fetch injection preview failed");
+  return (await response.json()) as { mode: string; block: string };
 }
 
 /** Fetches the persona a specific agent holds for a user. */

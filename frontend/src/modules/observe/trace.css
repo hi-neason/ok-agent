@@ -32,12 +32,13 @@
 }
 
 .trace-drawer {
-  width: min(1180px, 88vw);
+  width: min(1480px, 96vw);
   height: 100%;
   background: #f6f9fd;
   box-shadow: -12px 0 40px rgba(20, 38, 62, 0.18);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   animation: trace-slide 0.2s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 @keyframes trace-slide {
@@ -342,10 +343,10 @@
   flex: 1;
   min-height: 0;
   overflow: auto;
-  padding: 14px 18px;
+  padding: 16px 18px 28px;
 }
 .trace-detail-body pre {
-  margin: 0;
+  margin: 0 0 16px;
   padding: 12px 14px;
   border: 1px solid #e2edf8;
   border-radius: 8px;

@@ -3,6 +3,7 @@ package io.okagent.service.dialogue;
 import io.okagent.domain.dialogue.DialogueSession;
 import io.okagent.domain.dialogue.DialogueTurn;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 
@@ -31,6 +32,9 @@ public interface DialogueService {
 
     /** Returns the turns of a session in chronological order. */
     List<DialogueTurn> getMessages(String sessionId);
+
+    /** Returns the session with the given id, if it exists. */
+    Optional<DialogueSession> findById(String sessionId);
 
     /** Lists sessions for one agent, newest activity first. */
     List<DialogueSession> findByAgentId(UUID agentId);

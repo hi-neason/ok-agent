@@ -16,10 +16,14 @@ import {
   loadMcpTools,
   loadModels,
   loadSkills,
+  loadUsers,
   saveAgentConfig,
   sendChat,
   validateAgentConfig,
+  type DebugUser,
 } from "./api";
+import { searchSessions, fetchTurns } from "../observe/api";
+import type { DialogueSummary } from "../observe/types";
 import { useDirtyFlag } from "./hooks/useDirtyFlag";
 import { useTabRouting } from "./hooks/useTabRouting";
 import { AgentConfigTabs } from "./components/AgentConfigTabs";
@@ -97,6 +101,11 @@ export function AgentConfigPage({
   const [sending, setSending] = useState(false);
   const sessionIdRef = useRef<string>("");
 
+  const [users, setUsers] = useState<DebugUser[]>([]);
+  const [selectedUserKey, setSelectedUserKey] = useState<string | null>(null);
+  const [sessions, setSessions] = useState<DialogueSummary[]>([]);
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+
   const { dirty, markDirty, resetDirty } = useDirtyFlag();
   const { tab, navigateTab } = useTabRouting(agentId);
 
@@ -113,11 +122,12 @@ export function AgentConfigPage({
     void (async () => {
       setLoading(true);
       try {
-        const [agentRes, modelList, mcpList, skillList] = await Promise.all([
+        const [agentRes, modelList, mcpList, skillList, userList] = await Promise.all([
           loadAgent(agentId),
           loadModels(),
           loadMcpServers(),
           loadSkills(),
+          loadUsers(),
         ]);
         if (cancelled) return;
         setAgent(agentRes);
@@ -125,6 +135,15 @@ export function AgentConfigPage({
         setModels(modelList);
         setMcpServers(mcpList);
         setSkills(skillList);
+        setUsers(userList);
+        const debugUser = userList.find((u) => u.username === "debug");
+        const initialUser = debugUser ?? userList[0] ?? null;
+        const initialKey = initialUser?.userKey ?? null;
+        setSelectedUserKey(initialKey);
+        if (initialKey) {
+          const page = await searchSessions({ agentId, userId: initialKey, size: 50 });
+          setSessions(page.content);
+        }
         const tools = await loadMcpTools(mcpList);
         if (cancelled) return;
         setMcpTools(tools);
@@ -271,15 +290,17 @@ export function AgentConfigPage({
 
   const send = async () => {
     const text = input.trim();
-    if (!text || sending || !form) return;
+    if (!text || sending || !form || !selectedUserKey) return;
     setInput("");
     const history = [...messages, { role: "user" as const, content: text }];
     setMessages(history);
     setSending(true);
     try {
-      const data = await sendChat(agentId, text, sessionIdRef.current || null);
+      const data = await sendChat(agentId, text, sessionIdRef.current || null, selectedUserKey);
       if (data.sessionId) sessionIdRef.current = data.sessionId;
       setMessages([...history, { role: "assistant", content: data.reply }]);
+      const page = await searchSessions({ agentId, userId: selectedUserKey, size: 50 });
+      setSessions(page.content);
     } catch (err) {
       const message = err instanceof Error ? err.message : t("agents.chatFailed");
       setMessages([...history, { role: "assistant", content: message, error: true }]);
@@ -289,11 +310,49 @@ export function AgentConfigPage({
   };
 
   const newSession = () => {
+    if (!selectedUserKey) {
+      setNotice({ ok: false, text: "请先选择调试用户" });
+      return;
+    }
     if (sessionIdRef.current) {
       void deleteSession(sessionIdRef.current);
       sessionIdRef.current = "";
     }
+    setSelectedSessionId(null);
     setMessages(form?.welcomeMessage ? [{ role: "assistant", content: form.welcomeMessage }] : []);
+  };
+
+  const selectUser = async (userKey: string) => {
+    setSelectedUserKey(userKey);
+    setSelectedSessionId(null);
+    sessionIdRef.current = "";
+    setMessages(form?.welcomeMessage ? [{ role: "assistant", content: form.welcomeMessage }] : []);
+    try {
+      const page = await searchSessions({ agentId, userId: userKey, size: 50 });
+      setSessions(page.content);
+    } catch {
+      setSessions([]);
+    }
+  };
+
+  const selectSession = async (sessionId: string) => {
+    if (!sessionId) {
+      setSelectedSessionId(null);
+      return;
+    }
+    setSelectedSessionId(sessionId);
+    try {
+      const turns = await fetchTurns(sessionId);
+      const loaded: ChatMessage[] = turns.map((turn) => ({
+        role: turn.role === "user" ? "user" : "assistant",
+        content: turn.content,
+        error: turn.role === "error",
+      }));
+      setMessages(loaded);
+      sessionIdRef.current = sessionId;
+    } catch {
+      setNotice({ ok: false, text: "加载历史会话失败" });
+    }
   };
 
   if (loading) return <div className="page-content">{t("agents.loading")}</div>;
@@ -386,6 +445,12 @@ export function AgentConfigPage({
           onInputChange={setInput}
           onSend={send}
           onNewSession={newSession}
+          users={users}
+          selectedUserKey={selectedUserKey}
+          onSelectUser={selectUser}
+          sessions={sessions}
+          selectedSessionId={selectedSessionId}
+          onSelectSession={selectSession}
         />
       }
     />

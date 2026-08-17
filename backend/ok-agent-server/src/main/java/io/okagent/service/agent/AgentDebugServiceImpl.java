@@ -9,6 +9,7 @@ import io.agentscope.core.message.Msg;
 import io.agentscope.core.permission.PermissionMode;
 import io.agentscope.harness.agent.HarnessAgent;
 import io.okagent.domain.agent.AgentAsset;
+import io.okagent.domain.dialogue.DialogueSession;
 import io.okagent.infrastructure.store.JdbcAgentStateStore;
 import io.okagent.infrastructure.store.JdbcTranscriptStore;
 import io.okagent.repository.agent.AgentAssetRepository;
@@ -35,7 +36,6 @@ public class AgentDebugServiceImpl implements AgentDebugService {
     private static final Logger log = LoggerFactory.getLogger(AgentDebugServiceImpl.class);
     private static final Duration CALL_TIMEOUT = Duration.ofSeconds(120);
     private static final int MAX_SESSIONS = 50;
-    private static final String DEBUG_USER = "debug";
 
     private final AgentAssetRepository agents;
     private final HarnessAgentFactory factory;
@@ -65,15 +65,16 @@ public class AgentDebugServiceImpl implements AgentDebugService {
                     HttpStatus.BAD_REQUEST, "Select a model in the agent configuration before starting a debug chat");
         }
 
+        var userKey = request.userKey();
         var sessionId = resolveSessionId(request.sessionId());
-        var session = sessions.compute(sessionId, (key, existing) -> resolveSession(sessionId, existing, draft));
+        var session = sessions.compute(sessionId, (key, existing) -> resolveSession(sessionId, existing, draft, userKey));
         if (session == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Debug session not found or invalid");
         }
 
         try {
             var ctx = RuntimeContext.builder()
-                    .userId(DEBUG_USER)
+                    .userId(userKey)
                     .sessionId(sessionId)
                     .build();
             // The synchronous debug API has no human-in-the-loop confirmation round trip. The
@@ -81,7 +82,7 @@ public class AgentDebugServiceImpl implements AgentDebugService {
             session.agent.setPermissionMode(
                     ctx, PermissionMode.valueOf(draft.getPermissionMode().name()));
 
-            ensureSession(sessionId, draft, request.message());
+            ensureSession(sessionId, draft, request.message(), userKey);
             recordTurn(sessionId, "user", request.message(), null, null);
 
             // Accumulate the final reply from text deltas (the demo's approach). Some models /
@@ -150,10 +151,11 @@ public class AgentDebugServiceImpl implements AgentDebugService {
     @Override
     public void resetSession(String sessionId) {
         var removed = sessions.remove(sessionId);
+        String userId = (removed != null) ? removed.userId : null;
         if (removed != null) {
             closeQuietly(removed.agent);
         }
-        purgeSession(sessionId);
+        purgeSession(sessionId, userId);
     }
 
     private AgentAsset loadDraft(UUID id) {
@@ -169,7 +171,7 @@ public class AgentDebugServiceImpl implements AgentDebugService {
     }
 
     /** Rebuilds the HarnessAgent when missing, bound to another agent, or when config changed. */
-    private Session resolveSession(String sessionId, Session existing, AgentAsset draft) {
+    private Session resolveSession(String sessionId, Session existing, AgentAsset draft, String userKey) {
         if (existing != null
                 && existing.agentId.equals(draft.getId())
                 && existing.configChangedAt.equals(draft.getUpdatedAt())) {
@@ -179,10 +181,10 @@ public class AgentDebugServiceImpl implements AgentDebugService {
             closeQuietly(existing.agent);
             // Config changed under the same session id: drop the stale persisted state so the
             // rebuilt agent starts from a clean memory/transcript.
-            purgeSession(sessionId);
+            purgeSession(sessionId, existing.userId);
         }
         evictIfFull();
-        return new Session(draft.getId(), draft.getUpdatedAt(), factory.build(draft));
+        return new Session(draft.getId(), draft.getUpdatedAt(), factory.build(draft), userKey);
     }
 
     private void evictIfFull() {
@@ -212,7 +214,7 @@ public class AgentDebugServiceImpl implements AgentDebugService {
         }
     }
 
-    private void ensureSession(String sessionId, AgentAsset draft, String firstUserMessage) {
+    private void ensureSession(String sessionId, AgentAsset draft, String firstUserMessage, String userKey) {
         if (dialogue.sessionExists(sessionId)) {
             return;
         }
@@ -221,7 +223,7 @@ public class AgentDebugServiceImpl implements AgentDebugService {
                 : (firstUserMessage.length() <= 50
                         ? firstUserMessage
                         : firstUserMessage.substring(0, 50) + "...");
-        dialogue.ensureSession(sessionId, draft.getId(), DEBUG_USER, title);
+        dialogue.ensureSession(sessionId, draft.getId(), userKey, title);
     }
 
     private void recordTurn(
@@ -233,8 +235,14 @@ public class AgentDebugServiceImpl implements AgentDebugService {
         dialogue.touchSession(sessionId);
     }
 
-    private void purgeSession(String sessionId) {
-        stateStore.delete(DEBUG_USER, sessionId);
+    private void purgeSession(String sessionId, String userId) {
+        String effectiveUserId = userId;
+        if (effectiveUserId == null) {
+            effectiveUserId = dialogue.findById(sessionId)
+                    .map(DialogueSession::getUserId)
+                    .orElse(null);
+        }
+        stateStore.delete(effectiveUserId, sessionId);
         transcriptStore.deleteBySessionId(sessionId);
         dialogue.purge(sessionId);
     }
@@ -243,12 +251,14 @@ public class AgentDebugServiceImpl implements AgentDebugService {
         private final UUID agentId;
         private final Instant configChangedAt;
         private final HarnessAgent agent;
+        private final String userId;
         private final Instant lastTouched = Instant.now();
 
-        private Session(UUID agentId, Instant configChangedAt, HarnessAgent agent) {
+        private Session(UUID agentId, Instant configChangedAt, HarnessAgent agent, String userId) {
             this.agentId = agentId;
             this.configChangedAt = configChangedAt;
             this.agent = agent;
+            this.userId = userId;
         }
     }
 }

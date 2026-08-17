@@ -15,6 +15,8 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class UserServiceImpl implements UserService {
+    private static final String DEBUG_USERNAME = "debug";
+
     private final UserRepository userRepository;
     private final UserGroupRepository groupRepository;
 
@@ -78,8 +80,11 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void delete(UUID id) {
-        if (!userRepository.existsById(id)) {
-            throw new UserNotFoundException("USER_NOT_FOUND");
+        User user = userRepository.findById(id).orElseThrow(() -> new UserNotFoundException("USER_NOT_FOUND"));
+        // The built-in DEBUG user backs the agent debug preview; deleting it would break the
+        // "debug without a real user" path, so it is protected.
+        if (DEBUG_USERNAME.equals(user.getUsername())) {
+            throw new UserConflictException("DEBUG_USER_PROTECTED");
         }
         userRepository.deleteById(id);
     }

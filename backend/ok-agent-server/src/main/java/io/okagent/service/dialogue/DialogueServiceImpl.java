@@ -19,6 +19,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class DialogueServiceImpl implements DialogueService {
@@ -65,6 +66,7 @@ public class DialogueServiceImpl implements DialogueService {
     }
 
     @Override
+    @Transactional
     public void purge(String sessionId) {
         turns.deleteBySessionId(sessionId);
         sessions.deleteById(sessionId);
@@ -73,6 +75,11 @@ public class DialogueServiceImpl implements DialogueService {
     @Override
     public java.util.List<DialogueTurn> getMessages(String sessionId) {
         return turns.findBySessionIdOrderBySeqAsc(sessionId);
+    }
+
+    @Override
+    public Optional<DialogueSession> findById(String sessionId) {
+        return sessions.findById(sessionId);
     }
 
     @Override

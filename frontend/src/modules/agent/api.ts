@@ -74,6 +74,21 @@ export async function loadSkills(): Promise<Option[]> {
     }));
 }
 
+export type DebugUser = { userKey: string; username: string; displayName: string };
+
+export async function loadUsers(): Promise<DebugUser[]> {
+  const res = await fetch("/api/v1/users");
+  if (!res.ok) return [];
+  const list = (await res.json()) as Array<Record<string, unknown>>;
+  return list
+    .filter((u) => u.enabled !== false)
+    .map((u) => ({
+      userKey: String(u.userKey),
+      username: String(u.username),
+      displayName: String(u.displayName),
+    }));
+}
+
 export async function saveAgentConfig(
   agentId: string,
   payload: AgentForm,
@@ -91,11 +106,12 @@ export async function sendChat(
   agentId: string,
   message: string,
   sessionId: string | null,
+  userKey: string,
 ): Promise<{ reply: string; sessionId?: string }> {
   const res = await fetch(`/api/v1/agents/${agentId}/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, sessionId }),
+    body: JSON.stringify({ message, sessionId, userKey }),
   });
   const data = (await res.json().catch(() => null)) as
     | { reply?: string; sessionId?: string; detail?: string; message?: string }

@@ -4,6 +4,10 @@ import { useTranslation } from "react-i18next";
 import { useConfirm } from "../shared";
 import type { AgentItem } from "./types";
 
+function mcpToolCount(filters: Record<string, string[]>): number {
+  return Object.values(filters).reduce((sum, tools) => sum + tools.length, 0);
+}
+
 function Modal({
   title,
   onClose,
@@ -140,32 +144,48 @@ export function AgentRegistryPage({
         </div>
         <div
           className="table-head"
-          style={{ gridTemplateColumns: "1.8fr 1fr 1fr 110px auto" }}
+          style={{
+            gridTemplateColumns:
+              "240px 110px 160px 70px 90px 140px 90px 110px",
+          }}
         >
           <span>{t("agents.agent")}</span>
           <span>{t("agents.domain")}</span>
           <span>{t("agents.model")}</span>
+          <span>{t("agents.skillCount")}</span>
+          <span>{t("agents.mcpToolCount")}</span>
           <span>{t("agents.updated")}</span>
-          <span />
+          <span>{t("agents.updatedBy")}</span>
+          <span>{t("agents.actions")}</span>
         </div>
         {agents.map((a) => (
           <div
             className="table-row"
             key={a.id}
-            style={{ gridTemplateColumns: "1.8fr 1fr 1fr 110px auto" }}
+            style={{
+              gridTemplateColumns:
+                "240px 110px 160px 70px 90px 140px 90px 110px",
+            }}
           >
             <span>
               <b>{a.name}</b>
-              <small>
-                {a.agentKey} · {a.description || "—"}
-              </small>
+              <small>{a.agentKey}</small>
             </span>
             <span style={{ color: "#5b7aa6" }}>#{a.businessDomain}</span>
+            <span title={a.modelAssetId ?? undefined}>
+              <small>{a.modelName || "—"}</small>
+            </span>
             <span>
-              <small>{a.modelAssetId ? "configured" : "—"}</small>
+              <small>{a.skillIds.length}</small>
+            </span>
+            <span>
+              <small>{mcpToolCount(a.mcpToolFilters)}</small>
             </span>
             <span>
               <small>{new Date(a.updatedAt).toLocaleString()}</small>
+            </span>
+            <span>
+              <small>{a.updatedBy || "—"}</small>
             </span>
             <span style={{ display: "flex", gap: 8, whiteSpace: "nowrap" }}>
               <button

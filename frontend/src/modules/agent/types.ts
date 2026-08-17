@@ -18,6 +18,7 @@ export type AgentItem = {
   systemPrompt: string;
   welcomeMessage: string;
   modelAssetId: string | null;
+  modelName: string | null;
   temperature: number | null;
   topP: number | null;
   topK: number | null;
@@ -51,6 +52,7 @@ export type AgentItem = {
   enabled: boolean;
   createdAt: string;
   updatedAt: string;
+  updatedBy: string | null;
 };
 
 export type Option = { id: string; name: string; sub?: string };

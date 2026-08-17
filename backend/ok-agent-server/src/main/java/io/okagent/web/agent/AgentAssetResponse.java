@@ -20,6 +20,7 @@ public record AgentAssetResponse(
         String systemPrompt,
         String welcomeMessage,
         UUID modelAssetId,
+        String modelName,
         Double temperature,
         Double topP,
         Integer topK,
@@ -52,13 +53,14 @@ public record AgentAssetResponse(
         int sandboxCpuCount,
         boolean enabled,
         Instant createdAt,
-        Instant updatedAt) {
+        Instant updatedAt,
+        String updatedBy) {
 
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final TypeReference<List<UUID>> UUID_LIST = new TypeReference<>() {};
     private static final TypeReference<Map<String, List<String>>> TOOL_FILTERS = new TypeReference<>() {};
 
-    public static AgentAssetResponse from(AgentAsset a) {
+    public static AgentAssetResponse from(AgentAsset a, Map<UUID, String> modelNames) {
         return new AgentAssetResponse(
                 a.getId(),
                 a.getAgentKey(),
@@ -68,6 +70,7 @@ public record AgentAssetResponse(
                 a.getSystemPrompt(),
                 a.getWelcomeMessage(),
                 a.getModelAssetId(),
+                a.getModelAssetId() == null ? null : modelNames.get(a.getModelAssetId()),
                 a.getTemperature(),
                 a.getTopP(),
                 a.getTopK(),
@@ -100,7 +103,8 @@ public record AgentAssetResponse(
                 a.getSandboxCpuCount(),
                 a.isEnabled(),
                 a.getCreatedAt(),
-                a.getUpdatedAt());
+                a.getUpdatedAt(),
+                a.getUpdatedBy());
     }
 
     private static List<UUID> readUuidList(String json) {

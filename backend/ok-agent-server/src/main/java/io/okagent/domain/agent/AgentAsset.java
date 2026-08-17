@@ -148,6 +148,9 @@ public class AgentAsset {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    @Column(name = "updated_by", length = 64)
+    private String updatedBy;
+
     protected AgentAsset() {}
 
     public AgentAsset(UUID id, String agentKey, String name, String description, String businessDomain) {
@@ -191,6 +194,7 @@ public class AgentAsset {
         this.enabled = true;
         this.createdAt = Instant.now();
         this.updatedAt = createdAt;
+        this.updatedBy = "system";
     }
 
     public void updateBasicInfo(String name, String description, String businessDomain) {
@@ -448,5 +452,13 @@ public class AgentAsset {
 
     public Instant getUpdatedAt() {
         return updatedAt;
+    }
+
+    public String getUpdatedBy() {
+        return updatedBy;
+    }
+
+    public void setUpdatedBy(String updatedBy) {
+        this.updatedBy = updatedBy;
     }
 }

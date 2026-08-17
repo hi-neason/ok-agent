@@ -64,16 +64,18 @@ public class AgentAssetServiceImpl implements AgentAssetService {
     @Override
     @Transactional(readOnly = true)
     public List<AgentAssetResponse> list() {
+        var modelNames = modelNames();
         return agents.findAll().stream()
                 .sorted(Comparator.comparing(AgentAsset::getUpdatedAt).reversed())
-                .map(AgentAssetResponse::from)
+                .map(a -> AgentAssetResponse.from(a, modelNames))
                 .toList();
     }
 
     @Override
     @Transactional(readOnly = true)
     public AgentAssetResponse get(UUID id) {
-        return AgentAssetResponse.from(find(id));
+        var agent = find(id);
+        return AgentAssetResponse.from(agent, modelNameOf(agent.getModelAssetId()));
     }
 
     @Override
@@ -89,7 +91,8 @@ public class AgentAssetServiceImpl implements AgentAssetService {
                 request.name().trim(),
                 text(request.description()),
                 request.businessDomain().trim());
-        return AgentAssetResponse.from(agents.save(agent));
+        agent.setUpdatedBy("system");
+        return AgentAssetResponse.from(agents.save(agent), Map.of());
     }
 
     @Override
@@ -100,7 +103,8 @@ public class AgentAssetServiceImpl implements AgentAssetService {
                 request.name().trim(),
                 text(request.description()),
                 request.businessDomain().trim());
-        return AgentAssetResponse.from(agents.save(agent));
+        agent.setUpdatedBy("system");
+        return AgentAssetResponse.from(agents.save(agent), modelNameOf(agent.getModelAssetId()));
     }
 
     @Override
@@ -145,6 +149,7 @@ public class AgentAssetServiceImpl implements AgentAssetService {
                 text(request.dockerImage()),
                 request.sandboxMemoryMb(),
                 request.sandboxCpuCount());
+        agent.setUpdatedBy("system");
         var saved = agents.save(agent);
         log.info(
                 "Agent configuration updated: agentId={} permissionMode={} maxIters={} modelTimeoutSeconds={} toolTimeoutSeconds={}",
@@ -153,7 +158,7 @@ public class AgentAssetServiceImpl implements AgentAssetService {
                 saved.getMaxIters(),
                 saved.getModelTimeoutSeconds(),
                 saved.getToolTimeoutSeconds());
-        return AgentAssetResponse.from(saved);
+        return AgentAssetResponse.from(saved, modelNameOf(saved.getModelAssetId()));
     }
 
     @Override
@@ -161,7 +166,8 @@ public class AgentAssetServiceImpl implements AgentAssetService {
     public AgentAssetResponse setEnabled(UUID id, boolean enabled) {
         var agent = find(id);
         agent.setEnabled(enabled);
-        return AgentAssetResponse.from(agents.save(agent));
+        agent.setUpdatedBy("system");
+        return AgentAssetResponse.from(agents.save(agent), modelNameOf(agent.getModelAssetId()));
     }
 
     @Override
@@ -478,6 +484,22 @@ public class AgentAssetServiceImpl implements AgentAssetService {
     private AgentAsset find(UUID id) {
         return agents.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Agent not found"));
+    }
+
+    private Map<UUID, String> modelNames() {
+        return models.findAll().stream().collect(Collectors.toMap(
+                io.okagent.domain.model.ModelAsset::getId,
+                io.okagent.domain.model.ModelAsset::getName,
+                (a, b) -> a));
+    }
+
+    private Map<UUID, String> modelNameOf(UUID modelAssetId) {
+        if (modelAssetId == null) {
+            return Map.of();
+        }
+        return models.findById(modelAssetId)
+                .map(m -> Map.<UUID, String>of(m.getId(), m.getName()))
+                .orElseGet(Map::of);
     }
 
     private void validateReferences(AgentConfigRequest request) {

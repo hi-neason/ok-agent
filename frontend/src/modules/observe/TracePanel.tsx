@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { fetchTrace } from "./api";
 import type { SpanStatus, TraceSpan } from "./types";
@@ -291,7 +292,7 @@ function TraceDrawer({
     );
   }
 
-  return (
+  const drawer = (
     <div
       className={standalone ? "trace-page" : "trace-drawer-overlay"}
       onClick={standalone ? undefined : onClose}
@@ -339,6 +340,11 @@ function TraceDrawer({
       </aside>
     </div>
   );
+
+  // The application content uses entry animations that establish a transformed
+  // containing block. A fixed drawer rendered inside it would therefore be
+  // positioned against the scrolled page instead of the viewport.
+  return standalone ? drawer : createPortal(drawer, document.body);
 }
 
 /**

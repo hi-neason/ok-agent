@@ -18,7 +18,14 @@ const resources = {
         system: "账号权限",
         sysconfig: "系统配置",
       },
-      common: { controlPlane: "控制面", search: "搜索", language: "语言", collapseNavigation: "收起或展开一级菜单" },
+      common: {
+        controlPlane: "控制面",
+        search: "搜索",
+        language: "语言",
+        collapseNavigation: "收起或展开一级菜单",
+        confirm: "确定",
+        cancel: "取消",
+      },
       models: {
         connectionSucceeded: "连接成功",
         connectionTesting: "正在验证连接…",
@@ -371,6 +378,8 @@ const resources = {
         search: "Search",
         language: "Language",
         collapseNavigation: "Collapse or expand navigation",
+        confirm: "Confirm",
+        cancel: "Cancel",
       },
       models: {
         connectionSucceeded: "Connection succeeded",

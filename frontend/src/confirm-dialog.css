@@ -1,0 +1,80 @@
+.confirm-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  background: rgba(23, 54, 95, 0.45);
+  backdrop-filter: blur(2px);
+  animation: confirm-fade-in 0.15s ease;
+}
+
+.confirm-panel {
+  width: 420px;
+  max-width: 90vw;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #d9e7f7;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(38, 101, 170, 0.18);
+  overflow: hidden;
+  animation: confirm-scale-in 0.15s ease;
+}
+
+.confirm-header {
+  padding: 18px 20px 0;
+}
+
+.confirm-header h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #17365f;
+}
+
+.confirm-body {
+  padding: 14px 20px 20px;
+}
+
+.confirm-body p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #315a84;
+}
+
+.confirm-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 0 20px 20px;
+}
+
+.ui-button.danger {
+  background: #dc2626;
+  color: #fff;
+  border-color: #dc2626;
+}
+
+.ui-button.danger:hover {
+  background: #b91d1d;
+}
+
+@keyframes confirm-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes confirm-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

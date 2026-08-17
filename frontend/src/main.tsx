@@ -8,6 +8,7 @@ import "./llm-provider.css";
 import "./skill.css";
 import "./mcp.css";
 import "./observe.css";
+import "./confirm-dialog.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

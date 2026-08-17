@@ -31,6 +31,7 @@ import { AgentMcpTab } from "./components/tabs/AgentMcpTab";
 import { AgentMemoryTab } from "./components/tabs/AgentMemoryTab";
 import { AgentWorkspaceTab } from "./components/tabs/AgentWorkspaceTab";
 import { AgentRuntimeTab } from "./components/tabs/AgentRuntimeTab";
+import { useConfirm } from "../shared";
 
 function initialForm(agent: AgentItem): AgentForm {
   return {
@@ -78,6 +79,7 @@ export function AgentConfigPage({
   onBack: () => void;
 }) {
   const { t } = useTranslation();
+  const { confirm, Dialog } = useConfirm();
   const [agent, setAgent] = useState<AgentItem | null>(null);
   const [form, setForm] = useState<AgentForm | null>(null);
   const [models, setModels] = useState<Option[]>([]);
@@ -163,14 +165,14 @@ export function AgentConfigPage({
     return counts;
   }, [validation]);
 
-  const handleTabClick = (next: AgentTab) => {
+  const handleTabClick = async (next: AgentTab) => {
     if (next === tab) return;
-    if (dirty && !window.confirm(t("agents.unsavedLeaveConfirm"))) return;
+    if (dirty && !(await confirm({ message: t("agents.unsavedLeaveConfirm") }))) return;
     navigateTab(next);
   };
 
-  const handleBack = () => {
-    if (dirty && !window.confirm(t("agents.unsavedLeaveConfirm"))) return;
+  const handleBack = async () => {
+    if (dirty && !(await confirm({ message: t("agents.unsavedLeaveConfirm") }))) return;
     onBack();
   };
 
@@ -208,20 +210,22 @@ export function AgentConfigPage({
     if (
       agent &&
       permissionModeChanged(agent, form) &&
-      !window.confirm(
-        t("agents.permissionChangeConfirm", {
+      !(await confirm({
+        message: t("agents.permissionChangeConfirm", {
           from: agent.permissionMode,
           to: form.permissionMode,
           name: agent.name,
         }),
-      )
+      }))
     ) {
       return;
     }
     if (
       agent &&
       workspaceOrShellChanged(agent, form) &&
-      !window.confirm(t("agents.workspaceChangeConfirm", { name: agent.name }))
+      !(await confirm({
+        message: t("agents.workspaceChangeConfirm", { name: agent.name }),
+      }))
     ) {
       return;
     }
@@ -235,9 +239,11 @@ export function AgentConfigPage({
     }
     if (
       result.warnings.length > 0 &&
-      !window.confirm(
-        t("agents.validationWarningsConfirm", { count: result.warnings.length }),
-      )
+      !(await confirm({
+        message: t("agents.validationWarningsConfirm", {
+          count: result.warnings.length,
+        }),
+      }))
     ) {
       return;
     }
@@ -288,7 +294,9 @@ export function AgentConfigPage({
   if (!agent || !form) return <div className="page-content">{t("agents.notFound")}</div>;
 
   return (
-    <ResizableWorkbench
+    <>
+      <Dialog />
+      <ResizableWorkbench
       left={
         <>
           <AgentConfigTabs
@@ -375,6 +383,7 @@ export function AgentConfigPage({
         />
       }
     />
+    </>
   );
 }
 

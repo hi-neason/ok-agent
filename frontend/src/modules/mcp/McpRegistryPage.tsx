@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { Button, PageHeader, Toggle } from "../shared";
+import { Button, PageHeader, Toggle, useConfirm } from "../shared";
 import {
   deleteServer,
   fetchServers,
@@ -23,6 +23,7 @@ import {
 
 export function McpRegistryPage() {
   const { t } = useTranslation();
+  const { confirm, Dialog } = useConfirm();
   const [servers, setServers] = useState<McpServer[]>([]);
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<McpServer | null | "new">(null);
@@ -276,7 +277,7 @@ export function McpRegistryPage() {
     }
   };
   const remove = async (server: McpServer) => {
-    if (!confirm(t("mcp.deleteConfirm", { name: server.name }))) return;
+    if (!(await confirm({ message: t("mcp.deleteConfirm", { name: server.name }), dangerous: true }))) return;
     await deleteServer(server.id);
     await load();
   };
@@ -291,6 +292,7 @@ export function McpRegistryPage() {
   );
   return (
     <>
+      <Dialog />
       <PageHeader
         kicker="MCP SERVER / REGISTRY"
         title={t("mcp.title")}

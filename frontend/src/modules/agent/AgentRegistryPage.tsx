@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
+import { useConfirm } from "../shared";
 import type { AgentItem } from "./types";
 
 function Modal({
@@ -42,6 +43,7 @@ export function AgentRegistryPage({
   onConfigure: (id: string) => void;
 }) {
   const { t } = useTranslation();
+  const { confirm, Dialog } = useConfirm();
   const [agents, setAgents] = useState<AgentItem[]>([]);
   const [error, setError] = useState("");
   const [editing, setEditing] = useState<AgentItem | "new" | null>(null);
@@ -111,13 +113,14 @@ export function AgentRegistryPage({
   };
 
   const remove = async (a: AgentItem) => {
-    if (!window.confirm(t("agents.deleteConfirm", { name: a.name }))) return;
+    if (!(await confirm({ message: t("agents.deleteConfirm", { name: a.name }), dangerous: true }))) return;
     const res = await fetch(`/api/v1/agents/${a.id}`, { method: "DELETE" });
     if (res.ok) await load();
   };
 
   return (
     <>
+      <Dialog />
       <header className="page-header">
         <div>
           <p className="kicker">HARNESS AGENT / REGISTRY</p>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { Button, PageHeader, Toggle } from "../shared";
+import { Button, PageHeader, Toggle, useConfirm } from "../shared";
 import {
   SkillConflictError,
   SkillFileConflictError,
@@ -65,6 +65,7 @@ function SkillTree({
 
 export function SkillRegistryPage() {
   const { t } = useTranslation();
+  const { confirm, Dialog } = useConfirm();
   const [skills, setSkills] = useState<SkillItem[]>([]);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [editing, setEditing] = useState<SkillItem | null>(null);
@@ -141,7 +142,7 @@ export function SkillRegistryPage() {
       setBusinessDomain("");
     } catch (failure) {
       if (failure instanceof SkillConflictError && !overwrite) {
-        if (window.confirm(t("skills.overwriteConfirm"))) {
+        if (await confirm({ message: t("skills.overwriteConfirm") })) {
           setSaving(false);
           await importArchive(true);
           return;
@@ -222,7 +223,7 @@ export function SkillRegistryPage() {
   };
 
   const removeSkill = async (skill: SkillItem) => {
-    if (!window.confirm(t("skills.deleteConfirm", { name: skill.name })))
+    if (!(await confirm({ message: t("skills.deleteConfirm", { name: skill.name }), dangerous: true })))
       return;
     try {
       await deleteSkill(skill.id);
@@ -234,6 +235,7 @@ export function SkillRegistryPage() {
 
   return (
     <>
+      <Dialog />
       <PageHeader
         kicker="SKILL ASSETS / REPOSITORY"
         title={t("skills.title")}

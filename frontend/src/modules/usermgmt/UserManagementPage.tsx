@@ -185,7 +185,7 @@ export function UserManagementPage() {
       </label>
 
       {tab === "groups" ? (
-        <section className="run-table">
+        <section className="run-table um-group-table">
           <div className="table-head">
             <span>用户组</span>
             <span>标识</span>
@@ -242,7 +242,7 @@ export function UserManagementPage() {
           )}
         </section>
       ) : (
-        <section className="run-table">
+        <section className="run-table um-user-table">
           <div className="table-head">
             <span>账号</span>
             <span>用户标识</span>

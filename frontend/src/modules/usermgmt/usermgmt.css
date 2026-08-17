@@ -32,3 +32,56 @@
   color: #92a0b5;
   font-size: 13px;
 }
+
+/* ---------- 表格列宽对齐（覆盖全局 6 列默认） ---------- */
+
+/* 用户组：用户组 | 标识 | 描述 | 成员 | 状态 | 操作 */
+.um-group-table .table-head,
+.um-group-table .table-row {
+  grid-template-columns:
+    minmax(120px, 1fr)
+    minmax(140px, 1fr)
+    minmax(180px, 2fr)
+    70px
+    76px
+    110px;
+  gap: 12px;
+}
+
+/* 用户：账号 | 用户标识 | 姓名 | 邮箱 | 电话 | 所属用户组 | 状态 | 操作 */
+.um-user-table .table-head,
+.um-user-table .table-row {
+  grid-template-columns:
+    120px
+    240px
+    minmax(90px, 1fr)
+    minmax(150px, 1.2fr)
+    110px
+    minmax(120px, 1fr)
+    76px
+    110px;
+  gap: 12px;
+}
+
+.um-group-table .table-head span,
+.um-user-table .table-head span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.um-group-table .table-row .model-actions,
+.um-user-table .table-row .model-actions {
+  display: flex;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.um-group-table .table-row code,
+.um-user-table .table-row code {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+}

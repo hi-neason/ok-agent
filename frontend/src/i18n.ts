@@ -137,7 +137,7 @@ const resources = {
         validationWarnings: "警告 ({{count}})",
         validationWarningsConfirm: "配置有 {{count}} 个警告，仍要保存？",
         unsaved: "未保存",
-        unsavedLeaveConfirm: "你有未保存的修改，确定离开吗？",
+        unsavedLeaveConfirm: "你有未保存的修改，离开将放弃这些更改，确定继续吗？",
         validation: {
           AGENT_NOT_FOUND: "智能体不存在",
           MODEL_NOT_SELECTED: "未选择模型，智能体无法运行",
@@ -496,7 +496,7 @@ const resources = {
         validationWarnings: "Warnings ({{count}})",
         validationWarningsConfirm: "Configuration has {{count}} warning(s); save anyway?",
         unsaved: "Unsaved",
-        unsavedLeaveConfirm: "You have unsaved changes. Leave anyway?",
+        unsavedLeaveConfirm: "You have unsaved changes. Leaving will discard them. Continue?",
         validation: {
           AGENT_NOT_FOUND: "Agent not found",
           MODEL_NOT_SELECTED: "No model selected; the agent cannot run",

@@ -165,8 +165,15 @@ export function AgentConfigPage({
     return counts;
   }, [validation]);
 
-  const handleTabClick = (next: AgentTab) => {
+  const handleTabClick = async (next: AgentTab) => {
     if (next === tab) return;
+    if (dirty) {
+      const ok = await confirm({ message: t("agents.unsavedLeaveConfirm") });
+      if (!ok) return;
+      // 用户确认离开：丢弃未保存的改动，回到干净状态，避免反复弹窗
+      if (agent) setForm(initialForm(agent));
+      resetDirty();
+    }
     navigateTab(next);
   };
 

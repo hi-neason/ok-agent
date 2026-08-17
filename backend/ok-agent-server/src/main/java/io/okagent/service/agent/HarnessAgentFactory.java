@@ -30,6 +30,8 @@ import io.okagent.repository.mcp.McpServerRepository;
 import io.okagent.repository.model.ModelAssetRepository;
 import io.okagent.repository.skill.SkillAssetRepository;
 import io.okagent.service.model.ApiKeyCipher;
+import io.okagent.service.knowledge.KnowledgeRuntimeCatalog;
+import io.okagent.service.knowledge.KnowledgeTools;
 import io.okagent.service.persona.UserPersonaService;
 import io.okagent.service.workflow.WorkflowRuntimeCatalog;
 import io.okagent.service.workflow.WorkflowTools;
@@ -59,6 +61,7 @@ public class HarnessAgentFactory {
     private final JdbcBaseStore baseStore;
     private final UserPersonaService personaService;
     private final WorkflowRuntimeCatalog workflowCatalog;
+    private final KnowledgeRuntimeCatalog knowledgeCatalog;
     private final ObjectMapper json = new ObjectMapper();
 
     public HarnessAgentFactory(
@@ -71,7 +74,8 @@ public class HarnessAgentFactory {
             TranscriptStore transcriptStore,
             JdbcBaseStore baseStore,
             UserPersonaService personaService,
-            WorkflowRuntimeCatalog workflowCatalog) {
+            WorkflowRuntimeCatalog workflowCatalog,
+            KnowledgeRuntimeCatalog knowledgeCatalog) {
         this.models = models;
         this.mcpServers = mcpServers;
         this.skills = skills;
@@ -82,6 +86,7 @@ public class HarnessAgentFactory {
         this.baseStore = baseStore;
         this.personaService = personaService;
         this.workflowCatalog = workflowCatalog;
+        this.knowledgeCatalog = knowledgeCatalog;
     }
 
     public HarnessAgent build(AgentAsset draft) {
@@ -104,12 +109,15 @@ public class HarnessAgentFactory {
                 // No workspace/tools.json file; register MCP servers programmatically.
                 .toolsConfig(toolsConfig(draft));
 
-        // Register the external-workflow tools (list/describe/start) when this agent has
-        // bound workflows. The harness copies this toolkit during build() and then appends its
-        // own built-in tools (memory/filesystem/shell/web), so none of those are lost.
+        // Register external tools (workflows + knowledge) when this agent has bindings. The
+        // harness copies this toolkit during build() and then appends its own built-in tools
+        // (memory/filesystem/shell/web), so none of those are lost.
         Toolkit toolkit = new Toolkit();
         if (draft.getId() != null && !workflowCatalog.listForAgent(draft.getId()).isEmpty()) {
             toolkit.registerTool(new WorkflowTools(workflowCatalog, draft.getId()));
+        }
+        if (draft.getId() != null && !knowledgeCatalog.listForAgent(draft.getId()).isEmpty()) {
+            toolkit.registerTool(new KnowledgeTools(knowledgeCatalog, draft.getId()));
         }
         builder.toolkit(toolkit);
 

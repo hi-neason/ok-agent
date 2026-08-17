@@ -1,82 +1,84 @@
-export type WorkflowSourceType = "DIFY";
+export type KnowledgeSourceType = "DIFY";
 
 export type TestStatus = "SUCCESS" | "FAILED" | "UNSUPPORTED" | "UNTESTED";
 
-export type WorkflowSource = {
+export type KnowledgeSource = {
   id: string;
   sourceKey: string;
   name: string;
-  sourceType: WorkflowSourceType;
+  sourceType: KnowledgeSourceType;
   baseUrl: string;
   enabled: boolean;
   hasApiKey: boolean;
-  executeTimeoutSeconds: number;
+  retrieveTimeoutSeconds: number;
   connectTimeoutSeconds: number;
   lastTestStatus: TestStatus;
   lastTestMessage: string | null;
   lastTestedAt: string | null;
   lastSyncedAt: string | null;
-  workflowCount: number;
+  knowledgeCount: number;
   updatedAt: string;
 };
 
-export type WorkflowSourceDraft = {
+export type KnowledgeSourceDraft = {
   sourceKey: string;
   name: string;
-  sourceType: WorkflowSourceType;
+  sourceType: KnowledgeSourceType;
   baseUrl: string;
   apiKey: string;
-  executeTimeoutSeconds: number;
+  retrieveTimeoutSeconds: number;
   connectTimeoutSeconds: number;
 };
 
-export type WorkflowCatalogItem = {
+export type KnowledgeCatalogItem = {
   id: string;
   sourceId: string;
   sourceName: string;
-  remoteWorkflowId: string;
+  remoteKnowledgeId: string;
   name: string;
-  remoteMode: string | null;
   active: boolean;
   tags: string[];
   remoteDescription: string | null;
   description: string;
-  inputSchemaJson: string | null;
+  documentCount: number;
+  wordCount: number;
   metadataStatus: "NEEDS_REVIEW" | "READY";
   updatedAt: string;
 };
 
-export type AgentWorkflowBinding = {
+export type AgentKnowledgeBinding = {
   id: string;
   agentId: string;
   catalogItemId: string;
-  remoteWorkflowId: string;
-  workflowName: string;
+  remoteKnowledgeId: string;
+  knowledgeName: string;
   sourceName: string;
   descriptionOverride: string | null;
-  parameterDefaultsJson: string | null;
+  topK: number | null;
+  scoreThreshold: number | null;
   enabled: boolean;
   metadataStatus: "NEEDS_REVIEW" | "READY";
   active: boolean;
   updatedAt: string;
 };
 
-export type AgentWorkflowBindingDraft = {
+export type AgentKnowledgeBindingDraft = {
   catalogItemId: string;
   descriptionOverride: string;
-  parameterDefaults: string;
+  topK: number | null;
+  scoreThreshold: number | null;
 };
 
-export const emptySourceDraft = (): WorkflowSourceDraft => ({
+export const emptySourceDraft = (): KnowledgeSourceDraft => ({
   sourceKey: "",
   name: "",
   sourceType: "DIFY",
   baseUrl: "https://api.dify.ai/v1",
   apiKey: "",
-  executeTimeoutSeconds: 90,
+  retrieveTimeoutSeconds: 30,
   connectTimeoutSeconds: 10,
 });
 
-export const SOURCE_TYPE_LABELS: Record<WorkflowSourceType, string> = {
+export const SOURCE_TYPE_LABELS: Record<KnowledgeSourceType, string> = {
   DIFY: "Dify",
 };

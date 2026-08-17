@@ -1,0 +1,71 @@
+/* Knowledge integration — catalog drawer + agent binding tab.
+   Reuses the .wf-catalog-* drawer classes from the workflow module for layout consistency. */
+
+.kb-stats {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+  font-size: 12px;
+  color: var(--text-dim, #8a99b3);
+}
+
+.kb-stats .kb-tags {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.kb-stats code {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border, #2a3548);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 11px;
+}
+
+/* Agent knowledge binding tab */
+.wf-binding-detail {
+  flex-basis: 100%;
+  margin-top: 8px;
+  padding-left: 26px;
+}
+
+.wf-binding-desc {
+  margin: 0 0 6px;
+  font-size: 12px;
+  color: var(--text-dim, #8a99b3);
+  line-height: 1.5;
+}
+
+.wf-binding-overrides {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.wf-binding-overrides label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-dim, #8a99b3);
+}
+
+.wf-binding-overrides textarea,
+.wf-binding-overrides input {
+  background: var(--input-bg, #0f1620);
+  border: 1px solid var(--border, #2a3548);
+  border-radius: 6px;
+  color: inherit;
+  padding: 8px;
+  font: inherit;
+  resize: vertical;
+}
+
+.wf-binding-count {
+  font-size: 12px;
+  color: var(--text-dim, #8a99b3);
+}

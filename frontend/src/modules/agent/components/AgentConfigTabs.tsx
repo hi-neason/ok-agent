@@ -6,9 +6,10 @@ const TAB_INDEX: Record<AgentTab, string> = {
   skills: "02",
   mcp: "03",
   workflows: "04",
-  memory: "05",
-  workspace: "06",
-  runtime: "07",
+  knowledge: "05",
+  memory: "06",
+  workspace: "07",
+  runtime: "08",
 };
 
 export function AgentConfigTabs({

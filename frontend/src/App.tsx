@@ -12,6 +12,7 @@ import {
 import { UserManagementPage } from "./modules/usermgmt";
 import { PersonaPage } from "./modules/persona";
 import { WorkflowSourcesPage } from "./modules/workflow";
+import { KnowledgeSourcesPage } from "./modules/knowledge";
 import { Button, PageHeader } from "./modules/shared";
 import "./agent.css";
 
@@ -52,7 +53,7 @@ const navItems: NavItem[] = [
   { id: "models", icon: "◌", name: "模型", kicker: "MODEL" },
   { id: "skills", icon: "✦", name: "技能", kicker: "SKILL" },
   { id: "mcp", icon: "⌘", name: "工具", kicker: "MCP" },
-  { id: "knowledge", icon: "◫", name: "知识库", kicker: "KNOWLEDGE", wip: true },
+  { id: "knowledge", icon: "◫", name: "知识库 - 集成", kicker: "KNOWLEDGE" },
   { id: "workflows", icon: "⌁", name: "工作流 - 集成", kicker: "WORKFLOW" },
   { id: "persona", icon: "◑", name: "用户画像", kicker: "PERSONA" },
   { id: "insight", icon: "◍", name: "对话洞察", kicker: "INSIGHT", wip: true },
@@ -123,69 +124,6 @@ const pageForPath = (path: string): Page =>
 const isKnownPath = (path: string): boolean =>
   Boolean(pathPages[path]) ||
   nestedPathPrefixes.some(([prefix]) => path.startsWith(prefix));
-
-function KnowledgePage() {
-  return (
-    <>
-      <PageHeader
-        kicker="KNOWLEDGE BASE / GLOBAL ASSET"
-        title="知识库"
-        description="维护可复用的知识集合、检索配置与访问范围；智能体仅绑定已经发布的知识库版本。"
-        action={<Button>＋ 创建知识库</Button>}
-      />
-      <div className="content-split">
-        <section className="catalog-panel">
-          {[
-            ["产品帮助中心", "product-help@12", "1,846 文档 · 已发布"],
-            ["工单规则库", "ticket-policy@7", "94 文档 · 已发布"],
-            ["财务制度库", "finance-policy@3", "318 文档 · 审核中"],
-          ].map(([name, code, meta], index) => (
-            <article className="skill-row" key={code}>
-              <div className="skill-glyph">{index === 0 ? "◫" : "▤"}</div>
-              <div>
-                <b>{name}</b>
-                <code>{code}</code>
-                <small>{meta}</small>
-              </div>
-              <span className={index === 2 ? "tag" : "tag green"}>
-                {index === 2 ? "REVIEW" : "READY"}
-              </span>
-            </article>
-          ))}
-        </section>
-        <aside className="binding-panel">
-          <p className="kicker">RETRIEVAL PROFILE</p>
-          <h2>产品帮助中心</h2>
-          <div className="priority-list">
-            <div>
-              <b>01</b>
-              <span>
-                切片策略<small>512 tokens / overlap 64</small>
-              </span>
-            </div>
-            <div>
-              <b>02</b>
-              <span>
-                向量模型<small>text-embedding-v3</small>
-              </span>
-            </div>
-            <div className="highlight">
-              <b>03</b>
-              <span>
-                召回与重排<small>topK 12 → rerank 5</small>
-              </span>
-            </div>
-          </div>
-          <section className="policy-note">
-            <b>被 4 个智能体引用</b>
-            <p>生产引用锁定到知识库版本与索引快照，可安全回溯。</p>
-          </section>
-          <Button>查看版本与索引</Button>
-        </aside>
-      </div>
-    </>
-  );
-}
 
 function SystemPage() {
   return (
@@ -398,7 +336,7 @@ export default function App() {
     models: <ModelRegistryPage />,
     skills: <SkillRegistryPage />,
     mcp: <McpPage />,
-    knowledge: <KnowledgePage />,
+    knowledge: <KnowledgeSourcesPage />,
     workflows: <WorkflowSourcesPage />,
     release: <ReleasePage />,
     observe: (

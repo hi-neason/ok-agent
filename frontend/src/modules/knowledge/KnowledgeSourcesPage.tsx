@@ -4,23 +4,20 @@ import { Button, PageHeader, Toggle, useConfirm } from "../shared";
 import {
   createSource,
   deleteSource,
-  listCatalog,
   listSources,
   setSourceEnabled,
   syncSource,
   testSource,
-  updateCatalogDescription,
   updateSource,
 } from "./api";
 import {
   SOURCE_TYPE_LABELS,
   emptySourceDraft,
-  type WorkflowCatalogItem,
-  type WorkflowSource,
-  type WorkflowSourceDraft,
+  type KnowledgeSource,
+  type KnowledgeSourceDraft,
 } from "./types";
 import { CatalogDrawer } from "./CatalogDrawer";
-import "./workflow.css";
+import "./knowledge.css";
 
 const slugify = (value: string) =>
   value
@@ -46,15 +43,15 @@ export function testLabel(status: string): string {
   }
 }
 
-export function WorkflowSourcesPage() {
+export function KnowledgeSourcesPage() {
   const { confirm, Dialog } = useConfirm();
-  const [sources, setSources] = useState<WorkflowSource[]>([]);
+  const [sources, setSources] = useState<KnowledgeSource[]>([]);
   const [search, setSearch] = useState("");
-  const [editing, setEditing] = useState<WorkflowSource | "new" | null>(null);
-  const [draft, setDraft] = useState<WorkflowSourceDraft>(emptySourceDraft());
+  const [editing, setEditing] = useState<KnowledgeSource | "new" | null>(null);
+  const [draft, setDraft] = useState<KnowledgeSourceDraft>(emptySourceDraft());
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
-  const [catalogFor, setCatalogFor] = useState<WorkflowSource | null>(null);
+  const [catalogFor, setCatalogFor] = useState<KnowledgeSource | null>(null);
 
   const load = async () => {
     try {
@@ -68,7 +65,7 @@ export function WorkflowSourcesPage() {
     void load();
   }, []);
 
-  const open = (source?: WorkflowSource) => {
+  const open = (source?: KnowledgeSource) => {
     if (source) {
       setEditing(source);
       setDraft({
@@ -77,7 +74,7 @@ export function WorkflowSourcesPage() {
         sourceType: source.sourceType,
         baseUrl: source.baseUrl,
         apiKey: "",
-        executeTimeoutSeconds: source.executeTimeoutSeconds,
+        retrieveTimeoutSeconds: source.retrieveTimeoutSeconds,
         connectTimeoutSeconds: source.connectTimeoutSeconds,
       });
     } else {
@@ -87,15 +84,15 @@ export function WorkflowSourcesPage() {
     setNotice(null);
   };
 
-  const validate = (d: WorkflowSourceDraft): string | null => {
+  const validate = (d: KnowledgeSourceDraft): string | null => {
     if (!d.name.trim()) return "请填写名称";
     if (!d.sourceKey.trim()) return "请填写 SOURCE_KEY";
     if (!/^[a-z0-9-]+$/.test(d.sourceKey))
       return "SOURCE_KEY 只能包含小写字母、数字和连字符";
     if (!d.baseUrl.trim()) return "请填写 Base URL";
     if (editing === "new" && !d.apiKey.trim()) return "请填写 API Key";
-    if (d.executeTimeoutSeconds <= 0 || d.executeTimeoutSeconds > 120)
-      return "同步超时需在 1–120 秒之间（建议小于 120）";
+    if (d.retrieveTimeoutSeconds <= 0 || d.retrieveTimeoutSeconds > 120)
+      return "检索超时需在 1–120 秒之间";
     return null;
   };
 
@@ -143,12 +140,12 @@ export function WorkflowSourcesPage() {
     }
   };
 
-  const sync = async (source: WorkflowSource) => {
+  const sync = async (source: KnowledgeSource) => {
     setBusy(true);
     setNotice(null);
     try {
       const items = await syncSource(source.id);
-      setNotice({ ok: true, text: `同步完成，发现 ${items.length} 个工作流` });
+      setNotice({ ok: true, text: `同步完成，发现 ${items.length} 个知识库` });
       await load();
     } catch (e) {
       setNotice({ ok: false, text: msg(e) });
@@ -157,7 +154,7 @@ export function WorkflowSourcesPage() {
     }
   };
 
-  const toggle = async (source: WorkflowSource) => {
+  const toggle = async (source: KnowledgeSource) => {
     try {
       await setSourceEnabled(source.id, !source.enabled);
       await load();
@@ -166,10 +163,10 @@ export function WorkflowSourcesPage() {
     }
   };
 
-  const remove = async (source: WorkflowSource) => {
+  const remove = async (source: KnowledgeSource) => {
     if (
       !(await confirm({
-        message: `确认删除工作流源「${source.name}」？其下发现的工作流与所有 Agent 绑定将一并移除。`,
+        message: `确认删除知识库源「${source.name}」？其下发现的知识库与所有 Agent 绑定将一并移除。`,
         dangerous: true,
       }))
     )
@@ -197,17 +194,17 @@ export function WorkflowSourcesPage() {
     <>
       <Dialog />
       <PageHeader
-        kicker="WORKFLOW / INTEGRATION"
-        title="工作流 - 集成"
-        description="接入外部流水线系统（Dify 等），同步其流程为全局可复用目录，再在各 Agent 中按需绑定。流程描述与入参在目录层维护一次，所有 Agent 共享。"
-        action={<Button onClick={() => open()}>＋ 添加工作流源</Button>}
+        kicker="KNOWLEDGE / INTEGRATION"
+        title="知识库 - 集成"
+        description="接入外部知识库系统（Dify 等），同步其知识库为全局可复用目录，再在各 Agent 中按需绑定。模型通过检索工具按需查阅，作为回答的事实依据。"
+        action={<Button onClick={() => open()}>＋ 添加知识库源</Button>}
       />
 
       <div className="mcp-toolbar">
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="搜索工作流源 / KEY / URL"
+          placeholder="搜索知识库源 / KEY / URL"
         />
         <span>{sources.length} 个源</span>
       </div>
@@ -222,9 +219,9 @@ export function WorkflowSourcesPage() {
 
       <div className="mcp-table">
         <div className="mcp-row head">
-          <span>工作流源</span>
+          <span>知识库源</span>
           <span>类型</span>
-          <span>流程数</span>
+          <span>知识库数</span>
           <span>最近测试</span>
           <span>状态</span>
           <span>操作</span>
@@ -240,7 +237,7 @@ export function WorkflowSourcesPage() {
               <code>{SOURCE_TYPE_LABELS[source.sourceType]}</code>
               <small>{source.baseUrl}</small>
             </span>
-            <span>{source.workflowCount}</span>
+            <span>{source.knowledgeCount}</span>
             <span className={`test-state ${source.lastTestStatus.toLowerCase()}`}>
               {testLabel(source.lastTestStatus)}
               {source.lastTestedAt && (
@@ -264,7 +261,7 @@ export function WorkflowSourcesPage() {
         ))}
         {visible.length === 0 && (
           <div className="mcp-empty">
-            ⌁<b>暂无工作流源，点击右上角添加</b>
+            ⌁<b>暂无知识库源，点击右上角添加</b>
           </div>
         )}
       </div>
@@ -280,12 +277,12 @@ export function WorkflowSourcesPage() {
               <header>
                 <div>
                   <p className="kicker">
-                    WORKFLOW SOURCE / {editing === "new" ? "REGISTER" : "EDIT"}
+                    KNOWLEDGE SOURCE / {editing === "new" ? "REGISTER" : "EDIT"}
                   </p>
                   <h2>
                     {editing === "new"
-                      ? "添加工作流源"
-                      : (editing as WorkflowSource).name}
+                      ? "添加知识库源"
+                      : (editing as KnowledgeSource).name}
                   </h2>
                 </div>
                 <button className="link-button" onClick={() => setEditing(null)}>
@@ -308,7 +305,7 @@ export function WorkflowSourcesPage() {
                             : d.sourceKey,
                       }));
                     }}
-                    placeholder="如：旅游 Dify"
+                    placeholder="如：产品知识库"
                   />
                 </label>
                 <label>
@@ -317,7 +314,7 @@ export function WorkflowSourcesPage() {
                   </span>
                   <input
                     value={draft.sourceKey}
-                    placeholder="travel-dify"
+                    placeholder="product-knowledge"
                     onChange={(e) => setDraft({ ...draft, sourceKey: e.target.value })}
                   />
                 </label>
@@ -328,7 +325,7 @@ export function WorkflowSourcesPage() {
                     onChange={(e) =>
                       setDraft({
                         ...draft,
-                        sourceType: e.target.value as WorkflowSourceDraft["sourceType"],
+                        sourceType: e.target.value as KnowledgeSourceDraft["sourceType"],
                       })
                     }
                   >
@@ -348,24 +345,24 @@ export function WorkflowSourcesPage() {
                 </label>
                 <label className="wide">
                   <span>
-                    API Key{" "}
+                    Dataset API Key{" "}
                     {editing !== "new" && <small>· 留空表示不修改已保存的密钥</small>}
                     {editing === "new" && <b className="field-required">*</b>}
                   </span>
                   <input
                     type="password"
                     value={draft.apiKey}
-                    placeholder="app-xxxxxxxx"
+                    placeholder="dataset-xxxxxxxx"
                     onChange={(e) => setDraft({ ...draft, apiKey: e.target.value })}
                   />
                 </label>
                 <label>
-                  <span>同步超时（秒）</span>
+                  <span>检索超时（秒）</span>
                   <input
                     type="number"
-                    value={draft.executeTimeoutSeconds}
+                    value={draft.retrieveTimeoutSeconds}
                     onChange={(e) =>
-                      setDraft({ ...draft, executeTimeoutSeconds: +e.target.value })
+                      setDraft({ ...draft, retrieveTimeoutSeconds: +e.target.value })
                     }
                   />
                 </label>

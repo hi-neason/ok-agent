@@ -11,6 +11,7 @@ import {
 } from "./modules/observe";
 import { UserManagementPage } from "./modules/usermgmt";
 import { PersonaPage } from "./modules/persona";
+import { WorkflowSourcesPage } from "./modules/workflow";
 import { Button, PageHeader } from "./modules/shared";
 import "./agent.css";
 
@@ -52,7 +53,7 @@ const navItems: NavItem[] = [
   { id: "skills", icon: "✦", name: "技能", kicker: "SKILL" },
   { id: "mcp", icon: "⌘", name: "工具", kicker: "MCP" },
   { id: "knowledge", icon: "◫", name: "知识库", kicker: "KNOWLEDGE", wip: true },
-  { id: "workflows", icon: "⌁", name: "工作流", kicker: "WORKFLOW", wip: true },
+  { id: "workflows", icon: "⌁", name: "工作流 - 集成", kicker: "WORKFLOW" },
   { id: "persona", icon: "◑", name: "用户画像", kicker: "PERSONA" },
   { id: "insight", icon: "◍", name: "对话洞察", kicker: "INSIGHT", wip: true },
   { id: "system", icon: "◎", name: "账号权限", kicker: "ACCESS", wip: true },
@@ -180,59 +181,6 @@ function KnowledgePage() {
             <p>生产引用锁定到知识库版本与索引快照，可安全回溯。</p>
           </section>
           <Button>查看版本与索引</Button>
-        </aside>
-      </div>
-    </>
-  );
-}
-
-function WorkflowsPage() {
-  return (
-    <>
-      <PageHeader
-        kicker="WORKFLOW LIBRARY / REUSABLE"
-        title="工作流"
-        description="将稳定的流程编排沉淀为可复用组件，可作为智能体工具或发布流程中的受控步骤。"
-        action={<Button>＋ 新建工作流</Button>}
-      />
-      <div className="content-split">
-        <section className="catalog-panel">
-          {[
-            ["工单创建与确认", "ticket-create@v5", "12 节点 · 3 个 Agent 引用"],
-            ["高风险操作审批", "human-approval@v3", "6 节点 · HITL Gate"],
-            ["售后问题分流", "after-sales-router@v8", "9 节点 · 生产中"],
-          ].map(([name, code, meta], index) => (
-            <article className="skill-row" key={code}>
-              <div className="skill-glyph">⌁</div>
-              <div>
-                <b>{name}</b>
-                <code>{code}</code>
-                <small>{meta}</small>
-              </div>
-              <span className={index === 1 ? "tag blue" : "tag green"}>
-                {index === 1 ? "GATED" : "RUNNING"}
-              </span>
-            </article>
-          ))}
-        </section>
-        <aside className="binding-panel">
-          <p className="kicker">WORKFLOW SNAPSHOT</p>
-          <h2>工单创建与确认</h2>
-          <div className="memory-flow">
-            <span>校验</span>
-            <i>→</i>
-            <span>创建</span>
-            <i>→</i>
-            <span>确认</span>
-          </div>
-          <section className="policy-note">
-            <b>发布约束</b>
-            <p>
-              工作流作为全局资产独立版本化；Agent ReleaseSnapshot
-              记录其精确引用。
-            </p>
-          </section>
-          <Button>进入流程编排</Button>
         </aside>
       </div>
     </>
@@ -451,7 +399,7 @@ export default function App() {
     skills: <SkillRegistryPage />,
     mcp: <McpPage />,
     knowledge: <KnowledgePage />,
-    workflows: <WorkflowsPage />,
+    workflows: <WorkflowSourcesPage />,
     release: <ReleasePage />,
     observe: (
       <ObservePage

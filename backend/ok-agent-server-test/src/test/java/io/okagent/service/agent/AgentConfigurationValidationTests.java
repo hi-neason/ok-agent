@@ -239,6 +239,10 @@ class AgentConfigurationValidationTests {
         int memoryConsolidationIntervalMinutes = 30;
         int memoryDailyRetentionDays = 90;
         int memorySessionRetentionDays = 180;
+        boolean personaExtractEnabled = false;
+        io.okagent.domain.agent.PersonaInjectionMode personaInjectionMode =
+                io.okagent.domain.agent.PersonaInjectionMode.NONE;
+        String personaPromptTemplate = "";
         AgentWorkspaceMode workspaceMode = AgentWorkspaceMode.LOCAL_ROOTED;
         String workspaceIsolationScope = "SESSION";
         boolean workspaceContextEnabled = true;
@@ -275,6 +279,9 @@ class AgentConfigurationValidationTests {
                     memoryConsolidationIntervalMinutes,
                     memoryDailyRetentionDays,
                     memorySessionRetentionDays,
+                    personaExtractEnabled,
+                    personaInjectionMode,
+                    personaPromptTemplate,
                     workspaceMode,
                     workspaceIsolationScope,
                     workspaceContextEnabled,

@@ -19,6 +19,7 @@ import io.okagent.infrastructure.store.JdbcAgentStateStore;
 import io.okagent.infrastructure.store.JdbcTranscriptStore;
 import io.okagent.repository.agent.AgentAssetRepository;
 import io.okagent.service.dialogue.DialogueService;
+import io.okagent.service.persona.PersonaExtractionService;
 import io.okagent.web.agent.AgentChatRequest;
 import java.util.Optional;
 import java.util.UUID;
@@ -39,12 +40,13 @@ class AgentDebugServiceImplTests {
         var dialogue = mock(DialogueService.class);
         var stateStore = mock(JdbcAgentStateStore.class);
         var transcriptStore = mock(JdbcTranscriptStore.class);
+        var personaExtraction = mock(PersonaExtractionService.class);
         when(agents.findById(agentId)).thenReturn(Optional.of(asset));
-        when(factory.build(asset)).thenReturn(harnessAgent);
+        when(factory.build(asset, "debug")).thenReturn(harnessAgent);
         when(harnessAgent.streamEvents(any(String.class), any(RuntimeContext.class)))
                 .thenReturn(Flux.just(new AgentResultEvent(new AssistantMessage("Current time returned by tool"))));
 
-        var service = new AgentDebugServiceImpl(agents, factory, dialogue, stateStore, transcriptStore);
+        var service = new AgentDebugServiceImpl(agents, factory, dialogue, stateStore, transcriptStore, personaExtraction);
         var response = service.chat(agentId, new AgentChatRequest("Call the current time tool", "debug-session", "debug"));
 
         verify(harnessAgent)
@@ -66,8 +68,9 @@ class AgentDebugServiceImplTests {
         var factory = mock(HarnessAgentFactory.class);
         var harnessAgent = mock(HarnessAgent.class);
         var dialogue = mock(DialogueService.class);
+        var personaExtraction = mock(PersonaExtractionService.class);
         when(agents.findById(agentId)).thenReturn(Optional.of(asset));
-        when(factory.build(asset)).thenReturn(harnessAgent);
+        when(factory.build(asset, "debug")).thenReturn(harnessAgent);
         when(dialogue.sessionExists("dlg-session")).thenReturn(false);
         when(harnessAgent.streamEvents(any(String.class), any(RuntimeContext.class)))
                 .thenReturn(Flux.just(new AgentResultEvent(new AssistantMessage("Beijing time is 09:15"))));
@@ -77,7 +80,8 @@ class AgentDebugServiceImplTests {
                 factory,
                 dialogue,
                 mock(JdbcAgentStateStore.class),
-                mock(JdbcTranscriptStore.class));
+                mock(JdbcTranscriptStore.class),
+                personaExtraction);
         service.chat(agentId, new AgentChatRequest("What time is it?", "dlg-session", "debug"));
 
         // The debug runtime must not own its own history table: it records through the shared

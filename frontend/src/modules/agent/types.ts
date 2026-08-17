@@ -1,9 +1,10 @@
-export type AgentTab = "core" | "skills" | "mcp" | "memory" | "workspace" | "runtime";
+export type AgentTab = "core" | "skills" | "mcp" | "workflows" | "memory" | "workspace" | "runtime";
 
 export const AGENT_TABS: AgentTab[] = [
   "core",
   "skills",
   "mcp",
+  "workflows",
   "memory",
   "workspace",
   "runtime",

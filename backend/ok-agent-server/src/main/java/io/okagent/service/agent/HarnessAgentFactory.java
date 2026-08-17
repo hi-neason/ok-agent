@@ -8,6 +8,7 @@ import io.agentscope.core.model.transport.HttpTransport;
 import io.agentscope.core.skill.AgentSkill;
 import io.agentscope.core.skill.repository.AgentSkillRepository;
 import io.agentscope.core.state.AgentStateStore;
+import io.agentscope.core.tool.Toolkit;
 import io.agentscope.extensions.model.openai.OpenAIChatModel;
 import io.agentscope.harness.agent.HarnessAgent;
 import io.agentscope.harness.agent.IsolationScope;
@@ -30,6 +31,8 @@ import io.okagent.repository.model.ModelAssetRepository;
 import io.okagent.repository.skill.SkillAssetRepository;
 import io.okagent.service.model.ApiKeyCipher;
 import io.okagent.service.persona.UserPersonaService;
+import io.okagent.service.workflow.WorkflowRuntimeCatalog;
+import io.okagent.service.workflow.WorkflowTools;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -55,6 +58,7 @@ public class HarnessAgentFactory {
     private final TranscriptStore transcriptStore;
     private final JdbcBaseStore baseStore;
     private final UserPersonaService personaService;
+    private final WorkflowRuntimeCatalog workflowCatalog;
     private final ObjectMapper json = new ObjectMapper();
 
     public HarnessAgentFactory(
@@ -66,7 +70,8 @@ public class HarnessAgentFactory {
             AgentStateStore stateStore,
             TranscriptStore transcriptStore,
             JdbcBaseStore baseStore,
-            UserPersonaService personaService) {
+            UserPersonaService personaService,
+            WorkflowRuntimeCatalog workflowCatalog) {
         this.models = models;
         this.mcpServers = mcpServers;
         this.skills = skills;
@@ -76,6 +81,7 @@ public class HarnessAgentFactory {
         this.transcriptStore = transcriptStore;
         this.baseStore = baseStore;
         this.personaService = personaService;
+        this.workflowCatalog = workflowCatalog;
     }
 
     public HarnessAgent build(AgentAsset draft) {
@@ -97,6 +103,15 @@ public class HarnessAgentFactory {
                 .disableSubagents()
                 // No workspace/tools.json file; register MCP servers programmatically.
                 .toolsConfig(toolsConfig(draft));
+
+        // Register the external-workflow tools (list/describe/start) when this agent has
+        // bound workflows. The harness copies this toolkit during build() and then appends its
+        // own built-in tools (memory/filesystem/shell/web), so none of those are lost.
+        Toolkit toolkit = new Toolkit();
+        if (draft.getId() != null && !workflowCatalog.listForAgent(draft.getId()).isEmpty()) {
+            toolkit.registerTool(new WorkflowTools(workflowCatalog, draft.getId()));
+        }
+        builder.toolkit(toolkit);
 
         configureWorkspace(builder, draft);
         configureMemory(builder, draft);

@@ -32,6 +32,7 @@ import { ResizableWorkbench } from "./components/ResizableWorkbench";
 import { AgentPromptTab } from "./components/tabs/AgentPromptTab";
 import { AgentSkillsTab } from "./components/tabs/AgentSkillsTab";
 import { AgentMcpTab } from "./components/tabs/AgentMcpTab";
+import { AgentWorkflowTab } from "./components/tabs/AgentWorkflowTab";
 import { AgentMemoryTab } from "./components/tabs/AgentMemoryTab";
 import { AgentWorkspaceTab } from "./components/tabs/AgentWorkspaceTab";
 import { AgentRuntimeTab } from "./components/tabs/AgentRuntimeTab";
@@ -177,6 +178,7 @@ export function AgentConfigPage({
       core: 0,
       skills: 0,
       mcp: 0,
+      workflows: 0,
       memory: 0,
       workspace: 0,
       runtime: 0,
@@ -396,6 +398,7 @@ export function AgentConfigPage({
                 mcpTools={mcpTools}
               />
             )}
+            {tab === "workflows" && <AgentWorkflowTab agentId={agentId} />}
             {tab === "memory" && (
               <AgentMemoryTab form={form} setField={setField} errorsByField={errorsByField} />
             )}
@@ -406,37 +409,44 @@ export function AgentConfigPage({
               <AgentRuntimeTab form={form} setField={setField} errorsByField={errorsByField} />
             )}
 
-            {validation && (validation.errors.length > 0 || validation.warnings.length > 0) && (
-              <ValidationSummary
-                validation={validation}
-                onSelectIssue={focusField}
-                t={t}
-              />
-            )}
+            {tab !== "workflows" && (
+              <>
+                {validation &&
+                  (validation.errors.length > 0 || validation.warnings.length > 0) && (
+                    <ValidationSummary
+                      validation={validation}
+                      onSelectIssue={focusField}
+                      t={t}
+                    />
+                  )}
 
-            {notice && (
-              <div
-                className={
-                  notice.ok ? "connection-result connection-result--success" : "skill-error"
-                }
-              >
-                {notice.ok ? "✓" : "×"} {notice.text}
-              </div>
-            )}
+                {notice && (
+                  <div
+                    className={
+                      notice.ok
+                        ? "connection-result connection-result--success"
+                        : "skill-error"
+                    }
+                  >
+                    {notice.ok ? "✓" : "×"} {notice.text}
+                  </div>
+                )}
 
-            <div className="config-save-bar">
-              <button
-                className="ui-button quiet"
-                onClick={runValidation}
-                disabled={validating || saving}
-              >
-                {validating ? t("agents.validating") : t("agents.validate")}
-              </button>
-              <button className="ui-button" onClick={save} disabled={saving}>
-                {saving ? t("agents.saving") : t("agents.saveConfig")}
-              </button>
-              {dirty && <span className="dirty-flag">{t("agents.unsaved")}</span>}
-            </div>
+                <div className="config-save-bar">
+                  <button
+                    className="ui-button quiet"
+                    onClick={runValidation}
+                    disabled={validating || saving}
+                  >
+                    {validating ? t("agents.validating") : t("agents.validate")}
+                  </button>
+                  <button className="ui-button" onClick={save} disabled={saving}>
+                    {saving ? t("agents.saving") : t("agents.saveConfig")}
+                  </button>
+                  {dirty && <span className="dirty-flag">{t("agents.unsaved")}</span>}
+                </div>
+              </>
+            )}
           </section>
         </>
       }

@@ -1,0 +1,21 @@
+CREATE TABLE workflow_execution_audit (
+  id BINARY(16) NOT NULL,
+  agent_id BINARY(16) NULL,
+  user_id VARCHAR(128) NULL,
+  session_id VARCHAR(128) NULL,
+  source_id BINARY(16) NULL,
+  catalog_item_id BINARY(16) NULL,
+  inputs_hash VARCHAR(64) NOT NULL,
+  remote_run_id VARCHAR(255) NULL,
+  status VARCHAR(32) NOT NULL,
+  result_summary TEXT NULL,
+  error_message TEXT NULL,
+  elapsed_seconds DOUBLE NULL,
+  total_tokens INT NULL,
+  latency_ms INT NOT NULL,
+  created_at TIMESTAMP(6) NOT NULL,
+  PRIMARY KEY (id),
+  KEY idx_wf_audit_agent (agent_id),
+  KEY idx_wf_audit_session (session_id),
+  KEY idx_wf_audit_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

@@ -1,5 +1,4 @@
-import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { fetchTrace } from "./api";
 import type { SpanStatus, TraceSpan } from "./types";
@@ -7,7 +6,7 @@ import "./trace.css";
 
 function formatDuration(us: number): string {
   if (us >= 1_000_000) return `${(us / 1_000_000).toFixed(2)}s`;
-  if (us >= 1_000) return `${(us / 1000).toFixed(1)}ms`;
+  if (us >= 1_000) return `${(us / 1_000).toFixed(1)}ms`;
   return `${us}μs`;
 }
 
@@ -42,84 +41,6 @@ function statusClass(status: string): string {
   return "ok";
 }
 
-function SpanRow({
-  span,
-  traceStart,
-  traceEnd,
-  depth,
-}: {
-  span: TraceSpan;
-  traceStart: number;
-  traceEnd: number;
-  depth: number;
-}) {
-  const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
-  const total = Math.max(traceEnd - traceStart, 1);
-  const left = ((span.startUs - traceStart) / total) * 100;
-  const width = Math.max((span.durationUs / total) * 100, 1.5);
-  const attrs = parseAttributes(span.attributes);
-  const tokens =
-    typeof attrs["gen_ai.usage.total_tokens"] === "number"
-      ? (attrs["gen_ai.usage.total_tokens"] as number)
-      : null;
-
-  return (
-    <div className={`trace-row type-${span.type.toLowerCase()} ${statusClass(span.status)}`}>
-      <button
-        className="trace-row-head"
-        onClick={() => setOpen((v) => !v)}
-        title={span.name}
-      >
-        <span className="trace-row-gutter" style={{ paddingLeft: depth * 16 }}>
-          <i className="trace-caret">{open ? "▾" : "▸"}</i>
-          <span className={`trace-type-badge type-${span.type.toLowerCase()}`}>
-            {typeLabel(span.type, t)}
-          </span>
-          <span className="trace-name">{span.name}</span>
-        </span>
-        <span className="trace-row-meta">
-          {tokens !== null && <span className="trace-tokens">{tokens} tok</span>}
-          <span className={`trace-status ${statusClass(span.status)}`}>
-            {span.status}
-          </span>
-          <span className="trace-duration">{formatDuration(span.durationUs)}</span>
-        </span>
-      </button>
-
-      <div className="trace-waterfall">
-        <span
-          className={`trace-bar type-${span.type.toLowerCase()} ${statusClass(span.status)}`}
-          style={{ left: `${left}%`, width: `${width}%` }}
-        />
-      </div>
-
-      {open && (
-        <div className="trace-detail">
-          {Object.keys(attrs).length > 0 && (
-            <div className="trace-detail-section">
-              <h4>{t("observe.traceAttributes")}</h4>
-              <pre>{prettyJson(span.attributes)}</pre>
-            </div>
-          )}
-          {span.input && (
-            <div className="trace-detail-section">
-              <h4>{t("observe.traceInput")}</h4>
-              <pre>{prettyJson(span.input)}</pre>
-            </div>
-          )}
-          {span.output && (
-            <div className="trace-detail-section">
-              <h4>{t("observe.traceOutput")}</h4>
-              <pre>{prettyJson(span.output)}</pre>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
 function buildTree(spans: TraceSpan[]): {
   roots: TraceSpan[];
   children: Map<string, TraceSpan[]>;
@@ -138,32 +59,6 @@ function buildTree(spans: TraceSpan[]): {
   return { roots, children };
 }
 
-function renderTree(
-  roots: TraceSpan[],
-  children: Map<string, TraceSpan[]>,
-  traceStart: number,
-  traceEnd: number,
-  depth = 0,
-): ReactNode[] {
-  const nodes: ReactNode[] = [];
-  for (const span of roots) {
-    nodes.push(
-      <SpanRow
-        key={span.spanId}
-        span={span}
-        traceStart={traceStart}
-        traceEnd={traceEnd}
-        depth={depth}
-      />,
-    );
-    const kids = children.get(span.spanId);
-    if (kids && kids.length > 0) {
-      nodes.push(...renderTree(kids, children, traceStart, traceEnd, depth + 1));
-    }
-  }
-  return nodes;
-}
-
 function aggregate(spans: TraceSpan[]): {
   totalTokens: number;
   errorCount: number;
@@ -180,84 +75,278 @@ function aggregate(spans: TraceSpan[]): {
   return { totalTokens, errorCount, spanCount: spans.length };
 }
 
-export function TracePanel({ traceId }: { traceId: string }) {
+type DetailTab = "input" | "output" | "attributes";
+
+function SpanDetail({ span, t }: { span: TraceSpan; t: (k: string) => string }) {
+  const hasInput = Boolean(span.input);
+  const hasOutput = Boolean(span.output);
+  const hasAttrs = Object.keys(parseAttributes(span.attributes)).length > 0;
+  const [tab, setTab] = useState<DetailTab>(
+    hasInput ? "input" : hasOutput ? "output" : "attributes",
+  );
+
+  const tabs: { key: DetailTab; label: string; visible: boolean }[] = [
+    { key: "input", label: t("observe.traceInput"), visible: hasInput },
+    { key: "output", label: t("observe.traceOutput"), visible: hasOutput },
+    { key: "attributes", label: t("observe.traceAttributes"), visible: hasAttrs },
+  ];
+  const visibleTabs = tabs.filter((x) => x.visible);
+
+  return (
+    <div className="trace-detail-pane">
+      <div className="trace-detail-head">
+        <span className={`trace-type-badge type-${span.type.toLowerCase()}`}>
+          {typeLabel(span.type, t)}
+        </span>
+        <span className="trace-detail-name" title={span.name}>
+          {span.name}
+        </span>
+        <span className={`trace-status ${statusClass(span.status)}`}>{span.status}</span>
+        <span className="trace-detail-duration">{formatDuration(span.durationUs)}</span>
+      </div>
+      {visibleTabs.length > 0 && (
+        <div className="trace-detail-tabs">
+          {visibleTabs.map((x) => (
+            <button
+              key={x.key}
+              className={tab === x.key ? "active" : ""}
+              onClick={() => setTab(x.key)}
+            >
+              {x.label}
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="trace-detail-body">
+        {tab === "input" && <pre>{prettyJson(span.input)}</pre>}
+        {tab === "output" && <pre>{prettyJson(span.output)}</pre>}
+        {tab === "attributes" && <pre>{prettyJson(span.attributes)}</pre>}
+      </div>
+    </div>
+  );
+}
+
+function TraceDrawer({
+  traceId,
+  onClose,
+}: {
+  traceId: string;
+  onClose: () => void;
+}) {
   const { t } = useTranslation();
-  const [enabled, setEnabled] = useState(false);
   const [spans, setSpans] = useState<TraceSpan[] | null>(null);
   const [error, setError] = useState("");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    if (!enabled) return;
     let active = true;
     setError("");
     fetchTrace(traceId)
-      .then((data) => active && setSpans(data))
+      .then((data) => {
+        if (!active) return;
+        setSpans(data);
+        if (data.length > 0) setSelectedId(data[0].spanId);
+      })
       .catch(() => active && setError(t("observe.traceFailed")));
     return () => {
       active = false;
     };
-  }, [enabled, traceId, t]);
+  }, [traceId, t]);
 
-  if (!enabled) {
-    return (
-      <button className="trace-toggle" onClick={() => setEnabled(true)}>
-        ▸ {t("observe.viewTrace")}
-      </button>
-    );
-  }
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [onClose]);
 
-  let body: ReactNode;
+  const tree = useMemo(() => (spans ? buildTree(spans) : null), [spans]);
+  const selected = useMemo(
+    () => spans?.find((s) => s.spanId === selectedId) ?? null,
+    [spans, selectedId],
+  );
+
+  const traceStart = spans && spans.length > 0 ? spans[0].startUs : 0;
+  const traceEnd = useMemo(
+    () => (spans && spans.length > 0
+      ? spans.reduce((max, s) => Math.max(max, s.endUs), traceStart)
+      : 0),
+    [spans, traceStart],
+  );
+  const stats = useMemo(() => (spans ? aggregate(spans) : null), [spans]);
+
+  const toggleCollapse = (id: string) => {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const renderRows = (
+    nodes: TraceSpan[],
+    depth: number,
+    out: React.ReactNode[],
+  ) => {
+    for (const span of nodes) {
+      const kids = tree?.children.get(span.spanId) ?? [];
+      const hasKids = kids.length > 0;
+      const isCollapsed = collapsed.has(span.spanId);
+      const total = Math.max(traceEnd - traceStart, 1);
+      const left = ((span.startUs - traceStart) / total) * 100;
+      const width = Math.max((span.durationUs / total) * 100, 1.2);
+      const attrs = parseAttributes(span.attributes);
+      const tokens =
+        typeof attrs["gen_ai.usage.total_tokens"] === "number"
+          ? (attrs["gen_ai.usage.total_tokens"] as number)
+          : null;
+
+      out.push(
+        <div
+          key={span.spanId}
+          className={`trace-tree-row type-${span.type.toLowerCase()} ${statusClass(
+            span.status,
+          )} ${selectedId === span.spanId ? "selected" : ""}`}
+          style={{ paddingLeft: depth * 16 + 8 }}
+          onClick={() => setSelectedId(span.spanId)}
+        >
+          <div className="trace-tree-main">
+            <button
+              className={`trace-caret ${hasKids ? "" : "leaf"}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (hasKids) toggleCollapse(span.spanId);
+              }}
+            >
+              {hasKids ? (isCollapsed ? "▸" : "▾") : ""}
+            </button>
+            <span className={`trace-type-badge type-${span.type.toLowerCase()}`}>
+              {typeLabel(span.type, t)}
+            </span>
+            <span className="trace-tree-name" title={span.name}>
+              {span.name}
+            </span>
+            <span className="trace-tree-meta">
+              {tokens !== null && <span className="trace-tokens">{tokens} tok</span>}
+              <span className={`trace-status ${statusClass(span.status)}`}>
+                {span.status}
+              </span>
+              <span className="trace-duration">{formatDuration(span.durationUs)}</span>
+            </span>
+          </div>
+          <div className="trace-waterfall">
+            <span
+              className={`trace-bar type-${span.type.toLowerCase()} ${statusClass(
+                span.status,
+              )}`}
+              style={{ left: `${left}%`, width: `${width}%` }}
+            />
+          </div>
+        </div>,
+      );
+      if (hasKids && !isCollapsed) renderRows(kids, depth + 1, out);
+    }
+    return out;
+  };
+
+  let body: React.ReactNode;
   if (error) {
-    body = <div className="trace-empty error">× {error}</div>;
+    body = <div className="trace-drawer-placeholder error">× {error}</div>;
   } else if (!spans) {
-    body = <div className="trace-empty">{t("observe.traceLoading")}</div>;
+    body = <div className="trace-drawer-placeholder">{t("observe.traceLoading")}</div>;
   } else if (spans.length === 0) {
-    body = <div className="trace-empty">{t("observe.traceEmpty")}</div>;
+    body = <div className="trace-drawer-placeholder">{t("observe.traceEmpty")}</div>;
   } else {
-    const { roots, children } = buildTree(spans);
-    const traceStart = spans[0].startUs;
-    const traceEnd = spans.reduce((max, s) => Math.max(max, s.endUs), traceStart);
-    const stats = aggregate(spans);
     body = (
-      <>
-        <div className="trace-summary">
-          <article>
-            <small>{t("observe.traceSpans")}</small>
-            <b>{stats.spanCount}</b>
-          </article>
-          <article>
-            <small>{t("observe.traceTokens")}</small>
-            <b>{stats.totalTokens}</b>
-          </article>
-          <article>
-            <small>{t("observe.traceErrors")}</small>
-            <b className={stats.errorCount > 0 ? "has-error" : ""}>
-              {stats.errorCount}
-            </b>
-          </article>
-          <article>
-            <small>{t("observe.traceDuration")}</small>
-            <b>{formatDuration(traceEnd - traceStart)}</b>
-          </article>
+      <div className="trace-drawer-body">
+        <div className="trace-drawer-tree">
+          <div className="trace-tree-head">
+            <span>{t("observe.executionTrace")}</span>
+            <span>{t("observe.traceDuration")}</span>
+          </div>
+          <div className="trace-tree-list">
+            {renderRows(tree!.roots, 0, [])}
+          </div>
         </div>
-        <div className="trace-list">
-          {renderTree(roots, children, traceStart, traceEnd)}
+        <div className="trace-drawer-detail">
+          {selected ? (
+            <SpanDetail span={selected} t={t} />
+          ) : (
+            <div className="trace-drawer-placeholder">{t("observe.traceEmpty")}</div>
+          )}
         </div>
-      </>
+      </div>
     );
   }
 
   return (
-    <div className="trace-panel">
-      <div className="trace-panel-head">
-        <span className="trace-panel-title">
-          <i className="trace-dot" /> {t("observe.executionTrace")}
-        </span>
-        <button className="trace-collapse" onClick={() => setEnabled(false)}>
-          {t("observe.collapse")}
-        </button>
-      </div>
-      {body}
+    <div className="trace-drawer-overlay" onClick={onClose}>
+      <aside
+        className="trace-drawer"
+        role="dialog"
+        aria-modal="true"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <header className="trace-drawer-topbar">
+          <div className="trace-drawer-title">
+            <span className="trace-drawer-kicker">{t("observe.executionTrace")}</span>
+            <code className="trace-drawer-id" title={traceId}>
+              Trace ID {traceId}
+            </code>
+          </div>
+          <button className="trace-drawer-close" onClick={onClose} aria-label={t("observe.close")}>
+            ×
+          </button>
+        </header>
+        {stats && (
+          <div className="trace-summary">
+            <article>
+              <small>{t("observe.traceSpans")}</small>
+              <b>{stats.spanCount}</b>
+            </article>
+            <article>
+              <small>{t("observe.traceTokens")}</small>
+              <b>{stats.totalTokens}</b>
+            </article>
+            <article>
+              <small>{t("observe.traceErrors")}</small>
+              <b className={stats.errorCount > 0 ? "has-error" : ""}>
+                {stats.errorCount}
+              </b>
+            </article>
+            <article>
+              <small>{t("observe.traceDuration")}</small>
+              <b>{formatDuration(traceEnd - traceStart)}</b>
+            </article>
+          </div>
+        )}
+        {body}
+      </aside>
     </div>
+  );
+}
+
+/**
+ * In-place trigger button. The trace itself renders in a right-side drawer
+ * (lazy-loaded on open) instead of expanding inline under the message.
+ */
+export function TracePanel({ traceId }: { traceId: string }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <button className="trace-toggle" onClick={() => setOpen(true)}>
+        ▸ {t("observe.viewTrace")}
+      </button>
+      {open && <TraceDrawer traceId={traceId} onClose={() => setOpen(false)} />}
+    </>
   );
 }

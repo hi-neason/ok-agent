@@ -1,4 +1,4 @@
-/* Execution trace panel (agent / model / tool spans) under an assistant turn. */
+/* Execution trace — trigger button + right-side drawer (waterfall tree + detail). */
 
 .trace-toggle {
   margin-top: 10px;
@@ -15,57 +15,97 @@
   border-color: #bcdafa;
 }
 
-.trace-panel {
-  margin-top: 12px;
-  padding: 12px 14px;
-  border: 1px solid #d9e7f7;
-  border-radius: 10px;
-  background: #f8fbff;
+/* ---------- Drawer shell ---------- */
+
+.trace-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(20, 38, 62, 0.28);
+  display: flex;
+  justify-content: flex-end;
+  animation: trace-fade 0.16s ease-out;
 }
-.trace-panel-head {
+@keyframes trace-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.trace-drawer {
+  width: min(1180px, 88vw);
+  height: 100%;
+  background: #f6f9fd;
+  box-shadow: -12px 0 40px rgba(20, 38, 62, 0.18);
+  display: flex;
+  flex-direction: column;
+  animation: trace-slide 0.2s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+@keyframes trace-slide {
+  from { transform: translateX(24px); opacity: 0.6; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.trace-drawer-topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
+  gap: 16px;
+  padding: 14px 20px;
+  border-bottom: 1px solid #e2edf8;
+  background: #fff;
 }
-.trace-panel-title {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
+.trace-drawer-title {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.trace-drawer-kicker {
   color: #2d557e;
   font: 600 11px "DM Mono", monospace;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
-.trace-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #378add;
-  display: inline-block;
-}
-.trace-collapse {
-  border: none;
-  background: none;
-  color: #7f9ec1;
+.trace-drawer-id {
+  color: #8da8c3;
   font: 11px "DM Mono", monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.trace-drawer-close {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border: 1px solid #e2edf8;
+  border-radius: 8px;
+  background: #fff;
+  color: #5a789b;
+  font-size: 18px;
+  line-height: 1;
   cursor: pointer;
 }
-.trace-collapse:hover {
+.trace-drawer-close:hover {
+  background: #f4f9ff;
+  border-color: #bcdafa;
   color: #2d557e;
 }
+
+/* ---------- Summary cards ---------- */
 
 .trace-summary {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 10px;
-  margin-bottom: 12px;
+  padding: 14px 20px;
+  border-bottom: 1px solid #e2edf8;
+  background: #fff;
 }
 .trace-summary article {
-  padding: 8px 10px;
+  padding: 8px 12px;
   border: 1px solid #e2edf8;
   border-radius: 8px;
-  background: #fff;
+  background: #f8fbff;
 }
 .trace-summary small {
   display: block;
@@ -76,54 +116,77 @@
 }
 .trace-summary b {
   color: #2d557e;
-  font: 600 16px "DM Mono", monospace;
+  font: 600 18px "DM Mono", monospace;
 }
 .trace-summary b.has-error {
   color: #c1504a;
 }
 
-.trace-list {
+/* ---------- Body split: tree + detail ---------- */
+
+.trace-drawer-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(380px, 1fr) minmax(360px, 1fr);
+}
+
+.trace-drawer-tree {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  min-height: 0;
+  border-right: 1px solid #e2edf8;
+  background: #fbfdff;
 }
-
-.trace-row {
-  border: 1px solid #e2edf8;
-  border-radius: 7px;
-  background: #fff;
-  overflow: hidden;
-}
-.trace-row.error {
-  border-color: #f0c2bd;
-  background: #fdf6f5;
-}
-.trace-row.cancelled {
-  opacity: 0.7;
-}
-
-.trace-row-head {
+.trace-tree-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  width: 100%;
-  padding: 7px 10px;
-  border: none;
-  background: none;
-  text-align: left;
-  cursor: pointer;
+  padding: 9px 14px;
+  border-bottom: 1px solid #e2edf8;
+  color: #8da8c3;
+  font: 600 9px "DM Mono", monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
-.trace-row-gutter {
-  display: inline-flex;
+.trace-tree-list {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 6px 0;
+}
+
+.trace-tree-row {
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: background 0.12s;
+}
+.trace-tree-row:hover {
+  background: #f0f6fd;
+}
+.trace-tree-row.selected {
+  background: #eaf2fb;
+  border-left-color: #378add;
+}
+.trace-tree-main {
+  display: flex;
   align-items: center;
   gap: 8px;
+  padding: 6px 12px 4px;
   min-width: 0;
 }
 .trace-caret {
+  width: 14px;
+  flex-shrink: 0;
+  border: none;
+  background: none;
   color: #8da8c3;
   font-size: 10px;
-  width: 12px;
+  cursor: pointer;
+  padding: 0;
+}
+.trace-caret.leaf {
+  cursor: default;
 }
 .trace-type-badge {
   padding: 1px 7px;
@@ -144,17 +207,19 @@
   background: #e1f5ee;
   color: #0f6e56;
 }
-.trace-name {
+.trace-tree-name {
   color: #2b4c70;
   font: 12px "Noto Sans SC", sans-serif;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
 }
-.trace-row-meta {
+.trace-tree-meta {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex-shrink: 0;
   font: 10px "DM Mono", monospace;
   color: #8da8c3;
@@ -164,6 +229,8 @@
 }
 .trace-duration {
   color: #2d557e;
+  min-width: 46px;
+  text-align: right;
 }
 .trace-status {
   padding: 0 6px;
@@ -184,8 +251,8 @@
 
 .trace-waterfall {
   position: relative;
-  height: 5px;
-  margin: 0 10px 7px;
+  height: 6px;
+  margin: 0 14px 6px;
   background: #eef4fb;
   border-radius: 3px;
   overflow: hidden;
@@ -213,39 +280,109 @@
   background: #ba7517;
 }
 
-.trace-detail {
-  padding: 0 10px 10px;
+/* ---------- Detail pane ---------- */
+
+.trace-drawer-detail {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-}
-.trace-detail-section h4 {
-  margin: 0 0 5px;
-  color: #7f9ec1;
-  font: 600 9px "DM Mono", monospace;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-.trace-detail-section pre {
-  margin: 0;
-  padding: 9px 11px;
-  max-height: 320px;
-  overflow: auto;
-  border: 1px solid #e2edf8;
-  border-radius: 7px;
+  min-height: 0;
   background: #fff;
+}
+.trace-detail-pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+.trace-detail-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border-bottom: 1px solid #e2edf8;
+}
+.trace-detail-name {
+  flex: 1;
+  min-width: 0;
   color: #2b4c70;
-  font: 11px/1.55 "DM Mono", "Noto Sans SC", monospace;
+  font: 600 13px "Noto Sans SC", sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.trace-detail-duration {
+  color: #2d557e;
+  font: 11px "DM Mono", monospace;
+  flex-shrink: 0;
+}
+.trace-detail-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px 18px 0;
+  border-bottom: 1px solid #e2edf8;
+}
+.trace-detail-tabs button {
+  padding: 7px 14px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: #7f9ec1;
+  font: 600 11px "DM Mono", monospace;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+.trace-detail-tabs button:hover {
+  color: #2d557e;
+}
+.trace-detail-tabs button.active {
+  color: #185fa5;
+  border-bottom-color: #378add;
+}
+.trace-detail-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 14px 18px;
+}
+.trace-detail-body pre {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid #e2edf8;
+  border-radius: 8px;
+  background: #f8fbff;
+  color: #2b4c70;
+  font: 11px/1.6 "DM Mono", "Noto Sans SC", monospace;
   white-space: pre-wrap;
   word-break: break-word;
 }
 
-.trace-empty {
-  padding: 14px;
-  text-align: center;
+/* ---------- Placeholder / states ---------- */
+
+.trace-drawer-placeholder {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
   color: #8da8c3;
-  font: 12px "Noto Sans SC", sans-serif;
+  font: 13px "Noto Sans SC", sans-serif;
 }
-.trace-empty.error {
+.trace-drawer-placeholder.error {
   color: #c1504a;
+}
+
+/* ---------- Narrow screens ---------- */
+
+@media (max-width: 900px) {
+  .trace-drawer-body {
+    grid-template-columns: 1fr;
+    grid-template-rows: 40% 1fr;
+  }
+  .trace-drawer-tree {
+    border-right: none;
+    border-bottom: 1px solid #e2edf8;
+  }
+  .trace-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }

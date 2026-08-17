@@ -319,6 +319,8 @@ const resources = {
         traceTokens: "Tokens",
         traceErrors: "错误数",
         traceDuration: "总耗时",
+        traceStart: "开始",
+        traceEnd: "结束",
       },
       skills: {
         title: "技能仓库",
@@ -713,6 +715,8 @@ const resources = {
         traceTokens: "Tokens",
         traceErrors: "Errors",
         traceDuration: "Duration",
+        traceStart: "Start",
+        traceEnd: "End",
       },
       skills: {
         title: "Skill Repository",

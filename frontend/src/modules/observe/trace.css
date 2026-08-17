@@ -85,6 +85,11 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.trace-drawer-time {
+  color: #5a789b;
+  font: 11px "DM Mono", monospace;
+  white-space: nowrap;
+}
 .trace-drawer-close {
   flex-shrink: 0;
   width: 30px;
@@ -255,6 +260,9 @@
 .trace-tokens {
   color: #6f84a0;
 }
+.trace-tree-clock {
+  color: #9aafc4;
+}
 .trace-duration {
   color: #2d557e;
   min-width: 46px;
@@ -354,6 +362,29 @@
   color: #2d557e;
   font: 11px "DM Mono", monospace;
   flex-shrink: 0;
+}
+.trace-detail-times {
+  display: flex;
+  gap: 24px;
+  padding: 8px 18px;
+  border-bottom: 1px solid #e2edf8;
+  background: #f8fbff;
+}
+.trace-detail-times > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.trace-time-label {
+  color: #8da8c3;
+  font: 600 10px "DM Mono", monospace;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.trace-detail-times code {
+  color: #2b4c70;
+  font: 11px "DM Mono", monospace;
 }
 .trace-detail-tabs {
   display: flex;

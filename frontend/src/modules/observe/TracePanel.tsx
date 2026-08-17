@@ -11,6 +11,27 @@ function formatDuration(us: number): string {
   return `${us}μs`;
 }
 
+/** Format an epoch-microsecond value as a local timestamp with millisecond precision. */
+function formatTimestamp(us: number): string {
+  if (!us) return "—";
+  const d = new Date(us / 1000);
+  const pad = (n: number, w = 2) => String(n).padStart(w, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(
+    d.getHours(),
+  )}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.${pad(d.getMilliseconds(), 3)}`;
+}
+
+/** Short time only (HH:MM:SS.mmm), used where the date is implied by the trace. */
+function formatClock(us: number): string {
+  if (!us) return "—";
+  const d = new Date(us / 1000);
+  const pad = (n: number, w = 2) => String(n).padStart(w, "0");
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.${pad(
+    d.getMilliseconds(),
+    3,
+  )}`;
+}
+
 function typeLabel(type: string, t: (k: string) => string): string {
   if (type === "AGENT") return t("observe.traceAgent");
   if (type === "MODEL") return t("observe.traceModel");
@@ -113,6 +134,16 @@ function SpanDetail({ span, t }: { span: TraceSpan; t: (k: string) => string }) 
         </span>
         <span className={`trace-status ${statusClass(span.status)}`}>{span.status}</span>
         <span className="trace-detail-duration">{formatDuration(span.durationUs)}</span>
+      </div>
+      <div className="trace-detail-times">
+        <div>
+          <span className="trace-time-label">{t("observe.traceStart")}</span>
+          <code>{formatTimestamp(span.startUs)}</code>
+        </div>
+        <div>
+          <span className="trace-time-label">{t("observe.traceEnd")}</span>
+          <code>{formatTimestamp(span.endUs)}</code>
+        </div>
       </div>
       {visibleTabs.length > 0 && (
         <div className="trace-detail-tabs">
@@ -245,6 +276,9 @@ function TraceDrawer({
             </span>
             <span className="trace-tree-meta">
               {tokens !== null && <span className="trace-tokens">{tokens} tok</span>}
+              <span className="trace-tree-clock" title={formatTimestamp(span.startUs)}>
+                +{formatDuration(span.startUs - traceStart)}
+              </span>
               <span className={`trace-status ${statusClass(span.status)}`}>
                 {span.status}
               </span>
@@ -313,6 +347,11 @@ function TraceDrawer({
             <code className="trace-drawer-id" title={traceId}>
               Trace ID {traceId}
             </code>
+            {spans && spans.length > 0 && (
+              <span className="trace-drawer-time">
+                {t("observe.traceStart")} {formatTimestamp(spans[0].startUs)}
+              </span>
+            )}
           </div>
           <button className="trace-drawer-close" onClick={onClose} aria-label={t("observe.close")}>
             {standalone ? "‹" : "×"}

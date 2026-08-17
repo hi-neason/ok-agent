@@ -14,6 +14,7 @@ import io.okagent.infrastructure.store.JdbcAgentStateStore;
 import io.okagent.infrastructure.store.JdbcTranscriptStore;
 import io.okagent.repository.agent.AgentAssetRepository;
 import io.okagent.service.dialogue.DialogueService;
+import io.okagent.service.persona.PersonaExtractionService;
 import io.okagent.web.agent.AgentChatRequest;
 import io.okagent.web.agent.AgentChatResponse;
 import java.time.Duration;
@@ -42,6 +43,7 @@ public class AgentDebugServiceImpl implements AgentDebugService {
     private final DialogueService dialogue;
     private final JdbcAgentStateStore stateStore;
     private final JdbcTranscriptStore transcriptStore;
+    private final PersonaExtractionService personaExtraction;
     private final Map<String, Session> sessions = new ConcurrentHashMap<>();
 
     public AgentDebugServiceImpl(
@@ -49,12 +51,14 @@ public class AgentDebugServiceImpl implements AgentDebugService {
             HarnessAgentFactory factory,
             DialogueService dialogue,
             JdbcAgentStateStore stateStore,
-            JdbcTranscriptStore transcriptStore) {
+            JdbcTranscriptStore transcriptStore,
+            PersonaExtractionService personaExtraction) {
         this.agents = agents;
         this.factory = factory;
         this.dialogue = dialogue;
         this.stateStore = stateStore;
         this.transcriptStore = transcriptStore;
+        this.personaExtraction = personaExtraction;
     }
 
     @Override
@@ -142,6 +146,9 @@ public class AgentDebugServiceImpl implements AgentDebugService {
                 recordTurn(sessionId, "assistant", reply, null, latencyMs);
             }
             touchSession(sessionId);
+            // Best-effort: asynchronously extract/update the user's persona from this conversation.
+            // Fire-and-forget; never affects the chat response.
+            personaExtraction.extractAsync(draft.getId(), userId, sessionId);
             return new AgentChatResponse(sessionId, reply);
         } catch (Exception e) {
             throw toUserFacingError(e);
@@ -174,7 +181,8 @@ public class AgentDebugServiceImpl implements AgentDebugService {
     private Session resolveSession(String sessionId, Session existing, AgentAsset draft, String userId) {
         if (existing != null
                 && existing.agentId.equals(draft.getId())
-                && existing.configChangedAt.equals(draft.getUpdatedAt())) {
+                && existing.configChangedAt.equals(draft.getUpdatedAt())
+                && java.util.Objects.equals(existing.userId, userId)) {
             return existing;
         }
         if (existing != null) {
@@ -184,7 +192,7 @@ public class AgentDebugServiceImpl implements AgentDebugService {
             purgeSession(sessionId, existing.userId);
         }
         evictIfFull();
-        return new Session(draft.getId(), draft.getUpdatedAt(), factory.build(draft), userId);
+        return new Session(draft.getId(), draft.getUpdatedAt(), factory.build(draft, userId), userId);
     }
 
     private void evictIfFull() {

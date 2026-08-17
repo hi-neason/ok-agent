@@ -99,6 +99,37 @@ export function AgentMemoryTab({ form, setField, errorsByField }: AgentTabProps)
       {errorsByField["memoryEnabled"]?.[0]?.message && (
         <div className="field-error">{errorsByField["memoryEnabled"][0].message}</div>
       )}
+
+      <div className="config-section capability-card">
+        <div className="capability-hero">
+          <span>USR</span>
+          <div>
+            <b>用户画像注入</b>
+            <small>对话时把目标用户的画像（标签/偏好/事实/长期记忆）注入 system prompt，帮助 Agent 个性化处理。由对话自动沉淀，人工可校正。</small>
+          </div>
+          <label className="switch-line">
+            <input
+              type="checkbox"
+              data-field="personaMemoryEnabled"
+              checked={form.personaMemoryEnabled}
+              onChange={(e) => setField("personaMemoryEnabled", e.target.checked)}
+            />
+            {t("agents.enabled")}
+          </label>
+        </div>
+        <div className="runtime-grid muted-when-disabled" aria-disabled={!form.personaMemoryEnabled}>
+          <label className="runtime-field" style={{ gridColumn: "1 / -1" }}>
+            <span>画像注入模板（可选占位符 {"{summary} {tags} {preferences} {facts} {memory}"}）</span>
+            <textarea
+              disabled={!form.personaMemoryEnabled}
+              rows={4}
+              value={form.personaPromptTemplate}
+              placeholder={"以下是当前用户的画像，请在回答时参考：\n# 用户画像\n{summary}\n标签：{tags}\n偏好：{preferences}\n关键事实：{facts}\n长期记忆：{memory}"}
+              onChange={(e) => setField("personaPromptTemplate", e.target.value)}
+            />
+          </label>
+        </div>
+      </div>
     </div>
   );
 }

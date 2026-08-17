@@ -29,6 +29,7 @@ import io.okagent.repository.mcp.McpServerRepository;
 import io.okagent.repository.model.ModelAssetRepository;
 import io.okagent.repository.skill.SkillAssetRepository;
 import io.okagent.service.model.ApiKeyCipher;
+import io.okagent.service.persona.UserPersonaService;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -53,6 +54,7 @@ public class HarnessAgentFactory {
     private final AgentStateStore stateStore;
     private final TranscriptStore transcriptStore;
     private final JdbcBaseStore baseStore;
+    private final UserPersonaService personaService;
     private final ObjectMapper json = new ObjectMapper();
 
     public HarnessAgentFactory(
@@ -63,7 +65,8 @@ public class HarnessAgentFactory {
             HttpTransport httpTransport,
             AgentStateStore stateStore,
             TranscriptStore transcriptStore,
-            JdbcBaseStore baseStore) {
+            JdbcBaseStore baseStore,
+            UserPersonaService personaService) {
         this.models = models;
         this.mcpServers = mcpServers;
         this.skills = skills;
@@ -72,13 +75,18 @@ public class HarnessAgentFactory {
         this.stateStore = stateStore;
         this.transcriptStore = transcriptStore;
         this.baseStore = baseStore;
+        this.personaService = personaService;
     }
 
     public HarnessAgent build(AgentAsset draft) {
+        return build(draft, null);
+    }
+
+    public HarnessAgent build(AgentAsset draft, String userId) {
         var builder = HarnessAgent.builder()
                 .name(safeName(draft.getAgentKey()))
                 .description(draft.getDescription() == null ? "" : draft.getDescription())
-                .sysPrompt(systemPrompt(draft))
+                .sysPrompt(systemPrompt(draft, userId))
                 .maxIters(draft.getMaxIters())
                 .modelExecutionConfig(modelExecutionConfig(draft))
                 .toolExecutionConfig(toolExecutionConfig(draft))
@@ -248,10 +256,17 @@ public class HarnessAgentFactory {
         return cfg;
     }
 
-    private String systemPrompt(AgentAsset draft) {
-        var prompt =
-                draft.getSystemPrompt() == null ? "" : draft.getSystemPrompt().trim();
-        return prompt.isEmpty() ? "You are a helpful assistant." : prompt;
+    private String systemPrompt(AgentAsset draft, String userId) {
+        var prompt = draft.getSystemPrompt() == null ? "" : draft.getSystemPrompt().trim();
+        var base = prompt.isEmpty() ? "You are a helpful assistant." : prompt;
+        if (!draft.isPersonaMemoryEnabled() || userId == null || userId.isBlank()) {
+            return base;
+        }
+        var block = personaService.getProfileBlock(userId, draft.getPersonaPromptTemplate());
+        if (block == null || block.isBlank()) {
+            return base;
+        }
+        return base + "\n\n<user_profile>\n" + block.strip() + "\n</user_profile>";
     }
 
     private java.util.Optional<OpenAIChatModel> resolveModel(AgentAsset draft) {

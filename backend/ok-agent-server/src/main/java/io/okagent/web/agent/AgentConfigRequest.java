@@ -40,6 +40,8 @@ public record AgentConfigRequest(
         @Min(1) @Max(1440) int memoryConsolidationIntervalMinutes,
         @Min(1) @Max(3650) int memoryDailyRetentionDays,
         @Min(1) @Max(3650) int memorySessionRetentionDays,
+        boolean personaMemoryEnabled,
+        @Size(max = 8000) String personaPromptTemplate,
         @NotNull AgentWorkspaceMode workspaceMode,
         @NotNull String workspaceIsolationScope,
         boolean workspaceContextEnabled,

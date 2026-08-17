@@ -10,6 +10,7 @@ import {
   observeSessionPath,
 } from "./modules/observe";
 import { UserManagementPage } from "./modules/usermgmt";
+import { PersonaPage } from "./modules/persona";
 import { Button, PageHeader } from "./modules/shared";
 import "./agent.css";
 
@@ -52,7 +53,7 @@ const navItems: NavItem[] = [
   { id: "mcp", icon: "⌘", name: "工具", kicker: "MCP" },
   { id: "knowledge", icon: "◫", name: "知识库", kicker: "KNOWLEDGE", wip: true },
   { id: "workflows", icon: "⌁", name: "工作流", kicker: "WORKFLOW", wip: true },
-  { id: "persona", icon: "◑", name: "用户画像", kicker: "PERSONA", wip: true },
+  { id: "persona", icon: "◑", name: "用户画像", kicker: "PERSONA" },
   { id: "insight", icon: "◍", name: "对话洞察", kicker: "INSIGHT", wip: true },
   { id: "system", icon: "◎", name: "账号权限", kicker: "ACCESS", wip: true },
   { id: "sysconfig", icon: "⚙", name: "系统配置", kicker: "SETTINGS", wip: true },
@@ -460,7 +461,7 @@ export default function App() {
       />
     ),
     system: <SystemPage />,
-    persona: <WipPlaceholder name="用户画像" kicker="PERSONA" />,
+    persona: <PersonaPage />,
     insight: <WipPlaceholder name="对话洞察" kicker="INSIGHT" />,
     sysconfig: <WipPlaceholder name="系统配置" kicker="SETTINGS" />,
     usermgmt: <UserManagementPage />,

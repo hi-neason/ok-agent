@@ -17,6 +17,10 @@ import java.util.UUID;
 @Entity
 @Table(name = "agent_asset")
 public class AgentAsset {
+
+    /** Default persona injection template; mirrors UserPersonaServiceImpl's fallback rendering. */
+    public static final String DEFAULT_PERSONA_PROMPT_TEMPLATE =
+            "# 用户画像 (User Profile)\n总结: {summary}\n标签: {tags}\n偏好: {preferences}\n关键事实: {facts}\n长期记忆:\n{memory}";
     @Id
     private UUID id;
 
@@ -114,6 +118,15 @@ public class AgentAsset {
     @Column(name = "memory_session_retention_days", nullable = false)
     private int memorySessionRetentionDays;
 
+    /** When true, the agent injects the target user's persona into its system prompt at runtime. */
+    @Column(name = "persona_memory_enabled", nullable = false)
+    private boolean personaMemoryEnabled;
+
+    /** Template rendering the persona block injected into the system prompt. Supports
+     *  {summary}/{tags}/{preferences}/{facts}/{memory} placeholders. */
+    @Column(name = "persona_prompt_template", columnDefinition = "LONGTEXT")
+    private String personaPromptTemplate;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "workspace_mode", nullable = false, length = 32)
     private AgentWorkspaceMode workspaceMode;
@@ -184,6 +197,8 @@ public class AgentAsset {
         this.memoryConsolidationIntervalMinutes = 30;
         this.memoryDailyRetentionDays = 90;
         this.memorySessionRetentionDays = 180;
+        this.personaMemoryEnabled = false;
+        this.personaPromptTemplate = DEFAULT_PERSONA_PROMPT_TEMPLATE;
         this.workspaceMode = AgentWorkspaceMode.DISABLED;
         this.workspaceIsolationScope = "SESSION";
         this.workspaceContextEnabled = true;
@@ -290,6 +305,13 @@ public class AgentAsset {
         this.updatedAt = Instant.now();
     }
 
+    /** Applies the user-persona injection configuration. */
+    public void applyPersonaConfig(boolean personaMemoryEnabled, String personaPromptTemplate) {
+        this.personaMemoryEnabled = personaMemoryEnabled;
+        this.personaPromptTemplate = personaPromptTemplate;
+        this.updatedAt = Instant.now();
+    }
+
     public UUID getId() {
         return id;
     }
@@ -392,6 +414,14 @@ public class AgentAsset {
 
     public boolean isMemoryEnabled() {
         return memoryEnabled;
+    }
+
+    public boolean isPersonaMemoryEnabled() {
+        return personaMemoryEnabled;
+    }
+
+    public String getPersonaPromptTemplate() {
+        return personaPromptTemplate;
     }
 
     public AgentMemoryFlushMode getMemoryFlushMode() {

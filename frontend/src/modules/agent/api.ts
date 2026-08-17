@@ -168,6 +168,8 @@ export function toConfigPayload(_agentId: string, form: AgentForm) {
     memoryConsolidationIntervalMinutes: form.memoryConsolidationIntervalMinutes,
     memoryDailyRetentionDays: form.memoryDailyRetentionDays,
     memorySessionRetentionDays: form.memorySessionRetentionDays,
+    personaMemoryEnabled: form.personaMemoryEnabled,
+    personaPromptTemplate: form.personaPromptTemplate,
     workspaceMode: form.workspaceMode,
     workspaceIsolationScope: form.workspaceIsolationScope,
     workspaceContextEnabled: form.workspaceContextEnabled,

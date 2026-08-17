@@ -65,6 +65,8 @@ function initialForm(agent: AgentItem): AgentForm {
     memoryConsolidationIntervalMinutes: agent.memoryConsolidationIntervalMinutes ?? 30,
     memoryDailyRetentionDays: agent.memoryDailyRetentionDays ?? 90,
     memorySessionRetentionDays: agent.memorySessionRetentionDays ?? 180,
+    personaMemoryEnabled: agent.personaMemoryEnabled ?? false,
+    personaPromptTemplate: agent.personaPromptTemplate ?? "",
     workspaceMode: agent.workspaceMode ?? "DISABLED",
     workspaceIsolationScope: agent.workspaceIsolationScope ?? "SESSION",
     workspaceContextEnabled: agent.workspaceContextEnabled ?? true,

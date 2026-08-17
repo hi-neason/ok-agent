@@ -52,9 +52,22 @@ public class DialogueServiceImpl implements DialogueService {
     }
 
     @Override
-    public void recordMessage(String sessionId, String role, String content, String model, Integer latencyMs) {
+    public DialogueTurn recordMessage(String sessionId, String role, String content, String model, Integer latencyMs) {
+        return recordMessage(sessionId, role, content, model, latencyMs, null);
+    }
+
+    @Override
+    public int nextSeq(String sessionId) {
+        return (int) turns.countBySessionId(sessionId) + 1;
+    }
+
+    @Override
+    public DialogueTurn recordMessage(
+            String sessionId, String role, String content, String model, Integer latencyMs, String traceId) {
         int seq = (int) turns.countBySessionId(sessionId) + 1;
-        turns.save(new DialogueTurn(sessionId, seq, role, content, model, latencyMs, Instant.now()));
+        DialogueTurn turn =
+                new DialogueTurn(sessionId, seq, role, content, model, latencyMs, traceId, Instant.now());
+        return turns.save(turn);
     }
 
     @Override

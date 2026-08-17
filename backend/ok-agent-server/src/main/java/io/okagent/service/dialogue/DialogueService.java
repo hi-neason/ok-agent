@@ -22,7 +22,22 @@ public interface DialogueService {
     DialogueSession ensureSession(String sessionId, UUID agentId, String userId, String title);
 
     /** Appends one exchange to a session, assigning the next sequence number. */
-    void recordMessage(String sessionId, String role, String content, String model, Integer latencyMs);
+    DialogueTurn recordMessage(String sessionId, String role, String content, String model, Integer latencyMs);
+
+    /** Returns the sequence number the next recorded turn would receive (1-based). */
+    int nextSeq(String sessionId);
+
+    /**
+     * Appends one exchange to a session and links it to an execution trace. The trace id is stored
+     * on assistant turns so the observability UI can expand the turn into its span tree.
+     */
+    DialogueTurn recordMessage(
+            String sessionId,
+            String role,
+            String content,
+            String model,
+            Integer latencyMs,
+            String traceId);
 
     /** Refreshes a session's last-activity timestamp. */
     void touchSession(String sessionId);

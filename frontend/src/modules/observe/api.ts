@@ -1,4 +1,4 @@
-import type { DialogueTurn, SessionPage, SessionQuery } from "./types";
+import type { DialogueTurn, SessionPage, SessionQuery, TraceSpan } from "./types";
 
 /**
  * Read-only client for the runtime observability surface. It talks to `/api/v1/observe`,
@@ -34,4 +34,13 @@ export async function fetchTurns(sessionId: string): Promise<DialogueTurn[]> {
   );
   if (!response.ok) throw new Error("turns failed");
   return (await response.json()) as DialogueTurn[];
+}
+
+export async function fetchTrace(traceId: string): Promise<TraceSpan[]> {
+  const response = await fetch(
+    `/api/v1/observe/traces/${encodeURIComponent(traceId)}`,
+  );
+  if (response.status === 404) return [];
+  if (!response.ok) throw new Error("trace failed");
+  return (await response.json()) as TraceSpan[];
 }

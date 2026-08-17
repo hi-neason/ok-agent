@@ -14,6 +14,7 @@ import io.okagent.infrastructure.store.JdbcAgentStateStore;
 import io.okagent.infrastructure.store.JdbcTranscriptStore;
 import io.okagent.repository.agent.AgentAssetRepository;
 import io.okagent.service.dialogue.DialogueService;
+import io.okagent.service.observe.TraceCollectingMiddleware;
 import io.okagent.service.persona.PersonaExtractionService;
 import io.okagent.web.agent.AgentChatRequest;
 import io.okagent.web.agent.AgentChatResponse;
@@ -77,9 +78,14 @@ public class AgentDebugServiceImpl implements AgentDebugService {
         }
 
         try {
+            String traceId = UUID.randomUUID().toString().replace("-", "");
+            int turnSeq = dialogue.nextSeq(sessionId);
             var ctx = RuntimeContext.builder()
                     .userId(userId)
                     .sessionId(sessionId)
+                    .put(TraceCollectingMiddleware.CTX_TRACE_ID, traceId)
+                    .put(TraceCollectingMiddleware.CTX_TURN_SEQ, turnSeq)
+                    .put(TraceCollectingMiddleware.CTX_AGENT_ID, draft.getId().toString())
                     .build();
             // The synchronous debug API has no human-in-the-loop confirmation round trip. The
             // configured policy therefore decides whether tool calls run or stop for approval.
@@ -141,9 +147,9 @@ public class AgentDebugServiceImpl implements AgentDebugService {
                         toolCalled.get(),
                         toolResultSeen.get(),
                         finalMsg.get() != null);
-                recordTurn(sessionId, "error", reply, null, latencyMs);
+                recordTurn(sessionId, "error", reply, null, latencyMs, traceId);
             } else {
-                recordTurn(sessionId, "assistant", reply, null, latencyMs);
+                recordTurn(sessionId, "assistant", reply, null, latencyMs, traceId);
             }
             touchSession(sessionId);
             // Best-effort: asynchronously extract/update the user's persona from this conversation.
@@ -236,7 +242,17 @@ public class AgentDebugServiceImpl implements AgentDebugService {
 
     private void recordTurn(
             String sessionId, String role, String content, String model, Integer latencyMs) {
-        dialogue.recordMessage(sessionId, role, content, model, latencyMs);
+        dialogue.recordMessage(sessionId, role, content, model, latencyMs, null);
+    }
+
+    private void recordTurn(
+            String sessionId,
+            String role,
+            String content,
+            String model,
+            Integer latencyMs,
+            String traceId) {
+        dialogue.recordMessage(sessionId, role, content, model, latencyMs, traceId);
     }
 
     private void touchSession(String sessionId) {

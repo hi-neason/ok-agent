@@ -4,14 +4,17 @@ import io.okagent.domain.dialogue.DialogueTurn;
 import io.okagent.service.dialogue.DialogueQuery;
 import io.okagent.service.dialogue.DialogueService;
 import io.okagent.service.dialogue.DialogueSummary;
+import io.okagent.service.observe.TraceService;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * Read-only surface for runtime observability. It never writes; it queries the shared
@@ -23,9 +26,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class AgentObserveController {
 
     private final DialogueService dialogue;
+    private final TraceService traces;
 
-    public AgentObserveController(DialogueService dialogue) {
+    public AgentObserveController(DialogueService dialogue, TraceService traces) {
         this.dialogue = dialogue;
+        this.traces = traces;
     }
 
     /**
@@ -48,5 +53,17 @@ public class AgentObserveController {
     @GetMapping("/sessions/{sessionId}/turns")
     public List<DialogueTurn> getTurns(@PathVariable String sessionId) {
         return dialogue.getMessages(sessionId);
+    }
+
+    /**
+     * Returns the execution trace (ordered agent/model/tool spans) for one dialogue turn, so the
+     * observability UI can expand a turn into its ReAct chain: model calls, MCP/knowledge/workflow
+     * tool executions, token usage, timings and full inputs/outputs.
+     */
+    @GetMapping("/traces/{traceId}")
+    public List<TraceSpanResponse> getTrace(@PathVariable String traceId) {
+        return traces.findTrace(traceId)
+                .map(spans -> spans.stream().map(TraceSpanResponse::from).toList())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Trace not found"));
     }
 }

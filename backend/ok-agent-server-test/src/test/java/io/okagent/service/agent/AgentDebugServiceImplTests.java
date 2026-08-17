@@ -43,6 +43,7 @@ class AgentDebugServiceImplTests {
         var personaExtraction = mock(PersonaExtractionService.class);
         when(agents.findById(agentId)).thenReturn(Optional.of(asset));
         when(factory.build(asset, "debug")).thenReturn(harnessAgent);
+        when(dialogue.nextSeq(any(String.class))).thenReturn(1);
         when(harnessAgent.streamEvents(any(String.class), any(RuntimeContext.class)))
                 .thenReturn(Flux.just(new AgentResultEvent(new AssistantMessage("Current time returned by tool"))));
 
@@ -72,6 +73,7 @@ class AgentDebugServiceImplTests {
         when(agents.findById(agentId)).thenReturn(Optional.of(asset));
         when(factory.build(asset, "debug")).thenReturn(harnessAgent);
         when(dialogue.sessionExists("dlg-session")).thenReturn(false);
+        when(dialogue.nextSeq("dlg-session")).thenReturn(2);
         when(harnessAgent.streamEvents(any(String.class), any(RuntimeContext.class)))
                 .thenReturn(Flux.just(new AgentResultEvent(new AssistantMessage("Beijing time is 09:15"))));
 
@@ -87,14 +89,15 @@ class AgentDebugServiceImplTests {
         // The debug runtime must not own its own history table: it records through the shared
         // DialogueService so the 运行观测 module sees debug and production conversations alike.
         verify(dialogue).ensureSession(eq("dlg-session"), eq(agentId), eq("debug"), eq("What time is it?"));
-        verify(dialogue).recordMessage(eq("dlg-session"), eq("user"), eq("What time is it?"), eq(null), eq(null));
+        verify(dialogue).recordMessage(eq("dlg-session"), eq("user"), eq("What time is it?"), eq(null), eq(null), eq(null));
         verify(dialogue)
                 .recordMessage(
                         eq("dlg-session"),
                         eq("assistant"),
                         eq("Beijing time is 09:15"),
                         eq(null),
-                        any(Integer.class));
+                        any(Integer.class),
+                        any(String.class));
         verify(dialogue).touchSession("dlg-session");
     }
 }

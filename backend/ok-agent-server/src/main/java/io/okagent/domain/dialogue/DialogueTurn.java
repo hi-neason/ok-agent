@@ -42,6 +42,10 @@ public class DialogueTurn {
     @Column(name = "token_usage")
     private Integer tokenUsage;
 
+    /** Identifier of the execution trace captured for an assistant turn; null for user/error rows. */
+    @Column(name = "trace_id", length = 64)
+    private String traceId;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -55,13 +59,34 @@ public class DialogueTurn {
             String model,
             Integer latencyMs,
             Instant createdAt) {
+        this(sessionId, seq, role, content, model, latencyMs, null, createdAt);
+    }
+
+    public DialogueTurn(
+            String sessionId,
+            int seq,
+            String role,
+            String content,
+            String model,
+            Integer latencyMs,
+            String traceId,
+            Instant createdAt) {
         this.sessionId = sessionId;
         this.seq = seq;
         this.role = role;
         this.content = content;
         this.model = model;
         this.latencyMs = latencyMs;
+        this.traceId = traceId;
         this.createdAt = createdAt;
+    }
+
+    public void setTraceId(String traceId) {
+        this.traceId = traceId;
+    }
+
+    public String getTraceId() {
+        return traceId;
     }
 
     public Long getId() {

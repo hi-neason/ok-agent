@@ -35,6 +35,7 @@ import io.okagent.service.knowledge.KnowledgeTools;
 import io.okagent.service.persona.UserPersonaService;
 import io.okagent.service.workflow.WorkflowRuntimeCatalog;
 import io.okagent.service.workflow.WorkflowTools;
+import io.okagent.service.observe.TraceCollectingMiddleware;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -62,6 +63,7 @@ public class HarnessAgentFactory {
     private final UserPersonaService personaService;
     private final WorkflowRuntimeCatalog workflowCatalog;
     private final KnowledgeRuntimeCatalog knowledgeCatalog;
+    private final TraceCollectingMiddleware traceMiddleware;
     private final ObjectMapper json = new ObjectMapper();
 
     public HarnessAgentFactory(
@@ -75,7 +77,8 @@ public class HarnessAgentFactory {
             JdbcBaseStore baseStore,
             UserPersonaService personaService,
             WorkflowRuntimeCatalog workflowCatalog,
-            KnowledgeRuntimeCatalog knowledgeCatalog) {
+            KnowledgeRuntimeCatalog knowledgeCatalog,
+            TraceCollectingMiddleware traceMiddleware) {
         this.models = models;
         this.mcpServers = mcpServers;
         this.skills = skills;
@@ -87,6 +90,7 @@ public class HarnessAgentFactory {
         this.personaService = personaService;
         this.workflowCatalog = workflowCatalog;
         this.knowledgeCatalog = knowledgeCatalog;
+        this.traceMiddleware = traceMiddleware;
     }
 
     public HarnessAgent build(AgentAsset draft) {
@@ -107,7 +111,10 @@ public class HarnessAgentFactory {
                 .transcriptStore(transcriptStore)
                 .disableSubagents()
                 // No workspace/tools.json file; register MCP servers programmatically.
-                .toolsConfig(toolsConfig(draft));
+                .toolsConfig(toolsConfig(draft))
+                // In-process execution tracing: captures agent/model/tool spans (including
+                // knowledge-base and workflow tools) and persists them to MySQL.
+                .middleware(traceMiddleware);
 
         // Register external tools (workflows + knowledge) when this agent has bindings. The
         // harness copies this toolkit during build() and then appends its own built-in tools

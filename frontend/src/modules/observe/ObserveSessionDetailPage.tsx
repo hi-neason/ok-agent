@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "../shared";
 import { fetchTurns, searchSessions } from "./api";
 import type { DialogueSummary, DialogueTurn } from "./types";
+import { TracePanel } from "./TracePanel";
 
 function roleLabel(role: string, t: (key: string) => string): string {
   if (role === "user") return t("observe.roleUser");
@@ -114,6 +115,7 @@ export function ObserveSessionDetailPage({
                   )}
                 </div>
               )}
+              {turn.traceId && <TracePanel traceId={turn.traceId} />}
             </article>
           ))
         )}

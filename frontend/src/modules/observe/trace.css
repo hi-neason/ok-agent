@@ -1,0 +1,251 @@
+/* Execution trace panel (agent / model / tool spans) under an assistant turn. */
+
+.trace-toggle {
+  margin-top: 10px;
+  padding: 5px 11px;
+  border: 1px solid #d9e7f7;
+  border-radius: 8px;
+  background: #f4f9ff;
+  color: #2d557e;
+  font: 11px "DM Mono", monospace;
+  cursor: pointer;
+}
+.trace-toggle:hover {
+  background: #e9f3ff;
+  border-color: #bcdafa;
+}
+
+.trace-panel {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid #d9e7f7;
+  border-radius: 10px;
+  background: #f8fbff;
+}
+.trace-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.trace-panel-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #2d557e;
+  font: 600 11px "DM Mono", monospace;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.trace-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #378add;
+  display: inline-block;
+}
+.trace-collapse {
+  border: none;
+  background: none;
+  color: #7f9ec1;
+  font: 11px "DM Mono", monospace;
+  cursor: pointer;
+}
+.trace-collapse:hover {
+  color: #2d557e;
+}
+
+.trace-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.trace-summary article {
+  padding: 8px 10px;
+  border: 1px solid #e2edf8;
+  border-radius: 8px;
+  background: #fff;
+}
+.trace-summary small {
+  display: block;
+  color: #8da8c3;
+  font: 9px "DM Mono", monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.trace-summary b {
+  color: #2d557e;
+  font: 600 16px "DM Mono", monospace;
+}
+.trace-summary b.has-error {
+  color: #c1504a;
+}
+
+.trace-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.trace-row {
+  border: 1px solid #e2edf8;
+  border-radius: 7px;
+  background: #fff;
+  overflow: hidden;
+}
+.trace-row.error {
+  border-color: #f0c2bd;
+  background: #fdf6f5;
+}
+.trace-row.cancelled {
+  opacity: 0.7;
+}
+
+.trace-row-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+.trace-row-gutter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.trace-caret {
+  color: #8da8c3;
+  font-size: 10px;
+  width: 12px;
+}
+.trace-type-badge {
+  padding: 1px 7px;
+  border-radius: 5px;
+  font: 600 9px "DM Mono", monospace;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+.trace-type-badge.type-agent {
+  background: #e6f1fb;
+  color: #185fa5;
+}
+.trace-type-badge.type-model {
+  background: #eef0fe;
+  color: #534ab7;
+}
+.trace-type-badge.type-tool {
+  background: #e1f5ee;
+  color: #0f6e56;
+}
+.trace-name {
+  color: #2b4c70;
+  font: 12px "Noto Sans SC", sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.trace-row-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  font: 10px "DM Mono", monospace;
+  color: #8da8c3;
+}
+.trace-tokens {
+  color: #6f84a0;
+}
+.trace-duration {
+  color: #2d557e;
+}
+.trace-status {
+  padding: 0 6px;
+  border-radius: 4px;
+}
+.trace-status.ok {
+  color: #2f7a4d;
+  background: #e7f4ec;
+}
+.trace-status.error {
+  color: #c1504a;
+  background: #fbe8e6;
+}
+.trace-status.cancelled {
+  color: #9a7b2e;
+  background: #fbf3df;
+}
+
+.trace-waterfall {
+  position: relative;
+  height: 5px;
+  margin: 0 10px 7px;
+  background: #eef4fb;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.trace-bar {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  border-radius: 3px;
+  min-width: 3px;
+}
+.trace-bar.type-agent {
+  background: #378add;
+}
+.trace-bar.type-model {
+  background: #7f77dd;
+}
+.trace-bar.type-tool {
+  background: #1d9e75;
+}
+.trace-bar.error {
+  background: #d85a30;
+}
+.trace-bar.cancelled {
+  background: #ba7517;
+}
+
+.trace-detail {
+  padding: 0 10px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.trace-detail-section h4 {
+  margin: 0 0 5px;
+  color: #7f9ec1;
+  font: 600 9px "DM Mono", monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.trace-detail-section pre {
+  margin: 0;
+  padding: 9px 11px;
+  max-height: 320px;
+  overflow: auto;
+  border: 1px solid #e2edf8;
+  border-radius: 7px;
+  background: #fff;
+  color: #2b4c70;
+  font: 11px/1.55 "DM Mono", "Noto Sans SC", monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.trace-empty {
+  padding: 14px;
+  text-align: center;
+  color: #8da8c3;
+  font: 12px "Noto Sans SC", sans-serif;
+}
+.trace-empty.error {
+  color: #c1504a;
+}

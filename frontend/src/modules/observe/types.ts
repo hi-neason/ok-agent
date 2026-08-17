@@ -18,7 +18,25 @@ export type DialogueTurn = {
   model: string | null;
   latencyMs: number | null;
   tokenUsage: number | null;
+  traceId: string | null;
   createdAt: string;
+};
+
+export type SpanType = "AGENT" | "MODEL" | "TOOL";
+export type SpanStatus = "OK" | "ERROR" | "CANCELLED";
+
+export type TraceSpan = {
+  spanId: string;
+  parentSpanId: string | null;
+  type: SpanType | string;
+  name: string;
+  startUs: number;
+  endUs: number;
+  durationUs: number;
+  status: SpanStatus | string;
+  attributes: string | null;
+  input: string | null;
+  output: string | null;
 };
 
 export type SessionQuery = {

@@ -9,6 +9,7 @@ import {
   observeSessionIdFromPath,
   observeSessionPath,
 } from "./modules/observe";
+import { UserManagementPage } from "./modules/usermgmt";
 import { Button, PageHeader } from "./modules/shared";
 import "./agent.css";
 
@@ -24,7 +25,8 @@ type Page =
   | "system"
   | "persona"
   | "insight"
-  | "sysconfig";
+  | "sysconfig"
+  | "usermgmt";
 
 type NavItem = {
   id: Page;
@@ -54,6 +56,7 @@ const navItems: NavItem[] = [
   { id: "insight", icon: "◍", name: "对话洞察", kicker: "INSIGHT", wip: true },
   { id: "system", icon: "◎", name: "账号权限", kicker: "ACCESS", wip: true },
   { id: "sysconfig", icon: "⚙", name: "系统配置", kicker: "SETTINGS", wip: true },
+  { id: "usermgmt", icon: "👤", name: "用户管理", kicker: "USER MGMT" },
 ];
 
 const navItemById = Object.fromEntries(
@@ -73,7 +76,7 @@ const navigationGroups: NavigationGroup[] = [
   },
   {
     title: "业务管理",
-    items: (["persona", "insight"] as Page[]).map((id) => navItemById[id]),
+    items: (["usermgmt", "persona", "insight"] as Page[]).map((id) => navItemById[id]),
   },
   {
     title: "系统管理",
@@ -95,6 +98,7 @@ const pagePaths: Record<Page, string> = {
   persona: "/persona",
   insight: "/insight",
   sysconfig: "/sysconfig",
+  usermgmt: "/usermgmt",
 };
 const pathPages = Object.fromEntries(
   Object.entries(pagePaths).map(([page, path]) => [path, page]),
@@ -459,6 +463,7 @@ export default function App() {
     persona: <WipPlaceholder name="用户画像" kicker="PERSONA" />,
     insight: <WipPlaceholder name="对话洞察" kicker="INSIGHT" />,
     sysconfig: <WipPlaceholder name="系统配置" kicker="SETTINGS" />,
+    usermgmt: <UserManagementPage />,
   }[page];
   return (
     <main className={`console-shell ${navCollapsed ? "nav-collapsed" : ""}`}>

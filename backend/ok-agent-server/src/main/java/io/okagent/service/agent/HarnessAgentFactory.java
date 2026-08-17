@@ -12,6 +12,8 @@ import io.agentscope.extensions.model.openai.OpenAIChatModel;
 import io.agentscope.harness.agent.HarnessAgent;
 import io.agentscope.harness.agent.IsolationScope;
 import io.agentscope.harness.agent.transcript.TranscriptStore;
+import io.agentscope.harness.agent.filesystem.remote.RemoteFilesystem;
+import io.agentscope.harness.agent.filesystem.remote.store.NamespaceFactory;
 import io.agentscope.harness.agent.filesystem.spec.LocalFilesystemSpec;
 import io.agentscope.harness.agent.memory.MemoryConfig;
 import io.agentscope.harness.agent.sandbox.impl.docker.DockerFilesystemSpec;
@@ -19,6 +21,7 @@ import io.agentscope.harness.agent.tools.McpServerConfig;
 import io.agentscope.harness.agent.tools.ToolsConfig;
 import io.agentscope.harness.agent.workspace.LocalFsMode;
 import io.okagent.domain.agent.AgentAsset;
+import io.okagent.infrastructure.store.JdbcBaseStore;
 import io.okagent.domain.mcp.McpServer;
 import io.okagent.domain.model.ModelAsset;
 import io.okagent.domain.skill.SkillAsset;
@@ -49,6 +52,7 @@ public class HarnessAgentFactory {
     private final HttpTransport httpTransport;
     private final AgentStateStore stateStore;
     private final TranscriptStore transcriptStore;
+    private final JdbcBaseStore baseStore;
     private final ObjectMapper json = new ObjectMapper();
 
     public HarnessAgentFactory(
@@ -58,7 +62,8 @@ public class HarnessAgentFactory {
             ApiKeyCipher cipher,
             HttpTransport httpTransport,
             AgentStateStore stateStore,
-            TranscriptStore transcriptStore) {
+            TranscriptStore transcriptStore,
+            JdbcBaseStore baseStore) {
         this.models = models;
         this.mcpServers = mcpServers;
         this.skills = skills;
@@ -66,6 +71,7 @@ public class HarnessAgentFactory {
         this.httpTransport = httpTransport;
         this.stateStore = stateStore;
         this.transcriptStore = transcriptStore;
+        this.baseStore = baseStore;
     }
 
     public HarnessAgent build(AgentAsset draft) {
@@ -158,6 +164,16 @@ public class HarnessAgentFactory {
             }
             case DISABLED -> throw new IllegalStateException("Disabled workspace handled above");
         }
+
+        // Route the agent's long-term memory (MEMORY.md + memory/YYYY-MM-DD.md) through the
+        // MySQL-backed BaseStore so it survives JVM restarts instead of living on local disk.
+        // The rest of the workspace (code, shell, etc.) keeps its original backing.
+        NamespaceFactory memoryNamespace =
+                rc -> List.of("agents", safeName(draft.getAgentKey()), "memory");
+        RemoteFilesystem memoryFs = new RemoteFilesystem(baseStore, memoryNamespace);
+        builder.filesystemRoute("memory/", memoryFs);
+        builder.filesystemRoute("MEMORY.md", memoryFs);
+
         if (!draft.isWorkspaceContextEnabled()) {
             builder.disableWorkspaceContext();
         }

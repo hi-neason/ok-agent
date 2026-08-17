@@ -81,10 +81,7 @@ public class AgentAssetServiceImpl implements AgentAssetService {
     @Override
     @Transactional
     public AgentAssetResponse create(AgentCreateRequest request) {
-        var agentKey = slugify(request.name());
-        if (agents.existsByAgentKey(agentKey)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "An agent with this name already exists");
-        }
+        var agentKey = UUID.randomUUID().toString();
         var agent = new AgentAsset(
                 UUID.randomUUID(),
                 agentKey,
@@ -571,16 +568,5 @@ public class AgentAssetServiceImpl implements AgentAssetService {
 
     private String text(String value) {
         return value == null ? "" : value;
-    }
-
-    private String slugify(String name) {
-        var slug = name.trim()
-                .toLowerCase(Locale.ROOT)
-                .replaceAll("[^a-z0-9]+", "-")
-                .replaceAll("^-+|-+$", "");
-        if (slug.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Agent name must contain letters or digits");
-        }
-        return slug;
     }
 }

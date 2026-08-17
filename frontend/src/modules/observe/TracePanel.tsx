@@ -18,8 +18,7 @@ function typeLabel(type: string, t: (k: string) => string): string {
   if (type === "SKILL") return t("observe.traceSkill");
   if (type === "WORKFLOW") return t("observe.traceWorkflow");
   if (type === "RAG") return t("observe.traceRag");
-  if (type === "BUILTIN") return t("observe.traceBuiltin");
-  if (type === "TOOL") return t("observe.traceBuiltin");
+  if (type === "TOOL") return t("observe.traceTool");
   return type;
 }
 

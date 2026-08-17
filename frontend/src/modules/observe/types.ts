@@ -29,7 +29,7 @@ export type SpanType =
   | "SKILL"
   | "WORKFLOW"
   | "RAG"
-  | "BUILTIN";
+  | "TOOL";
 export type SpanStatus = "OK" | "ERROR" | "CANCELLED";
 
 export type TraceSpan = {

@@ -12,7 +12,7 @@ package io.okagent.domain.observe;
  *   <li>{@link #SKILL} — harness skill tools (load_skill_through_path, propose_skill, ...).</li>
  *   <li>{@link #WORKFLOW} — ok-agent external workflow tools (list/describe/start_workflow).</li>
  *   <li>{@link #RAG} — ok-agent knowledge-base retrieval tools (list/search_knowledge).</li>
- *   <li>{@link #BUILTIN} — harness built-in tools: file/shell/web/task/memory, and anything else
+ *   <li>{@link #TOOL} — harness built-in tools: file/shell/web/task/memory, and anything else
  *       not classified above.</li>
  * </ul>
  */
@@ -30,5 +30,5 @@ public enum SpanType {
     /** A knowledge-base / RAG retrieval (ok-agent knowledge integration). */
     RAG,
     /** A harness built-in tool (file/shell/web/task/...) or any otherwise-unclassified tool. */
-    BUILTIN
+    TOOL
 }

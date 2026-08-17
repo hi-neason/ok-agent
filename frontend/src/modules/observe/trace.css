@@ -231,7 +231,6 @@
   background: #e7f6ec;
   color: #1f7a3d;
 }
-.trace-type-badge.type-builtin,
 .trace-type-badge.type-tool {
   background: #eef1f5;
   color: #5a6b80;
@@ -299,8 +298,7 @@
 .trace-bar.type-model {
   background: #7f77dd;
 }
-.trace-bar.type-tool,
-.trace-bar.type-builtin {
+.trace-bar.type-tool {
   background: #6b7c8f;
 }
 .trace-bar.type-mcp {

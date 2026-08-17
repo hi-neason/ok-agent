@@ -271,11 +271,11 @@ public class TraceCollectingMiddleware implements MiddlewareBase {
      * <p>Our own workflow/RAG tools and the harness skill tools have fixed well-known names and
      * are matched first. MCP tools are recognised by resolving the registered {@link AgentTool}
      * and checking for the {@link McpTool} type (MCP server tools carry no naming convention, so
-     * name matching is unreliable). Anything else falls back to {@link SpanType#BUILTIN}.
+     * name matching is unreliable). Anything else falls back to {@link SpanType#TOOL}.
      */
     private static SpanType classifyTool(Agent agent, String toolName) {
         if (toolName == null) {
-            return SpanType.BUILTIN;
+            return SpanType.TOOL;
         }
         if (WORKFLOW_TOOL_NAMES.contains(toolName)) {
             return SpanType.WORKFLOW;
@@ -293,10 +293,10 @@ public class TraceCollectingMiddleware implements MiddlewareBase {
                     return SpanType.MCP;
                 }
             } catch (Exception ignored) {
-                // Toolkit lookup should not fail trace collection; fall through to BUILTIN.
+                // Toolkit lookup should not fail trace collection; fall through to TOOL.
             }
         }
-        return SpanType.BUILTIN;
+        return SpanType.TOOL;
     }
 
     private static UUID parseAgentId(Object value) {

@@ -167,17 +167,17 @@ export function AgentRegistryPage({
             <span style={{ display: "flex", gap: 8, whiteSpace: "nowrap" }}>
               <button
                 className="link-button"
-                onClick={() => onConfigure(a.id)}
-                style={{ fontSize: 10 }}
-              >
-                {t("agents.configure")}
-              </button>
-              <button
-                className="link-button"
                 onClick={() => openEdit(a)}
                 style={{ fontSize: 10 }}
               >
                 {t("agents.edit")}
+              </button>
+              <button
+                className="link-button"
+                onClick={() => onConfigure(a.id)}
+                style={{ fontSize: 10 }}
+              >
+                {t("agents.configure")}
               </button>
               <button
                 className="link-button danger-link"

@@ -1,0 +1,52 @@
+package io.okagent.web.observe;
+
+import io.okagent.domain.dialogue.DialogueTurn;
+import io.okagent.service.dialogue.DialogueQuery;
+import io.okagent.service.dialogue.DialogueService;
+import io.okagent.service.dialogue.DialogueSummary;
+import java.util.List;
+import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+/**
+ * Read-only surface for runtime observability. It never writes; it queries the shared
+ * {@link DialogueService} so the same conversation history is visible regardless of which producer
+ * (debug runtime or a real runtime instance) created it.
+ */
+@RestController
+@RequestMapping("/api/v1/observe")
+public class AgentObserveController {
+
+    private final DialogueService dialogue;
+
+    public AgentObserveController(DialogueService dialogue) {
+        this.dialogue = dialogue;
+    }
+
+    /**
+     * Lists conversation sessions across all agents, filtered by optional session id, user id,
+     * agent id, and a created-at time range. Used by the "运行观测" history list.
+     */
+    @GetMapping("/sessions")
+    public Page<DialogueSummary> listSessions(
+            @RequestParam(required = false) String sessionId,
+            @RequestParam(required = false) String userId,
+            @RequestParam(required = false) UUID agentId,
+            @RequestParam(required = false) String from,
+            @RequestParam(required = false) String to,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return dialogue.search(new DialogueQuery(sessionId, userId, agentId, from, to), page, size);
+    }
+
+    /** Returns the full, ordered conversation of a session for the detail / replay view. */
+    @GetMapping("/sessions/{sessionId}/turns")
+    public List<DialogueTurn> getTurns(@PathVariable String sessionId) {
+        return dialogue.getMessages(sessionId);
+    }
+}

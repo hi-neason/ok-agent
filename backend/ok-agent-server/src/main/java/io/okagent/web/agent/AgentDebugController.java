@@ -21,7 +21,7 @@ public class AgentDebugController {
         this.service = service;
     }
 
-    /** Sends one message to an in-memory debug session and returns the HarnessAgent reply. */
+    /** Sends one message to a debug session and returns the HarnessAgent reply. */
     @PostMapping("/{id}/chat")
     public AgentChatResponse chat(@PathVariable UUID id, @Valid @RequestBody AgentChatRequest request) {
         return service.chat(id, request);

@@ -7,6 +7,7 @@ import "./model.css";
 import "./llm-provider.css";
 import "./skill.css";
 import "./mcp.css";
+import "./observe.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

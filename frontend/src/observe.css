@@ -1,0 +1,191 @@
+/* Runtime observability — dialogue history list + session replay.
+   Reuses the global .run-table / .observe-summary palette; only adds the pieces
+   that the shared table primitives do not cover (filters row, session-id cell,
+   pager, and the conversation transcript bubbles). */
+
+.dialogue-error {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border: 1px solid #f0c2bd;
+  border-radius: 7px;
+  background: #fdf1f0;
+  color: #c1504a;
+  font: 11px "DM Mono", monospace;
+}
+
+/* --- Filters row --- */
+.dialogue-filters {
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 14px 16px;
+  border-bottom: 1px solid #e3edf8;
+}
+.dialogue-filters .search-mini {
+  min-width: 190px;
+  flex: 1 1 190px;
+}
+.dialogue-filters .dialogue-date {
+  flex: 0 0 auto;
+  min-width: 0;
+  gap: 8px;
+}
+.dialogue-filters .dialogue-date input {
+  border: 0;
+  background: transparent;
+  outline: 0;
+  color: #315a84;
+  font: 10px "DM Mono", monospace;
+}
+.dialogue-filters .filter-chip {
+  height: 34px;
+}
+
+/* --- List rows --- */
+.dialogue-row {
+  grid-template-columns:
+    minmax(150px, 1.1fr) minmax(180px, 1.6fr) 120px 110px 60px 150px 22px;
+}
+.dialogue-session-id {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #2b6fbc;
+}
+
+.dialogue-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 54px 20px;
+  color: #7c9bbd;
+}
+.dialogue-empty span {
+  font-size: 30px;
+  color: #a9c4e0;
+}
+.dialogue-empty b {
+  color: #315a84;
+  font-size: 13px;
+}
+.dialogue-empty p {
+  margin: 0;
+  font-size: 11px;
+}
+
+/* --- Pager --- */
+.dialogue-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 16px;
+  border-top: 1px solid #e3edf8;
+  font: 10px "DM Mono", monospace;
+  color: #6f96bd;
+}
+.dialogue-pager > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.dialogue-pager b {
+  color: #315a84;
+}
+
+/* --- Session detail --- */
+.dialogue-detail-header {
+  align-items: flex-start;
+}
+.dialogue-detail-id {
+  display: inline-block;
+  margin-top: 10px;
+  color: #6f96bd;
+  font: 10px "DM Mono", monospace;
+}
+.dialogue-meta {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.dialogue-meta article {
+  padding: 13px 15px;
+  border: 1px solid #d7e7f7;
+  background: rgba(255, 255, 255, 0.79);
+  border-radius: 8px;
+}
+.dialogue-meta small {
+  display: block;
+  font: 9px "DM Mono", monospace;
+  color: #6f96bd;
+}
+.dialogue-meta b {
+  display: block;
+  margin-top: 6px;
+  color: #244d78;
+  font-size: 13px;
+  word-break: break-word;
+}
+
+/* --- Transcript bubbles --- */
+.dialogue-transcript {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.dialogue-turn {
+  max-width: 76%;
+  padding: 14px 16px;
+  border: 1px solid #d9e7f7;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 10px 30px rgba(38, 101, 170, 0.06);
+}
+.dialogue-turn.user {
+  align-self: flex-end;
+  border-color: #bcdafa;
+  background: linear-gradient(115deg, #eaf4ff, #f6fbff);
+}
+.dialogue-turn.assistant {
+  align-self: flex-start;
+}
+.dialogue-turn.error {
+  align-self: flex-start;
+  border-color: #f0c2bd;
+  background: #fdf3f2;
+}
+.dialogue-turn-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 8px;
+  font: 9px "DM Mono", monospace;
+  color: #7f9ec1;
+}
+.dialogue-turn-head b {
+  color: #2d557e;
+  font-size: 11px;
+}
+.dialogue-turn.error .dialogue-turn-head b {
+  color: #c1504a;
+}
+.dialogue-turn pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #2b4c70;
+  font: 13px/1.7 "Noto Sans SC", sans-serif;
+}
+.dialogue-turn.error pre {
+  color: #b5504a;
+}
+.dialogue-turn-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px dashed #e2edf8;
+  font: 9px "DM Mono", monospace;
+  color: #8da8c3;
+}

@@ -7,10 +7,11 @@ import io.agentscope.core.model.GenerateOptions;
 import io.agentscope.core.model.transport.HttpTransport;
 import io.agentscope.core.skill.AgentSkill;
 import io.agentscope.core.skill.repository.AgentSkillRepository;
-import io.agentscope.core.state.InMemoryAgentStateStore;
+import io.agentscope.core.state.AgentStateStore;
 import io.agentscope.extensions.model.openai.OpenAIChatModel;
 import io.agentscope.harness.agent.HarnessAgent;
 import io.agentscope.harness.agent.IsolationScope;
+import io.agentscope.harness.agent.transcript.TranscriptStore;
 import io.agentscope.harness.agent.filesystem.spec.LocalFilesystemSpec;
 import io.agentscope.harness.agent.memory.MemoryConfig;
 import io.agentscope.harness.agent.sandbox.impl.docker.DockerFilesystemSpec;
@@ -46,6 +47,8 @@ public class HarnessAgentFactory {
     private final SkillAssetRepository skills;
     private final ApiKeyCipher cipher;
     private final HttpTransport httpTransport;
+    private final AgentStateStore stateStore;
+    private final TranscriptStore transcriptStore;
     private final ObjectMapper json = new ObjectMapper();
 
     public HarnessAgentFactory(
@@ -53,12 +56,16 @@ public class HarnessAgentFactory {
             McpServerRepository mcpServers,
             SkillAssetRepository skills,
             ApiKeyCipher cipher,
-            HttpTransport httpTransport) {
+            HttpTransport httpTransport,
+            AgentStateStore stateStore,
+            TranscriptStore transcriptStore) {
         this.models = models;
         this.mcpServers = mcpServers;
         this.skills = skills;
         this.cipher = cipher;
         this.httpTransport = httpTransport;
+        this.stateStore = stateStore;
+        this.transcriptStore = transcriptStore;
     }
 
     public HarnessAgent build(AgentAsset draft) {
@@ -71,7 +78,8 @@ public class HarnessAgentFactory {
                 .toolExecutionConfig(toolExecutionConfig(draft))
                 .maxContextTokens(draft.getMaxContextTokens())
                 .enableAgentTracingLog(draft.isTracingEnabled())
-                .stateStore(new InMemoryAgentStateStore())
+                .stateStore(stateStore)
+                .transcriptStore(transcriptStore)
                 .disableSubagents()
                 // No workspace/tools.json file; register MCP servers programmatically.
                 .toolsConfig(toolsConfig(draft));

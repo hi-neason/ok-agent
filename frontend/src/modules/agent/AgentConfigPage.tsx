@@ -165,9 +165,8 @@ export function AgentConfigPage({
     return counts;
   }, [validation]);
 
-  const handleTabClick = async (next: AgentTab) => {
+  const handleTabClick = (next: AgentTab) => {
     if (next === tab) return;
-    if (dirty && !(await confirm({ message: t("agents.unsavedLeaveConfirm") }))) return;
     navigateTab(next);
   };
 

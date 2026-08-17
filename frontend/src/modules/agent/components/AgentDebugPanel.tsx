@@ -6,9 +6,9 @@ const selectStyle: CSSProperties = {
   fontSize: 12,
   padding: "4px 8px",
   marginLeft: 6,
-  background: "var(--surface, #1b2230)",
-  color: "inherit",
-  border: "1px solid var(--border, #2c3340)",
+  background: "#fff",
+  color: "#1677ff",
+  border: "1px solid #1677ff",
   borderRadius: 6,
   maxWidth: 220,
 };

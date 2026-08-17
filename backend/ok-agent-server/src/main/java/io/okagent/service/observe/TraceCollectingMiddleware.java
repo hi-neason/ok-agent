@@ -14,7 +14,11 @@ import io.agentscope.core.middleware.ActingInput;
 import io.agentscope.core.middleware.AgentInput;
 import io.agentscope.core.middleware.ModelCallInput;
 import io.agentscope.core.middleware.MiddlewareBase;
+import io.agentscope.core.tool.AgentTool;
+import io.agentscope.core.tool.mcp.McpTool;
 import io.okagent.domain.observe.SpanStatus;
+import io.okagent.domain.observe.SpanType;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -171,8 +175,9 @@ public class TraceCollectingMiddleware implements MiddlewareBase {
                     // Pre-create a span for every tool call in this acting batch so parallel/async
                     // tools are covered even if a result event arrives without a preceding start.
                     for (ToolUseBlock toolCall : input.toolCalls()) {
+                        SpanType type = classifyTool(agent, toolCall.getName());
                         trace.startTool(
-                                toolCall.getId(), toolCall.getName(), toolCall.getInput());
+                                type, toolCall.getId(), toolCall.getName(), toolCall.getInput());
                     }
                     return next.apply(input)
                             .doOnNext(
@@ -236,6 +241,62 @@ public class TraceCollectingMiddleware implements MiddlewareBase {
             case ERROR, INTERRUPTED -> SpanStatus.ERROR;
             case DENIED -> SpanStatus.CANCELLED;
         };
+    }
+
+    /**
+     * ok-agent external workflow tools (see {@code WorkflowTools}). Fixed names, registered
+     * programmatically on the agent toolkit.
+     */
+    private static final Set<String> WORKFLOW_TOOL_NAMES =
+            Set.of("list_workflows", "describe_workflow", "start_workflow");
+
+    /**
+     * ok-agent knowledge-base / RAG tools (see {@code KnowledgeTools}). Fixed names, registered
+     * programmatically on the agent toolkit.
+     */
+    private static final Set<String> RAG_TOOL_NAMES =
+            Set.of("list_knowledge_bases", "search_knowledge");
+
+    /**
+     * Harness-native skill tools. These surface skills to the model (load/propose/manage); the
+     * actual skill body then runs through ordinary file/shell tools.
+     */
+    private static final Set<String> SKILL_TOOL_NAMES =
+            Set.of("load_skill_through_path", "use_skill", "propose_skill", "skill_manage");
+
+    /**
+     * Classifies a tool call into its source bucket so the waterfall can distinguish MCP, skill,
+     * workflow and RAG calls from ordinary built-in tools.
+     *
+     * <p>Our own workflow/RAG tools and the harness skill tools have fixed well-known names and
+     * are matched first. MCP tools are recognised by resolving the registered {@link AgentTool}
+     * and checking for the {@link McpTool} type (MCP server tools carry no naming convention, so
+     * name matching is unreliable). Anything else falls back to {@link SpanType#BUILTIN}.
+     */
+    private static SpanType classifyTool(Agent agent, String toolName) {
+        if (toolName == null) {
+            return SpanType.BUILTIN;
+        }
+        if (WORKFLOW_TOOL_NAMES.contains(toolName)) {
+            return SpanType.WORKFLOW;
+        }
+        if (RAG_TOOL_NAMES.contains(toolName)) {
+            return SpanType.RAG;
+        }
+        if (SKILL_TOOL_NAMES.contains(toolName)) {
+            return SpanType.SKILL;
+        }
+        if (agent != null && agent.getToolkit() != null) {
+            try {
+                AgentTool registered = agent.getToolkit().getTool(toolName);
+                if (registered instanceof McpTool) {
+                    return SpanType.MCP;
+                }
+            } catch (Exception ignored) {
+                // Toolkit lookup should not fail trace collection; fall through to BUILTIN.
+            }
+        }
+        return SpanType.BUILTIN;
     }
 
     private static UUID parseAgentId(Object value) {

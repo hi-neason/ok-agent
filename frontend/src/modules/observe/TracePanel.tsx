@@ -14,7 +14,12 @@ function formatDuration(us: number): string {
 function typeLabel(type: string, t: (k: string) => string): string {
   if (type === "AGENT") return t("observe.traceAgent");
   if (type === "MODEL") return t("observe.traceModel");
-  if (type === "TOOL") return t("observe.traceTool");
+  if (type === "MCP") return t("observe.traceMcp");
+  if (type === "SKILL") return t("observe.traceSkill");
+  if (type === "WORKFLOW") return t("observe.traceWorkflow");
+  if (type === "RAG") return t("observe.traceRag");
+  if (type === "BUILTIN") return t("observe.traceBuiltin");
+  if (type === "TOOL") return t("observe.traceBuiltin");
   return type;
 }
 

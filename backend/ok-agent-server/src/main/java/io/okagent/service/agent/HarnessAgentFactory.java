@@ -16,7 +16,6 @@ import io.agentscope.harness.agent.transcript.TranscriptStore;
 import io.agentscope.harness.agent.filesystem.remote.RemoteFilesystem;
 import io.agentscope.harness.agent.filesystem.remote.store.NamespaceFactory;
 import io.agentscope.harness.agent.filesystem.spec.LocalFilesystemSpec;
-import io.agentscope.harness.agent.memory.MemoryConfig;
 import io.agentscope.harness.agent.sandbox.impl.docker.DockerFilesystemSpec;
 import io.agentscope.harness.agent.tools.McpServerConfig;
 import io.agentscope.harness.agent.tools.ToolsConfig;
@@ -221,23 +220,15 @@ public class HarnessAgentFactory {
     }
 
     private void configureMemory(HarnessAgent.Builder builder, AgentAsset draft) {
-        if (!draft.isMemoryEnabled()) {
-            builder.disableMemoryTools().disableMemoryHooks();
-            return;
-        }
-        var flushTrigger =
-                switch (draft.getMemoryFlushMode()) {
-                    case ALWAYS -> MemoryConfig.FlushTrigger.always();
-                    case NEVER -> MemoryConfig.FlushTrigger.never();
-                    case THROTTLED -> MemoryConfig.FlushTrigger.throttled(
-                            Duration.ofMinutes(draft.getMemoryFlushIntervalMinutes()));
-                };
-        builder.memory(MemoryConfig.builder()
-                .flushTrigger(flushTrigger)
-                .consolidationMinGap(Duration.ofMinutes(draft.getMemoryConsolidationIntervalMinutes()))
-                .dailyFileRetentionDays(draft.getMemoryDailyRetentionDays())
-                .sessionRetentionDays(draft.getMemorySessionRetentionDays())
-                .build());
+        // Harness 自带的长期记忆表面（MEMORY.md 自动 flush + memory_* 工具）在多用户产品场景下
+        // 不适用：
+        //   1. MemoryFlushMiddleware 用 concatWith 挂在回复流尾部，每轮触发一次二次 LLM 抽取
+        //      （实测约 30s），直接 blockLast 阻塞接口返回；
+        //   2. memory namespace 仅按 agentKey 隔离（agents/{agentKey}/memory），成千上万用户
+        //      共享同一份 MEMORY.md，自动 flush 与 memory_save 都会造成跨用户污染与并发覆盖。
+        // 用户维度的长期记忆已由 persona 模块（user_persona 表 + 按 (userId,agentId) 异步抽取 +
+        // systemPrompt 注入 <user_profile>）独立承担，因此统一关闭 harness 记忆表面。
+        builder.disableMemoryTools().disableMemoryHooks();
     }
 
     private McpServerConfig toMcpServerConfig(McpServer server) {

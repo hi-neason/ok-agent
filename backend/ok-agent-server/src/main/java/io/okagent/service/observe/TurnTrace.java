@@ -125,17 +125,19 @@ final class TurnTrace {
         return span;
     }
 
-    /** Opens a child TOOL span under the root. */
-    MutableSpan startTool(String callId, String toolName, Map<String, Object> inputArgs) {
+    /** Opens a child tool span under the root. {@code type} classifies the tool source. */
+    MutableSpan startTool(
+            SpanType type, String callId, String toolName, Map<String, Object> inputArgs) {
         MutableSpan span =
                 new MutableSpan(
                         // Reuse the tool call id when present so tool result events can correlate.
                         callId != null && !callId.isBlank() ? stableSpanId(callId) : randomSpanId(),
                         rootSpanId,
-                        SpanType.TOOL,
+                        type,
                         "execute_tool " + toolName,
                         microsNow());
         span.attribute("gen_ai.tool.name", toolName);
+        span.attribute("gen_ai.tool.type", type.name());
         if (callId != null) {
             span.attribute("gen_ai.tool.call.id", callId);
         }

@@ -22,7 +22,14 @@ export type DialogueTurn = {
   createdAt: string;
 };
 
-export type SpanType = "AGENT" | "MODEL" | "TOOL";
+export type SpanType =
+  | "AGENT"
+  | "MODEL"
+  | "MCP"
+  | "SKILL"
+  | "WORKFLOW"
+  | "RAG"
+  | "BUILTIN";
 export type SpanStatus = "OK" | "ERROR" | "CANCELLED";
 
 export type TraceSpan = {

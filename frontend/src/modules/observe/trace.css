@@ -215,9 +215,26 @@
   background: #eef0fe;
   color: #534ab7;
 }
+.trace-type-badge.type-mcp {
+  background: #fff0e6;
+  color: #b55a1a;
+}
+.trace-type-badge.type-skill {
+  background: #f3eafe;
+  color: #6d28d9;
+}
+.trace-type-badge.type-workflow {
+  background: #e3f4fb;
+  color: #0e6e94;
+}
+.trace-type-badge.type-rag {
+  background: #e7f6ec;
+  color: #1f7a3d;
+}
+.trace-type-badge.type-builtin,
 .trace-type-badge.type-tool {
-  background: #e1f5ee;
-  color: #0f6e56;
+  background: #eef1f5;
+  color: #5a6b80;
 }
 .trace-tree-name {
   color: #2b4c70;
@@ -282,8 +299,21 @@
 .trace-bar.type-model {
   background: #7f77dd;
 }
-.trace-bar.type-tool {
-  background: #1d9e75;
+.trace-bar.type-tool,
+.trace-bar.type-builtin {
+  background: #6b7c8f;
+}
+.trace-bar.type-mcp {
+  background: #e8821e;
+}
+.trace-bar.type-skill {
+  background: #8b4fd0;
+}
+.trace-bar.type-workflow {
+  background: #0e94b8;
+}
+.trace-bar.type-rag {
+  background: #2ea85c;
 }
 .trace-bar.error {
   background: #d85a30;

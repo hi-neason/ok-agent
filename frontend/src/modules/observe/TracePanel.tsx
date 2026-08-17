@@ -84,6 +84,11 @@ function SpanDetail({ span, t }: { span: TraceSpan; t: (k: string) => string }) 
   const [tab, setTab] = useState<DetailTab>(
     hasInput ? "input" : hasOutput ? "output" : "attributes",
   );
+  const detail = useMemo(() => {
+    if (tab === "input") return prettyJson(span.input);
+    if (tab === "output") return prettyJson(span.output);
+    return prettyJson(span.attributes);
+  }, [span, tab]);
 
   const tabs: { key: DetailTab; label: string; visible: boolean }[] = [
     { key: "input", label: t("observe.traceInput"), visible: hasInput },
@@ -118,9 +123,7 @@ function SpanDetail({ span, t }: { span: TraceSpan; t: (k: string) => string }) 
         </div>
       )}
       <div className="trace-detail-body">
-        {tab === "input" && <pre>{prettyJson(span.input)}</pre>}
-        {tab === "output" && <pre>{prettyJson(span.output)}</pre>}
-        {tab === "attributes" && <pre>{prettyJson(span.attributes)}</pre>}
+        <pre>{detail}</pre>
       </div>
     </div>
   );
@@ -129,9 +132,11 @@ function SpanDetail({ span, t }: { span: TraceSpan; t: (k: string) => string }) 
 function TraceDrawer({
   traceId,
   onClose,
+  standalone = false,
 }: {
   traceId: string;
   onClose: () => void;
+  standalone?: boolean;
 }) {
   const { t } = useTranslation();
   const [spans, setSpans] = useState<TraceSpan[] | null>(null);
@@ -287,9 +292,12 @@ function TraceDrawer({
   }
 
   return (
-    <div className="trace-drawer-overlay" onClick={onClose}>
+    <div
+      className={standalone ? "trace-page" : "trace-drawer-overlay"}
+      onClick={standalone ? undefined : onClose}
+    >
       <aside
-        className="trace-drawer"
+        className={`trace-drawer ${standalone ? "standalone" : ""}`}
         role="dialog"
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
@@ -302,7 +310,7 @@ function TraceDrawer({
             </code>
           </div>
           <button className="trace-drawer-close" onClick={onClose} aria-label={t("observe.close")}>
-            ×
+            {standalone ? "‹" : "×"}
           </button>
         </header>
         {stats && (
@@ -349,4 +357,9 @@ export function TracePanel({ traceId }: { traceId: string }) {
       {open && <TraceDrawer traceId={traceId} onClose={() => setOpen(false)} />}
     </>
   );
+}
+
+/** Directly addressable execution-trace page for links and browser refreshes. */
+export function TracePage({ traceId, onBack }: { traceId: string; onBack: () => void }) {
+  return <TraceDrawer traceId={traceId} onClose={onBack} standalone />;
 }

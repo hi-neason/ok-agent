@@ -3,6 +3,8 @@ export {
   OBSERVE_BASE_PATH,
   observeSessionPath,
   observeSessionIdFromPath,
+  observeTraceIdFromPath,
+  observeTracePath,
 } from "./ObservePage";
 export { ObserveSessionsPage } from "./ObserveSessionsPage";
 export { ObserveSessionDetailPage } from "./ObserveSessionDetailPage";

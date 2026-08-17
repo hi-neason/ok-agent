@@ -26,6 +26,17 @@
   justify-content: flex-end;
   animation: trace-fade 0.16s ease-out;
 }
+.trace-page {
+  height: calc(100vh - 86px);
+  min-height: 560px;
+}
+.trace-drawer.standalone {
+  width: 100%;
+  border: 1px solid #dce9f6;
+  border-radius: 16px;
+  box-shadow: 0 16px 42px rgba(35, 78, 122, 0.1);
+  animation: none;
+}
 @keyframes trace-fade {
   from { opacity: 0; }
   to { opacity: 1; }

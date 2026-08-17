@@ -8,6 +8,7 @@ import {
   ObservePage,
   observeSessionIdFromPath,
   observeSessionPath,
+  observeTraceIdFromPath,
 } from "./modules/observe";
 import { UserManagementPage } from "./modules/usermgmt";
 import { PersonaPage } from "./modules/persona";
@@ -285,6 +286,9 @@ export default function App() {
   const [observeSessionId, setObserveSessionId] = useState<string | null>(() =>
     observeSessionIdFromPath(window.location.pathname),
   );
+  const [observeTraceId, setObserveTraceId] = useState<string | null>(() =>
+    observeTraceIdFromPath(window.location.pathname),
+  );
   useEffect(() => {
     if (!isKnownPath(window.location.pathname))
       window.history.replaceState({}, "", pagePaths.agents);
@@ -292,6 +296,7 @@ export default function App() {
       setPage(pageForPath(window.location.pathname));
       setAgentConfigId(agentConfigMatch()?.[1] ?? null);
       setObserveSessionId(observeSessionIdFromPath(window.location.pathname));
+      setObserveTraceId(observeTraceIdFromPath(window.location.pathname));
     };
     window.addEventListener("popstate", syncPage);
     return () => window.removeEventListener("popstate", syncPage);
@@ -306,6 +311,7 @@ export default function App() {
     setPage(next);
     setAgentConfigId(null);
     setObserveSessionId(null);
+    setObserveTraceId(null);
   };
   const openAgentConfig = (id: string) => {
     window.history.pushState({}, "", `/agents/${id}/config`);
@@ -342,6 +348,7 @@ export default function App() {
     observe: (
       <ObservePage
         sessionId={observeSessionId}
+        traceId={observeTraceId}
         onOpenSession={openObserveSession}
         onBack={backToObserveList}
       />

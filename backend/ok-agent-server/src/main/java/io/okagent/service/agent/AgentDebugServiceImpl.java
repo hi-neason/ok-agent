@@ -36,7 +36,9 @@ import reactor.core.Exceptions;
 @Service
 public class AgentDebugServiceImpl implements AgentDebugService {
     private static final Logger log = LoggerFactory.getLogger(AgentDebugServiceImpl.class);
-    private static final Duration CALL_TIMEOUT = Duration.ofSeconds(120);
+    // Generous budget for agentic loops that may involve sub-agent spawning and multiple
+    // LLM round-trips. Individual model/HTTP calls are bounded by their own timeouts.
+    private static final Duration CALL_TIMEOUT = Duration.ofSeconds(300);
     private static final int MAX_SESSIONS = 50;
 
     private final AgentAssetRepository agents;
@@ -120,10 +122,20 @@ public class AgentDebugServiceImpl implements AgentDebugService {
                     .blockLast(CALL_TIMEOUT);
             var latencyMs = (int) java.time.Duration.between(started, Instant.now()).toMillis();
 
-            // Prefer the streamed text; fall back to the result message's text content.
-            String text = answer.toString();
-            if (text.isBlank() && finalMsg.get() != null) {
-                text = finalMsg.get().getTextContent();
+            // Prefer AgentResultEvent text over accumulated deltas. Some models only emit
+            // deltas and leave the result text empty, so we fall back to delta accumulation.
+            // When sub-agent delegation occurs, deltas from the sub-agent also flow into the
+            // parent stream, so naive accumulation would duplicate content — AgentResultEvent
+            // carries only the main agent's final synthesized result.
+            String text = null;
+            if (finalMsg.get() != null) {
+                String resultText = finalMsg.get().getTextContent();
+                if (resultText != null && !resultText.isBlank()) {
+                    text = resultText;
+                }
+            }
+            if (text == null || text.isBlank()) {
+                text = answer.toString();
             }
 
             String reply;

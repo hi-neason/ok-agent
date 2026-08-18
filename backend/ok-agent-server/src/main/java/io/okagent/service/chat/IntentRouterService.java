@@ -66,7 +66,11 @@ import reactor.core.Exceptions;
 @Service
 public class IntentRouterService {
     private static final Logger log = LoggerFactory.getLogger(IntentRouterService.class);
-    private static final Duration CALL_TIMEOUT = Duration.ofSeconds(120);
+    // Agentic loops can involve multiple LLM round-trips (router decision → sub-agent execution
+    // → result synthesis). 120s is too tight for the whole stream once a sub-agent is spawned,
+    // so give the overall turn a generous budget; per-call HTTP/model timeouts still bound
+    // individual requests.
+    private static final Duration CALL_TIMEOUT = Duration.ofSeconds(300);
     private static final double CONFIDENCE_FALLBACK = 0.6;
     private static final int MAX_SESSIONS = 200;
 
@@ -163,9 +167,20 @@ public class IntentRouterService {
                     .blockLast(CALL_TIMEOUT);
             var latencyMs = (int) Duration.between(started, Instant.now()).toMillis();
 
-            String text = answer.toString();
-            if (text.isBlank() && finalMsg.get() != null) {
-                text = finalMsg.get().getTextContent();
+            // Prefer AgentResultEvent text over accumulated TextBlockDeltaEvent content.
+            // When sub-agent delegation occurs, the sub-agent's text deltas also flow into
+            // the parent event stream, so naive accumulation duplicates the content — the
+            // sub-agent's reply followed by the parent's synthesis. AgentResultEvent carries
+            // only the main agent's final synthesized result.
+            String text = null;
+            if (finalMsg.get() != null) {
+                String resultText = finalMsg.get().getTextContent();
+                if (resultText != null && !resultText.isBlank()) {
+                    text = resultText;
+                }
+            }
+            if (text == null || text.isBlank()) {
+                text = answer.toString();
             }
             String reply;
             if (text != null && !text.isBlank()) {
@@ -314,9 +329,16 @@ public class IntentRouterService {
             return query;
         }
         return String.format(
-                "[路由指令] 用户意图已识别为「%s」(意图键: %s)，请使用名为「%s」的子Agent处理本问题。\n\n用户原问题：%s",
+                """
+                [路由指令] 用户意图已确定为「%s」(意图键: %s)，该意图由子Agent「%s」专门负责。
+
+                你必须立即调用 agent_spawn 工具，将 agent_id 设为「%s」、task 设为下方用户原问题，将任务委派给该子Agent处理。
+                不要自己回答，不要解释，直接调用 agent_spawn 并等待其返回结果，然后将子Agent的回复原样转达给用户。
+
+                用户原问题：%s""",
                 c.intentName() == null ? c.intentKey() : c.intentName(),
                 c.intentKey(),
+                c.targetSubagentKey(),
                 c.targetSubagentKey(),
                 query);
     }

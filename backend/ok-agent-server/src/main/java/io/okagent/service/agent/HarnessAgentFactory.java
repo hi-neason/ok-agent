@@ -19,7 +19,6 @@ import io.agentscope.harness.agent.filesystem.spec.LocalFilesystemSpec;
 import io.agentscope.harness.agent.sandbox.impl.docker.DockerFilesystemSpec;
 import io.agentscope.harness.agent.tools.McpServerConfig;
 import io.agentscope.harness.agent.tools.ToolsConfig;
-import io.agentscope.harness.agent.subagent.SubagentDeclaration;
 import io.agentscope.harness.agent.workspace.LocalFsMode;
 import io.okagent.domain.agent.AgentAsset;
 import io.okagent.infrastructure.store.JdbcBaseStore;
@@ -30,6 +29,9 @@ import io.okagent.repository.agent.AgentAssetRepository;
 import io.okagent.repository.mcp.McpServerRepository;
 import io.okagent.repository.model.ModelAssetRepository;
 import io.okagent.repository.skill.SkillAssetRepository;
+import io.okagent.service.intent.IntentDto;
+import io.okagent.service.intent.IntentNode;
+import io.okagent.service.intent.IntentService;
 import io.okagent.service.model.ApiKeyCipher;
 import io.okagent.service.knowledge.KnowledgeRuntimeCatalog;
 import io.okagent.service.knowledge.KnowledgeTools;
@@ -66,6 +68,7 @@ public class HarnessAgentFactory {
     private final WorkflowRuntimeCatalog workflowCatalog;
     private final KnowledgeRuntimeCatalog knowledgeCatalog;
     private final TraceCollectingMiddleware traceMiddleware;
+    private final IntentService intents;
     private final ObjectMapper json = new ObjectMapper();
 
     public HarnessAgentFactory(
@@ -81,7 +84,8 @@ public class HarnessAgentFactory {
             UserPersonaService personaService,
             WorkflowRuntimeCatalog workflowCatalog,
             KnowledgeRuntimeCatalog knowledgeCatalog,
-            TraceCollectingMiddleware traceMiddleware) {
+            TraceCollectingMiddleware traceMiddleware,
+            IntentService intents) {
         this.models = models;
         this.mcpServers = mcpServers;
         this.skills = skills;
@@ -95,6 +99,7 @@ public class HarnessAgentFactory {
         this.workflowCatalog = workflowCatalog;
         this.knowledgeCatalog = knowledgeCatalog;
         this.traceMiddleware = traceMiddleware;
+        this.intents = intents;
     }
 
     public HarnessAgent build(AgentAsset draft) {
@@ -192,44 +197,94 @@ public class HarnessAgentFactory {
      * ({@link #buildSubordinate}) to prevent delegation cycles.
      */
     private void applySubagents(HarnessAgent.Builder builder, AgentAsset draft, String userId) {
-        List<AgentAsset> referenced;
+        List<SubagentRef> refs;
         try {
-            referenced = loadReferencedSubagents(draft);
+            refs = loadReferencedSubagents(draft);
         } catch (Exception e) {
             log.warn("Failed to load referenced sub-agents for agent={}: {}",
                     draft.getAgentKey(), e.getMessage());
-            referenced = List.of();
+            refs = List.of();
         }
-        if (referenced.isEmpty()) {
+        if (refs.isEmpty()) {
             builder.disableSubagents();
             return;
         }
-        List<SubagentDeclaration> declarations = new ArrayList<>();
-        for (AgentAsset child : referenced) {
-            String name = safeName(child.getAgentKey());
-            String desc = child.getDescription() == null || child.getDescription().isBlank()
-                    ? child.getName()
-                    : child.getDescription();
-            declarations.add(SubagentDeclaration.builder()
-                    .name(name)
-                    .description(desc)
-                    .mode(SubagentDeclaration.Mode.SUBAGENT)
-                    .build());
-            // Custom factory wins for instance creation; the same-named declaration above keeps
-            // its metadata (name/description/mode) in the manager.
-            final AgentAsset capturedChild = child;
-            builder.subagentFactory(name, ignored -> buildSubordinate(capturedChild, userId));
+        // Build a lookup of intentKey -> intent metadata so we can enrich each sub-agent's
+        // declaration description with the intents it is responsible for.
+        Map<String, IntentDto> intentByKey = new LinkedHashMap<>();
+        try {
+            for (IntentNode node : intents.getTree()) {
+                collectIntents(node, intentByKey);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to load intent tree for sub-agent descriptions: {}", e.getMessage());
         }
-        builder.subagents(declarations);
+        // Register each referenced child as a custom subagent factory with an enriched
+        // description. We use the subagentFactory() path (not subagents(declarations)) because
+        // the child must be built from its OWN AgentAsset — its own model, MCP servers, skills,
+        // system prompt and workspace — rather than inheriting the router's configuration via
+        // the declaration's default factory. The enriched description (child's own description +
+        // "负责意图：…") is shown to the router LLM in the ### Available agent ids list so it
+        // can make an informed delegation decision. The built child is forced to a leaf
+        // (buildSubordinate → asLeaf=true) to prevent delegation cycles.
+        for (SubagentRef ref : refs) {
+            AgentAsset child = ref.child();
+            String name = safeName(child.getAgentKey());
+            String desc = buildSubagentDescription(child, ref.intentKeys(), intentByKey);
+            final AgentAsset capturedChild = child;
+            builder.subagentFactory(name, desc, ignored -> buildSubordinate(capturedChild, userId));
+        }
+    }
+
+    /**
+     * Enriches the child agent's own description with the intents it handles so the router LLM
+     * can make an informed delegation decision from the {@code ### Available agent ids} list.
+     */
+    private static String buildSubagentDescription(
+            AgentAsset child, List<String> intentKeys, Map<String, IntentDto> intentByKey) {
+        StringBuilder sb = new StringBuilder();
+        String own = child.getDescription() == null ? "" : child.getDescription().trim();
+        if (!own.isEmpty()) {
+            sb.append(own);
+        }
+        if (intentKeys != null && !intentKeys.isEmpty()) {
+            if (!own.isEmpty()) sb.append('\n');
+            sb.append("负责意图：");
+            List<String> parts = new ArrayList<>();
+            for (String key : intentKeys) {
+                IntentDto it = intentByKey.get(key);
+                if (it == null) {
+                    parts.add(key);
+                    continue;
+                }
+                StringBuilder part = new StringBuilder();
+                part.append(it.name());
+                String desc = it.description() == null ? "" : it.description().trim();
+                if (!desc.isEmpty()) part.append("（").append(desc).append('）');
+                if (it.examples() != null && !it.examples().isEmpty()) {
+                    part.append(" 示例：").append(String.join(" / ", it.examples()));
+                }
+                parts.add(part.toString());
+            }
+            sb.append(String.join("；", parts));
+        }
+        return sb.isEmpty() ? child.getName() : sb.toString();
+    }
+
+    private static void collectIntents(IntentNode node, Map<String, IntentDto> acc) {
+        acc.put(node.node().intentKey(), node.node());
+        for (IntentNode child : node.children()) {
+            collectIntents(child, acc);
+        }
     }
 
     /**
      * Parses {@code agent_asset.subagents_json} as a list of {@code {"agentId": ..., "intentKeys":
      * [...]}} references and loads each target AgentAsset. Duplicate agentIds are collapsed;
-     * self-references and missing targets are skipped. The {@code intentKeys} array is routing
-     * metadata consumed by IntentRouterService and is ignored here.
+     * self-references and missing targets are skipped. The returned refs carry each child's
+     * declared {@code intentKeys} so the caller can enrich the sub-agent description.
      */
-    private List<AgentAsset> loadReferencedSubagents(AgentAsset draft) {
+    private List<SubagentRef> loadReferencedSubagents(AgentAsset draft) {
         String raw = draft.getSubagentsJson();
         if (raw == null || raw.isBlank() || "[]".equals(raw.trim())) {
             return List.of();
@@ -241,31 +296,46 @@ public class HarnessAgentFactory {
             log.warn("subagents_json is not a valid JSON array for agent={}", draft.getAgentKey());
             return List.of();
         }
-        List<UUID> ids = new ArrayList<>();
+        // Preserve order but collapse duplicate agentIds (union their intentKeys).
+        Map<UUID, List<String>> intentKeysByAgent = new LinkedHashMap<>();
         for (Map<String, Object> def : defs) {
             String idText = asText(def.get("agentId"));
             if (idText.isBlank()) continue;
             try {
                 UUID id = UUID.fromString(idText);
-                if (!id.equals(draft.getId()) && !ids.contains(id)) {
-                    ids.add(id);
+                if (id.equals(draft.getId())) continue;
+                List<String> keys = new ArrayList<>(
+                        intentKeysByAgent.getOrDefault(id, new ArrayList<>()));
+                for (Object k : asObjectList(def.get("intentKeys"))) {
+                    String s = asText(k);
+                    if (!s.isBlank() && !keys.contains(s)) keys.add(s);
                 }
+                intentKeysByAgent.put(id, keys);
             } catch (IllegalArgumentException e) {
                 log.warn("Skipping sub-agent with invalid agentId '{}' for agent={}",
                         idText, draft.getAgentKey());
             }
         }
-        if (ids.isEmpty()) {
+        if (intentKeysByAgent.isEmpty()) {
             return List.of();
         }
-        List<AgentAsset> out = new ArrayList<>();
-        for (AgentAsset a : agents.findAllById(ids)) {
+        List<SubagentRef> out = new ArrayList<>();
+        for (var a : agents.findAllById(intentKeysByAgent.keySet())) {
             if (a != null && a.isEnabled()) {
-                out.add(a);
+                out.add(new SubagentRef(a, intentKeysByAgent.get(a.getId())));
             }
         }
         return out;
     }
+
+    @SuppressWarnings("unchecked")
+    private static List<Object> asObjectList(Object v) {
+        if (v instanceof List<?> list) return (List<Object>) list;
+        return List.of();
+    }
+
+    /** A referenced child agent paired with the intentKeys it claims. */
+    private record SubagentRef(AgentAsset child, List<String> intentKeys) {}
 
     private static String asText(Object v) {
         return v == null ? "" : String.valueOf(v).trim();

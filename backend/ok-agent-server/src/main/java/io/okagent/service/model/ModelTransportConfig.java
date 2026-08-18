@@ -25,8 +25,8 @@ public class ModelTransportConfig {
         var config = io.agentscope.core.model.transport.HttpTransportConfig.builder()
                 .httpVersion(io.agentscope.core.model.transport.HttpVersion.HTTP_1_1)
                 .connectTimeout(Duration.ofSeconds(30))
-                .responseTimeout(Duration.ofMinutes(2))
-                .readTimeout(Duration.ofMinutes(2))
+                .responseTimeout(Duration.ofMinutes(3))
+                .readTimeout(Duration.ofMinutes(3))
                 .writeTimeout(Duration.ofSeconds(30))
                 .build();
         transport = OkHttpTransport.builder().config(config).build();

@@ -305,6 +305,8 @@
 
 .config-section > .section-head b {
   font-size: 13px;
+  white-space: nowrap;
+  flex: none;
 }
 
 .config-section > .section-head small {
@@ -402,6 +404,39 @@
 
 .binding-card { flex-wrap: wrap; border: 1px solid transparent; }
 .binding-card.selected { border-color: #cbe2fb; background: #f7fbff; }
+
+/* Agent 配置页作用域：覆盖工作流/知识库集成页泄漏的深色主题变量 */
+.binding-list { max-height: none; }
+.binding-card .wf-binding-overrides textarea,
+.binding-card .wf-binding-overrides input {
+  background: #fff;
+  border: 1px solid #cbdff5;
+  border-radius: 8px;
+  color: #1c3b5e;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 13px;
+  resize: vertical;
+  box-sizing: border-box;
+  width: 100%;
+}
+.binding-card .wf-binding-overrides textarea:focus,
+.binding-card .wf-binding-overrides input:focus {
+  outline: none;
+  border-color: #1880ee;
+  box-shadow: 0 0 0 3px rgba(24, 128, 238, 0.12);
+}
+.binding-card .wf-binding-overrides textarea::placeholder,
+.binding-card .wf-binding-overrides input::placeholder {
+  color: #aebdd0;
+}
+.binding-card .wf-binding-overrides label {
+  color: #5b7391;
+  font-size: 12px;
+}
+.binding-card .wf-binding-desc {
+  color: #6f84a0;
+}
 .tool-allowlist { flex-basis: 100%; margin: 4px 0 0 24px; padding: 8px; display: flex; flex-wrap: wrap; gap: 7px; border-top: 1px solid #e3eef9; }
 .tool-allowlist > small { width: 100%; color: #7994b3; }
 .tool-allowlist label { display: flex; gap: 4px; align-items: center; padding: 4px 7px; border-radius: 6px; background: #fff; color: #315d89; font: 10px monospace; }

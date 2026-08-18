@@ -108,7 +108,7 @@ function SpanDetail({ span, t }: { span: TraceSpan; t: (k: string) => string }) 
   const hasOutput = Boolean(span.output);
   const hasAttrs = Object.keys(parseAttributes(span.attributes)).length > 0;
   const [tab, setTab] = useState<DetailTab>(
-    hasInput ? "input" : hasOutput ? "output" : "attributes",
+    hasOutput ? "output" : hasInput ? "input" : "attributes",
   );
   const detail = useMemo(() => {
     if (tab === "input") return prettyJson(span.input);

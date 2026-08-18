@@ -19,6 +19,15 @@ export function AgentSubAgentTab({
   const subagents = form.subagents ?? [];
   const [agents, setAgents] = useState<AgentOption[]>([]);
   const [intentTree, setIntentTree] = useState<IntentNode[]>([]);
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+
+  const toggleCollapsed = (key: string) =>
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
 
   useEffect(() => {
     let alive = true;
@@ -98,8 +107,11 @@ export function AgentSubAgentTab({
     nodes: IntentNode[],
     selected: Set<string>,
     idx: number,
+    depth = 0,
   ): ReactNode => {
     return nodes.map((n) => {
+      const hasChildren = n.children.length > 0;
+      const isCollapsed = collapsed.has(n.node.intentKey);
       const family = descendants.get(n.node.intentKey) ?? [n.node.intentKey];
       const checkedCount = family.filter((k) => selected.has(k)).length;
       const allChecked = checkedCount === family.length;
@@ -113,30 +125,55 @@ export function AgentSubAgentTab({
             )
           : null;
       const claimerName = claimer ? agentName(claimer.agentId) : "";
+      const nodeClasses = [
+        "intent-tree-node",
+        "intent-check-node",
+        hasChildren ? "is-parent" : "",
+        claimedByOther ? "is-disabled" : "",
+        allChecked ? "active" : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
       return (
-        <div key={n.node.id}>
-          <label
-            className={
-              "intent-option" + (claimedByOther ? " is-disabled" : "")
-            }
-          >
-            <input
-              type="checkbox"
-              checked={allChecked}
-              ref={(el) => {
-                if (el) el.indeterminate = someChecked;
-              }}
-              disabled={claimedByOther}
-              onChange={() => toggleIntent(idx, n.node.intentKey)}
-            />
-            <span>{n.node.name}</span>
-            {claimedByOther && claimerName && (
-              <em className="intent-claimed-by">已由「{claimerName}」绑定</em>
+        <div key={n.node.id} className="intent-tree-branch">
+          <div className="intent-tree-row">
+            {hasChildren ? (
+              <button
+                type="button"
+                className="intent-chevron"
+                style={{ marginLeft: depth * 14 }}
+                onClick={() => toggleCollapsed(n.node.intentKey)}
+                aria-label={isCollapsed ? "展开" : "折叠"}
+              >
+                {isCollapsed ? "▸" : "▾"}
+              </button>
+            ) : (
+              <span
+                className="intent-chevron placeholder"
+                style={{ marginLeft: depth * 14 }}
+              >
+                ·
+              </span>
             )}
-          </label>
-          {n.children.length > 0 && (
-            <div className="intent-children">
-              {renderIntentTree(n.children, selected, idx)}
+            <label className={nodeClasses}>
+              <input
+                type="checkbox"
+                checked={allChecked}
+                ref={(el) => {
+                  if (el) el.indeterminate = someChecked;
+                }}
+                disabled={claimedByOther}
+                onChange={() => toggleIntent(idx, n.node.intentKey)}
+              />
+              <span className="intent-name">{n.node.name}</span>
+              {claimedByOther && claimerName && (
+                <em className="intent-claimed-by">已由「{claimerName}」绑定</em>
+              )}
+            </label>
+          </div>
+          {hasChildren && !isCollapsed && (
+            <div className="intent-tree-children">
+              {renderIntentTree(n.children, selected, idx, depth + 1)}
             </div>
           )}
         </div>
@@ -231,8 +268,34 @@ export function AgentSubAgentTab({
                       全局意图树为空，请先在「业务管理 → 意图管理」维护意图。
                     </div>
                   ) : (
-                    <div className="intent-option-list">
-                      {renderIntentTree(intentTree, selected, idx)}
+                    <div className="intent-picker">
+                      <div className="intent-picker-bar">
+                        <button
+                          type="button"
+                          className="link-button"
+                          onClick={() => {
+                            const next = new Set(s.intentKeys);
+                            allIntents.forEach((it) => {
+                              if (!isClaimedElsewhere(idx, it.intentKey)) {
+                                next.add(it.intentKey);
+                              }
+                            });
+                            patch(idx, { intentKeys: [...next] });
+                          }}
+                        >
+                          全选可用
+                        </button>
+                        <button
+                          type="button"
+                          className="link-button"
+                          onClick={() => patch(idx, { intentKeys: [] })}
+                        >
+                          清空
+                        </button>
+                      </div>
+                      <div className="intent-tree intent-check-tree">
+                        {renderIntentTree(intentTree, selected, idx)}
+                      </div>
                     </div>
                   )}
                 </details>

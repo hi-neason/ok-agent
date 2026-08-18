@@ -96,11 +96,19 @@ public class McpServerServiceImpl implements McpServerService {
         var s = get(id);
         try {
             var found = inspector.inspect(s, secret(s, "headers"), secret(s, "environment"));
+            // Flush the delete before inserting so the unique key (mcp_server_id, tool_name)
+            // is released before the new batch arrives.
             tools.deleteByServerId(id);
-            tools.saveAll(found.stream()
-                    .map(t -> new McpToolSnapshot(id, t.name(), t.description(), t.inputSchemaJson()))
-                    .toList());
-            s.recordTest(true, found.size());
+            tools.flush();
+            // Some MCP servers expose duplicate tool names; collapse them to the first
+            // occurrence to avoid violating the uk_mcp_server_tool unique constraint.
+            var seen = new LinkedHashMap<String, McpToolSnapshot>();
+            for (var t : found) {
+                seen.putIfAbsent(t.name(),
+                        new McpToolSnapshot(id, t.name(), t.description(), t.inputSchemaJson()));
+            }
+            tools.saveAll(seen.values());
+            s.recordTest(true, seen.size());
             return new McpInspectionResponse(true, "Connection succeeded", found);
         } catch (Exception e) {
             s.recordTest(false, s.getToolCount());

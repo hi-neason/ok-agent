@@ -189,6 +189,15 @@ export function AgentConfigPage({
     return map;
   }, [validation]);
 
+  // 给调试预览下拉用：userId -> {displayName,username}，让会话下拉文字里能拼出"是谁的对话"
+  const userMap = useMemo(() => {
+    const map: Record<string, { displayName: string; username: string }> = {};
+    for (const u of users) {
+      map[u.userId] = { displayName: u.displayName, username: u.username };
+    }
+    return map;
+  }, [users]);
+
   const errorsByTab = useMemo(() => {
     const counts: Record<AgentTab, number> = {
       core: 0,
@@ -498,6 +507,7 @@ export function AgentConfigPage({
           sessions={sessions}
           selectedSessionId={selectedSessionId}
           onSelectSession={selectSession}
+          userMap={userMap}
         />
       }
     />

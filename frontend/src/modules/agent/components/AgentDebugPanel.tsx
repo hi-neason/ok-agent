@@ -27,6 +27,7 @@ export function AgentDebugPanel({
   sessions,
   selectedSessionId,
   onSelectSession,
+  userMap,
 }: {
   messages: ChatMessage[];
   input: string;
@@ -37,9 +38,10 @@ export function AgentDebugPanel({
   users: { userId: string; username: string; displayName: string }[];
   selectedUserId: string | null;
   onSelectUser: (userId: string) => void;
-  sessions: { sessionId: string; title: string; turnCount: number }[];
+  sessions: { sessionId: string; title: string; turnCount: number; userId: string | null }[];
   selectedSessionId: string | null;
   onSelectSession: (sessionId: string) => void;
+  userMap: Record<string, { displayName: string; username: string }>;
 }) {
   const { t } = useTranslation();
   const threadRef = useRef<HTMLDivElement>(null);
@@ -77,7 +79,7 @@ export function AgentDebugPanel({
             value={selectedUserId ?? ""}
             onChange={(e) => onSelectUser(e.target.value)}
           >
-            {users.length === 0 && <option value="">（无用户）</option>}
+            <option value="">全部用户（跨用户）</option>
             {users.map((u) => (
               <option key={u.userId} value={u.userId}>
                 {u.username === "debug" ? "DEBUG用户（内置）" : u.displayName || u.username}
@@ -93,11 +95,17 @@ export function AgentDebugPanel({
             onChange={(e) => onSelectSession(e.target.value)}
           >
             <option value="">— 新会话 / 选择历史 —</option>
-            {sessions.map((s) => (
-              <option key={s.sessionId} value={s.sessionId}>
-                {s.title}（{s.turnCount}）
-              </option>
-            ))}
+            {sessions.map((s) => {
+              const owner = s.userId ? userMap[s.userId] : undefined;
+              const ownerLabel = owner
+                ? owner.displayName || owner.username
+                : s.userId ?? "—";
+              return (
+                <option key={s.sessionId} value={s.sessionId}>
+                  {s.title}（{s.turnCount}）— {ownerLabel}
+                </option>
+              );
+            })}
           </select>
         </label>
       </div>

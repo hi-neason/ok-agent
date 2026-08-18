@@ -23,7 +23,8 @@
 .um-tab.active {
   background: rgba(86, 140, 255, 0.16);
   border-color: rgba(86, 140, 255, 0.5);
-  color: #cdd9ee;
+  color: #568cff;
+  font-weight: 500;
 }
 
 .um-empty {

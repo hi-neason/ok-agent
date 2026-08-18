@@ -141,14 +141,13 @@ export function AgentConfigPage({
         setMcpServers(mcpList);
         setSkills(skillList);
         setUsers(userList);
-        const debugUser = userList.find((u) => u.username === "debug");
-        const initialUser = debugUser ?? userList[0] ?? null;
-        const initialKey = initialUser?.userId ?? null;
-        setSelectedUserId(initialKey);
-        if (initialKey) {
-          const page = await searchSessions({ agentId, userId: initialKey, size: 50 });
+        // 不默认选 DEBUG 用户；进入时按该 Agent 的所有调试会话查询，直接回放最近一条。
+        setSelectedUserId(null);
+        {
+          const page = await searchSessions({ agentId, size: 50 });
+          if (cancelled) return;
           setSessions(page.content);
-          if (!cancelled && page.content.length > 0) {
+          if (page.content.length > 0) {
             const first = page.content[0].sessionId;
             setSelectedSessionId(first);
             sessionIdRef.current = first;
@@ -164,17 +163,13 @@ export function AgentConfigPage({
             } catch {
               if (!cancelled) setMessages([]);
             }
+          } else if (agentRes.welcomeMessage) {
+            setMessages([{ role: "assistant", content: agentRes.welcomeMessage }]);
           }
         }
         const tools = await loadMcpTools(mcpList);
         if (cancelled) return;
         setMcpTools(tools);
-        if (
-          agentRes.welcomeMessage &&
-          (!initialKey || page.content.length === 0)
-        ) {
-          setMessages([{ role: "assistant", content: agentRes.welcomeMessage }]);
-        }
       } catch {
         if (!cancelled) setNotice({ ok: false, text: t("agents.loadFailed") });
       } finally {

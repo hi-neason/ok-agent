@@ -22,8 +22,9 @@ import org.springframework.stereotype.Component;
  * and retrieve from many datasets: {@code GET /datasets} enumerates them and
  * {@code POST /datasets/{id}/retrieve} performs semantic retrieval. Dify datasets have no
  * active/inactive flag, so discovered bases are treated as active. The retrieval model is sent with
- * {@code search_method=semantic_search}; the optional score threshold is enabled only when a binding
- * supplies a value in [0,1].
+ * {@code search_method=semantic_search}, reranking disabled (with an empty {@code reranking_model}
+ * object to match Dify's default payload shape); the optional score threshold is enabled only when a
+ * binding supplies a value in [0,1]. The query is truncated to Dify's 250-character limit.
  */
 @Component
 public class DifyKnowledgeProvider implements KnowledgeProvider {
@@ -99,8 +100,14 @@ public class DifyKnowledgeProvider implements KnowledgeProvider {
             retrievalModel.put("top_k", k);
             // Dify's retrieve payload requires reranking_enable (it is a required field in the
             // HitTestingPayload model). We default to disabled — reranking needs a separately
-            // configured rerank model, which bindings do not currently expose.
+            // configured rerank model, which bindings do not currently expose. The empty
+            // reranking_model object mirrors Dify's own default retrieval_model shape and is sent
+            // by the Dify console even when reranking is disabled.
             retrievalModel.put("reranking_enable", false);
+            ObjectNode rerankingModel = json.createObjectNode();
+            rerankingModel.put("reranking_provider_name", "");
+            rerankingModel.put("reranking_model_name", "");
+            retrievalModel.set("reranking_model", rerankingModel);
             if (scoreThreshold != null && scoreThreshold >= 0 && scoreThreshold <= 1) {
                 retrievalModel.put("score_threshold_enabled", true);
                 retrievalModel.put("score_threshold", scoreThreshold);
@@ -108,8 +115,16 @@ public class DifyKnowledgeProvider implements KnowledgeProvider {
                 retrievalModel.put("score_threshold_enabled", false);
             }
 
+            // Dify caps the query at 250 characters; truncate rather than risk a hard 400 on
+            // long prompts (the first 250 chars still carry the primary retrieval intent).
+            String q = query == null ? "" : query;
+            if (q.length() > 250) {
+                log.debug("Dify retrieve query truncated from {} to 250 chars for dataset {}",
+                        q.length(), remoteKnowledgeId);
+                q = q.substring(0, 250);
+            }
             ObjectNode body = json.createObjectNode();
-            body.put("query", query == null ? "" : query);
+            body.put("query", q);
             body.set("retrieval_model", retrievalModel);
 
             var request = HttpRequest.newBuilder()

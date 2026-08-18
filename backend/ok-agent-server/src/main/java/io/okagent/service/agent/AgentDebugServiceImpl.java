@@ -67,7 +67,7 @@ public class AgentDebugServiceImpl implements AgentDebugService {
         var draft = loadDraft(agentId);
         if (draft.getModelAssetId() == null) {
             throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST, "Select a model in the agent configuration before starting a debug chat");
+                    HttpStatus.BAD_REQUEST, "该智能体尚未配置模型，请先在配置中选择模型后再发起对话");
         }
 
         var userId = request.userId();

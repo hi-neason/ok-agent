@@ -74,17 +74,13 @@ export type AgentItem = {
 export type Option = { id: string; name: string; sub?: string };
 
 /**
- * A sub-agent declaration on a router (main-sub) agent. The sub-agent claims the intentKeys
- * listed in {@link intentKeys}; at runtime the router's LLM classifier picks an intent, then the
- * matching sub-agent (reverse-resolved by intentKey) is delegated to.
+ * A sub-agent reference on a router (main-sub) agent. Points at an existing AgentAsset by id;
+ * the referenced agent runs with its OWN model/MCP/skills/systemPrompt. `intentKeys` lists the
+ * intents this sub-agent claims (a sub-agent may handle many intents; one intent may not be
+ * claimed by two sub-agents under the same router).
  */
 export type AgentSubagentConfig = {
-  key: string;
-  name: string;
-  description: string;
-  modelAssetId: string | null;
-  toolNames: string[];
-  workspacePath: string;
+  agentId: string | null;
   intentKeys: string[];
 };
 

@@ -34,6 +34,27 @@ export async function loadModels(): Promise<Option[]> {
     }));
 }
 
+export type AgentOption = {
+  id: string;
+  agentKey: string;
+  name: string;
+  description: string;
+};
+
+export async function loadAgents(): Promise<AgentOption[]> {
+  const res = await fetch("/api/v1/agents");
+  if (!res.ok) return [];
+  const list = (await res.json()) as Array<Record<string, unknown>>;
+  return list
+    .filter((a) => a.enabled !== false)
+    .map((a) => ({
+      id: String(a.id),
+      agentKey: String(a.agentKey ?? ""),
+      name: String(a.name ?? ""),
+      description: String(a.description ?? ""),
+    }));
+}
+
 export async function loadMcpServers(): Promise<Option[]> {
   const res = await fetch("/api/v1/mcp-servers");
   if (!res.ok) return [];
@@ -189,12 +210,7 @@ export function parseSubagents(raw: string | undefined): AgentSubagentConfig[] {
     const arr = JSON.parse(raw);
     if (!Array.isArray(arr)) return [];
     return arr.map((x: Record<string, unknown>) => ({
-      key: String(x.key ?? ""),
-      name: String(x.name ?? x.key ?? ""),
-      description: String(x.description ?? ""),
-      modelAssetId: x.modelAssetId ? String(x.modelAssetId) : null,
-      toolNames: Array.isArray(x.toolNames) ? (x.toolNames as unknown[]).map(String) : [],
-      workspacePath: String(x.workspacePath ?? ""),
+      agentId: x.agentId ? String(x.agentId) : null,
       intentKeys: Array.isArray(x.intentKeys) ? (x.intentKeys as unknown[]).map(String) : [],
     }));
   } catch {

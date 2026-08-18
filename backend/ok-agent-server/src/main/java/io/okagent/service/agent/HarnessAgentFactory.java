@@ -26,6 +26,7 @@ import io.okagent.infrastructure.store.JdbcBaseStore;
 import io.okagent.domain.mcp.McpServer;
 import io.okagent.domain.model.ModelAsset;
 import io.okagent.domain.skill.SkillAsset;
+import io.okagent.repository.agent.AgentAssetRepository;
 import io.okagent.repository.mcp.McpServerRepository;
 import io.okagent.repository.model.ModelAssetRepository;
 import io.okagent.repository.skill.SkillAssetRepository;
@@ -55,6 +56,7 @@ public class HarnessAgentFactory {
     private final ModelAssetRepository models;
     private final McpServerRepository mcpServers;
     private final SkillAssetRepository skills;
+    private final AgentAssetRepository agents;
     private final ApiKeyCipher cipher;
     private final HttpTransport httpTransport;
     private final AgentStateStore stateStore;
@@ -70,6 +72,7 @@ public class HarnessAgentFactory {
             ModelAssetRepository models,
             McpServerRepository mcpServers,
             SkillAssetRepository skills,
+            AgentAssetRepository agents,
             ApiKeyCipher cipher,
             HttpTransport httpTransport,
             AgentStateStore stateStore,
@@ -82,6 +85,7 @@ public class HarnessAgentFactory {
         this.models = models;
         this.mcpServers = mcpServers;
         this.skills = skills;
+        this.agents = agents;
         this.cipher = cipher;
         this.httpTransport = httpTransport;
         this.stateStore = stateStore;
@@ -94,10 +98,24 @@ public class HarnessAgentFactory {
     }
 
     public HarnessAgent build(AgentAsset draft) {
-        return build(draft, null);
+        return build(draft, null, false);
     }
 
     public HarnessAgent build(AgentAsset draft, String userId) {
+        return build(draft, userId, false);
+    }
+
+    /**
+     * Builds a subordinate (leaf) agent from an existing {@link AgentAsset} — used as a custom
+     * subagent factory so a referenced child agent runs with its OWN model/MCP/skills/systemPrompt
+     * rather than inheriting the router's. The result is forced to a leaf ({@code disableSubagents})
+     * to prevent a child from further spawning and creating delegation cycles.
+     */
+    public HarnessAgent buildSubordinate(AgentAsset child, String userId) {
+        return build(child, userId, true);
+    }
+
+    private HarnessAgent build(AgentAsset draft, String userId, boolean asLeaf) {
         var builder = HarnessAgent.builder()
                 .name(safeName(draft.getAgentKey()))
                 .description(draft.getDescription() == null ? "" : draft.getDescription())
@@ -114,11 +132,18 @@ public class HarnessAgentFactory {
                 // In-process execution tracing: captures agent/model/tool spans (including
                 // knowledge-base and workflow tools) and persists them to MySQL.
                 .middleware(traceMiddleware);
-        // Router (main-sub) topology: when the agent declares sub-agents, enable them so the
-        // harness exposes agent_spawn/agent_send and the LLM can delegate by name. Otherwise keep
-        // the single-agent behaviour. Defensive: a malformed declaration must never break the
-        // whole router build, so failures fall back to the single-agent mode.
-        applySubagents(builder, draft);
+        if (asLeaf) {
+            // A subordinate (referenced child) agent must never itself spawn sub-agents,
+            // otherwise delegation can recurse. Force single-agent/leaf behaviour.
+            builder.disableSubagents();
+        } else {
+            // Router (main-sub) topology: when the agent references other agents as sub-agents,
+            // register them so the harness exposes agent_spawn/agent_send and the LLM can delegate
+            // by name. Otherwise keep the single-agent behaviour. Defensive: a malformed
+            // declaration must never break the whole router build, so failures fall back to the
+            // single-agent mode.
+            applySubagents(builder, draft, userId);
+        }
 
         // Register external tools (workflows + knowledge) when this agent has bindings. The
         // harness copies this toolkit during build() and then appends its own built-in tools
@@ -155,37 +180,56 @@ public class HarnessAgentFactory {
     }
 
     /**
-     * Enables sub-agents when the draft declares them, otherwise keeps the single-agent mode.
+     * Enables sub-agents when the draft references other agents, otherwise keeps single-agent mode.
      * A malformed declaration must never break the whole router build, so parsing failures fall
      * back to {@code disableSubagents()}.
+     *
+     * <p>Each referenced agent is wired with TWO same-named registrations that the harness merges:
+     * a {@link SubagentDeclaration} carrying the child's name/description (so the router LLM knows
+     * <em>when</em> to delegate) and a custom {@code subagentFactory} that builds the child from
+     * <em>its own</em> AgentAsset — its own model, MCP servers, skills, system prompt and workspace
+     * — instead of inheriting the router's. The built child is forced to a leaf
+     * ({@link #buildSubordinate}) to prevent delegation cycles.
      */
-    private void applySubagents(HarnessAgent.Builder builder, AgentAsset draft) {
-        List<SubagentDeclaration> declarations;
+    private void applySubagents(HarnessAgent.Builder builder, AgentAsset draft, String userId) {
+        List<AgentAsset> referenced;
         try {
-            declarations = parseSubagents(draft);
+            referenced = loadReferencedSubagents(draft);
         } catch (Exception e) {
-            log.warn("Failed to parse sub-agent declarations for agent={}: {}",
+            log.warn("Failed to load referenced sub-agents for agent={}: {}",
                     draft.getAgentKey(), e.getMessage());
-            declarations = List.of();
+            referenced = List.of();
         }
-        if (declarations.isEmpty()) {
+        if (referenced.isEmpty()) {
             builder.disableSubagents();
             return;
+        }
+        List<SubagentDeclaration> declarations = new ArrayList<>();
+        for (AgentAsset child : referenced) {
+            String name = safeName(child.getAgentKey());
+            String desc = child.getDescription() == null || child.getDescription().isBlank()
+                    ? child.getName()
+                    : child.getDescription();
+            declarations.add(SubagentDeclaration.builder()
+                    .name(name)
+                    .description(desc)
+                    .mode(SubagentDeclaration.Mode.SUBAGENT)
+                    .build());
+            // Custom factory wins for instance creation; the same-named declaration above keeps
+            // its metadata (name/description/mode) in the manager.
+            final AgentAsset capturedChild = child;
+            builder.subagentFactory(name, ignored -> buildSubordinate(capturedChild, userId));
         }
         builder.subagents(declarations);
     }
 
     /**
-     * Parses {@code agent_asset.subagents_json} into harness {@link SubagentDeclaration}s.
-     * Each entry: {"key","name","description","modelAssetId"(optional),"toolNames"(optional),
-     * "workspacePath"(optional),"intentKeys"(optional)}. The sub-agent {@code key} is what the
-     * harness exposes to agent_spawn; the optional {@code intentKeys} array is consumed by
-     * IntentRouterService to reverse-resolve a classified intentKey to its owning sub-agent
-     * (purely routing metadata, ignored here). Sub-agents inherit the router's model (we
-     * intentionally do not call {@code .model(...)} to avoid depending on agentscope's
-     * ModelRegistry for ok-agent's custom model assets).
+     * Parses {@code agent_asset.subagents_json} as a list of {@code {"agentId": ..., "intentKeys":
+     * [...]}} references and loads each target AgentAsset. Duplicate agentIds are collapsed;
+     * self-references and missing targets are skipped. The {@code intentKeys} array is routing
+     * metadata consumed by IntentRouterService and is ignored here.
      */
-    private List<SubagentDeclaration> parseSubagents(AgentAsset draft) {
+    private List<AgentAsset> loadReferencedSubagents(AgentAsset draft) {
         String raw = draft.getSubagentsJson();
         if (raw == null || raw.isBlank() || "[]".equals(raw.trim())) {
             return List.of();
@@ -197,31 +241,27 @@ public class HarnessAgentFactory {
             log.warn("subagents_json is not a valid JSON array for agent={}", draft.getAgentKey());
             return List.of();
         }
-        List<SubagentDeclaration> out = new ArrayList<>();
+        List<UUID> ids = new ArrayList<>();
         for (Map<String, Object> def : defs) {
-            String key = asText(def.get("key"));
-            if (key.isBlank()) {
-                continue;
-            }
+            String idText = asText(def.get("agentId"));
+            if (idText.isBlank()) continue;
             try {
-                var b = SubagentDeclaration.builder()
-                        .name(key)
-                        .description(asText(def.get("description"), key))
-                        .mode(SubagentDeclaration.Mode.SUBAGENT);
-                var toolNames = asStringList(def.get("toolNames"));
-                if (!toolNames.isEmpty()) {
-                    b.tools(toolNames);
+                UUID id = UUID.fromString(idText);
+                if (!id.equals(draft.getId()) && !ids.contains(id)) {
+                    ids.add(id);
                 }
-                String ws = asText(def.get("workspacePath"));
-                Path workspace = ws.isBlank()
-                        ? Path.of(System.getProperty("user.dir"), ".agentscope", "subagents",
-                                safeName(draft.getAgentKey()), key)
-                        : Path.of(ws);
-                b.workspace(workspace);
-                out.add(b.build());
-            } catch (Exception e) {
-                log.warn("Skipping invalid sub-agent '{}' for agent={}: {}",
-                        key, draft.getAgentKey(), e.getMessage());
+            } catch (IllegalArgumentException e) {
+                log.warn("Skipping sub-agent with invalid agentId '{}' for agent={}",
+                        idText, draft.getAgentKey());
+            }
+        }
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+        List<AgentAsset> out = new ArrayList<>();
+        for (AgentAsset a : agents.findAllById(ids)) {
+            if (a != null && a.isEnabled()) {
+                out.add(a);
             }
         }
         return out;

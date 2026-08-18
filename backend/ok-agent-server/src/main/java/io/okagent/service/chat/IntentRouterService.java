@@ -261,8 +261,10 @@ public class IntentRouterService {
     }
 
     /**
-     * Finds the sub-agent key declared on the router agent whose {@code intentKeys} array contains
-     * the given intentKey. Returns null when no sub-agent claims it.
+     * Finds the referenced sub-agent (its {@code agentKey}) declared on the router agent whose
+     * {@code intentKeys} array contains the given intentKey. Each subagents_json entry is
+     * {@code {"agentId": ..., "intentKeys": [...]}}; we load the target AgentAsset to resolve the
+     * key the harness exposes to agent_spawn. Returns null when no reference claims the intent.
      */
     private String resolveDelegate(AgentAsset router, String intentKey) {
         String raw = router.getSubagentsJson();
@@ -279,12 +281,25 @@ public class IntentRouterService {
         for (Map<String, Object> def : defs) {
             Object keys = def.get("intentKeys");
             if (!(keys instanceof List<?> list)) continue;
-            String subKey = asText(def.get("key"));
-            if (subKey.isBlank()) continue;
+            boolean claimed = false;
             for (Object k : list) {
                 if (k != null && intentKey.equals(String.valueOf(k).trim())) {
-                    return subKey;
+                    claimed = true;
+                    break;
                 }
+            }
+            if (!claimed) continue;
+            String agentId = asText(def.get("agentId"));
+            if (agentId.isBlank()) continue;
+            try {
+                var child = agents.findById(UUID.fromString(agentId)).orElse(null);
+                if (child != null && child.isEnabled() && child.getAgentKey() != null
+                        && !child.getAgentKey().isBlank()) {
+                    return child.getAgentKey();
+                }
+            } catch (IllegalArgumentException e) {
+                log.warn("Sub-agent reference has invalid agentId '{}' on router={}",
+                        agentId, router.getAgentKey());
             }
         }
         return null;

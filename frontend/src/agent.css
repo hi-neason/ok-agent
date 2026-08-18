@@ -958,10 +958,58 @@ select.cfg-select,
   accent-color: #1880ee;
 }
 .intent-option span { flex: 1; }
-.intent-option code {
+.intent-children {
+  padding-left: 22px;
+  border-left: 1px dashed #dceaf8;
+  margin-left: 12px;
+}
+.intent-option.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.intent-option.is-disabled:hover { background: transparent; }
+.intent-claimed-by {
+  font-style: normal;
   font-size: 11px;
-  color: #5b7391;
-  background: #f0f6fd;
+  color: #b07a00;
+  background: #fdf4e0;
+  padding: 1px 7px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+/* 被引用子智能体的只读信息卡 */
+.subagent-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: #f5faff;
+  border: 1px solid #dceaf8;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 12px;
+  color: #315d89;
+}
+.subagent-meta > div {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+.subagent-meta .meta-label {
+  flex: 0 0 40px;
+  color: #7a9abc;
+  font-size: 11px;
+}
+.subagent-meta code {
+  font-family: ui-monospace, "DM Mono", monospace;
+  font-size: 11px;
+  color: #1677e8;
+  background: #e8f2fe;
   padding: 1px 6px;
   border-radius: 4px;
+}
+.subagent-meta .meta-hint {
+  color: #8aa3bd;
+  font-size: 11px;
+  margin-top: 2px;
 }

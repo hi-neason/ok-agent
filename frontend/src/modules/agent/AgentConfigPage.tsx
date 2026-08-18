@@ -456,7 +456,11 @@ export function AgentConfigPage({
               <AgentRuntimeTab form={form} setField={setField} errorsByField={errorsByField} />
             )}
             {tab === "subagents" && (
-              <AgentSubAgentTab form={form} setField={setField} models={models} />
+              <AgentSubAgentTab
+                form={form}
+                setField={setField}
+                currentAgentId={agentId}
+              />
             )}
 
             {tab !== "workflows" && tab !== "knowledge" && (

@@ -97,6 +97,10 @@ public class DifyKnowledgeProvider implements KnowledgeProvider {
             ObjectNode retrievalModel = json.createObjectNode();
             retrievalModel.put("search_method", "semantic_search");
             retrievalModel.put("top_k", k);
+            // Dify's retrieve payload requires reranking_enable (it is a required field in the
+            // HitTestingPayload model). We default to disabled — reranking needs a separately
+            // configured rerank model, which bindings do not currently expose.
+            retrievalModel.put("reranking_enable", false);
             if (scoreThreshold != null && scoreThreshold >= 0 && scoreThreshold <= 1) {
                 retrievalModel.put("score_threshold_enabled", true);
                 retrievalModel.put("score_threshold", scoreThreshold);

@@ -209,6 +209,10 @@ public class TraceCollectingMiddleware implements MiddlewareBase {
                                                                 : "UNKNOWN");
                                                 span.finish(
                                                         status, null, TurnTrace.microsNow());
+                                                // Tools catch exceptions and return error strings
+                                                // with state SUCCESS; downgrade span to ERROR when
+                                                // the output starts with an error prefix.
+                                                span.markErrorIfToolFailed();
                                             }
                                         }
                                     })

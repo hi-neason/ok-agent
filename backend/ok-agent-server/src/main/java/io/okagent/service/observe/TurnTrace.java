@@ -291,6 +291,30 @@ final class TurnTrace {
             this.errorMessage = message;
         }
 
+        /**
+         * Tools (knowledge/workflow/MCP) catch their own exceptions and return a human-readable
+         * string starting with "Error" / "Workflow failed" instead of throwing, so the framework
+         * reports ToolResult state SUCCESS. Inspect the captured output to downgrade the span to
+         * ERROR when the tool actually returned an error message, so the trace reflects reality.
+         */
+        void markErrorIfToolFailed() {
+            if (status != SpanStatus.OK) {
+                return;
+            }
+            String text = this.output;
+            if (text == null || text.isBlank()) {
+                text = outputBuffer.toString();
+            }
+            String trimmed = text.stripLeading();
+            if (trimmed.startsWith("Error")
+                    || trimmed.startsWith("Workflow failed")
+                    || trimmed.startsWith("Failed to ")) {
+                this.status = SpanStatus.ERROR;
+                this.errorMessage = trimmed.lines().findFirst().orElse("Tool returned an error");
+                attribute("error.message", this.errorMessage);
+            }
+        }
+
         void finish(SpanStatus status, String errorMessage, long endUs) {
             if (this.endUs != 0) {
                 return;

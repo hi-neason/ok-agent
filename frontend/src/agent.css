@@ -473,8 +473,8 @@
   border-radius: 14px;
   font-size: 13.5px;
   line-height: 1.6;
-  white-space: pre-wrap;
   word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .chat-bubble.user {
@@ -482,6 +482,7 @@
   background: #406eff;
   color: #fff;
   border-bottom-right-radius: 4px;
+  white-space: pre-wrap;
 }
 
 .chat-bubble.assistant {
@@ -489,6 +490,95 @@
   background: #f3f5fa;
   color: #2a3140;
   border-bottom-left-radius: 4px;
+}
+
+.chat-bubble.assistant > :first-child {
+  margin-top: 0;
+}
+.chat-bubble.assistant > :last-child {
+  margin-bottom: 0;
+}
+.chat-bubble.assistant p {
+  margin: 6px 0;
+}
+.chat-bubble.assistant h1,
+.chat-bubble.assistant h2,
+.chat-bubble.assistant h3,
+.chat-bubble.assistant h4,
+.chat-bubble.assistant h5,
+.chat-bubble.assistant h6 {
+  margin: 12px 0 6px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.chat-bubble.assistant h1 { font-size: 18px; }
+.chat-bubble.assistant h2 { font-size: 16px; }
+.chat-bubble.assistant h3 { font-size: 15px; }
+.chat-bubble.assistant h4,
+.chat-bubble.assistant h5,
+.chat-bubble.assistant h6 { font-size: 14px; }
+.chat-bubble.assistant ul,
+.chat-bubble.assistant ol {
+  margin: 6px 0;
+  padding-left: 22px;
+}
+.chat-bubble.assistant li {
+  margin: 3px 0;
+}
+.chat-bubble.assistant code {
+  background: rgba(64, 110, 255, 0.08);
+  color: #1d4ed8;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 12.5px;
+}
+.chat-bubble.assistant pre {
+  background: #1f2530;
+  color: #e6ebf5;
+  padding: 10px 12px;
+  border-radius: 8px;
+  overflow-x: auto;
+  font-size: 12.5px;
+  margin: 8px 0;
+}
+.chat-bubble.assistant pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  font-size: inherit;
+}
+.chat-bubble.assistant blockquote {
+  margin: 8px 0;
+  padding: 4px 12px;
+  border-left: 3px solid #c7cfdb;
+  color: #5b6677;
+}
+.chat-bubble.assistant table {
+  border-collapse: collapse;
+  margin: 8px 0;
+  display: block;
+  overflow-x: auto;
+  max-width: 100%;
+}
+.chat-bubble.assistant th,
+.chat-bubble.assistant td {
+  border: 1px solid #d8dee8;
+  padding: 6px 10px;
+  text-align: left;
+}
+.chat-bubble.assistant th {
+  background: #eef1f7;
+  font-weight: 600;
+}
+.chat-bubble.assistant hr {
+  border: none;
+  border-top: 1px solid #d8dee8;
+  margin: 12px 0;
+}
+.chat-bubble.assistant a {
+  color: #2f6feb;
+  text-decoration: underline;
 }
 
 .chat-bubble.error {

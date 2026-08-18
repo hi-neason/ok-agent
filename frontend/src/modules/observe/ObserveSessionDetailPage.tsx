@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "../shared";
+import { Button, Markdown } from "../shared";
 import { fetchTurns, searchSessions } from "./api";
 import type { DialogueSummary, DialogueTurn } from "./types";
 import { TracePanel } from "./TracePanel";
@@ -103,7 +103,9 @@ export function ObserveSessionDetailPage({
                 <span>#{turn.seq}</span>
                 <small>{new Date(turn.createdAt).toLocaleString()}</small>
               </div>
-              <pre>{turn.content}</pre>
+              <div className="dialogue-turn-body">
+                <Markdown source={turn.content} />
+              </div>
               {(turn.model || turn.latencyMs !== null || turn.tokenUsage !== null) && (
                 <div className="dialogue-turn-foot">
                   {turn.model && <span>{turn.model}</span>}

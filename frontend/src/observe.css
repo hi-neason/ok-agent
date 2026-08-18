@@ -179,6 +179,106 @@
 .dialogue-turn.error pre {
   color: #b5504a;
 }
+.dialogue-turn-body {
+  margin: 0;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  color: #2b4c70;
+  font: 13px/1.7 "Noto Sans SC", sans-serif;
+}
+.dialogue-turn.error .dialogue-turn-body {
+  color: #b5504a;
+}
+.dialogue-turn-body > :first-child {
+  margin-top: 0;
+}
+.dialogue-turn-body > :last-child {
+  margin-bottom: 0;
+}
+.dialogue-turn-body p {
+  margin: 6px 0;
+}
+.dialogue-turn-body h1,
+.dialogue-turn-body h2,
+.dialogue-turn-body h3,
+.dialogue-turn-body h4,
+.dialogue-turn-body h5,
+.dialogue-turn-body h6 {
+  margin: 14px 0 6px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #213d5c;
+}
+.dialogue-turn-body h1 { font-size: 18px; }
+.dialogue-turn-body h2 { font-size: 16px; }
+.dialogue-turn-body h3 { font-size: 15px; }
+.dialogue-turn-body h4,
+.dialogue-turn-body h5,
+.dialogue-turn-body h6 { font-size: 14px; }
+.dialogue-turn-body ul,
+.dialogue-turn-body ol {
+  margin: 6px 0;
+  padding-left: 22px;
+}
+.dialogue-turn-body li {
+  margin: 3px 0;
+}
+.dialogue-turn-body code {
+  background: rgba(33, 84, 158, 0.08);
+  color: #21549e;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 12.5px;
+}
+.dialogue-turn-body pre {
+  background: #1f2530;
+  color: #e6ebf5;
+  padding: 10px 12px;
+  border-radius: 8px;
+  overflow-x: auto;
+  font-size: 12.5px;
+  margin: 8px 0;
+  white-space: pre-wrap;
+}
+.dialogue-turn-body pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  font-size: inherit;
+}
+.dialogue-turn-body blockquote {
+  margin: 8px 0;
+  padding: 4px 12px;
+  border-left: 3px solid #c7cfdb;
+  color: #5b6677;
+}
+.dialogue-turn-body table {
+  border-collapse: collapse;
+  margin: 8px 0;
+  display: block;
+  overflow-x: auto;
+  max-width: 100%;
+}
+.dialogue-turn-body th,
+.dialogue-turn-body td {
+  border: 1px solid #d3dfee;
+  padding: 6px 10px;
+  text-align: left;
+}
+.dialogue-turn-body th {
+  background: #eaf0f7;
+  font-weight: 600;
+}
+.dialogue-turn-body hr {
+  border: none;
+  border-top: 1px solid #d3dfee;
+  margin: 12px 0;
+}
+.dialogue-turn-body a {
+  color: #2f6feb;
+  text-decoration: underline;
+}
 .dialogue-turn-foot {
   display: flex;
   flex-wrap: wrap;

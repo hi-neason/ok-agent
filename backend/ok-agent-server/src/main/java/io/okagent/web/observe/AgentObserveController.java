@@ -7,7 +7,6 @@ import io.okagent.service.dialogue.DialogueSummary;
 import io.okagent.service.observe.TraceService;
 import java.util.List;
 import java.util.UUID;
-import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -38,7 +37,7 @@ public class AgentObserveController {
      * agent id, and a created-at time range. Used by the "运行观测" history list.
      */
     @GetMapping("/sessions")
-    public Page<DialogueSummary> listSessions(
+    public PageResponse<DialogueSummary> listSessions(
             @RequestParam(required = false) String sessionId,
             @RequestParam(required = false) String userId,
             @RequestParam(required = false) UUID agentId,
@@ -46,7 +45,8 @@ public class AgentObserveController {
             @RequestParam(required = false) String to,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return dialogue.search(new DialogueQuery(sessionId, userId, agentId, from, to), page, size);
+        return PageResponse.of(
+                dialogue.search(new DialogueQuery(sessionId, userId, agentId, from, to), page, size));
     }
 
     /** Returns the full, ordered conversation of a session for the detail / replay view. */

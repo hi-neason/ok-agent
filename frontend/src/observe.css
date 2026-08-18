@@ -289,3 +289,42 @@
   font: 9px "DM Mono", monospace;
   color: #8da8c3;
 }
+
+/* ---------- 长 Markdown 折叠 / 展开 ---------- */
+
+.dialogue-turn-body .collapsible-md {
+  position: relative;
+}
+.dialogue-turn-body .collapsible-md-body {
+  position: relative;
+  overflow: hidden;
+  transition: max-height 0.2s ease;
+}
+.dialogue-turn-body .collapsible-md-body.collapsed {
+  max-height: 12em;
+  -webkit-mask-image: linear-gradient(to bottom, #000 70%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 70%, transparent 100%);
+}
+.dialogue-turn-body .collapsible-md-body.expanded {
+  max-height: none;
+  overflow: visible;
+}
+.dialogue-turn-body .collapsible-md-actions {
+  margin-top: 6px;
+  text-align: right;
+}
+.dialogue-turn-body .collapsible-md-toggle {
+  font-size: 12px;
+  padding: 3px 10px;
+  border: 1px solid rgba(33, 84, 158, 0.35);
+  border-radius: 999px;
+  color: #21549e;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.dialogue-turn-body .collapsible-md-toggle:hover {
+  background: #21549e;
+  color: #fff;
+  border-color: #21549e;
+}

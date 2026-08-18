@@ -787,3 +787,48 @@ select.cfg-select,
   color: #aab4c5;
 }
 
+/* ---------- 长 Markdown 折叠 / 展开 ---------- */
+
+.chat-bubble.assistant .collapsible-md {
+  position: relative;
+}
+.chat-bubble.assistant .collapsible-md-body {
+  position: relative;
+  overflow: hidden;
+  transition: max-height 0.2s ease;
+}
+.chat-bubble.assistant .collapsible-md-body.collapsed {
+  max-height: 12em;
+}
+.chat-bubble.assistant .collapsible-md-body.collapsed::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 3em;
+  background: linear-gradient(to bottom, rgba(243, 245, 250, 0), #f3f5fa 90%);
+  pointer-events: none;
+}
+.chat-bubble.assistant .collapsible-md-body.expanded {
+  max-height: none;
+  overflow: visible;
+}
+.chat-bubble.assistant .collapsible-md-actions {
+  margin-top: 6px;
+  text-align: right;
+}
+.chat-bubble.assistant .collapsible-md-toggle {
+  font-size: 12px;
+  padding: 3px 10px;
+  border: 1px solid rgba(86, 140, 255, 0.4);
+  border-radius: 999px;
+  color: #2f6feb;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.chat-bubble.assistant .collapsible-md-toggle:hover {
+  background: #568cff;
+  color: #fff;
+  border-color: #568cff;
+}
+

@@ -1,7 +1,7 @@
 import { useEffect, useRef, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import type { ChatMessage } from "../types";
-import { Markdown } from "../../shared";
+import { Markdown, CollapsibleMarkdown } from "../../shared";
 
 const selectStyle: CSSProperties = {
   fontSize: 12,
@@ -112,7 +112,7 @@ export function AgentDebugPanel({
         {messages.map((m, i) => (
           <div key={i} className={`chat-bubble ${m.error ? "error" : m.role}`}>
             {m.role === "assistant" && !m.error ? (
-              <Markdown source={m.content} />
+              <CollapsibleMarkdown source={m.content} />
             ) : (
               m.content
             )}

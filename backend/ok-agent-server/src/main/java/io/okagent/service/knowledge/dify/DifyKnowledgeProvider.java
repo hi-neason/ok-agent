@@ -9,7 +9,9 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -21,10 +23,12 @@ import org.springframework.stereotype.Component;
  * <p>A Dify dataset-level API key ({@code dataset-...}) is workspace-scoped, so one source can list
  * and retrieve from many datasets: {@code GET /datasets} enumerates them and
  * {@code POST /datasets/{id}/retrieve} performs semantic retrieval. Dify datasets have no
- * active/inactive flag, so discovered bases are treated as active. The retrieval model is sent with
- * {@code search_method=semantic_search}, reranking disabled (with an empty {@code reranking_model}
- * object to match Dify's default payload shape); the optional score threshold is enabled only when a
- * binding supplies a value in [0,1]. The query is truncated to Dify's 250-character limit.
+ * active/inactive flag, so discovered bases are treated as active. On retrieval we first fetch the
+ * dataset's own {@code retrieval_model_dict} (cached 5 minutes) and use it as the base payload so the
+ * {@code search_method} matches how the dataset was indexed — {@code economy} datasets are
+ * keyword/inverted-index only and forcing {@code semantic_search} on them returns "Collection not
+ * found". The caller's top_k / score threshold are overlaid on top. The query is truncated to Dify's
+ * 250-character limit.
  */
 @Component
 public class DifyKnowledgeProvider implements KnowledgeProvider {
@@ -37,6 +41,20 @@ public class DifyKnowledgeProvider implements KnowledgeProvider {
             .connectTimeout(Duration.ofSeconds(10))
             .followRedirects(HttpClient.Redirect.NORMAL)
             .build();
+
+    /**
+     * Cache of each dataset's own {@code retrieval_model_dict}, keyed by
+     * {@code <baseUrl>::<datasetId>}. We must send a retrieval_model whose
+     * {@code search_method} matches how the dataset was actually indexed: an
+     * {@code economy} dataset only has a keyword/inverted index, so hardcoding
+     * {@code semantic_search} makes Dify look for a vector collection that does
+     * not exist ("Collection not found"). Fetching the dataset config and using
+     * its retrieval_model as the base works for both high-quality (vector/hybrid)
+     * and economy (keyword/inverted-index) datasets. Cached for 5 minutes to
+     * avoid an extra HTTP round-trip on every chat turn.
+     */
+    private static final Duration DATASET_CONFIG_TTL = Duration.ofMinutes(5);
+    private final Map<String, CacheEntry> datasetConfigCache = new ConcurrentHashMap<>();
 
     @Override
     public String type() {
@@ -95,24 +113,32 @@ public class DifyKnowledgeProvider implements KnowledgeProvider {
             String endUserId) {
         try {
             int k = topK == null || topK <= 0 ? DEFAULT_TOP_K : Math.min(topK, 50);
-            ObjectNode retrievalModel = json.createObjectNode();
-            retrievalModel.put("search_method", "semantic_search");
+
+            // Start from the dataset's OWN retrieval_model_dict so the search_method matches how
+            // the dataset was indexed. Economy datasets only have a keyword/inverted index and no
+            // vector collection — forcing semantic_search there yields "Collection not found".
+            // We then overlay the caller's top_k / score threshold. reranking_enable,
+            // reranking_model, weights and search_method are preserved from the dataset config
+            // (the dataset controls whether a rerank model is available).
+            ObjectNode retrievalModel = resolveRetrievalModel(config, remoteKnowledgeId);
             retrievalModel.put("top_k", k);
-            // Dify's retrieve payload requires reranking_enable (it is a required field in the
-            // HitTestingPayload model). We default to disabled — reranking needs a separately
-            // configured rerank model, which bindings do not currently expose. The empty
-            // reranking_model object mirrors Dify's own default retrieval_model shape and is sent
-            // by the Dify console even when reranking is disabled.
-            retrievalModel.put("reranking_enable", false);
-            ObjectNode rerankingModel = json.createObjectNode();
-            rerankingModel.put("reranking_provider_name", "");
-            rerankingModel.put("reranking_model_name", "");
-            retrievalModel.set("reranking_model", rerankingModel);
             if (scoreThreshold != null && scoreThreshold >= 0 && scoreThreshold <= 1) {
                 retrievalModel.put("score_threshold_enabled", true);
                 retrievalModel.put("score_threshold", scoreThreshold);
             } else {
                 retrievalModel.put("score_threshold_enabled", false);
+                retrievalModel.putNull("score_threshold");
+            }
+            // reranking_enable is a required field; if the dataset config did not supply one,
+            // default to disabled (bindings do not expose a separate rerank model).
+            if (!retrievalModel.has("reranking_enable")) {
+                retrievalModel.put("reranking_enable", false);
+            }
+            if (!retrievalModel.has("reranking_model")) {
+                ObjectNode rerankingModel = json.createObjectNode();
+                rerankingModel.put("reranking_provider_name", "");
+                rerankingModel.put("reranking_model_name", "");
+                retrievalModel.set("reranking_model", rerankingModel);
             }
 
             // Dify caps the query at 250 characters; truncate rather than risk a hard 400 on
@@ -165,8 +191,48 @@ public class DifyKnowledgeProvider implements KnowledgeProvider {
         }
     }
 
-    private JsonNode getJson(KnowledgeSourceConfig config, String path) throws Exception {
-        var request = HttpRequest.newBuilder()
+    /**
+     * Returns the dataset's own {@code retrieval_model_dict} as a mutable deep copy, using a
+     * short-TTL cache. Falls back to a minimal {@code semantic_search} config if the dataset
+     * details cannot be loaded (so retrieval is still attempted, with a logged warning).
+     */
+    private ObjectNode resolveRetrievalModel(KnowledgeSourceConfig config, String remoteKnowledgeId) {
+        String cacheKey = baseUrl(config) + "::" + remoteKnowledgeId;
+        CacheEntry cached = datasetConfigCache.get(cacheKey);
+        Instant now = Instant.now();
+        if (cached != null && cached.fetchedAt.plus(DATASET_CONFIG_TTL).isAfter(now)) {
+            return cached.model.deepCopy();
+        }
+        try {
+            JsonNode dataset = getJson(config, "/datasets/" + remoteKnowledgeId);
+            JsonNode dict = dataset.path("retrieval_model_dict");
+            ObjectNode model;
+            if (dict.isObject()) {
+                model = ((ObjectNode) dict).deepCopy();
+            } else {
+                model = json.createObjectNode();
+                model.put("search_method", "keyword_search");
+                log.warn("Dify dataset {} returned no retrieval_model_dict (indexing_technique={}); "
+                                + "falling back to keyword_search",
+                        remoteKnowledgeId, dataset.path("indexing_technique").asText("null"));
+            }
+            if (!model.has("search_method") || model.path("search_method").asText("").isBlank()) {
+                model.put("search_method", "keyword_search");
+            }
+            datasetConfigCache.put(cacheKey, new CacheEntry(model.deepCopy(), now));
+            return model;
+        } catch (Exception e) {
+            log.warn("Failed to fetch Dify dataset {} config, falling back to keyword_search: {}",
+                    remoteKnowledgeId, safeMessage(e));
+            ObjectNode fallback = json.createObjectNode();
+            fallback.put("search_method", "keyword_search");
+            return fallback;
+        }
+    }
+
+    private record CacheEntry(ObjectNode model, Instant fetchedAt) {}
+
+    private JsonNode getJson(KnowledgeSourceConfig config, String path) throws Exception {        var request = HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl(config) + path))
                 .timeout(Duration.ofSeconds(Math.max(config.connectTimeoutSeconds(), 5)))
                 .header(HttpHeaders.ACCEPT, "application/json")

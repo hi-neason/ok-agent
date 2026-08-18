@@ -148,11 +148,31 @@ export function AgentConfigPage({
         if (initialKey) {
           const page = await searchSessions({ agentId, userId: initialKey, size: 50 });
           setSessions(page.content);
+          if (!cancelled && page.content.length > 0) {
+            const first = page.content[0].sessionId;
+            setSelectedSessionId(first);
+            sessionIdRef.current = first;
+            try {
+              const turns = await fetchTurns(first);
+              if (cancelled) return;
+              const loaded: ChatMessage[] = turns.map((turn) => ({
+                role: turn.role === "user" ? "user" : "assistant",
+                content: turn.content,
+                error: turn.role === "error",
+              }));
+              setMessages(loaded);
+            } catch {
+              if (!cancelled) setMessages([]);
+            }
+          }
         }
         const tools = await loadMcpTools(mcpList);
         if (cancelled) return;
         setMcpTools(tools);
-        if (agentRes.welcomeMessage) {
+        if (
+          agentRes.welcomeMessage &&
+          (!initialKey || page.content.length === 0)
+        ) {
           setMessages([{ role: "assistant", content: agentRes.welcomeMessage }]);
         }
       } catch {
@@ -337,6 +357,22 @@ export function AgentConfigPage({
     try {
       const page = await searchSessions({ agentId, userId, size: 50 });
       setSessions(page.content);
+      if (page.content.length > 0) {
+        const first = page.content[0].sessionId;
+        setSelectedSessionId(first);
+        sessionIdRef.current = first;
+        try {
+          const turns = await fetchTurns(first);
+          const loaded: ChatMessage[] = turns.map((turn) => ({
+            role: turn.role === "user" ? "user" : "assistant",
+            content: turn.content,
+            error: turn.role === "error",
+          }));
+          setMessages(loaded);
+        } catch {
+          setMessages([]);
+        }
+      }
     } catch {
       setSessions([]);
     }

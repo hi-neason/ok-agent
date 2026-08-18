@@ -296,6 +296,10 @@ final class TurnTrace {
          * string starting with "Error" / "Workflow failed" instead of throwing, so the framework
          * reports ToolResult state SUCCESS. Inspect the captured output to downgrade the span to
          * ERROR when the tool actually returned an error message, so the trace reflects reality.
+         *
+         * <p>The framework JSON-serializes a String-returning tool result, so the captured output
+         * may be surrounded by literal double quotes (e.g. {@code "Error: ..."}); strip a leading
+         * quote before prefix matching.
          */
         void markErrorIfToolFailed() {
             if (status != SpanStatus.OK) {
@@ -306,6 +310,9 @@ final class TurnTrace {
                 text = outputBuffer.toString();
             }
             String trimmed = text.stripLeading();
+            if (trimmed.startsWith("\"")) {
+                trimmed = trimmed.substring(1).stripLeading();
+            }
             if (trimmed.startsWith("Error")
                     || trimmed.startsWith("Workflow failed")
                     || trimmed.startsWith("Failed to ")) {

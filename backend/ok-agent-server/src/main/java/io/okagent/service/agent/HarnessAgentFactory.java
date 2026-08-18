@@ -19,6 +19,7 @@ import io.agentscope.harness.agent.filesystem.spec.LocalFilesystemSpec;
 import io.agentscope.harness.agent.sandbox.impl.docker.DockerFilesystemSpec;
 import io.agentscope.harness.agent.tools.McpServerConfig;
 import io.agentscope.harness.agent.tools.ToolsConfig;
+import io.agentscope.harness.agent.subagent.SubagentDeclaration;
 import io.agentscope.harness.agent.workspace.LocalFsMode;
 import io.okagent.domain.agent.AgentAsset;
 import io.okagent.infrastructure.store.JdbcBaseStore;
@@ -219,21 +220,30 @@ public class HarnessAgentFactory {
         } catch (Exception e) {
             log.warn("Failed to load intent tree for sub-agent descriptions: {}", e.getMessage());
         }
-        // Register each referenced child as a custom subagent factory with an enriched
-        // description. We use the subagentFactory() path (not subagents(declarations)) because
-        // the child must be built from its OWN AgentAsset — its own model, MCP servers, skills,
-        // system prompt and workspace — rather than inheriting the router's configuration via
-        // the declaration's default factory. The enriched description (child's own description +
-        // "负责意图：…") is shown to the router LLM in the ### Available agent ids list so it
-        // can make an informed delegation decision. The built child is forced to a leaf
-        // (buildSubordinate → asLeaf=true) to prevent delegation cycles.
+        // Register each referenced child with TWO same-named registrations that the harness
+        // merges: (1) a SubagentDeclaration carrying the enriched description so the router LLM
+        // sees "负责意图：…" in the ### Available agent ids list, and (2) a custom subagentFactory
+        // that builds the child from its OWN AgentAsset (its own model, MCP, skills, system
+        // prompt, workspace) instead of inheriting the router's config via the declaration's
+        // default factory. The built child is forced to a leaf (asLeaf=true) to prevent
+        // delegation cycles. The dual registration creates a cosmetic duplicate entry in the
+        // agent list (the factory entry's description falls back to its name/UUID), but
+        // function-calling is driven by the routing directive which names the exact agent_id,
+        // so the duplicate does not affect delegation correctness.
+        List<SubagentDeclaration> declarations = new ArrayList<>();
         for (SubagentRef ref : refs) {
             AgentAsset child = ref.child();
             String name = safeName(child.getAgentKey());
             String desc = buildSubagentDescription(child, ref.intentKeys(), intentByKey);
+            declarations.add(SubagentDeclaration.builder()
+                    .name(name)
+                    .description(desc)
+                    .mode(SubagentDeclaration.Mode.SUBAGENT)
+                    .build());
             final AgentAsset capturedChild = child;
-            builder.subagentFactory(name, desc, ignored -> buildSubordinate(capturedChild, userId));
+            builder.subagentFactory(name, ignored -> buildSubordinate(capturedChild, userId));
         }
+        builder.subagents(declarations);
     }
 
     /**

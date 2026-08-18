@@ -1,6 +1,7 @@
 import type {
   AgentForm,
   AgentItem,
+  AgentSubagentConfig,
   ChatMessage,
   Option,
   ValidationResponse,
@@ -178,7 +179,27 @@ export function toConfigPayload(_agentId: string, form: AgentForm) {
     dockerImage: form.dockerImage,
     sandboxMemoryMb: form.sandboxMemoryMb,
     sandboxCpuCount: form.sandboxCpuCount,
+    subagentsJson: JSON.stringify(form.subagents ?? []),
   };
+}
+
+export function parseSubagents(raw: string | undefined): AgentSubagentConfig[] {
+  if (!raw) return [];
+  try {
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) return [];
+    return arr.map((x: Record<string, unknown>) => ({
+      key: String(x.key ?? ""),
+      name: String(x.name ?? x.key ?? ""),
+      description: String(x.description ?? ""),
+      modelAssetId: x.modelAssetId ? String(x.modelAssetId) : null,
+      toolNames: Array.isArray(x.toolNames) ? (x.toolNames as unknown[]).map(String) : [],
+      workspacePath: String(x.workspacePath ?? ""),
+      intentKeys: Array.isArray(x.intentKeys) ? (x.intentKeys as unknown[]).map(String) : [],
+    }));
+  } catch {
+    return [];
+  }
 }
 
 export type { ChatMessage };

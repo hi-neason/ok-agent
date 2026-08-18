@@ -20,6 +20,7 @@ import {
   saveAgentConfig,
   sendChat,
   validateAgentConfig,
+  parseSubagents,
   type DebugUser,
 } from "./api";
 import { searchSessions, fetchTurns } from "../observe/api";
@@ -37,6 +38,7 @@ import { AgentKnowledgeTab } from "./components/tabs/AgentKnowledgeTab";
 import { AgentMemoryTab } from "./components/tabs/AgentMemoryTab";
 import { AgentWorkspaceTab } from "./components/tabs/AgentWorkspaceTab";
 import { AgentRuntimeTab } from "./components/tabs/AgentRuntimeTab";
+import { AgentSubAgentTab } from "./components/tabs/AgentSubAgentTab";
 import { useConfirm } from "../shared";
 
 function initialForm(agent: AgentItem): AgentForm {
@@ -77,6 +79,7 @@ function initialForm(agent: AgentItem): AgentForm {
     dockerImage: agent.dockerImage ?? "",
     sandboxMemoryMb: agent.sandboxMemoryMb ?? 512,
     sandboxCpuCount: agent.sandboxCpuCount ?? 1,
+    subagents: parseSubagents(agent.subagentsJson),
   };
 }
 
@@ -208,6 +211,7 @@ export function AgentConfigPage({
       memory: 0,
       workspace: 0,
       runtime: 0,
+      subagents: 0,
     };
     for (const e of validation?.errors ?? []) {
       counts[e.tab] = (counts[e.tab] ?? 0) + 1;
@@ -450,6 +454,9 @@ export function AgentConfigPage({
             )}
             {tab === "runtime" && (
               <AgentRuntimeTab form={form} setField={setField} errorsByField={errorsByField} />
+            )}
+            {tab === "subagents" && (
+              <AgentSubAgentTab form={form} setField={setField} models={models} />
             )}
 
             {tab !== "workflows" && tab !== "knowledge" && (

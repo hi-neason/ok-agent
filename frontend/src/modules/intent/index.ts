@@ -1,0 +1,1 @@
+export { IntentPage } from "./IntentPage";

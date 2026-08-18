@@ -150,6 +150,7 @@ public class AgentAssetServiceImpl implements AgentAssetService {
                 request.personaExtractEnabled(),
                 request.personaInjectionMode(),
                 text(request.personaPromptTemplate()));
+        agent.updateSubagents(request.subagentsJson());
         agent.setUpdatedBy("system");
         var saved = agents.save(agent);
         log.info(

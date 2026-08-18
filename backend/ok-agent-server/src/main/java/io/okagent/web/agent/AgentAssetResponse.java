@@ -58,6 +58,7 @@ public record AgentAssetResponse(
         boolean enabled,
         Instant createdAt,
         Instant updatedAt,
+        String subagentsJson,
         String updatedBy) {
 
     private static final ObjectMapper JSON = new ObjectMapper();
@@ -111,6 +112,7 @@ public record AgentAssetResponse(
                 a.isEnabled(),
                 a.getCreatedAt(),
                 a.getUpdatedAt(),
+                a.getSubagentsJson(),
                 a.getUpdatedBy());
     }
 

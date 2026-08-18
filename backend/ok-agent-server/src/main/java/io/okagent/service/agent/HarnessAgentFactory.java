@@ -19,6 +19,7 @@ import io.agentscope.harness.agent.filesystem.spec.LocalFilesystemSpec;
 import io.agentscope.harness.agent.sandbox.impl.docker.DockerFilesystemSpec;
 import io.agentscope.harness.agent.tools.McpServerConfig;
 import io.agentscope.harness.agent.tools.ToolsConfig;
+import io.agentscope.harness.agent.subagent.SubagentDeclaration;
 import io.agentscope.harness.agent.workspace.LocalFsMode;
 import io.okagent.domain.agent.AgentAsset;
 import io.okagent.infrastructure.store.JdbcBaseStore;
@@ -108,12 +109,16 @@ public class HarnessAgentFactory {
                 .enableAgentTracingLog(draft.isTracingEnabled())
                 .stateStore(stateStore)
                 .transcriptStore(transcriptStore)
-                .disableSubagents()
                 // No workspace/tools.json file; register MCP servers programmatically.
                 .toolsConfig(toolsConfig(draft))
                 // In-process execution tracing: captures agent/model/tool spans (including
                 // knowledge-base and workflow tools) and persists them to MySQL.
                 .middleware(traceMiddleware);
+        // Router (main-sub) topology: when the agent declares sub-agents, enable them so the
+        // harness exposes agent_spawn/agent_send and the LLM can delegate by name. Otherwise keep
+        // the single-agent behaviour. Defensive: a malformed declaration must never break the
+        // whole router build, so failures fall back to the single-agent mode.
+        applySubagents(builder, draft);
 
         // Register external tools (workflows + knowledge) when this agent has bindings. The
         // harness copies this toolkit during build() and then appends its own built-in tools
@@ -147,6 +152,102 @@ public class HarnessAgentFactory {
         }
 
         return builder.build();
+    }
+
+    /**
+     * Enables sub-agents when the draft declares them, otherwise keeps the single-agent mode.
+     * A malformed declaration must never break the whole router build, so parsing failures fall
+     * back to {@code disableSubagents()}.
+     */
+    private void applySubagents(HarnessAgent.Builder builder, AgentAsset draft) {
+        List<SubagentDeclaration> declarations;
+        try {
+            declarations = parseSubagents(draft);
+        } catch (Exception e) {
+            log.warn("Failed to parse sub-agent declarations for agent={}: {}",
+                    draft.getAgentKey(), e.getMessage());
+            declarations = List.of();
+        }
+        if (declarations.isEmpty()) {
+            builder.disableSubagents();
+            return;
+        }
+        builder.subagents(declarations);
+    }
+
+    /**
+     * Parses {@code agent_asset.subagents_json} into harness {@link SubagentDeclaration}s.
+     * Each entry: {"key","name","description","modelAssetId"(optional),"toolNames"(optional),
+     * "workspacePath"(optional),"intentKeys"(optional)}. The sub-agent {@code key} is what the
+     * harness exposes to agent_spawn; the optional {@code intentKeys} array is consumed by
+     * IntentRouterService to reverse-resolve a classified intentKey to its owning sub-agent
+     * (purely routing metadata, ignored here). Sub-agents inherit the router's model (we
+     * intentionally do not call {@code .model(...)} to avoid depending on agentscope's
+     * ModelRegistry for ok-agent's custom model assets).
+     */
+    private List<SubagentDeclaration> parseSubagents(AgentAsset draft) {
+        String raw = draft.getSubagentsJson();
+        if (raw == null || raw.isBlank() || "[]".equals(raw.trim())) {
+            return List.of();
+        }
+        List<Map<String, Object>> defs;
+        try {
+            defs = json.readValue(raw, new TypeReference<List<Map<String, Object>>>() {});
+        } catch (Exception e) {
+            log.warn("subagents_json is not a valid JSON array for agent={}", draft.getAgentKey());
+            return List.of();
+        }
+        List<SubagentDeclaration> out = new ArrayList<>();
+        for (Map<String, Object> def : defs) {
+            String key = asText(def.get("key"));
+            if (key.isBlank()) {
+                continue;
+            }
+            try {
+                var b = SubagentDeclaration.builder()
+                        .name(key)
+                        .description(asText(def.get("description"), key))
+                        .mode(SubagentDeclaration.Mode.SUBAGENT);
+                var toolNames = asStringList(def.get("toolNames"));
+                if (!toolNames.isEmpty()) {
+                    b.tools(toolNames);
+                }
+                String ws = asText(def.get("workspacePath"));
+                Path workspace = ws.isBlank()
+                        ? Path.of(System.getProperty("user.dir"), ".agentscope", "subagents",
+                                safeName(draft.getAgentKey()), key)
+                        : Path.of(ws);
+                b.workspace(workspace);
+                out.add(b.build());
+            } catch (Exception e) {
+                log.warn("Skipping invalid sub-agent '{}' for agent={}: {}",
+                        key, draft.getAgentKey(), e.getMessage());
+            }
+        }
+        return out;
+    }
+
+    private static String asText(Object v) {
+        return v == null ? "" : String.valueOf(v).trim();
+    }
+
+    private static String asText(Object v, String fallback) {
+        String s = asText(v);
+        return s.isEmpty() ? fallback : s;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<String> asStringList(Object v) {
+        if (v instanceof List<?> list) {
+            List<String> out = new ArrayList<>();
+            for (Object o : list) {
+                if (o != null) {
+                    out.add(String.valueOf(o));
+                }
+            }
+            return out;
+        }
+        return List.of();
     }
 
     /**

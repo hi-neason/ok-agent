@@ -10,6 +10,7 @@ const TAB_INDEX: Record<AgentTab, string> = {
   memory: "06",
   workspace: "07",
   runtime: "08",
+  subagents: "09",
 };
 
 export function AgentConfigTabs({

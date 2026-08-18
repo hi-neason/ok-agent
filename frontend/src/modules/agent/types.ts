@@ -6,7 +6,8 @@ export type AgentTab =
   | "knowledge"
   | "memory"
   | "workspace"
-  | "runtime";
+  | "runtime"
+  | "subagents";
 
 export const AGENT_TABS: AgentTab[] = [
   "core",
@@ -17,6 +18,7 @@ export const AGENT_TABS: AgentTab[] = [
   "memory",
   "workspace",
   "runtime",
+  "subagents",
 ];
 
 export type AgentItem = {
@@ -63,12 +65,28 @@ export type AgentItem = {
   sandboxMemoryMb: number;
   sandboxCpuCount: number;
   enabled: boolean;
+  subagentsJson: string;
   createdAt: string;
   updatedAt: string;
   updatedBy: string | null;
 };
 
 export type Option = { id: string; name: string; sub?: string };
+
+/**
+ * A sub-agent declaration on a router (main-sub) agent. The sub-agent claims the intentKeys
+ * listed in {@link intentKeys}; at runtime the router's LLM classifier picks an intent, then the
+ * matching sub-agent (reverse-resolved by intentKey) is delegated to.
+ */
+export type AgentSubagentConfig = {
+  key: string;
+  name: string;
+  description: string;
+  modelAssetId: string | null;
+  toolNames: string[];
+  workspacePath: string;
+  intentKeys: string[];
+};
 
 export type ChatMessage = {
   role: "user" | "assistant";
@@ -134,4 +152,5 @@ export type AgentForm = {
   dockerImage: string;
   sandboxMemoryMb: number;
   sandboxCpuCount: number;
+  subagents: AgentSubagentConfig[];
 };

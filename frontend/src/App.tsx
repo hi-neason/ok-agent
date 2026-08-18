@@ -14,6 +14,8 @@ import { UserManagementPage } from "./modules/usermgmt";
 import { PersonaPage } from "./modules/persona";
 import { WorkflowSourcesPage } from "./modules/workflow";
 import { KnowledgeSourcesPage } from "./modules/knowledge";
+import { IntentPage } from "./modules/intent";
+import { CustomerChatPage } from "./modules/chat/CustomerChatPage";
 import { Button, PageHeader } from "./modules/shared";
 import "./agent.css";
 
@@ -30,7 +32,9 @@ type Page =
   | "persona"
   | "insight"
   | "sysconfig"
-  | "usermgmt";
+  | "usermgmt"
+  | "intents"
+  | "custchat";
 
 type NavItem = {
   id: Page;
@@ -49,6 +53,7 @@ type NavigationGroup = {
 // a few are intentionally hidden from the primary navigation (see `hiddenNavIds`).
 const navItems: NavItem[] = [
   { id: "agents", icon: "◈", name: "配置调试", kicker: "AGENT CONFIG" },
+  { id: "custchat", icon: "▣", name: "客服对话", kicker: "CUSTOMER CHAT" },
   { id: "release", icon: "↗", name: "发布管理", kicker: "RELEASE", wip: true },
   { id: "observe", icon: "◌", name: "运行观测", kicker: "OBSERVE" },
   { id: "models", icon: "◌", name: "模型", kicker: "MODEL" },
@@ -57,6 +62,7 @@ const navItems: NavItem[] = [
   { id: "knowledge", icon: "◫", name: "知识库 - 集成", kicker: "KNOWLEDGE" },
   { id: "workflows", icon: "⌁", name: "工作流 - 集成", kicker: "WORKFLOW" },
   { id: "persona", icon: "◑", name: "用户画像", kicker: "PERSONA" },
+  { id: "intents", icon: "⌥", name: "意图管理", kicker: "INTENT" },
   { id: "insight", icon: "◍", name: "对话洞察", kicker: "INSIGHT", wip: true },
   { id: "system", icon: "◎", name: "账号权限", kicker: "ACCESS", wip: true },
   { id: "sysconfig", icon: "⚙", name: "系统配置", kicker: "SETTINGS", wip: true },
@@ -70,7 +76,7 @@ const navItemById = Object.fromEntries(
 const navigationGroups: NavigationGroup[] = [
   {
     title: "Agent管理",
-    items: (["agents", "release", "observe"] as Page[]).map((id) => navItemById[id]),
+    items: (["agents", "release", "observe", "custchat"] as Page[]).map((id) => navItemById[id]),
   },
   {
     title: "Component管理",
@@ -80,7 +86,7 @@ const navigationGroups: NavigationGroup[] = [
   },
   {
     title: "业务管理",
-    items: (["usermgmt", "persona", "insight"] as Page[]).map((id) => navItemById[id]),
+    items: (["usermgmt", "persona", "intents", "insight"] as Page[]).map((id) => navItemById[id]),
   },
   {
     title: "系统管理",
@@ -100,6 +106,8 @@ const pagePaths: Record<Page, string> = {
   observe: "/observability",
   system: "/system",
   persona: "/persona",
+  intents: "/intents",
+  custchat: "/custchat",
   insight: "/insight",
   sysconfig: "/sysconfig",
   usermgmt: "/usermgmt",
@@ -355,6 +363,8 @@ export default function App() {
     ),
     system: <SystemPage />,
     persona: <PersonaPage />,
+    intents: <IntentPage />,
+    custchat: <CustomerChatPage />,
     insight: <WipPlaceholder name="对话洞察" kicker="INSIGHT" />,
     sysconfig: <WipPlaceholder name="系统配置" kicker="SETTINGS" />,
     usermgmt: <UserManagementPage />,

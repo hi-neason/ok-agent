@@ -1,0 +1,139 @@
+.cs-controls {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-top: 14px;
+}
+.cs-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12px;
+  color: #5b7391;
+}
+.cs-controls input,
+.cs-controls select {
+  background: #fff;
+  border: 1px solid #cbdff5;
+  border-radius: 8px;
+  color: #1c3b5e;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+.cs-controls input:focus,
+.cs-controls select:focus {
+  outline: none;
+  border-color: #1880ee;
+  box-shadow: 0 0 0 3px rgba(24, 128, 238, 0.12);
+}
+
+.cs-routing {
+  margin-top: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #cbe2fb;
+  background: #eef6ff;
+  color: #315d89;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.cs-routing.fallback {
+  background: #fff5e6;
+  border-color: #f0d9a8;
+  color: #8a5a12;
+}
+.cs-routing code {
+  font-family: ui-monospace, "DM Mono", monospace;
+  color: #096dcc;
+}
+.cs-conf {
+  color: #1a9c6e;
+}
+.cs-fallback-tag {
+  color: #c47a16;
+  font-weight: 600;
+}
+
+.cs-chat {
+  margin-top: 14px;
+  border: 1px solid #d2e5f8;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 360px);
+  min-height: 360px;
+  background: #fbfdff;
+}
+.cs-messages {
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.cs-messages .empty-state {
+  margin: auto;
+  color: #9aa9b9;
+  font-size: 13px;
+}
+.cs-msg {
+  max-width: 76%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.cs-msg .cs-role {
+  display: block;
+  font-size: 10px;
+  color: #9aa9b9;
+  margin-bottom: 4px;
+}
+.cs-msg p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+.cs-msg.user {
+  align-self: flex-end;
+  background: #e4f1ff;
+  color: #0c3f6e;
+}
+.cs-msg.assistant {
+  align-self: flex-start;
+  background: #eef2f7;
+  color: #1c3b5e;
+}
+.cs-msg.assistant.error {
+  background: #fff1f1;
+  color: #b3261e;
+}
+.cs-input-bar {
+  border-top: 1px solid #e2ecf7;
+  padding: 10px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+.cs-input-bar textarea {
+  flex: 1;
+  background: #fff;
+  border: 1px solid #cbdff5;
+  border-radius: 8px;
+  color: #1c3b5e;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  resize: none;
+  box-sizing: border-box;
+}
+.cs-input-bar textarea:focus {
+  outline: none;
+  border-color: #1880ee;
+  box-shadow: 0 0 0 3px rgba(24, 128, 238, 0.12);
+}

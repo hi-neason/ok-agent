@@ -832,3 +832,136 @@ select.cfg-select,
   border-color: #568cff;
 }
 
+
+/* ===== SubAgent 配置 TAB（意图路由 main-sub 拓扑）===== */
+.agent-form-grid { display: flex; flex-direction: column; gap: 12px; }
+.form-title { font-size: 14px; font-weight: 600; color: #1c3b5e; margin: 0; }
+.form-hint {
+  margin: 0;
+  padding: 9px 11px;
+  border-radius: 8px;
+  background: #eaf5ff;
+  color: #3973aa;
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+.subagent-card {
+  border: 1px solid #d2e5f8;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #f5faff, #fff 55%);
+  padding: 14px;
+}
+.subagent-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.subagent-card-head strong { font-size: 14px; color: #1c3b5e; }
+.link-button.danger {
+  background: none;
+  border: none;
+  color: #c2413a;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+}
+.link-button.danger:hover { text-decoration: underline; }
+.subagent-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 14px;
+}
+.subagent-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12px;
+  color: #5b7391;
+}
+.subagent-grid .span-2 { grid-column: span 2; }
+.subagent-grid input,
+.subagent-grid select {
+  border: 1px solid #cbdff5;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 13px;
+  color: #1c3b5e;
+  background: #fff;
+  box-sizing: border-box;
+}
+.subagent-grid input:focus,
+.subagent-grid select:focus {
+  outline: none;
+  border-color: #1880ee;
+  box-shadow: 0 0 0 3px rgba(24, 128, 238, 0.12);
+}
+
+/* SubAgent 负责意图多选 */
+.subagent-intents details {
+  border: 1px solid #cbdff5;
+  border-radius: 8px;
+  background: #fff;
+  padding: 0;
+}
+.subagent-intents summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: #1c3b5e;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  user-select: none;
+}
+.subagent-intents summary::-webkit-details-marker { display: none; }
+.subagent-intents summary::before {
+  content: "▸";
+  font-size: 10px;
+  color: #5b7391;
+  transition: transform 0.15s;
+}
+.subagent-intents details[open] summary::before { transform: rotate(90deg); }
+.subagent-intent-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 9px;
+  background: #e8f2fe;
+  color: #1677e8;
+  font-size: 11px;
+  font-weight: 600;
+}
+.intent-option-list {
+  max-height: 240px;
+  overflow-y: auto;
+  border-top: 1px solid #eaf2fb;
+  padding: 6px 0;
+}
+.intent-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  font-size: 13px;
+  color: #1c3b5e;
+  cursor: pointer;
+}
+.intent-option:hover { background: #f3f8fe; }
+.intent-option input[type="checkbox"] {
+  margin: 0;
+  accent-color: #1880ee;
+}
+.intent-option span { flex: 1; }
+.intent-option code {
+  font-size: 11px;
+  color: #5b7391;
+  background: #f0f6fd;
+  padding: 1px 6px;
+  border-radius: 4px;
+}

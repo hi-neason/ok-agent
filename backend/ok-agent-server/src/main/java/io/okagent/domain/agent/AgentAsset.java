@@ -95,6 +95,10 @@ public class AgentAsset {
     @Column(name = "skill_ids_json", nullable = false, columnDefinition = "TEXT")
     private String skillIdsJson;
 
+    /** JSON array of sub-agent declarations for the router (main-sub) topology. "[]" means no sub-agents. */
+    @Column(name = "subagents_json", nullable = false, columnDefinition = "TEXT")
+    private String subagentsJson;
+
     /** JSON object keyed by MCP server id with an allowlist of tool names. */
     @Column(name = "mcp_tool_filters_json", nullable = false, columnDefinition = "TEXT")
     private String mcpToolFiltersJson;
@@ -195,6 +199,7 @@ public class AgentAsset {
         this.tracingEnabled = true;
         this.mcpServerIdsJson = "[]";
         this.skillIdsJson = "[]";
+        this.subagentsJson = "[]";
         this.mcpToolFiltersJson = "{}";
         this.memoryEnabled = false;
         this.memoryFlushMode = AgentMemoryFlushMode.THROTTLED;
@@ -245,6 +250,12 @@ public class AgentAsset {
         this.maxTokens = maxTokens;
         this.mcpServerIdsJson = mcpServerIdsJson;
         this.skillIdsJson = skillIdsJson;
+        this.updatedAt = Instant.now();
+    }
+
+    /** Applies the router's sub-agent declarations (main-sub topology). */
+    public void updateSubagents(String subagentsJson) {
+        this.subagentsJson = subagentsJson == null || subagentsJson.isBlank() ? "[]" : subagentsJson;
         this.updatedAt = Instant.now();
     }
 
@@ -417,6 +428,14 @@ public class AgentAsset {
 
     public String getSkillIdsJson() {
         return skillIdsJson;
+    }
+
+    public String getSubagentsJson() {
+        return subagentsJson;
+    }
+
+    public void setSubagentsJson(String subagentsJson) {
+        this.subagentsJson = subagentsJson == null ? "[]" : subagentsJson;
     }
 
     public String getMcpToolFiltersJson() {

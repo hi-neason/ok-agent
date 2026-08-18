@@ -50,4 +50,5 @@ public record AgentConfigRequest(
         boolean shellEnabled,
         @Size(max = 255) String dockerImage,
         @Min(128) @Max(32768) int sandboxMemoryMb,
-        @Min(1) @Max(64) int sandboxCpuCount) {}
+        @Min(1) @Max(64) int sandboxCpuCount,
+        @Size(max = 200000) String subagentsJson) {}

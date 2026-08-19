@@ -10,6 +10,7 @@
 ## Backend standards
 
 - Use Java 17 as the baseline and Spring Boot 4.x. Do not introduce pre-Java-17 compatibility patterns or unnecessary experimental APIs.
+- Pin the AgentScope dependency (`agentscope-core`, `agentscope-harness`, and any `agentscope-*` artifact) to the officially released version defined by `<agentscope.version>` in `backend/pom.xml` (currently `2.0.2`). Do not reference `-SNAPSHOT` versions or artifacts that exist only via a local `mvn install`. Every developer and CI must be able to build from a clean checkout using only the configured remote repositories; if a needed API is missing in the pinned version, adapt the code to that version instead of bumping to or installing an unreleased build.
 - Use the [AgentScope Java v2 documentation index](https://java.agentscope.io/v2/llms.txt) as the starting point when locating AgentScope APIs, examples, or source implementations. Follow its referenced documentation and then verify behavior against the versioned local AgentScope source when implementation details matter.
 - Organize packages by domain, for example `module/asset`, `module/agent`, `module/release`, `module/observe`, and `module/identity`. Put shared technical capabilities in `shared/`; do not create catch-all `util` packages.
 - Prefix APIs with `/api/v1`. Keep request/response DTOs separate from domain objects and validate all inputs with Bean Validation.

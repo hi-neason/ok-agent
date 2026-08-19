@@ -1,8 +1,45 @@
-.channel-user-row {
+/* Compound selector (0,2,0) overrides the global .table-head/.table-row grid
+   (single-class, 0,1,0) so the channel-user column layout actually applies. */
+.table-head.channel-user-row,
+.table-row.channel-user-row {
   display: grid;
-  grid-template-columns: 2fr 0.9fr 1.3fr 0.8fr 1.3fr 1.3fr;
+  grid-template-columns:
+    minmax(220px, 2fr)
+    minmax(80px, 0.8fr)
+    minmax(120px, 1.2fr)
+    minmax(80px, 0.8fr)
+    minmax(150px, 1.2fr)
+    minmax(150px, 1.2fr);
   gap: 12px;
   align-items: center;
+}
+
+.table-head.channel-user-row span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.table-row.channel-user-row b {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.table-row.channel-user-row small {
+  display: block;
+  margin-top: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.table-row.channel-user-row code {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .channel-user-tools {

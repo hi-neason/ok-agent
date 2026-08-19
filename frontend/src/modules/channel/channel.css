@@ -1,8 +1,45 @@
-.channel-table-row {
+/* Compound selector (0,2,0) overrides the global .table-head/.table-row 6-column
+   grid (single-class, 0,1,0) so the 7-column channel layout actually applies. */
+.table-head.channel-table-row,
+.table-row.channel-table-row {
   display: grid;
-  grid-template-columns: 2fr 0.9fr 1.3fr 1fr 1.2fr 0.7fr 1.2fr;
+  grid-template-columns:
+    minmax(180px, 2fr)
+    minmax(72px, 0.7fr)
+    minmax(120px, 1.2fr)
+    minmax(84px, 0.8fr)
+    minmax(104px, 1fr)
+    72px
+    minmax(180px, 1.2fr);
   gap: 12px;
   align-items: center;
+}
+
+.table-head.channel-table-row span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.table-row.channel-table-row .model-actions {
+  display: flex;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.table-row.channel-table-row b {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.table-row.channel-table-row small {
+  display: block;
+  margin-top: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .channel-status {

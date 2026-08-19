@@ -2,8 +2,8 @@ package io.okagent.service.channel.runtime;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lark.oapi.Client;
 import io.agentscope.core.agent.RuntimeContext;
-import io.agentscope.extensions.channel.feishu.FeishuChannel;
 import io.agentscope.harness.agent.HarnessAgent;
 import io.agentscope.harness.agent.gateway.GatewayBootstrap;
 import io.agentscope.harness.agent.gateway.channel.Channel;
@@ -16,6 +16,7 @@ import io.okagent.domain.channel.ChannelDmScope;
 import io.okagent.repository.agent.AgentAssetRepository;
 import io.okagent.service.agent.HarnessAgentFactory;
 import io.okagent.service.channel.ChannelUserService;
+import io.okagent.service.channel.runtime.feishu.FeishuWsChannel;
 import io.okagent.service.model.ApiKeyCipher;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -74,14 +75,27 @@ public class ChannelGatewayFactory {
         String agentKey = agentAsset.getAgentKey();
 
         Map<String, Object> properties = feishuProperties(asset);
+        String appId = asString(properties, "appId");
+        String appSecret = asString(properties, "appSecret");
+        if (appId == null || appId.isBlank()) {
+            throw new IllegalStateException("Feishu channel '" + asset.getChannelKey() + "' is missing appId");
+        }
+        if (appSecret == null || appSecret.isBlank()) {
+            throw new IllegalStateException("Feishu channel '" + asset.getChannelKey() + "' is missing appSecret");
+        }
+
         ChannelConfig routing = ChannelConfig.builder(asset.getChannelKey())
                 .defaultAgentId(agentKey)
                 .dmScope(toDmScope(asset.getDmScope()))
                 .build();
-        Channel channel = FeishuChannel.fromProperties(asset.getChannelKey(), routing, properties);
+
+        // Official SDK client used both for the WebSocket long connection (inbound) and the
+        // Open API message send (outbound). No public callback URL is required.
+        Client larkClient = Client.newBuilder(appId, appSecret).build();
+        Channel channel = new FeishuWsChannel(asset.getChannelKey(), routing, appId, appSecret, larkClient);
 
         log.info(
-                "Building Feishu channel '{}' bound to agent '{}' (dmScope={})",
+                "Building Feishu long-connection channel '{}' bound to agent '{}' (dmScope={})",
                 asset.getChannelKey(),
                 agentKey,
                 asset.getDmScope());
@@ -158,6 +172,11 @@ public class ChannelGatewayFactory {
         if (value != null && !value.isBlank()) {
             target.put(key, value);
         }
+    }
+
+    private static String asString(Map<String, Object> props, String key) {
+        Object v = props.get(key);
+        return v == null ? null : v.toString();
     }
 
     private DmScope toDmScope(ChannelDmScope scope) {

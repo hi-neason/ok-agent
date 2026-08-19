@@ -336,46 +336,13 @@ export function ChannelPage() {
                     }
                   />
                 </label>
-                <label className="field">
-                  <span>Verification Token（可选）</span>
-                  <input
-                    value={editing.feishu.verificationToken ?? ""}
-                    placeholder="留空则不校验"
-                    onChange={(e) =>
-                      setEditing({
-                        ...editing,
-                        feishu: {
-                          ...editing.feishu,
-                          verificationToken: e.target.value,
-                        },
-                      })
-                    }
-                  />
-                </label>
-                <label className="field">
-                  <span>Encrypt Key（可选）</span>
-                  <input
-                    value={editing.feishu.encryptKey ?? ""}
-                    placeholder="配置后回调体将被 AES 加密"
-                    onChange={(e) =>
-                      setEditing({
-                        ...editing,
-                        feishu: { ...editing.feishu, encryptKey: e.target.value },
-                      })
-                    }
-                  />
-                </label>
               </div>
 
-              {editingId && (
-                <div className="channel-callback">
-                  <span className="kicker">飞书事件订阅回调地址</span>
-                  <code>{editing.feishu.callbackPath ?? ""}</code>
-                  <small>
-                    将此地址填入飞书开放平台「事件订阅」的请求网址；本地开发需使用内网穿透暴露该地址。
-                  </small>
-                </div>
-              )}
+              <div className="channel-hint">
+                保存后系统通过飞书长连接（WebSocket）自动接收消息，<b>无需公网回调地址或内网穿透</b>。
+                请在飞书开放平台确认：① 开启「机器人」能力；② 事件订阅选择「使用长连接接收事件」，
+                并添加 <code>im.message.receive_v1</code> 事件；③ 发布应用版本。单聊直接对话，群聊需 @ 机器人。
+              </div>
 
               {error && <div className="channel-form-error">{error}</div>}
 

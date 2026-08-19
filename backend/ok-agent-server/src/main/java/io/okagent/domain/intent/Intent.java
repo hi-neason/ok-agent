@@ -64,11 +64,7 @@ public class Intent {
         this.updatedAt = createdAt;
     }
 
-    public void applyDefinition(
-            String name,
-            String description,
-            String examplesJson,
-            int sortOrder) {
+    public void applyDefinition(String name, String description, String examplesJson, int sortOrder) {
         this.name = name;
         this.description = description == null ? "" : description;
         this.examplesJson = examplesJson == null || examplesJson.isBlank() ? "[]" : examplesJson;

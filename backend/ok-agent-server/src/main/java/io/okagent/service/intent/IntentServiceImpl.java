@@ -33,9 +33,8 @@ public class IntentServiceImpl implements IntentService {
     @Transactional(readOnly = true)
     public List<IntentNode> getTree() {
         List<Intent> all = intents.findAll();
-        Map<UUID, List<Intent>> byParent = all.stream()
-                .filter(i -> i.getParentId() != null)
-                .collect(Collectors.groupingBy(Intent::getParentId));
+        Map<UUID, List<Intent>> byParent =
+                all.stream().filter(i -> i.getParentId() != null).collect(Collectors.groupingBy(Intent::getParentId));
         List<Intent> roots = intents.findByParentIdIsNullOrderByNameAsc();
         return roots.stream().map(r -> toNode(r, byParent)).toList();
     }
@@ -61,13 +60,12 @@ public class IntentServiceImpl implements IntentService {
         var intent = new Intent(
                 UUID.randomUUID(),
                 request.intentKey().trim(),
-                request.name() == null ? request.intentKey().trim() : request.name().trim(),
+                request.name() == null
+                        ? request.intentKey().trim()
+                        : request.name().trim(),
                 request.parentId());
         intent.applyDefinition(
-                intent.getName(),
-                request.description(),
-                writeExamples(request.examples()),
-                request.sortOrder());
+                intent.getName(), request.description(), writeExamples(request.examples()), request.sortOrder());
         return toDto(intents.save(intent));
     }
 
@@ -97,8 +95,7 @@ public class IntentServiceImpl implements IntentService {
     public void delete(UUID id) {
         var intent = find(id);
         if (intents.countByParentId(id) > 0) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT, "cannot delete an intent that still has children");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "cannot delete an intent that still has children");
         }
         intents.delete(intent);
     }

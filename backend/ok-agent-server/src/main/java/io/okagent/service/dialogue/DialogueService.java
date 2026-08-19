@@ -32,12 +32,7 @@ public interface DialogueService {
      * on assistant turns so the observability UI can expand the turn into its span tree.
      */
     DialogueTurn recordMessage(
-            String sessionId,
-            String role,
-            String content,
-            String model,
-            Integer latencyMs,
-            String traceId);
+            String sessionId, String role, String content, String model, Integer latencyMs, String traceId);
 
     /** Refreshes a session's last-activity timestamp. */
     void touchSession(String sessionId);

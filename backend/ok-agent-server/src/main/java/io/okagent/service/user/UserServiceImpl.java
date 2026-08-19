@@ -29,8 +29,8 @@ public class UserServiceImpl implements UserService {
     public List<UserResponse> list(UUID groupIdFilter) {
         List<User> users =
                 groupIdFilter != null ? userRepository.findByGroupId(groupIdFilter) : userRepository.findAll();
-        Map<UUID, String> groupNames = groupRepository.findAll().stream()
-                .collect(Collectors.toMap(UserGroup::getId, UserGroup::getName));
+        Map<UUID, String> groupNames =
+                groupRepository.findAll().stream().collect(Collectors.toMap(UserGroup::getId, UserGroup::getName));
         return users.stream()
                 .map(user -> UserResponse.from(user, groupName(groupNames, user.getGroupId())))
                 .toList();
@@ -74,7 +74,13 @@ public class UserServiceImpl implements UserService {
         if (groupId != null && !groupRepository.existsById(groupId)) {
             throw new UserConflictException("GROUP_NOT_FOUND");
         }
-        user.update(request.username(), request.displayName(), request.email(), request.phone(), groupId, request.enabled());
+        user.update(
+                request.username(),
+                request.displayName(),
+                request.email(),
+                request.phone(),
+                groupId,
+                request.enabled());
         return UserResponse.from(userRepository.save(user), resolveGroupName(groupId));
     }
 

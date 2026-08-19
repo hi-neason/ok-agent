@@ -33,8 +33,7 @@ public record UserPersonaResponse(
     }
 
     public static UserPersonaResponse empty(String userId, UUID agentId, String memory) {
-        return new UserPersonaResponse(
-                userId, agentId, List.of(), Map.of(), null, null, memory, null, null);
+        return new UserPersonaResponse(userId, agentId, List.of(), Map.of(), null, null, memory, null, null);
     }
 
     private static List<String> parseTags(String value, ObjectMapper json) {

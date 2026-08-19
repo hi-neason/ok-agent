@@ -29,9 +29,7 @@ public class UserPersonaController {
     private final UserPersonaRepository personas;
 
     public UserPersonaController(
-            UserPersonaService service,
-            AgentAssetRepository agents,
-            UserPersonaRepository personas) {
+            UserPersonaService service, AgentAssetRepository agents, UserPersonaRepository personas) {
         this.service = service;
         this.agents = agents;
         this.personas = personas;
@@ -44,9 +42,7 @@ public class UserPersonaController {
                 .collect(Collectors.groupingBy(
                         UserPersonaRepository.PersonaCoverageRow::getUserId,
                         LinkedHashMap::new,
-                        Collectors.mapping(
-                                UserPersonaRepository.PersonaCoverageRow::getAgentId,
-                                Collectors.toList())));
+                        Collectors.mapping(UserPersonaRepository.PersonaCoverageRow::getAgentId, Collectors.toList())));
     }
 
     /** Lists every per-agent persona stored for a user. */
@@ -62,41 +58,32 @@ public class UserPersonaController {
      * preview and as the single source of truth for injection behavior.
      */
     @GetMapping("/users/{userId}/agents/{agentId}/injection-preview")
-    public Map<String, String> injectionPreview(
-            @PathVariable String userId, @PathVariable UUID agentId) {
-        AgentAsset agent = agents
-                .findById(agentId)
+    public Map<String, String> injectionPreview(@PathVariable String userId, @PathVariable UUID agentId) {
+        AgentAsset agent = agents.findById(agentId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "agent not found"));
         String mode = agent.getPersonaInjectionMode() == null
                 ? "NONE"
                 : agent.getPersonaInjectionMode().name();
-        String block = service.getProfileBlock(
-                userId, agentId, mode, agent.getPersonaPromptTemplate());
-        return Map.of(
-                "mode", mode,
-                "block", block == null ? "" : block.strip());
+        String block = service.getProfileBlock(userId, agentId, mode, agent.getPersonaPromptTemplate());
+        return Map.of("mode", mode, "block", block == null ? "" : block.strip());
     }
 
     /** Returns the persona a specific agent holds for a user (empty shell if none). */
     @GetMapping("/users/{userId}/agents/{agentId}")
-    public UserPersonaResponse get(
-            @PathVariable String userId, @PathVariable UUID agentId) {
+    public UserPersonaResponse get(@PathVariable String userId, @PathVariable UUID agentId) {
         return service.getOrInit(userId, agentId);
     }
 
     /** Updates the structured persona fields for a (user, agent). */
     @PutMapping("/users/{userId}/agents/{agentId}")
     public UserPersonaResponse upsert(
-            @PathVariable String userId,
-            @PathVariable UUID agentId,
-            @RequestBody UpsertPersonaRequest request) {
+            @PathVariable String userId, @PathVariable UUID agentId, @RequestBody UpsertPersonaRequest request) {
         return service.upsert(userId, agentId, request);
     }
 
     /** Returns the long-term memory a specific agent holds for a user. */
     @GetMapping("/users/{userId}/agents/{agentId}/memory")
-    public Map<String, String> getMemory(
-            @PathVariable String userId, @PathVariable UUID agentId) {
+    public Map<String, String> getMemory(@PathVariable String userId, @PathVariable UUID agentId) {
         return Map.of("memory", service.readMemory(userId, agentId));
     }
 
@@ -104,9 +91,7 @@ public class UserPersonaController {
     @PostMapping("/users/{userId}/agents/{agentId}/memory")
     @ResponseStatus(HttpStatus.CREATED)
     public Map<String, String> appendMemory(
-            @PathVariable String userId,
-            @PathVariable UUID agentId,
-            @RequestBody AppendMemoryRequest request) {
+            @PathVariable String userId, @PathVariable UUID agentId, @RequestBody AppendMemoryRequest request) {
         service.appendMemory(userId, agentId, request.delta());
         return Map.of("memory", service.readMemory(userId, agentId));
     }

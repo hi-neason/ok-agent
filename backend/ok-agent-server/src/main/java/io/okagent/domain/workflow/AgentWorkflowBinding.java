@@ -38,11 +38,7 @@ public class AgentWorkflowBinding {
     protected AgentWorkflowBinding() {}
 
     public AgentWorkflowBinding(
-            UUID id,
-            UUID agentId,
-            UUID catalogItemId,
-            String descriptionOverride,
-            String parameterDefaultsJson) {
+            UUID id, UUID agentId, UUID catalogItemId, String descriptionOverride, String parameterDefaultsJson) {
         this.id = id;
         this.agentId = agentId;
         this.catalogItemId = catalogItemId;
@@ -64,12 +60,35 @@ public class AgentWorkflowBinding {
         this.updatedAt = Instant.now();
     }
 
-    public UUID getId() { return id; }
-    public UUID getAgentId() { return agentId; }
-    public UUID getCatalogItemId() { return catalogItemId; }
-    public String getDescriptionOverride() { return descriptionOverride; }
-    public String getParameterDefaultsJson() { return parameterDefaultsJson; }
-    public boolean isEnabled() { return enabled; }
-    public Instant getCreatedAt() { return createdAt; }
-    public Instant getUpdatedAt() { return updatedAt; }
+    public UUID getId() {
+        return id;
+    }
+
+    public UUID getAgentId() {
+        return agentId;
+    }
+
+    public UUID getCatalogItemId() {
+        return catalogItemId;
+    }
+
+    public String getDescriptionOverride() {
+        return descriptionOverride;
+    }
+
+    public String getParameterDefaultsJson() {
+        return parameterDefaultsJson;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
 }

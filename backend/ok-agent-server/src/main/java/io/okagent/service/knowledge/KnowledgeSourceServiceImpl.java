@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.okagent.domain.knowledge.KnowledgeCatalogItem;
 import io.okagent.domain.knowledge.KnowledgeMetadataStatus;
 import io.okagent.domain.knowledge.KnowledgeSource;
-import io.okagent.domain.knowledge.KnowledgeSourceType;
 import io.okagent.repository.knowledge.KnowledgeCatalogItemRepository;
 import io.okagent.repository.knowledge.KnowledgeSourceRepository;
 import io.okagent.service.model.ApiKeyCipher;
@@ -88,7 +87,9 @@ public class KnowledgeSourceServiceImpl implements KnowledgeSourceService {
                 r.sourceType(),
                 r.baseUrl().trim(),
                 writeConfig(r),
-                (r.apiKey() == null || r.apiKey().isBlank()) ? null : cipher.encrypt(r.apiKey().trim()));
+                (r.apiKey() == null || r.apiKey().isBlank())
+                        ? null
+                        : cipher.encrypt(r.apiKey().trim()));
         return response(sources.save(source));
     }
 
@@ -193,7 +194,8 @@ public class KnowledgeSourceServiceImpl implements KnowledgeSourceService {
     @Override
     @Transactional(readOnly = true)
     public List<KnowledgeCatalogItemResponse> catalogItems(UUID sourceId) {
-        var sourceName = sources.findById(sourceId).map(KnowledgeSource::getName).orElse("");
+        var sourceName =
+                sources.findById(sourceId).map(KnowledgeSource::getName).orElse("");
         return items.findBySourceId(sourceId).stream()
                 .sorted(Comparator.comparing(KnowledgeCatalogItem::getName))
                 .map(i -> itemResponse(i, sourceName))
@@ -204,10 +206,14 @@ public class KnowledgeSourceServiceImpl implements KnowledgeSourceService {
     @Transactional
     public KnowledgeCatalogItemResponse updateCatalogDescription(UUID itemId, String description) {
         var item = items.findById(itemId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Knowledge catalog item not found"));
+                .orElseThrow(
+                        () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Knowledge catalog item not found"));
         var text = description == null ? "" : description.trim();
-        item.updateMetadata(text, text.isBlank() ? KnowledgeMetadataStatus.NEEDS_REVIEW : KnowledgeMetadataStatus.READY);
-        var source = sources.findById(item.getSourceId()).map(KnowledgeSource::getName).orElse("");
+        item.updateMetadata(
+                text, text.isBlank() ? KnowledgeMetadataStatus.NEEDS_REVIEW : KnowledgeMetadataStatus.READY);
+        var source = sources.findById(item.getSourceId())
+                .map(KnowledgeSource::getName)
+                .orElse("");
         return itemResponse(items.save(item), source);
     }
 
@@ -215,7 +221,8 @@ public class KnowledgeSourceServiceImpl implements KnowledgeSourceService {
     KnowledgeSourceConfig toConfig(KnowledgeSource source) {
         Map<String, Object> config = readMap(source.getConfigJson());
         Map<String, Object> secrets = new LinkedHashMap<>();
-        if (source.getSecretsCiphertext() != null && !source.getSecretsCiphertext().isBlank()) {
+        if (source.getSecretsCiphertext() != null
+                && !source.getSecretsCiphertext().isBlank()) {
             secrets.put("apiKey", cipher.decrypt(source.getSecretsCiphertext()));
         }
         int retrieveTimeout = DEFAULT_RETRIEVE_TIMEOUT;
@@ -238,8 +245,8 @@ public class KnowledgeSourceServiceImpl implements KnowledgeSourceService {
         return providers.stream()
                 .filter(p -> p.type().equalsIgnoreCase(source.getSourceType().name()))
                 .findFirst()
-                .orElseThrow(() -> new IllegalStateException(
-                        "No knowledge provider for type " + source.getSourceType()));
+                .orElseThrow(
+                        () -> new IllegalStateException("No knowledge provider for type " + source.getSourceType()));
     }
 
     private KnowledgeSource find(UUID id) {
@@ -253,7 +260,8 @@ public class KnowledgeSourceServiceImpl implements KnowledgeSourceService {
 
     private KnowledgeSourceResponse response(KnowledgeSource s, boolean testPassed, String message) {
         var config = readMap(s.getConfigJson());
-        int retrieve = config.get("retrieveTimeoutSeconds") instanceof Number n ? n.intValue() : DEFAULT_RETRIEVE_TIMEOUT;
+        int retrieve =
+                config.get("retrieveTimeoutSeconds") instanceof Number n ? n.intValue() : DEFAULT_RETRIEVE_TIMEOUT;
         int connect = config.get("connectTimeoutSeconds") instanceof Number n ? n.intValue() : DEFAULT_CONNECT_TIMEOUT;
         return new KnowledgeSourceResponse(
                 s.getId(),
@@ -293,10 +301,16 @@ public class KnowledgeSourceServiceImpl implements KnowledgeSourceService {
 
     private String writeConfig(KnowledgeSourceRequest r) {
         Map<String, Object> config = new LinkedHashMap<>();
-        config.put("retrieveTimeoutSeconds", r.retrieveTimeoutSeconds() == null || r.retrieveTimeoutSeconds() <= 0
-                ? DEFAULT_RETRIEVE_TIMEOUT : r.retrieveTimeoutSeconds());
-        config.put("connectTimeoutSeconds", r.connectTimeoutSeconds() == null || r.connectTimeoutSeconds() <= 0
-                ? DEFAULT_CONNECT_TIMEOUT : r.connectTimeoutSeconds());
+        config.put(
+                "retrieveTimeoutSeconds",
+                r.retrieveTimeoutSeconds() == null || r.retrieveTimeoutSeconds() <= 0
+                        ? DEFAULT_RETRIEVE_TIMEOUT
+                        : r.retrieveTimeoutSeconds());
+        config.put(
+                "connectTimeoutSeconds",
+                r.connectTimeoutSeconds() == null || r.connectTimeoutSeconds() <= 0
+                        ? DEFAULT_CONNECT_TIMEOUT
+                        : r.connectTimeoutSeconds());
         try {
             return json.writeValueAsString(config);
         } catch (Exception e) {

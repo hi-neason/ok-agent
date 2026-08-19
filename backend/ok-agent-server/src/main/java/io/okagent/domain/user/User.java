@@ -67,13 +67,7 @@ public class User {
         this.updatedAt = this.createdAt;
     }
 
-    public void update(
-            String username,
-            String displayName,
-            String email,
-            String phone,
-            UUID groupId,
-            boolean enabled) {
+    public void update(String username, String displayName, String email, String phone, UUID groupId, boolean enabled) {
         this.username = username;
         this.displayName = displayName;
         this.email = email;

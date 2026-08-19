@@ -102,10 +102,7 @@ public class DifyWorkflowProvider implements WorkflowProvider {
 
     @Override
     public WorkflowExecutionResult execute(
-            WorkflowSourceConfig config,
-            String remoteWorkflowId,
-            Map<String, Object> inputs,
-            String endUserId) {
+            WorkflowSourceConfig config, String remoteWorkflowId, Map<String, Object> inputs, String endUserId) {
         long started = System.nanoTime();
         try {
             ObjectNode body = json.createObjectNode();
@@ -123,17 +120,21 @@ public class DifyWorkflowProvider implements WorkflowProvider {
 
             HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() / 100 != 2) {
-                return WorkflowExecutionResult.failure(null, "Dify returned HTTP " + response.statusCode()
-                        + ": " + truncate(response.body(), 500));
+                return WorkflowExecutionResult.failure(
+                        null, "Dify returned HTTP " + response.statusCode() + ": " + truncate(response.body(), 500));
             }
             JsonNode root = json.readTree(response.body());
             JsonNode data = root.path("data");
             String status = data.path("status").asText("");
             String runId = firstNonBlank(root.path("workflow_run_id"), data.path("id"));
-            Double elapsed = data.has("elapsed_time") && !data.path("elapsed_time").isNull()
-                    ? data.path("elapsed_time").asDouble() : null;
-            Integer tokens = data.has("total_tokens") && !data.path("total_tokens").isNull()
-                    ? data.path("total_tokens").asInt() : null;
+            Double elapsed =
+                    data.has("elapsed_time") && !data.path("elapsed_time").isNull()
+                            ? data.path("elapsed_time").asDouble()
+                            : null;
+            Integer tokens =
+                    data.has("total_tokens") && !data.path("total_tokens").isNull()
+                            ? data.path("total_tokens").asInt()
+                            : null;
 
             if ("succeeded".equalsIgnoreCase(status)) {
                 String summary = summariseOutputs(data.path("outputs"));
@@ -170,8 +171,8 @@ public class DifyWorkflowProvider implements WorkflowProvider {
                 .build();
         HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() / 100 != 2) {
-            throw new IllegalStateException("HTTP " + response.statusCode() + " from Dify: "
-                    + truncate(response.body(), 300));
+            throw new IllegalStateException(
+                    "HTTP " + response.statusCode() + " from Dify: " + truncate(response.body(), 300));
         }
         return json.readTree(response.body());
     }
@@ -196,7 +197,9 @@ public class DifyWorkflowProvider implements WorkflowProvider {
                     prop.put("type", jsonTypeFor(field.getKey(), def));
                     String label = def.path("label").asText("");
                     if (!label.isBlank()) prop.put("description", label);
-                    if (def.has("options") && def.path("options").isArray() && !def.path("options").isEmpty()) {
+                    if (def.has("options")
+                            && def.path("options").isArray()
+                            && !def.path("options").isEmpty()) {
                         prop.set("enum", def.path("options"));
                     }
                     if (def.has("default") && !def.path("default").isNull()) {

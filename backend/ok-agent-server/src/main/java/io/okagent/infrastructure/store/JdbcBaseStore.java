@@ -40,9 +40,9 @@ public class JdbcBaseStore implements BaseStore {
     public StoreItem get(List<String> namespace, String key) {
         String ns = namespace(namespace);
         List<Map<String, Object>> rows = jdbc.queryForList(
-                "SELECT item_key, value_json, version FROM workspace_kv "
-                        + "WHERE namespace = ? AND item_key = ?",
-                ns, key);
+                "SELECT item_key, value_json, version FROM workspace_kv " + "WHERE namespace = ? AND item_key = ?",
+                ns,
+                key);
         if (rows.isEmpty()) {
             return null;
         }
@@ -61,12 +61,13 @@ public class JdbcBaseStore implements BaseStore {
                         + "VALUES (?, ?, ?, 1, NOW(6), NOW(6)) "
                         + "ON DUPLICATE KEY UPDATE value_json = VALUES(value_json), "
                         + "version = version + 1, updated_at = NOW(6)",
-                ns, key, valueJson);
+                ns,
+                key,
+                valueJson);
     }
 
     @Override
-    public boolean putIfVersion(
-            List<String> namespace, String key, Map<String, Object> value, long expectedVersion) {
+    public boolean putIfVersion(List<String> namespace, String key, Map<String, Object> value, long expectedVersion) {
         String ns = namespace(namespace);
         String valueJson = write(value);
         if (expectedVersion == 0L) {
@@ -75,13 +76,18 @@ public class JdbcBaseStore implements BaseStore {
                     "INSERT IGNORE INTO workspace_kv "
                             + "(namespace, item_key, value_json, version, created_at, updated_at) "
                             + "VALUES (?, ?, ?, 1, NOW(6), NOW(6))",
-                    ns, key, valueJson);
+                    ns,
+                    key,
+                    valueJson);
             return rows == 1;
         }
         int rows = jdbc.update(
                 "UPDATE workspace_kv SET value_json = ?, version = version + 1, updated_at = NOW(6) "
                         + "WHERE namespace = ? AND item_key = ? AND version = ?",
-                valueJson, ns, key, expectedVersion);
+                valueJson,
+                ns,
+                key,
+                expectedVersion);
         return rows == 1;
     }
 
@@ -91,7 +97,9 @@ public class JdbcBaseStore implements BaseStore {
         List<Map<String, Object>> rows = jdbc.queryForList(
                 "SELECT item_key, value_json, version FROM workspace_kv "
                         + "WHERE namespace = ? ORDER BY item_key LIMIT ? OFFSET ?",
-                ns, limit, offset);
+                ns,
+                limit,
+                offset);
         List<StoreItem> items = new ArrayList<>(rows.size());
         for (Map<String, Object> row : rows) {
             String k = (String) row.get("item_key");

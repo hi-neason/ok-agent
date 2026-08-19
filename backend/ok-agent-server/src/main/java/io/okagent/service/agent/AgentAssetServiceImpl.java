@@ -8,6 +8,7 @@ import io.okagent.repository.mcp.McpServerRepository;
 import io.okagent.repository.mcp.McpToolSnapshotRepository;
 import io.okagent.repository.model.ModelAssetRepository;
 import io.okagent.repository.skill.SkillAssetRepository;
+import io.okagent.service.channel.runtime.AgentConfigChangedEvent;
 import io.okagent.web.agent.AgentAssetResponse;
 import io.okagent.web.agent.AgentConfigRequest;
 import io.okagent.web.agent.AgentConfigValidationCheck;
@@ -29,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,6 +46,7 @@ public class AgentAssetServiceImpl implements AgentAssetService {
     private final SkillAssetRepository skills;
     private final McpToolSnapshotRepository mcpToolSnapshots;
     private final Validator validator;
+    private final ApplicationEventPublisher events;
     private final ObjectMapper json = new ObjectMapper();
 
     public AgentAssetServiceImpl(
@@ -52,13 +55,15 @@ public class AgentAssetServiceImpl implements AgentAssetService {
             McpServerRepository mcpServers,
             SkillAssetRepository skills,
             McpToolSnapshotRepository mcpToolSnapshots,
-            Validator validator) {
+            Validator validator,
+            ApplicationEventPublisher events) {
         this.agents = agents;
         this.models = models;
         this.mcpServers = mcpServers;
         this.skills = skills;
         this.mcpToolSnapshots = mcpToolSnapshots;
         this.validator = validator;
+        this.events = events;
     }
 
     @Override
@@ -147,9 +152,7 @@ public class AgentAssetServiceImpl implements AgentAssetService {
                 request.sandboxMemoryMb(),
                 request.sandboxCpuCount());
         agent.applyPersonaConfig(
-                request.personaExtractEnabled(),
-                request.personaInjectionMode(),
-                text(request.personaPromptTemplate()));
+                request.personaExtractEnabled(), request.personaInjectionMode(), text(request.personaPromptTemplate()));
         agent.updateSubagents(request.subagentsJson());
         agent.setUpdatedBy("system");
         var saved = agents.save(agent);
@@ -160,6 +163,7 @@ public class AgentAssetServiceImpl implements AgentAssetService {
                 saved.getMaxIters(),
                 saved.getModelTimeoutSeconds(),
                 saved.getToolTimeoutSeconds());
+        events.publishEvent(new AgentConfigChangedEvent(saved.getId()));
         return AgentAssetResponse.from(saved, modelNameOf(saved.getModelAssetId()));
     }
 
@@ -415,8 +419,7 @@ public class AgentAssetServiceImpl implements AgentAssetService {
         }
         report.check(
                 "capabilities.consistent",
-                !report.hasError("DOCKER_IMAGE_REQUIRED")
-                        && !report.hasError("ISOLATION_SCOPE_INVALID"),
+                !report.hasError("DOCKER_IMAGE_REQUIRED") && !report.hasError("ISOLATION_SCOPE_INVALID"),
                 "Workspace/docker/isolation constraints satisfied");
     }
 
@@ -484,10 +487,11 @@ public class AgentAssetServiceImpl implements AgentAssetService {
     }
 
     private Map<UUID, String> modelNames() {
-        return models.findAll().stream().collect(Collectors.toMap(
-                io.okagent.domain.model.ModelAsset::getId,
-                io.okagent.domain.model.ModelAsset::getName,
-                (a, b) -> a));
+        return models.findAll().stream()
+                .collect(Collectors.toMap(
+                        io.okagent.domain.model.ModelAsset::getId,
+                        io.okagent.domain.model.ModelAsset::getName,
+                        (a, b) -> a));
     }
 
     private Map<UUID, String> modelNameOf(UUID modelAssetId) {

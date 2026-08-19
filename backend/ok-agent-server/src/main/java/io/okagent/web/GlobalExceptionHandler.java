@@ -29,8 +29,7 @@ public class GlobalExceptionHandler {
         if (status == null) {
             status = HttpStatus.INTERNAL_SERVER_ERROR;
         }
-        return ResponseEntity.status(status)
-                .body(baseBody(status, ex.getReason(), request));
+        return ResponseEntity.status(status).body(baseBody(status, ex.getReason(), request));
     }
 
     /**
@@ -53,8 +52,7 @@ public class GlobalExceptionHandler {
         return fe.getField() + ": " + fe.getDefaultMessage();
     }
 
-    private static Map<String, Object> baseBody(
-            HttpStatus status, String message, HttpServletRequest request) {
+    private static Map<String, Object> baseBody(HttpStatus status, String message, HttpServletRequest request) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("timestamp", Instant.now().toString());
         body.put("status", status.value());

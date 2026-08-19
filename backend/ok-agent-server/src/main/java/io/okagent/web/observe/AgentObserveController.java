@@ -45,8 +45,7 @@ public class AgentObserveController {
             @RequestParam(required = false) String to,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return PageResponse.of(
-                dialogue.search(new DialogueQuery(sessionId, userId, agentId, from, to), page, size));
+        return PageResponse.of(dialogue.search(new DialogueQuery(sessionId, userId, agentId, from, to), page, size));
     }
 
     /** Returns the full, ordered conversation of a session for the detail / replay view. */

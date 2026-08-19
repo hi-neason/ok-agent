@@ -112,18 +112,59 @@ public class KnowledgeCatalogItem {
         this.updatedAt = Instant.now();
     }
 
-    public UUID getId() { return id; }
-    public UUID getSourceId() { return sourceId; }
-    public String getRemoteKnowledgeId() { return remoteKnowledgeId; }
-    public String getName() { return name; }
-    public int getDocumentCount() { return documentCount; }
-    public long getWordCount() { return wordCount; }
-    public boolean isActive() { return active; }
-    public String getTagsJson() { return tagsJson; }
-    public String getRemoteDescription() { return remoteDescription; }
-    public String getDescription() { return description; }
-    public String getRemoteRawJson() { return remoteRawJson; }
-    public KnowledgeMetadataStatus getMetadataStatus() { return metadataStatus; }
-    public Instant getDiscoveredAt() { return discoveredAt; }
-    public Instant getUpdatedAt() { return updatedAt; }
+    public UUID getId() {
+        return id;
+    }
+
+    public UUID getSourceId() {
+        return sourceId;
+    }
+
+    public String getRemoteKnowledgeId() {
+        return remoteKnowledgeId;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public int getDocumentCount() {
+        return documentCount;
+    }
+
+    public long getWordCount() {
+        return wordCount;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public String getTagsJson() {
+        return tagsJson;
+    }
+
+    public String getRemoteDescription() {
+        return remoteDescription;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public String getRemoteRawJson() {
+        return remoteRawJson;
+    }
+
+    public KnowledgeMetadataStatus getMetadataStatus() {
+        return metadataStatus;
+    }
+
+    public Instant getDiscoveredAt() {
+        return discoveredAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
 }

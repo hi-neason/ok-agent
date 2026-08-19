@@ -57,11 +57,11 @@ public class PersonaExtractionService {
     private final UserPersonaRepository personas;
     private final UserPersonaService personaService;
     private final ObjectMapper json = new ObjectMapper();
-    private final HttpClient http = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(15))
-            .build();
+    private final HttpClient http =
+            HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build();
     private final ExecutorService executor = Executors.newFixedThreadPool(2, new ThreadFactory() {
         private final AtomicInteger seq = new AtomicInteger();
+
         @Override
         public Thread newThread(Runnable r) {
             Thread t = new Thread(r, "persona-extract-" + seq.incrementAndGet());
@@ -95,16 +95,17 @@ public class PersonaExtractionService {
             try {
                 runExtraction(agent, userId, sessionId);
             } catch (Exception e) {
-                log.warn("Persona extraction failed for agent={}, userId={}: {}",
-                        agentId, userId, e.getMessage());
+                log.warn("Persona extraction failed for agent={}, userId={}: {}", agentId, userId, e.getMessage());
             }
         });
     }
 
     private void runExtraction(AgentAsset agent, String userId, String sessionId) {
         UUID agentId = agent.getId();
-        UserPersona persona = personas.findByIdUserIdAndIdAgentId(userId, agentId).orElse(null);
-        if (persona != null && persona.getLastExtractedAt() != null
+        UserPersona persona =
+                personas.findByIdUserIdAndIdAgentId(userId, agentId).orElse(null);
+        if (persona != null
+                && persona.getLastExtractedAt() != null
                 && Duration.between(persona.getLastExtractedAt(), Instant.now()).compareTo(THROTTLE) < 0) {
             log.debug("Persona extraction throttled for agent={}, userId={}", agentId, userId);
             return;
@@ -138,10 +139,14 @@ public class PersonaExtractionService {
     private String renderExisting(UserPersona persona) {
         if (persona == null) return "(none)";
         StringBuilder sb = new StringBuilder();
-        if (persona.getSummary() != null) sb.append("summary: ").append(persona.getSummary()).append('\n');
-        if (persona.getTagsJson() != null) sb.append("tags: ").append(persona.getTagsJson()).append('\n');
-        if (persona.getPreferencesJson() != null) sb.append("preferences: ").append(persona.getPreferencesJson()).append('\n');
-        if (persona.getFacts() != null) sb.append("facts: ").append(persona.getFacts()).append('\n');
+        if (persona.getSummary() != null)
+            sb.append("summary: ").append(persona.getSummary()).append('\n');
+        if (persona.getTagsJson() != null)
+            sb.append("tags: ").append(persona.getTagsJson()).append('\n');
+        if (persona.getPreferencesJson() != null)
+            sb.append("preferences: ").append(persona.getPreferencesJson()).append('\n');
+        if (persona.getFacts() != null)
+            sb.append("facts: ").append(persona.getFacts()).append('\n');
         return sb.length() == 0 ? "(none)" : sb.toString();
     }
 
@@ -164,7 +169,8 @@ public class PersonaExtractionService {
                   "facts": "关键事实，分号分隔",
                   "memoryDelta": "一段自然语言的长期记忆增量（会追加到用户 MEMORY.md），没有则留空"
                 }
-                """.formatted(existing, transcript);
+                """
+                .formatted(existing, transcript);
     }
 
     private String callLlm(ModelAsset model, String prompt) {
@@ -226,8 +232,12 @@ public class PersonaExtractionService {
                 p.setLastExtractedAt(Instant.now());
                 personas.save(p);
             });
-            log.info("Persona extracted for agent={}, userId={} (tags={}, facts_len={})",
-                    agentId, userId, tags.size(), facts == null ? 0 : facts.length());
+            log.info(
+                    "Persona extracted for agent={}, userId={} (tags={}, facts_len={})",
+                    agentId,
+                    userId,
+                    tags.size(),
+                    facts == null ? 0 : facts.length());
         } catch (Exception e) {
             log.warn("Failed to apply persona extraction: {}", e.getMessage());
         }

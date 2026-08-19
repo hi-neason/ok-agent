@@ -31,10 +31,9 @@ public class WorkflowTools {
     @Tool(
             name = "list_workflows",
             readOnly = true,
-            description =
-                    "List the external workflows available to this agent. Each entry has an id, a"
-                            + " name and a one-line description of when to use it. Call this first when"
-                            + " the user wants to run/trigger/execute a workflow, and pick the best match.")
+            description = "List the external workflows available to this agent. Each entry has an id, a"
+                    + " name and a one-line description of when to use it. Call this first when"
+                    + " the user wants to run/trigger/execute a workflow, and pick the best match.")
     public String listWorkflows(RuntimeContext ctx) {
         try {
             List<BoundWorkflow> workflows = catalog.listForAgent(agentId);
@@ -43,10 +42,14 @@ public class WorkflowTools {
             }
             var sb = new StringBuilder();
             for (var w : workflows) {
-                sb.append("- id: ").append(w.catalogItemId())
-                        .append("\n  name: ").append(w.name())
-                        .append("\n  source: ").append(w.sourceKey())
-                        .append("\n  description: ").append(safe(w.description()))
+                sb.append("- id: ")
+                        .append(w.catalogItemId())
+                        .append("\n  name: ")
+                        .append(w.name())
+                        .append("\n  source: ")
+                        .append(w.sourceKey())
+                        .append("\n  description: ")
+                        .append(safe(w.description()))
                         .append('\n');
             }
             return sb.toString().trim();
@@ -59,10 +62,9 @@ public class WorkflowTools {
     @Tool(
             name = "describe_workflow",
             readOnly = true,
-            description =
-                    "Get the input parameter schema (JSON Schema) of a workflow. You MUST call this"
-                            + " before start_workflow so you know exactly which parameters to provide"
-                            + " and their types. Do not invent parameters that are not in the schema.")
+            description = "Get the input parameter schema (JSON Schema) of a workflow. You MUST call this"
+                    + " before start_workflow so you know exactly which parameters to provide"
+                    + " and their types. Do not invent parameters that are not in the schema.")
     public String describeWorkflow(
             RuntimeContext ctx,
             @ToolParam(name = "workflowId", description = "The catalog item id from list_workflows")
@@ -73,7 +75,8 @@ public class WorkflowTools {
             var sb = new StringBuilder();
             sb.append("name: ").append(detail.name()).append('\n');
             sb.append("input_schema:\n").append(detail.inputSchemaJson());
-            if (detail.parameterDefaultsJson() != null && !detail.parameterDefaultsJson().isBlank()) {
+            if (detail.parameterDefaultsJson() != null
+                    && !detail.parameterDefaultsJson().isBlank()) {
                 sb.append("\nparameter_defaults:\n").append(detail.parameterDefaultsJson());
             }
             return sb.toString();
@@ -87,18 +90,14 @@ public class WorkflowTools {
 
     @Tool(
             name = "start_workflow",
-            description =
-                    "Start an external workflow and wait for its result. Provide inputs as a JSON"
-                            + " object that matches the schema from describe_workflow. Returns the"
-                            + " workflow output on success or an error message on failure; do not retry"
-                            + " the same workflow with different parameters unless the user asks.")
+            description = "Start an external workflow and wait for its result. Provide inputs as a JSON"
+                    + " object that matches the schema from describe_workflow. Returns the"
+                    + " workflow output on success or an error message on failure; do not retry"
+                    + " the same workflow with different parameters unless the user asks.")
     public String startWorkflow(
             RuntimeContext ctx,
-            @ToolParam(name = "workflowId", description = "The catalog item id from list_workflows")
-                    String workflowId,
-            @ToolParam(
-                            name = "inputs",
-                            description = "JSON object with the workflow input parameters")
+            @ToolParam(name = "workflowId", description = "The catalog item id from list_workflows") String workflowId,
+            @ToolParam(name = "inputs", description = "JSON object with the workflow input parameters")
                     String inputsJson) {
         try {
             var itemId = parseId(workflowId);

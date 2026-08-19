@@ -5,8 +5,4 @@ package io.okagent.service.knowledge;
  * {@code documentName} identifies the source document; {@code score} is the relevance score when the
  * provider supplies one.
  */
-public record RetrievedChunk(
-        String content,
-        String documentName,
-        String segmentId,
-        Double score) {}
+public record RetrievedChunk(String content, String documentName, String segmentId, Double score) {}

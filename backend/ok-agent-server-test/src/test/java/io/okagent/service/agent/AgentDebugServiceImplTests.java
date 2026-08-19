@@ -46,7 +46,8 @@ class AgentDebugServiceImplTests {
                 .thenReturn(Flux.just(new AgentResultEvent(new AssistantMessage("Current time returned by tool"))));
 
         var service = new AgentDebugServiceImpl(agents, factory, dialogue, stateStore, personaExtraction);
-        var response = service.chat(agentId, new AgentChatRequest("Call the current time tool", "debug-session", "debug"));
+        var response =
+                service.chat(agentId, new AgentChatRequest("Call the current time tool", "debug-session", "debug"));
 
         verify(harnessAgent)
                 .setPermissionMode(
@@ -76,17 +77,14 @@ class AgentDebugServiceImplTests {
                 .thenReturn(Flux.just(new AgentResultEvent(new AssistantMessage("Beijing time is 09:15"))));
 
         var service = new AgentDebugServiceImpl(
-                agents,
-                factory,
-                dialogue,
-                mock(JdbcAgentStateStore.class),
-                personaExtraction);
+                agents, factory, dialogue, mock(JdbcAgentStateStore.class), personaExtraction);
         service.chat(agentId, new AgentChatRequest("What time is it?", "dlg-session", "debug"));
 
         // The debug runtime must not own its own history table: it records through the shared
         // DialogueService so the 运行观测 module sees debug and production conversations alike.
         verify(dialogue).ensureSession(eq("dlg-session"), eq(agentId), eq("debug"), eq("What time is it?"));
-        verify(dialogue).recordMessage(eq("dlg-session"), eq("user"), eq("What time is it?"), eq(null), eq(null), eq(null));
+        verify(dialogue)
+                .recordMessage(eq("dlg-session"), eq("user"), eq("What time is it?"), eq(null), eq(null), eq(null));
         verify(dialogue)
                 .recordMessage(
                         eq("dlg-session"),

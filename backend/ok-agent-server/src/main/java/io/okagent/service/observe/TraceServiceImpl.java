@@ -32,12 +32,11 @@ public class TraceServiceImpl implements TraceService, TraceSink {
     public TraceServiceImpl(TraceSpanRepository repository) {
         this.repository = repository;
         AtomicInteger counter = new AtomicInteger();
-        ThreadFactory factory =
-                runnable -> {
-                    Thread thread = new Thread(runnable, "okagent-trace-writer-" + counter.incrementAndGet());
-                    thread.setDaemon(true);
-                    return thread;
-                };
+        ThreadFactory factory = runnable -> {
+            Thread thread = new Thread(runnable, "okagent-trace-writer-" + counter.incrementAndGet());
+            thread.setDaemon(true);
+            return thread;
+        };
         this.writer = Executors.newFixedThreadPool(2, factory);
     }
 

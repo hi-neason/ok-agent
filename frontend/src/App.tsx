@@ -15,6 +15,8 @@ import { PersonaPage } from "./modules/persona";
 import { WorkflowSourcesPage } from "./modules/workflow";
 import { KnowledgeSourcesPage } from "./modules/knowledge";
 import { IntentPage } from "./modules/intent";
+import { ChannelPage } from "./modules/channel";
+import { ChannelUsersPage } from "./modules/channel-users";
 import { CustomerChatPage } from "./modules/chat/CustomerChatPage";
 import { Button, PageHeader } from "./modules/shared";
 import "./agent.css";
@@ -34,6 +36,8 @@ type Page =
   | "sysconfig"
   | "usermgmt"
   | "intents"
+  | "channels"
+  | "channelUsers"
   | "custchat";
 
 type NavItem = {
@@ -62,6 +66,8 @@ const navItems: NavItem[] = [
   { id: "knowledge", icon: "◫", name: "知识库 - 集成", kicker: "KNOWLEDGE" },
   { id: "workflows", icon: "⌁", name: "工作流 - 集成", kicker: "WORKFLOW" },
   { id: "persona", icon: "◑", name: "用户画像", kicker: "PERSONA" },
+  { id: "channels", icon: "⇄", name: "渠道管理", kicker: "CHANNEL" },
+  { id: "channelUsers", icon: "☰", name: "渠道用户", kicker: "CHANNEL USERS" },
   { id: "intents", icon: "⌥", name: "意图管理", kicker: "INTENT" },
   { id: "insight", icon: "◍", name: "对话洞察", kicker: "INSIGHT", wip: true },
   { id: "system", icon: "◎", name: "账号权限", kicker: "ACCESS", wip: true },
@@ -86,7 +92,7 @@ const navigationGroups: NavigationGroup[] = [
   },
   {
     title: "业务管理",
-    items: (["usermgmt", "persona", "intents", "insight"] as Page[]).map((id) => navItemById[id]),
+    items: (["usermgmt", "persona", "channels", "channelUsers", "intents", "insight"] as Page[]).map((id) => navItemById[id]),
   },
   {
     title: "系统管理",
@@ -106,6 +112,8 @@ const pagePaths: Record<Page, string> = {
   observe: "/observability",
   system: "/system",
   persona: "/persona",
+  channels: "/channels",
+  channelUsers: "/channel-users",
   intents: "/intents",
   custchat: "/custchat",
   insight: "/insight",
@@ -362,8 +370,10 @@ export default function App() {
       />
     ),
     system: <SystemPage />,
-    persona: <PersonaPage />,
-    intents: <IntentPage />,
+persona: <PersonaPage />,
+channels: <ChannelPage />,
+channelUsers: <ChannelUsersPage />,
+intents: <IntentPage />,
     custchat: <CustomerChatPage />,
     insight: <WipPlaceholder name="对话洞察" kicker="INSIGHT" />,
     sysconfig: <WipPlaceholder name="系统配置" kicker="SETTINGS" />,

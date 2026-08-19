@@ -9,7 +9,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface WorkflowCatalogItemRepository extends JpaRepository<WorkflowCatalogItem, UUID> {
     List<WorkflowCatalogItem> findBySourceId(UUID sourceId);
+
     Optional<WorkflowCatalogItem> findBySourceIdAndRemoteWorkflowId(UUID sourceId, String remoteWorkflowId);
+
     void deleteBySourceId(UUID sourceId);
+
     List<WorkflowCatalogItem> findAllByIdIn(Collection<UUID> ids);
 }

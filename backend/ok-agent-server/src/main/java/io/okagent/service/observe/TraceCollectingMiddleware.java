@@ -12,8 +12,8 @@ import io.agentscope.core.event.ToolResultTextDeltaEvent;
 import io.agentscope.core.message.ToolUseBlock;
 import io.agentscope.core.middleware.ActingInput;
 import io.agentscope.core.middleware.AgentInput;
-import io.agentscope.core.middleware.ModelCallInput;
 import io.agentscope.core.middleware.MiddlewareBase;
+import io.agentscope.core.middleware.ModelCallInput;
 import io.agentscope.core.tool.AgentTool;
 import io.agentscope.core.tool.mcp.McpTool;
 import io.okagent.domain.observe.SpanStatus;
@@ -69,10 +69,7 @@ public class TraceCollectingMiddleware implements MiddlewareBase {
 
     @Override
     public Flux<AgentEvent> onAgent(
-            Agent agent,
-            RuntimeContext ctx,
-            AgentInput input,
-            Function<AgentInput, Flux<AgentEvent>> next) {
+            Agent agent, RuntimeContext ctx, AgentInput input, Function<AgentInput, Flux<AgentEvent>> next) {
         String traceId = ctx.get(CTX_TRACE_ID);
         if (traceId == null || traceId.isBlank()) {
             return next.apply(input);
@@ -80,35 +77,24 @@ public class TraceCollectingMiddleware implements MiddlewareBase {
         UUID agentId = parseAgentId(ctx.get(CTX_AGENT_ID));
         int turnSeq = parseInt(ctx.get(CTX_TURN_SEQ), 0);
         TurnTrace trace =
-                TurnTrace.start(
-                        traceId,
-                        ctx.getSessionId(),
-                        agentId,
-                        ctx.getUserId(),
-                        turnSeq,
-                        agent.getName());
+                TurnTrace.start(traceId, ctx.getSessionId(), agentId, ctx.getUserId(), turnSeq, agent.getName());
 
         AtomicReference<SpanStatus> rootStatus = new AtomicReference<>(SpanStatus.OK);
         AtomicReference<String> rootError = new AtomicReference<>();
 
         return next.apply(input)
-                .doOnError(
-                        e -> {
-                            rootStatus.set(SpanStatus.ERROR);
-                            rootError.set(e.getMessage());
-                        })
+                .doOnError(e -> {
+                    rootStatus.set(SpanStatus.ERROR);
+                    rootError.set(e.getMessage());
+                })
                 .doOnCancel(() -> rootStatus.set(SpanStatus.CANCELLED))
-                .doFinally(
-                        signal -> {
-                            try {
-                                sink.saveAll(trace.finish(rootStatus.get(), rootError.get()));
-                            } catch (Exception e) {
-                                log.warn(
-                                        "Failed to persist trace {}: {}",
-                                        traceId,
-                                        e.getMessage());
-                            }
-                        })
+                .doFinally(signal -> {
+                    try {
+                        sink.saveAll(trace.finish(rootStatus.get(), rootError.get()));
+                    } catch (Exception e) {
+                        log.warn("Failed to persist trace {}: {}", traceId, e.getMessage());
+                    }
+                })
                 // Seed the per-turn trace into the downstream Reactor context so inner onModelCall
                 // /onActing hooks (which assemble inside this same pipeline) can read it via
                 // ContextView, even across thread hops.
@@ -117,116 +103,87 @@ public class TraceCollectingMiddleware implements MiddlewareBase {
 
     @Override
     public Flux<AgentEvent> onModelCall(
-            Agent agent,
-            RuntimeContext ctx,
-            ModelCallInput input,
-            Function<ModelCallInput, Flux<AgentEvent>> next) {
-        return Flux.deferContextual(
-                contextView -> {
-                    TurnTrace trace = traceFrom(contextView);
-                    if (trace == null) {
-                        return next.apply(input);
-                    }
-                    String modelName =
-                            input.model() != null && input.model().getModelName() != null
-                                    ? input.model().getModelName()
-                                    : "unknown";
-                    TurnTrace.MutableSpan span =
-                            trace.startModel(
-                                    modelName, input.messages(), input.tools(), input.options());
+            Agent agent, RuntimeContext ctx, ModelCallInput input, Function<ModelCallInput, Flux<AgentEvent>> next) {
+        return Flux.deferContextual(contextView -> {
+            TurnTrace trace = traceFrom(contextView);
+            if (trace == null) {
+                return next.apply(input);
+            }
+            String modelName = input.model() != null && input.model().getModelName() != null
+                    ? input.model().getModelName()
+                    : "unknown";
+            TurnTrace.MutableSpan span = trace.startModel(modelName, input.messages(), input.tools(), input.options());
 
-                    return next.apply(input)
-                            .doOnNext(
-                                    event -> {
-                                        if (event instanceof TextBlockDeltaEvent delta) {
-                                            span.appendOutput(delta.getDelta());
-                                        } else if (event instanceof ThinkingBlockDeltaEvent thinking) {
-                                            span.appendThinking(thinking.getDelta());
-                                        } else if (event instanceof ModelCallEndEvent end
-                                                && end.getUsage() != null) {
-                                            var usage = end.getUsage();
-                                            span.recordUsage(
-                                                    usage.getInputTokens(),
-                                                    usage.getOutputTokens(),
-                                                    usage.getCachedTokens(),
-                                                    usage.getTime());
-                                        }
-                                    })
-                            .doOnError(e -> span.fail(e.getMessage()))
-                            .doOnComplete(
-                                    () -> span.finish(SpanStatus.OK, null, TurnTrace.microsNow()));
-                });
+            return next.apply(input)
+                    .doOnNext(event -> {
+                        if (event instanceof TextBlockDeltaEvent delta) {
+                            span.appendOutput(delta.getDelta());
+                        } else if (event instanceof ThinkingBlockDeltaEvent thinking) {
+                            span.appendThinking(thinking.getDelta());
+                        } else if (event instanceof ModelCallEndEvent end && end.getUsage() != null) {
+                            var usage = end.getUsage();
+                            span.recordUsage(
+                                    usage.getInputTokens(),
+                                    usage.getOutputTokens(),
+                                    usage.getCachedTokens(),
+                                    usage.getTime());
+                        }
+                    })
+                    .doOnError(e -> span.fail(e.getMessage()))
+                    .doOnComplete(() -> span.finish(SpanStatus.OK, null, TurnTrace.microsNow()));
+        });
     }
 
     @Override
     public Flux<AgentEvent> onActing(
-            Agent agent,
-            RuntimeContext ctx,
-            ActingInput input,
-            Function<ActingInput, Flux<AgentEvent>> next) {
-        return Flux.deferContextual(
-                contextView -> {
-                    TurnTrace trace = traceFrom(contextView);
-                    if (trace == null
-                            || input.toolCalls() == null
-                            || input.toolCalls().isEmpty()) {
-                        return next.apply(input);
-                    }
-                    // Pre-create a span for every tool call in this acting batch so parallel/async
-                    // tools are covered even if a result event arrives without a preceding start.
-                    for (ToolUseBlock toolCall : input.toolCalls()) {
-                        SpanType type = classifyTool(agent, toolCall.getName());
-                        trace.startTool(
-                                type, toolCall.getId(), toolCall.getName(), toolCall.getInput());
-                    }
-                    return next.apply(input)
-                            .doOnNext(
-                                    event -> {
-                                        if (event instanceof ToolResultStartEvent start) {
-                                            TurnTrace.MutableSpan span =
-                                                    trace.spanByCallId(start.getToolCallId());
-                                            if (span != null
-                                                    && start.getToolCallName() != null) {
-                                                span.attribute(
-                                                        "gen_ai.tool.name",
-                                                        start.getToolCallName());
-                                            }
-                                        } else if (event instanceof ToolResultTextDeltaEvent delta) {
-                                            TurnTrace.MutableSpan span =
-                                                    trace.spanByCallId(delta.getToolCallId());
-                                            if (span != null) {
-                                                span.appendOutput(delta.getDelta());
-                                            }
-                                        } else if (event instanceof ToolResultEndEvent end) {
-                                            TurnTrace.MutableSpan span =
-                                                    trace.spanByCallId(end.getToolCallId());
-                                            if (span != null) {
-                                                SpanStatus status = mapToolState(end);
-                                                span.attribute(
-                                                        "gen_ai.tool.result_state",
-                                                        end.getState() != null
-                                                                ? end.getState().name()
-                                                                : "UNKNOWN");
-                                                span.finish(
-                                                        status, null, TurnTrace.microsNow());
-                                                // Tools catch exceptions and return error strings
-                                                // with state SUCCESS; downgrade span to ERROR when
-                                                // the output starts with an error prefix.
-                                                span.markErrorIfToolFailed();
-                                            }
-                                        }
-                                    })
-                            .doOnError(
-                                    e -> {
-                                        for (ToolUseBlock toolCall : input.toolCalls()) {
-                                            TurnTrace.MutableSpan span =
-                                                    trace.spanByCallId(toolCall.getId());
-                                            if (span != null) {
-                                                span.fail(e.getMessage());
-                                            }
-                                        }
-                                    });
-                });
+            Agent agent, RuntimeContext ctx, ActingInput input, Function<ActingInput, Flux<AgentEvent>> next) {
+        return Flux.deferContextual(contextView -> {
+            TurnTrace trace = traceFrom(contextView);
+            if (trace == null || input.toolCalls() == null || input.toolCalls().isEmpty()) {
+                return next.apply(input);
+            }
+            // Pre-create a span for every tool call in this acting batch so parallel/async
+            // tools are covered even if a result event arrives without a preceding start.
+            for (ToolUseBlock toolCall : input.toolCalls()) {
+                SpanType type = classifyTool(agent, toolCall.getName());
+                trace.startTool(type, toolCall.getId(), toolCall.getName(), toolCall.getInput());
+            }
+            return next.apply(input)
+                    .doOnNext(event -> {
+                        if (event instanceof ToolResultStartEvent start) {
+                            TurnTrace.MutableSpan span = trace.spanByCallId(start.getToolCallId());
+                            if (span != null && start.getToolCallName() != null) {
+                                span.attribute("gen_ai.tool.name", start.getToolCallName());
+                            }
+                        } else if (event instanceof ToolResultTextDeltaEvent delta) {
+                            TurnTrace.MutableSpan span = trace.spanByCallId(delta.getToolCallId());
+                            if (span != null) {
+                                span.appendOutput(delta.getDelta());
+                            }
+                        } else if (event instanceof ToolResultEndEvent end) {
+                            TurnTrace.MutableSpan span = trace.spanByCallId(end.getToolCallId());
+                            if (span != null) {
+                                SpanStatus status = mapToolState(end);
+                                span.attribute(
+                                        "gen_ai.tool.result_state",
+                                        end.getState() != null ? end.getState().name() : "UNKNOWN");
+                                span.finish(status, null, TurnTrace.microsNow());
+                                // Tools catch exceptions and return error strings
+                                // with state SUCCESS; downgrade span to ERROR when
+                                // the output starts with an error prefix.
+                                span.markErrorIfToolFailed();
+                            }
+                        }
+                    })
+                    .doOnError(e -> {
+                        for (ToolUseBlock toolCall : input.toolCalls()) {
+                            TurnTrace.MutableSpan span = trace.spanByCallId(toolCall.getId());
+                            if (span != null) {
+                                span.fail(e.getMessage());
+                            }
+                        }
+                    });
+        });
     }
 
     private static TurnTrace traceFrom(ContextView view) {
@@ -258,8 +215,7 @@ public class TraceCollectingMiddleware implements MiddlewareBase {
      * ok-agent knowledge-base / RAG tools (see {@code KnowledgeTools}). Fixed names, registered
      * programmatically on the agent toolkit.
      */
-    private static final Set<String> RAG_TOOL_NAMES =
-            Set.of("list_knowledge_bases", "search_knowledge");
+    private static final Set<String> RAG_TOOL_NAMES = Set.of("list_knowledge_bases", "search_knowledge");
 
     /**
      * Harness-native skill tools. These surface skills to the model (load/propose/manage); the

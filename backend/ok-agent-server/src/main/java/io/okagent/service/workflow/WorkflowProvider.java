@@ -28,8 +28,5 @@ public interface WorkflowProvider {
 
     /** Triggers a workflow synchronously and returns its result. */
     WorkflowExecutionResult execute(
-            WorkflowSourceConfig config,
-            String remoteWorkflowId,
-            Map<String, Object> inputs,
-            String endUserId);
+            WorkflowSourceConfig config, String remoteWorkflowId, Map<String, Object> inputs, String endUserId);
 }

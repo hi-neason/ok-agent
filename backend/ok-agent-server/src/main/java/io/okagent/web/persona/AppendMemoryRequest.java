@@ -1,4 +1,3 @@
 package io.okagent.web.persona;
 
-public record AppendMemoryRequest(String delta) {
-}
+public record AppendMemoryRequest(String delta) {}

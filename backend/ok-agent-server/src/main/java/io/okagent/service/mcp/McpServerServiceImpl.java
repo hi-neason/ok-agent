@@ -104,8 +104,7 @@ public class McpServerServiceImpl implements McpServerService {
             // occurrence to avoid violating the uk_mcp_server_tool unique constraint.
             var seen = new LinkedHashMap<String, McpToolSnapshot>();
             for (var t : found) {
-                seen.putIfAbsent(t.name(),
-                        new McpToolSnapshot(id, t.name(), t.description(), t.inputSchemaJson()));
+                seen.putIfAbsent(t.name(), new McpToolSnapshot(id, t.name(), t.description(), t.inputSchemaJson()));
             }
             tools.saveAll(seen.values());
             s.recordTest(true, seen.size());

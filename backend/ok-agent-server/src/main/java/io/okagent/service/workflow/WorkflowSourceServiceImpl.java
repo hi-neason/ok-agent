@@ -89,7 +89,9 @@ public class WorkflowSourceServiceImpl implements WorkflowSourceService {
                 r.sourceType(),
                 r.baseUrl().trim(),
                 writeConfig(r),
-                (r.apiKey() == null || r.apiKey().isBlank()) ? null : cipher.encrypt(r.apiKey().trim()));
+                (r.apiKey() == null || r.apiKey().isBlank())
+                        ? null
+                        : cipher.encrypt(r.apiKey().trim()));
         return response(sources.save(source));
     }
 
@@ -206,10 +208,13 @@ public class WorkflowSourceServiceImpl implements WorkflowSourceService {
     @Transactional
     public WorkflowCatalogItemResponse updateCatalogDescription(UUID itemId, String description) {
         var item = items.findById(itemId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Workflow catalog item not found"));
+                .orElseThrow(
+                        () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Workflow catalog item not found"));
         var text = description == null ? "" : description.trim();
         item.updateMetadata(text, text.isBlank() ? WorkflowMetadataStatus.NEEDS_REVIEW : WorkflowMetadataStatus.READY);
-        var source = sources.findById(item.getSourceId()).map(WorkflowSource::getName).orElse("");
+        var source = sources.findById(item.getSourceId())
+                .map(WorkflowSource::getName)
+                .orElse("");
         return itemResponse(items.save(item), source);
     }
 
@@ -217,10 +222,12 @@ public class WorkflowSourceServiceImpl implements WorkflowSourceService {
     WorkflowSourceConfig toConfig(WorkflowSource source) {
         Map<String, Object> config = readMap(source.getConfigJson());
         Map<String, Object> secrets = new LinkedHashMap<>();
-        if (source.getSecretsCiphertext() != null && !source.getSecretsCiphertext().isBlank()) {
+        if (source.getSecretsCiphertext() != null
+                && !source.getSecretsCiphertext().isBlank()) {
             secrets.put("apiKey", cipher.decrypt(source.getSecretsCiphertext()));
         }
-        int executeTimeout = source.getSourceType() == WorkflowSourceType.DIFY ? DEFAULT_EXECUTE_TIMEOUT : DEFAULT_EXECUTE_TIMEOUT;
+        int executeTimeout =
+                source.getSourceType() == WorkflowSourceType.DIFY ? DEFAULT_EXECUTE_TIMEOUT : DEFAULT_EXECUTE_TIMEOUT;
         int connectTimeout = DEFAULT_CONNECT_TIMEOUT;
         Object et = config.get("executeTimeoutSeconds");
         if (et instanceof Number n) executeTimeout = n.intValue();
@@ -240,8 +247,8 @@ public class WorkflowSourceServiceImpl implements WorkflowSourceService {
         return providers.stream()
                 .filter(p -> p.type().equalsIgnoreCase(source.getSourceType().name()))
                 .findFirst()
-                .orElseThrow(() -> new IllegalStateException(
-                        "No workflow provider for type " + source.getSourceType()));
+                .orElseThrow(
+                        () -> new IllegalStateException("No workflow provider for type " + source.getSourceType()));
     }
 
     private WorkflowSource find(UUID id) {
@@ -295,10 +302,16 @@ public class WorkflowSourceServiceImpl implements WorkflowSourceService {
 
     private String writeConfig(WorkflowSourceRequest r) {
         Map<String, Object> config = new LinkedHashMap<>();
-        config.put("executeTimeoutSeconds", r.executeTimeoutSeconds() == null || r.executeTimeoutSeconds() <= 0
-                ? DEFAULT_EXECUTE_TIMEOUT : r.executeTimeoutSeconds());
-        config.put("connectTimeoutSeconds", r.connectTimeoutSeconds() == null || r.connectTimeoutSeconds() <= 0
-                ? DEFAULT_CONNECT_TIMEOUT : r.connectTimeoutSeconds());
+        config.put(
+                "executeTimeoutSeconds",
+                r.executeTimeoutSeconds() == null || r.executeTimeoutSeconds() <= 0
+                        ? DEFAULT_EXECUTE_TIMEOUT
+                        : r.executeTimeoutSeconds());
+        config.put(
+                "connectTimeoutSeconds",
+                r.connectTimeoutSeconds() == null || r.connectTimeoutSeconds() <= 0
+                        ? DEFAULT_CONNECT_TIMEOUT
+                        : r.connectTimeoutSeconds());
         try {
             return json.writeValueAsString(config);
         } catch (Exception e) {
@@ -338,5 +351,7 @@ public class WorkflowSourceServiceImpl implements WorkflowSourceService {
     }
 
     // Exposed for runtime use when lastTestedAt needs a timestamp without persisting in this path.
-    Instant now() { return Instant.now(); }
+    Instant now() {
+        return Instant.now();
+    }
 }

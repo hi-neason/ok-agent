@@ -71,13 +71,39 @@ public class AgentKnowledgeBinding {
         this.updatedAt = Instant.now();
     }
 
-    public UUID getId() { return id; }
-    public UUID getAgentId() { return agentId; }
-    public UUID getCatalogItemId() { return catalogItemId; }
-    public String getDescriptionOverride() { return descriptionOverride; }
-    public Integer getTopK() { return topK; }
-    public Double getScoreThreshold() { return scoreThreshold; }
-    public boolean isEnabled() { return enabled; }
-    public Instant getCreatedAt() { return createdAt; }
-    public Instant getUpdatedAt() { return updatedAt; }
+    public UUID getId() {
+        return id;
+    }
+
+    public UUID getAgentId() {
+        return agentId;
+    }
+
+    public UUID getCatalogItemId() {
+        return catalogItemId;
+    }
+
+    public String getDescriptionOverride() {
+        return descriptionOverride;
+    }
+
+    public Integer getTopK() {
+        return topK;
+    }
+
+    public Double getScoreThreshold() {
+        return scoreThreshold;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
 }

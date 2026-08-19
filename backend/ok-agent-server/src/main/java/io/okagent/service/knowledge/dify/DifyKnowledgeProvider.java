@@ -54,6 +54,7 @@ public class DifyKnowledgeProvider implements KnowledgeProvider {
      * avoid an extra HTTP round-trip on every chat turn.
      */
     private static final Duration DATASET_CONFIG_TTL = Duration.ofMinutes(5);
+
     private final Map<String, CacheEntry> datasetConfigCache = new ConcurrentHashMap<>();
 
     @Override
@@ -66,8 +67,7 @@ public class DifyKnowledgeProvider implements KnowledgeProvider {
         try {
             JsonNode body = getJson(config, "/datasets?page=1&limit=1");
             int total = body.path("total").isNumber() ? body.path("total").asInt() : 0;
-            return ConnectionTestResult.ok(
-                    "Connected to Dify datasets (" + total + " knowledge base(s) accessible)");
+            return ConnectionTestResult.ok("Connected to Dify datasets (" + total + " knowledge base(s) accessible)");
         } catch (Exception e) {
             return ConnectionTestResult.failed(safeMessage(e));
         }
@@ -145,8 +145,10 @@ public class DifyKnowledgeProvider implements KnowledgeProvider {
             // long prompts (the first 250 chars still carry the primary retrieval intent).
             String q = query == null ? "" : query;
             if (q.length() > 250) {
-                log.debug("Dify retrieve query truncated from {} to 250 chars for dataset {}",
-                        q.length(), remoteKnowledgeId);
+                log.debug(
+                        "Dify retrieve query truncated from {} to 250 chars for dataset {}",
+                        q.length(),
+                        remoteKnowledgeId);
                 q = q.substring(0, 250);
             }
             ObjectNode body = json.createObjectNode();
@@ -164,8 +166,8 @@ public class DifyKnowledgeProvider implements KnowledgeProvider {
 
             HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() / 100 != 2) {
-                throw new IllegalStateException("HTTP " + response.statusCode() + " from Dify retrieve: "
-                        + truncate(response.body(), 300));
+                throw new IllegalStateException(
+                        "HTTP " + response.statusCode() + " from Dify retrieve: " + truncate(response.body(), 300));
             }
             JsonNode root = json.readTree(response.body());
             JsonNode records = root.path("records");
@@ -176,7 +178,8 @@ public class DifyKnowledgeProvider implements KnowledgeProvider {
                     String content = segment.path("content").asText("");
                     if (content.isBlank()) continue;
                     Double score = record.has("score") && !record.path("score").isNull()
-                            ? record.path("score").asDouble() : null;
+                            ? record.path("score").asDouble()
+                            : null;
                     chunks.add(new RetrievedChunk(
                             content,
                             segment.path("document").path("name").asText(""),
@@ -212,18 +215,23 @@ public class DifyKnowledgeProvider implements KnowledgeProvider {
             } else {
                 model = json.createObjectNode();
                 model.put("search_method", "keyword_search");
-                log.warn("Dify dataset {} returned no retrieval_model_dict (indexing_technique={}); "
+                log.warn(
+                        "Dify dataset {} returned no retrieval_model_dict (indexing_technique={}); "
                                 + "falling back to keyword_search",
-                        remoteKnowledgeId, dataset.path("indexing_technique").asText("null"));
+                        remoteKnowledgeId,
+                        dataset.path("indexing_technique").asText("null"));
             }
-            if (!model.has("search_method") || model.path("search_method").asText("").isBlank()) {
+            if (!model.has("search_method")
+                    || model.path("search_method").asText("").isBlank()) {
                 model.put("search_method", "keyword_search");
             }
             datasetConfigCache.put(cacheKey, new CacheEntry(model.deepCopy(), now));
             return model;
         } catch (Exception e) {
-            log.warn("Failed to fetch Dify dataset {} config, falling back to keyword_search: {}",
-                    remoteKnowledgeId, safeMessage(e));
+            log.warn(
+                    "Failed to fetch Dify dataset {} config, falling back to keyword_search: {}",
+                    remoteKnowledgeId,
+                    safeMessage(e));
             ObjectNode fallback = json.createObjectNode();
             fallback.put("search_method", "keyword_search");
             return fallback;
@@ -232,7 +240,8 @@ public class DifyKnowledgeProvider implements KnowledgeProvider {
 
     private record CacheEntry(ObjectNode model, Instant fetchedAt) {}
 
-    private JsonNode getJson(KnowledgeSourceConfig config, String path) throws Exception {        var request = HttpRequest.newBuilder()
+    private JsonNode getJson(KnowledgeSourceConfig config, String path) throws Exception {
+        var request = HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl(config) + path))
                 .timeout(Duration.ofSeconds(Math.max(config.connectTimeoutSeconds(), 5)))
                 .header(HttpHeaders.ACCEPT, "application/json")
@@ -241,8 +250,8 @@ public class DifyKnowledgeProvider implements KnowledgeProvider {
                 .build();
         HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() / 100 != 2) {
-            throw new IllegalStateException("HTTP " + response.statusCode() + " from Dify: "
-                    + truncate(response.body(), 300));
+            throw new IllegalStateException(
+                    "HTTP " + response.statusCode() + " from Dify: " + truncate(response.body(), 300));
         }
         return json.readTree(response.body());
     }

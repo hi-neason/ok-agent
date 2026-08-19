@@ -118,19 +118,63 @@ public class KnowledgeSource {
         this.updatedAt = Instant.now();
     }
 
-    public UUID getId() { return id; }
-    public String getSourceKey() { return sourceKey; }
-    public String getName() { return name; }
-    public KnowledgeSourceType getSourceType() { return sourceType; }
-    public String getBaseUrl() { return baseUrl; }
-    public String getConfigJson() { return configJson; }
-    public String getSecretsCiphertext() { return secretsCiphertext; }
-    public boolean isEnabled() { return enabled; }
-    public String getLastTestStatus() { return lastTestStatus; }
-    public String getLastTestMessage() { return lastTestMessage; }
-    public Instant getLastTestedAt() { return lastTestedAt; }
-    public Instant getLastSyncedAt() { return lastSyncedAt; }
-    public int getKnowledgeCount() { return knowledgeCount; }
-    public Instant getCreatedAt() { return createdAt; }
-    public Instant getUpdatedAt() { return updatedAt; }
+    public UUID getId() {
+        return id;
+    }
+
+    public String getSourceKey() {
+        return sourceKey;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public KnowledgeSourceType getSourceType() {
+        return sourceType;
+    }
+
+    public String getBaseUrl() {
+        return baseUrl;
+    }
+
+    public String getConfigJson() {
+        return configJson;
+    }
+
+    public String getSecretsCiphertext() {
+        return secretsCiphertext;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public String getLastTestStatus() {
+        return lastTestStatus;
+    }
+
+    public String getLastTestMessage() {
+        return lastTestMessage;
+    }
+
+    public Instant getLastTestedAt() {
+        return lastTestedAt;
+    }
+
+    public Instant getLastSyncedAt() {
+        return lastSyncedAt;
+    }
+
+    public int getKnowledgeCount() {
+        return knowledgeCount;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
 }

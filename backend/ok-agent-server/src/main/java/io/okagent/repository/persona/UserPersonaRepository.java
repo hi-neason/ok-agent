@@ -19,9 +19,8 @@ public interface UserPersonaRepository extends JpaRepository<UserPersona, UserPe
     List<UserPersona> findByIdUserId(String userId);
 
     /** Lightweight coverage rows for the management list (avoids loading LONGTEXT fields). */
-    @Query(
-            "select p.id.userId as userId, p.id.agentId as agentId, p.summary as summary, "
-                    + "p.updatedAt as updatedAt from UserPersona p")
+    @Query("select p.id.userId as userId, p.id.agentId as agentId, p.summary as summary, "
+            + "p.updatedAt as updatedAt from UserPersona p")
     List<PersonaCoverageRow> findCoverage();
 
     interface PersonaCoverageRow {

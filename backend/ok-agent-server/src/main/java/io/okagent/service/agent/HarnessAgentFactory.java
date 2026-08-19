@@ -18,15 +18,15 @@ import io.agentscope.harness.agent.filesystem.remote.RemoteFilesystem;
 import io.agentscope.harness.agent.filesystem.remote.store.NamespaceFactory;
 import io.agentscope.harness.agent.filesystem.spec.LocalFilesystemSpec;
 import io.agentscope.harness.agent.sandbox.impl.docker.DockerFilesystemSpec;
+import io.agentscope.harness.agent.subagent.SubagentDeclaration;
 import io.agentscope.harness.agent.tools.McpServerConfig;
 import io.agentscope.harness.agent.tools.ToolsConfig;
-import io.agentscope.harness.agent.subagent.SubagentDeclaration;
 import io.agentscope.harness.agent.workspace.LocalFsMode;
 import io.okagent.domain.agent.AgentAsset;
-import io.okagent.infrastructure.store.JdbcBaseStore;
 import io.okagent.domain.mcp.McpServer;
 import io.okagent.domain.model.ModelAsset;
 import io.okagent.domain.skill.SkillAsset;
+import io.okagent.infrastructure.store.JdbcBaseStore;
 import io.okagent.repository.agent.AgentAssetRepository;
 import io.okagent.repository.mcp.McpServerRepository;
 import io.okagent.repository.model.ModelAssetRepository;
@@ -34,13 +34,13 @@ import io.okagent.repository.skill.SkillAssetRepository;
 import io.okagent.service.intent.IntentDto;
 import io.okagent.service.intent.IntentNode;
 import io.okagent.service.intent.IntentService;
-import io.okagent.service.model.ApiKeyCipher;
 import io.okagent.service.knowledge.KnowledgeRuntimeCatalog;
 import io.okagent.service.knowledge.KnowledgeTools;
+import io.okagent.service.model.ApiKeyCipher;
+import io.okagent.service.observe.TraceCollectingMiddleware;
 import io.okagent.service.persona.UserPersonaService;
 import io.okagent.service.workflow.WorkflowRuntimeCatalog;
 import io.okagent.service.workflow.WorkflowTools;
-import io.okagent.service.observe.TraceCollectingMiddleware;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -152,10 +152,12 @@ public class HarnessAgentFactory {
         // harness copies this toolkit during build() and then appends its own built-in tools
         // (memory/filesystem/shell/web), so none of those are lost.
         Toolkit toolkit = new Toolkit();
-        if (draft.getId() != null && !workflowCatalog.listForAgent(draft.getId()).isEmpty()) {
+        if (draft.getId() != null
+                && !workflowCatalog.listForAgent(draft.getId()).isEmpty()) {
             toolkit.registerTool(new WorkflowTools(workflowCatalog, draft.getId()));
         }
-        if (draft.getId() != null && !knowledgeCatalog.listForAgent(draft.getId()).isEmpty()) {
+        if (draft.getId() != null
+                && !knowledgeCatalog.listForAgent(draft.getId()).isEmpty()) {
             toolkit.registerTool(new KnowledgeTools(knowledgeCatalog, draft.getId()));
         }
         builder.toolkit(toolkit);
@@ -199,8 +201,7 @@ public class HarnessAgentFactory {
         try {
             refs = loadReferencedSubagents(draft);
         } catch (Exception e) {
-            log.warn("Failed to load referenced sub-agents for agent={}: {}",
-                    draft.getAgentKey(), e.getMessage());
+            log.warn("Failed to load referenced sub-agents for agent={}: {}", draft.getAgentKey(), e.getMessage());
             refs = List.of();
         }
         if (refs.isEmpty()) {
@@ -250,7 +251,8 @@ public class HarnessAgentFactory {
     private static String buildSubagentDescription(
             AgentAsset child, List<String> intentKeys, Map<String, IntentDto> intentByKey) {
         StringBuilder sb = new StringBuilder();
-        String own = child.getDescription() == null ? "" : child.getDescription().trim();
+        String own =
+                child.getDescription() == null ? "" : child.getDescription().trim();
         if (!own.isEmpty()) {
             sb.append(own);
         }
@@ -311,16 +313,14 @@ public class HarnessAgentFactory {
             try {
                 UUID id = UUID.fromString(idText);
                 if (id.equals(draft.getId())) continue;
-                List<String> keys = new ArrayList<>(
-                        intentKeysByAgent.getOrDefault(id, new ArrayList<>()));
+                List<String> keys = new ArrayList<>(intentKeysByAgent.getOrDefault(id, new ArrayList<>()));
                 for (Object k : asObjectList(def.get("intentKeys"))) {
                     String s = asText(k);
                     if (!s.isBlank() && !keys.contains(s)) keys.add(s);
                 }
                 intentKeysByAgent.put(id, keys);
             } catch (IllegalArgumentException e) {
-                log.warn("Skipping sub-agent with invalid agentId '{}' for agent={}",
-                        idText, draft.getAgentKey());
+                log.warn("Skipping sub-agent with invalid agentId '{}' for agent={}", idText, draft.getAgentKey());
             }
         }
         if (intentKeysByAgent.isEmpty()) {
@@ -407,8 +407,7 @@ public class HarnessAgentFactory {
         // Memory surface backed by the MySQL BaseStore. Harness memory tools/hooks are disabled
         // (see configureMemory), and persona persists via its own service, so this route is only
         // relevant for code/workspace flows that touch MEMORY.md or memory/.
-        NamespaceFactory memoryNamespace =
-                rc -> List.of("agents", safeName(draft.getAgentKey()), "memory");
+        NamespaceFactory memoryNamespace = rc -> List.of("agents", safeName(draft.getAgentKey()), "memory");
         RemoteFilesystem memoryFs = new RemoteFilesystem(baseStore, memoryNamespace);
 
         switch (draft.getWorkspaceMode()) {
@@ -421,11 +420,9 @@ public class HarnessAgentFactory {
                         .isolationScope(isolationScope)
                         .inheritEnv(false)
                         .projectWritable(false);
-                AbstractFilesystem localFs =
-                        localSpec.toFilesystem(workspace, isolationScope.toNamespaceFactory());
+                AbstractFilesystem localFs = localSpec.toFilesystem(workspace, isolationScope.toNamespaceFactory());
                 AbstractFilesystem composite =
-                        new CompositeFilesystem(
-                                localFs, Map.of("memory/", memoryFs, "MEMORY.md", memoryFs));
+                        new CompositeFilesystem(localFs, Map.of("memory/", memoryFs, "MEMORY.md", memoryFs));
                 builder.abstractFilesystem(composite);
             }
             case DOCKER_SANDBOX -> {
@@ -509,15 +506,19 @@ public class HarnessAgentFactory {
     }
 
     private String systemPrompt(AgentAsset draft, String userId) {
-        var prompt = draft.getSystemPrompt() == null ? "" : draft.getSystemPrompt().trim();
+        var prompt =
+                draft.getSystemPrompt() == null ? "" : draft.getSystemPrompt().trim();
         var base = prompt.isEmpty() ? "You are a helpful assistant." : prompt;
         var mode = draft.getPersonaInjectionMode();
-        if (mode == null || mode == io.okagent.domain.agent.PersonaInjectionMode.NONE
-                || userId == null || userId.isBlank() || draft.getId() == null) {
+        if (mode == null
+                || mode == io.okagent.domain.agent.PersonaInjectionMode.NONE
+                || userId == null
+                || userId.isBlank()
+                || draft.getId() == null) {
             return base;
         }
-        var block = personaService.getProfileBlock(
-                userId, draft.getId(), mode.name(), draft.getPersonaPromptTemplate());
+        var block =
+                personaService.getProfileBlock(userId, draft.getId(), mode.name(), draft.getPersonaPromptTemplate());
         if (block == null || block.isBlank()) {
             return base;
         }

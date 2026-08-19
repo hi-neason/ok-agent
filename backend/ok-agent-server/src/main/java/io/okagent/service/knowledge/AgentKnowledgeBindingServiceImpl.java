@@ -73,17 +73,17 @@ public class AgentKnowledgeBindingServiceImpl implements AgentKnowledgeBindingSe
         ensureAgentExists(agentId);
         var valid = requests == null ? List.<AgentKnowledgeBindingRequest>of() : requests;
         for (var req : valid) {
-            if (req.catalogItemId() != null && items.findById(req.catalogItemId()).isEmpty()) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "Knowledge catalog item does not exist: " + req.catalogItemId());
+            if (req.catalogItemId() != null
+                    && items.findById(req.catalogItemId()).isEmpty()) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST, "Knowledge catalog item does not exist: " + req.catalogItemId());
             }
             if (req.topK() != null && (req.topK() < MIN_TOP_K || req.topK() > MAX_TOP_K)) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "topK must be between " + MIN_TOP_K + " and " + MAX_TOP_K);
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST, "topK must be between " + MIN_TOP_K + " and " + MAX_TOP_K);
             }
             if (req.scoreThreshold() != null && (req.scoreThreshold() < 0 || req.scoreThreshold() > 1)) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "scoreThreshold must be between 0 and 1");
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "scoreThreshold must be between 0 and 1");
             }
         }
 

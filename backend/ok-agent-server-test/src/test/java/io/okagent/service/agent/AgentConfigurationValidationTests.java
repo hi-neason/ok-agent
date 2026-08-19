@@ -86,7 +86,14 @@ class AgentConfigurationValidationTests {
             Validation.buildDefaultValidatorFactory().getValidator();
 
     private AgentAssetServiceImpl service() {
-        return new AgentAssetServiceImpl(agents, models, mcpServers, skills, mcpToolSnapshots, validator);
+        return new AgentAssetServiceImpl(
+                agents,
+                models,
+                mcpServers,
+                skills,
+                mcpToolSnapshots,
+                validator,
+                mock(org.springframework.context.ApplicationEventPublisher.class));
     }
 
     private Req validReq() {

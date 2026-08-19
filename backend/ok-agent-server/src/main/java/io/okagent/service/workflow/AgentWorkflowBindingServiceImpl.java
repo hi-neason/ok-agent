@@ -71,9 +71,10 @@ public class AgentWorkflowBindingServiceImpl implements AgentWorkflowBindingServ
         ensureAgentExists(agentId);
         var valid = requests == null ? List.<AgentWorkflowBindingRequest>of() : requests;
         for (var req : valid) {
-            if (req.catalogItemId() != null && items.findById(req.catalogItemId()).isEmpty()) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "Workflow catalog item does not exist: " + req.catalogItemId());
+            if (req.catalogItemId() != null
+                    && items.findById(req.catalogItemId()).isEmpty()) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST, "Workflow catalog item does not exist: " + req.catalogItemId());
             }
         }
 
@@ -88,8 +89,8 @@ public class AgentWorkflowBindingServiceImpl implements AgentWorkflowBindingServ
                 try {
                     json.readTree(defaults);
                 } catch (Exception e) {
-                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                            "parameterDefaults must be valid JSON: " + e.getMessage());
+                    throw new ResponseStatusException(
+                            HttpStatus.BAD_REQUEST, "parameterDefaults must be valid JSON: " + e.getMessage());
                 }
             }
             bindings.save(new AgentWorkflowBinding(

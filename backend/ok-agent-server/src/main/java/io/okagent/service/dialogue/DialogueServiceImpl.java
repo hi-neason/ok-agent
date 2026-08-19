@@ -46,8 +46,7 @@ public class DialogueServiceImpl implements DialogueService {
         if (existing.isPresent()) {
             return existing.get();
         }
-        DialogueSession created =
-                new DialogueSession(sessionId, agentId, title, userId, Instant.now());
+        DialogueSession created = new DialogueSession(sessionId, agentId, title, userId, Instant.now());
         return sessions.save(created);
     }
 
@@ -65,8 +64,7 @@ public class DialogueServiceImpl implements DialogueService {
     public DialogueTurn recordMessage(
             String sessionId, String role, String content, String model, Integer latencyMs, String traceId) {
         int seq = (int) turns.countBySessionId(sessionId) + 1;
-        DialogueTurn turn =
-                new DialogueTurn(sessionId, seq, role, content, model, latencyMs, traceId, Instant.now());
+        DialogueTurn turn = new DialogueTurn(sessionId, seq, role, content, model, latencyMs, traceId, Instant.now());
         return turns.save(turn);
     }
 
@@ -108,16 +106,14 @@ public class DialogueServiceImpl implements DialogueService {
                 predicate = cb.and(predicate, cb.equal(root.get("sessionId"), query.sessionId()));
             }
             if (query.userId() != null && !query.userId().isBlank()) {
-                predicate =
-                        cb.and(predicate, cb.like(root.get("userId"), "%" + query.userId() + "%"));
+                predicate = cb.and(predicate, cb.like(root.get("userId"), "%" + query.userId() + "%"));
             }
             if (query.agentId() != null) {
                 predicate = cb.and(predicate, cb.equal(root.get("agentId"), query.agentId()));
             }
             Parsed from = parse(query.from());
             if (from != null) {
-                predicate =
-                        cb.and(predicate, cb.greaterThanOrEqualTo(root.get("createdAt"), from.instant()));
+                predicate = cb.and(predicate, cb.greaterThanOrEqualTo(root.get("createdAt"), from.instant()));
             }
             Parsed to = parse(query.to());
             if (to != null) {
@@ -168,8 +164,7 @@ public class DialogueServiceImpl implements DialogueService {
         try {
             if (dateOnly) {
                 LocalDate date = LocalDate.parse(value);
-                return new Parsed(
-                        date.atStartOfDay(ZoneId.systemDefault()).toInstant(), true);
+                return new Parsed(date.atStartOfDay(ZoneId.systemDefault()).toInstant(), true);
             }
             LocalDateTime dateTime = LocalDateTime.parse(value);
             return new Parsed(dateTime.atZone(ZoneId.systemDefault()).toInstant(), false);

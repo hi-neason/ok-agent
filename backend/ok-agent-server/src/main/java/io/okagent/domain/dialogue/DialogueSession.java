@@ -38,8 +38,7 @@ public class DialogueSession {
 
     public DialogueSession() {}
 
-    public DialogueSession(
-            String sessionId, UUID agentId, String title, String userId, Instant createdAt) {
+    public DialogueSession(String sessionId, UUID agentId, String title, String userId, Instant createdAt) {
         this.sessionId = sessionId;
         this.agentId = agentId;
         this.title = title;

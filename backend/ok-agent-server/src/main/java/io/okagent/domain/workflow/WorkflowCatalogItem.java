@@ -112,18 +112,59 @@ public class WorkflowCatalogItem {
         this.updatedAt = Instant.now();
     }
 
-    public UUID getId() { return id; }
-    public UUID getSourceId() { return sourceId; }
-    public String getRemoteWorkflowId() { return remoteWorkflowId; }
-    public String getName() { return name; }
-    public String getRemoteMode() { return remoteMode; }
-    public boolean isActive() { return active; }
-    public String getTagsJson() { return tagsJson; }
-    public String getRemoteDescription() { return remoteDescription; }
-    public String getDescription() { return description; }
-    public String getInputSchemaJson() { return inputSchemaJson; }
-    public String getRemoteRawJson() { return remoteRawJson; }
-    public WorkflowMetadataStatus getMetadataStatus() { return metadataStatus; }
-    public Instant getDiscoveredAt() { return discoveredAt; }
-    public Instant getUpdatedAt() { return updatedAt; }
+    public UUID getId() {
+        return id;
+    }
+
+    public UUID getSourceId() {
+        return sourceId;
+    }
+
+    public String getRemoteWorkflowId() {
+        return remoteWorkflowId;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getRemoteMode() {
+        return remoteMode;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public String getTagsJson() {
+        return tagsJson;
+    }
+
+    public String getRemoteDescription() {
+        return remoteDescription;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public String getInputSchemaJson() {
+        return inputSchemaJson;
+    }
+
+    public String getRemoteRawJson() {
+        return remoteRawJson;
+    }
+
+    public WorkflowMetadataStatus getMetadataStatus() {
+        return metadataStatus;
+    }
+
+    public Instant getDiscoveredAt() {
+        return discoveredAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
 }

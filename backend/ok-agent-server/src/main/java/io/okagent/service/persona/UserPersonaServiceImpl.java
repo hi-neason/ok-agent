@@ -38,7 +38,8 @@ public class UserPersonaServiceImpl implements UserPersonaService {
 
     @Override
     public UserPersonaResponse getOrInit(String userId, UUID agentId) {
-        UserPersona persona = repository.findByIdUserIdAndIdAgentId(userId, agentId).orElse(null);
+        UserPersona persona =
+                repository.findByIdUserIdAndIdAgentId(userId, agentId).orElse(null);
         String memory = readMemory(userId, agentId);
         if (persona == null) {
             return UserPersonaResponse.empty(userId, agentId, memory);
@@ -55,7 +56,8 @@ public class UserPersonaServiceImpl implements UserPersonaService {
 
     @Override
     public UserPersonaResponse upsert(String userId, UUID agentId, UpsertPersonaRequest request) {
-        UserPersona persona = repository.findByIdUserIdAndIdAgentId(userId, agentId)
+        UserPersona persona = repository
+                .findByIdUserIdAndIdAgentId(userId, agentId)
                 .orElseGet(() -> new UserPersona(userId, agentId));
         if (request.tags() != null) {
             persona.setTagsJson(writeJson(request.tags()));
@@ -90,8 +92,7 @@ public class UserPersonaServiceImpl implements UserPersonaService {
             return;
         }
         String existing = readMemory(userId, agentId);
-        String stamped =
-                (existing.isBlank() ? "" : existing + "\n\n") + "## " + Instant.now() + "\n" + delta.strip();
+        String stamped = (existing.isBlank() ? "" : existing + "\n\n") + "## " + Instant.now() + "\n" + delta.strip();
         Map<String, Object> value = new LinkedHashMap<>();
         value.put("content", stamped);
         value.put("encoding", "utf-8");
@@ -106,10 +107,12 @@ public class UserPersonaServiceImpl implements UserPersonaService {
         if (injectionMode == PersonaInjectionMode.NONE || agentId == null) {
             return "";
         }
-        List<UserPersona> personas =
-                injectionMode == PersonaInjectionMode.GLOBAL
-                        ? repository.findByIdUserId(userId)
-                        : repository.findByIdUserIdAndIdAgentId(userId, agentId).map(List::of).orElse(List.of());
+        List<UserPersona> personas = injectionMode == PersonaInjectionMode.GLOBAL
+                ? repository.findByIdUserId(userId)
+                : repository
+                        .findByIdUserIdAndIdAgentId(userId, agentId)
+                        .map(List::of)
+                        .orElse(List.of());
 
         // Merge structured fields across the selected persona rows.
         List<String> tags = new ArrayList<>();
@@ -119,8 +122,10 @@ public class UserPersonaServiceImpl implements UserPersonaService {
         for (UserPersona p : personas) {
             tags.addAll(parseTags(p.getTagsJson()));
             prefs.putAll(parsePreferences(p.getPreferencesJson()));
-            if (p.getSummary() != null && !p.getSummary().isBlank()) summaries.add(p.getSummary().strip());
-            if (p.getFacts() != null && !p.getFacts().isBlank()) factsParts.add(p.getFacts().strip());
+            if (p.getSummary() != null && !p.getSummary().isBlank())
+                summaries.add(p.getSummary().strip());
+            if (p.getFacts() != null && !p.getFacts().isBlank())
+                factsParts.add(p.getFacts().strip());
         }
         List<String> tagsDedup = new ArrayList<>(new LinkedHashSet<>(tags));
         String summary = String.join(" / ", summaries);
@@ -139,14 +144,12 @@ public class UserPersonaServiceImpl implements UserPersonaService {
             }
         }
 
-        if (summary.isBlank() && tagsDedup.isEmpty() && prefs.isEmpty() && facts.isBlank()
-                && memory.length() == 0) {
+        if (summary.isBlank() && tagsDedup.isEmpty() && prefs.isEmpty() && facts.isBlank() && memory.length() == 0) {
             return "";
         }
 
         if (template != null && !template.isBlank()) {
-            return template
-                    .replace("{summary}", summary)
+            return template.replace("{summary}", summary)
                     .replace("{tags}", writeJsonSafe(tagsDedup))
                     .replace("{preferences}", writeJsonSafe(prefs))
                     .replace("{facts}", facts)
@@ -154,7 +157,8 @@ public class UserPersonaServiceImpl implements UserPersonaService {
         }
         StringBuilder sb = new StringBuilder("# 用户画像 (User Profile)\n");
         if (!summary.isBlank()) sb.append("总结: ").append(summary).append("\n");
-        if (!tagsDedup.isEmpty()) sb.append("标签: ").append(writeJsonSafe(tagsDedup)).append("\n");
+        if (!tagsDedup.isEmpty())
+            sb.append("标签: ").append(writeJsonSafe(tagsDedup)).append("\n");
         if (!prefs.isEmpty()) sb.append("偏好: ").append(writeJsonSafe(prefs)).append("\n");
         if (!facts.isBlank()) sb.append("关键事实: ").append(facts).append("\n");
         if (memory.length() > 0) sb.append("长期记忆:\n").append(memory).append("\n");

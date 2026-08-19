@@ -87,19 +87,63 @@ public class WorkflowExecutionAudit {
         this.createdAt = Instant.now();
     }
 
-    public UUID getId() { return id; }
-    public UUID getAgentId() { return agentId; }
-    public String getUserId() { return userId; }
-    public String getSessionId() { return sessionId; }
-    public UUID getSourceId() { return sourceId; }
-    public UUID getCatalogItemId() { return catalogItemId; }
-    public String getInputsHash() { return inputsHash; }
-    public String getRemoteRunId() { return remoteRunId; }
-    public String getStatus() { return status; }
-    public String getResultSummary() { return resultSummary; }
-    public String getErrorMessage() { return errorMessage; }
-    public Double getElapsedSeconds() { return elapsedSeconds; }
-    public Integer getTotalTokens() { return totalTokens; }
-    public int getLatencyMs() { return latencyMs; }
-    public Instant getCreatedAt() { return createdAt; }
+    public UUID getId() {
+        return id;
+    }
+
+    public UUID getAgentId() {
+        return agentId;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public String getSessionId() {
+        return sessionId;
+    }
+
+    public UUID getSourceId() {
+        return sourceId;
+    }
+
+    public UUID getCatalogItemId() {
+        return catalogItemId;
+    }
+
+    public String getInputsHash() {
+        return inputsHash;
+    }
+
+    public String getRemoteRunId() {
+        return remoteRunId;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public String getResultSummary() {
+        return resultSummary;
+    }
+
+    public String getErrorMessage() {
+        return errorMessage;
+    }
+
+    public Double getElapsedSeconds() {
+        return elapsedSeconds;
+    }
+
+    public Integer getTotalTokens() {
+        return totalTokens;
+    }
+
+    public int getLatencyMs() {
+        return latencyMs;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
 }

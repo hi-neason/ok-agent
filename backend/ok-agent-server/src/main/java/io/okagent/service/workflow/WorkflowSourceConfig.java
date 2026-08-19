@@ -25,7 +25,10 @@ public record WorkflowSourceConfig(
         var value = config.get(key);
         if (value instanceof Number n) return n.intValue();
         if (value instanceof String s && !s.isBlank()) {
-            try { return Integer.parseInt(s.trim()); } catch (NumberFormatException ignored) { }
+            try {
+                return Integer.parseInt(s.trim());
+            } catch (NumberFormatException ignored) {
+            }
         }
         return fallback;
     }

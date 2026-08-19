@@ -7,5 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface WorkflowSourceRepository extends JpaRepository<WorkflowSource, UUID> {
     boolean existsBySourceKey(String sourceKey);
+
     Optional<WorkflowSource> findBySourceKey(String sourceKey);
 }

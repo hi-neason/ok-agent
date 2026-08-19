@@ -1,6 +1,5 @@
 package io.okagent.service.workflow;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.okagent.domain.workflow.AgentWorkflowBinding;
 import io.okagent.domain.workflow.WorkflowCatalogItem;
@@ -13,7 +12,6 @@ import io.okagent.repository.workflow.WorkflowSourceRepository;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
@@ -100,11 +98,7 @@ public class WorkflowRuntimeCatalog {
 
     /** Authorizes, dedupes, executes a bound workflow, and records an audit entry. */
     public ExecuteResult execute(
-            UUID agentId,
-            UUID catalogItemId,
-            Map<String, Object> inputs,
-            String userId,
-            String sessionId) {
+            UUID agentId, UUID catalogItemId, Map<String, Object> inputs, String userId, String sessionId) {
         long started = System.nanoTime();
         var item = requireBoundItem(agentId, catalogItemId);
         var source = sources.findById(item.getSourceId())
@@ -116,10 +110,13 @@ public class WorkflowRuntimeCatalog {
         String inputsHash = hashInputs(safeInputs);
         String idempotencyKey = sessionId + "|" + catalogItemId + "|" + inputsHash;
         if (isDuplicate(idempotencyKey)) {
-            log.info("Suppressing duplicate workflow execution: agent={} item={} session={}",
-                    agentId, catalogItemId, sessionId);
-            return new ExecuteResult(false, "DUPLICATE", "Duplicate request suppressed; workflow already triggered",
-                    null, null, null);
+            log.info(
+                    "Suppressing duplicate workflow execution: agent={} item={} session={}",
+                    agentId,
+                    catalogItemId,
+                    sessionId);
+            return new ExecuteResult(
+                    false, "DUPLICATE", "Duplicate request suppressed; workflow already triggered", null, null, null);
         }
         recentExecutions.put(idempotencyKey, System.currentTimeMillis());
 
@@ -184,7 +181,8 @@ public class WorkflowRuntimeCatalog {
     }
 
     private Map<UUID, String> sourceNames(Collection<WorkflowCatalogItem> items) {
-        var ids = items.stream().map(WorkflowCatalogItem::getSourceId).distinct().toList();
+        var ids =
+                items.stream().map(WorkflowCatalogItem::getSourceId).distinct().toList();
         Map<UUID, String> names = new HashMap<>();
         for (var source : sources.findAllById(ids)) {
             names.put(source.getId(), source.getSourceKey());
@@ -196,8 +194,8 @@ public class WorkflowRuntimeCatalog {
         return providers.stream()
                 .filter(p -> p.type().equalsIgnoreCase(source.getSourceType().name()))
                 .findFirst()
-                .orElseThrow(() -> new IllegalStateException(
-                        "No workflow provider for type " + source.getSourceType()));
+                .orElseThrow(
+                        () -> new IllegalStateException("No workflow provider for type " + source.getSourceType()));
     }
 
     private boolean isDuplicate(String key) {

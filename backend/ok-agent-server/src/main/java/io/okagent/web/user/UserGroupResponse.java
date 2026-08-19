@@ -5,13 +5,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 public record UserGroupResponse(
-        UUID id,
-        String groupKey,
-        String name,
-        String description,
-        boolean enabled,
-        long userCount,
-        Instant updatedAt) {
+        UUID id, String groupKey, String name, String description, boolean enabled, long userCount, Instant updatedAt) {
     public static UserGroupResponse from(UserGroup group, long userCount) {
         return new UserGroupResponse(
                 group.getId(),

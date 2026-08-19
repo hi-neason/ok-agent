@@ -8,7 +8,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface AgentWorkflowBindingRepository extends JpaRepository<AgentWorkflowBinding, UUID> {
     List<AgentWorkflowBinding> findByAgentId(UUID agentId);
+
     List<AgentWorkflowBinding> findByAgentIdIn(Collection<UUID> agentIds);
+
     List<AgentWorkflowBinding> findByCatalogItemId(UUID catalogItemId);
+
     void deleteByAgentId(UUID agentId);
 }

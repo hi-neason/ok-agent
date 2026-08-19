@@ -1,6 +1,5 @@
 package io.okagent.service.observe;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.agentscope.core.message.Msg;
 import io.agentscope.core.model.GenerateOptions;
 import io.agentscope.core.model.ToolSchema;
@@ -62,22 +61,10 @@ final class TurnTrace {
      * the runtime so the same middleware works for the debug runtime and future runtime instances.
      */
     static TurnTrace start(
-            String traceId,
-            String sessionId,
-            UUID agentId,
-            String userId,
-            int turnSeq,
-            String agentName) {
+            String traceId, String sessionId, UUID agentId, String userId, int turnSeq, String agentName) {
         long now = microsNow();
-        TurnTrace trace =
-                new TurnTrace(traceId, sessionId, agentId, userId, turnSeq, agentName, now);
-        MutableSpan root =
-                new MutableSpan(
-                        trace.rootSpanId,
-                        null,
-                        SpanType.AGENT,
-                        "invoke_agent " + agentName,
-                        now);
+        TurnTrace trace = new TurnTrace(traceId, sessionId, agentId, userId, turnSeq, agentName, now);
+        MutableSpan root = new MutableSpan(trace.rootSpanId, null, SpanType.AGENT, "invoke_agent " + agentName, now);
         trace.register(root);
         return trace;
     }
@@ -91,14 +78,9 @@ final class TurnTrace {
     }
 
     /** Opens a child MODEL span under the root, capturing the full request payload. */
-    MutableSpan startModel(
-            String modelName,
-            List<Msg> messages,
-            List<ToolSchema> tools,
-            GenerateOptions options) {
+    MutableSpan startModel(String modelName, List<Msg> messages, List<ToolSchema> tools, GenerateOptions options) {
         MutableSpan span =
-                new MutableSpan(
-                        randomSpanId(), rootSpanId, SpanType.MODEL, "chat " + modelName, microsNow());
+                new MutableSpan(randomSpanId(), rootSpanId, SpanType.MODEL, "chat " + modelName, microsNow());
         span.attribute("gen_ai.request.model", modelName);
         span.attribute("gen_ai.request.messages.count", messages == null ? 0 : messages.size());
         span.attribute("gen_ai.request.tools.count", tools == null ? 0 : tools.size());
@@ -126,16 +108,14 @@ final class TurnTrace {
     }
 
     /** Opens a child tool span under the root. {@code type} classifies the tool source. */
-    MutableSpan startTool(
-            SpanType type, String callId, String toolName, Map<String, Object> inputArgs) {
-        MutableSpan span =
-                new MutableSpan(
-                        // Reuse the tool call id when present so tool result events can correlate.
-                        callId != null && !callId.isBlank() ? stableSpanId(callId) : randomSpanId(),
-                        rootSpanId,
-                        type,
-                        "execute_tool " + toolName,
-                        microsNow());
+    MutableSpan startTool(SpanType type, String callId, String toolName, Map<String, Object> inputArgs) {
+        MutableSpan span = new MutableSpan(
+                // Reuse the tool call id when present so tool result events can correlate.
+                callId != null && !callId.isBlank() ? stableSpanId(callId) : randomSpanId(),
+                rootSpanId,
+                type,
+                "execute_tool " + toolName,
+                microsNow());
         span.attribute("gen_ai.tool.name", toolName);
         span.attribute("gen_ai.tool.type", type.name());
         if (callId != null) {
@@ -170,23 +150,22 @@ final class TurnTrace {
             if (s.endUs == 0) {
                 s.finish(SpanStatus.CANCELLED, null, endUs);
             }
-            result.add(
-                    new TraceSpan(
-                            traceId,
-                            s.spanId,
-                            s.parentSpanId,
-                            sessionId,
-                            agentId,
-                            userId,
-                            turnSeq,
-                            s.type,
-                            s.name,
-                            s.startUs,
-                            s.endUs,
-                            s.status,
-                            s.attributesJson(),
-                            s.input,
-                            s.output));
+            result.add(new TraceSpan(
+                    traceId,
+                    s.spanId,
+                    s.parentSpanId,
+                    sessionId,
+                    agentId,
+                    userId,
+                    turnSeq,
+                    s.type,
+                    s.name,
+                    s.startUs,
+                    s.endUs,
+                    s.status,
+                    s.attributesJson(),
+                    s.input,
+                    s.output));
         }
         return result;
     }
@@ -243,12 +222,7 @@ final class TurnTrace {
         String output;
         private String errorMessage;
 
-        MutableSpan(
-                String spanId,
-                String parentSpanId,
-                SpanType type,
-                String name,
-                long startUs) {
+        MutableSpan(String spanId, String parentSpanId, SpanType type, String name, long startUs) {
             this.spanId = spanId;
             this.parentSpanId = parentSpanId;
             this.type = type;

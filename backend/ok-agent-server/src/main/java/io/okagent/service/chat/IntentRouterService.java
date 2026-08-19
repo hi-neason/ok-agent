@@ -82,7 +82,8 @@ public class IntentRouterService {
     private final JdbcAgentStateStore stateStore;
     private final PersonaExtractionService personaExtraction;
     private final ObjectMapper json = new ObjectMapper();
-    private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build();
+    private final HttpClient http =
+            HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build();
     private final Map<String, Session> sessions = new ConcurrentHashMap<>();
 
     public IntentRouterService(
@@ -108,11 +109,10 @@ public class IntentRouterService {
         if (req.message() == null || req.message().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "message is required");
         }
-        var draft = agents.findById(req.agentId()).orElseThrow(
-                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Router agent not found"));
+        var draft = agents.findById(req.agentId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Router agent not found"));
         if (draft.getModelAssetId() == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST, "该路由智能体尚未配置模型，请先选择模型");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "该路由智能体尚未配置模型，请先选择模型");
         }
 
         var userId = req.userId();
@@ -148,7 +148,8 @@ public class IntentRouterService {
             var toolCalled = new AtomicBoolean(false);
             var toolResultSeen = new AtomicBoolean(false);
             var started = Instant.now();
-            session.agent.streamEvents(turnMessage, ctx)
+            session.agent
+                    .streamEvents(turnMessage, ctx)
                     .doOnNext(event -> {
                         if (event instanceof TextBlockDeltaEvent delta) {
                             answer.append(delta.getDelta());
@@ -304,13 +305,14 @@ public class IntentRouterService {
             if (agentId.isBlank()) continue;
             try {
                 var child = agents.findById(UUID.fromString(agentId)).orElse(null);
-                if (child != null && child.isEnabled() && child.getAgentKey() != null
+                if (child != null
+                        && child.isEnabled()
+                        && child.getAgentKey() != null
                         && !child.getAgentKey().isBlank()) {
                     return child.getAgentKey();
                 }
             } catch (IllegalArgumentException e) {
-                log.warn("Sub-agent reference has invalid agentId '{}' on router={}",
-                        agentId, router.getAgentKey());
+                log.warn("Sub-agent reference has invalid agentId '{}' on router={}", agentId, router.getAgentKey());
             }
         }
         return null;
@@ -321,7 +323,9 @@ public class IntentRouterService {
     }
 
     private String buildRoutedMessage(String query, IntentClassification c) {
-        if (c.fallback() || c.targetSubagentKey() == null || c.targetSubagentKey().isBlank()) {
+        if (c.fallback()
+                || c.targetSubagentKey() == null
+                || c.targetSubagentKey().isBlank()) {
             return query;
         }
         return String.format(
@@ -343,8 +347,13 @@ public class IntentRouterService {
         var sb = new StringBuilder();
         sb.append("你是一个客服意图分类器。下面是可用的意图树（意图键 | 名称 | 描述）：\n");
         for (var i : flat) {
-            sb.append("- ").append(i.intentKey()).append(" | ").append(i.name()).append(" | ")
-                    .append(i.description() == null ? "" : i.description()).append('\n');
+            sb.append("- ")
+                    .append(i.intentKey())
+                    .append(" | ")
+                    .append(i.name())
+                    .append(" | ")
+                    .append(i.description() == null ? "" : i.description())
+                    .append('\n');
         }
         sb.append("\n用户问题：").append(query).append('\n');
         sb.append("请只输出一个 JSON 对象：{\"intentKey\":\"最匹配的意图键，无匹配则空字符串\","
@@ -470,9 +479,8 @@ public class IntentRouterService {
     private void purgeSession(String key, String userId) {
         String effectiveUserId = userId;
         if (effectiveUserId == null) {
-            effectiveUserId = dialogue.findById(key)
-                    .map(DialogueSession::getUserId)
-                    .orElse(null);
+            effectiveUserId =
+                    dialogue.findById(key).map(DialogueSession::getUserId).orElse(null);
         }
         stateStore.delete(effectiveUserId, key);
         dialogue.purge(key);

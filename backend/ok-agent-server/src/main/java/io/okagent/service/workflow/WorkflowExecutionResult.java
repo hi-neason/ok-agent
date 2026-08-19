@@ -12,7 +12,8 @@ public record WorkflowExecutionResult(
 
     public static WorkflowExecutionResult success(
             String remoteRunId, String outputSummary, Double elapsedSeconds, Integer totalTokens) {
-        return new WorkflowExecutionResult(true, remoteRunId, "SUCCESS", outputSummary, null, elapsedSeconds, totalTokens);
+        return new WorkflowExecutionResult(
+                true, remoteRunId, "SUCCESS", outputSummary, null, elapsedSeconds, totalTokens);
     }
 
     public static WorkflowExecutionResult failure(String remoteRunId, String errorMessage) {

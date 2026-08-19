@@ -41,7 +41,10 @@ public class JdbcAgentStateStore implements AgentStateStore {
                 "INSERT INTO agent_state (user_id, session_id, state_key, item_index, state_data, version) "
                         + "VALUES (?, ?, ?, 0, ?, 1) "
                         + "ON DUPLICATE KEY UPDATE state_data = VALUES(state_data), version = version + 1",
-                user(userId), sessionId, key, json);
+                user(userId),
+                sessionId,
+                key,
+                json);
     }
 
     @Override
@@ -51,12 +54,11 @@ public class JdbcAgentStateStore implements AgentStateStore {
         }
         String u = user(userId);
         jdbc.update(
-                "DELETE FROM agent_state WHERE user_id = ? AND session_id = ? AND state_key = ?",
-                u, sessionId, key);
+                "DELETE FROM agent_state WHERE user_id = ? AND session_id = ? AND state_key = ?", u, sessionId, key);
         List<Object[]> batch = new ArrayList<>(values.size());
         for (int i = 0; i < values.size(); i++) {
-            batch.add(new Object[] {u, sessionId, key, i,
-                    JsonUtils.getJsonCodec().toJson(values.get(i))});
+            batch.add(
+                    new Object[] {u, sessionId, key, i, JsonUtils.getJsonCodec().toJson(values.get(i))});
         }
         jdbc.batchUpdate(
                 "INSERT INTO agent_state (user_id, session_id, state_key, item_index, state_data,"
@@ -65,47 +67,51 @@ public class JdbcAgentStateStore implements AgentStateStore {
     }
 
     @Override
-    public <T extends State> Optional<T> get(
-            String userId, String sessionId, String key, Class<T> type) {
-        return jdbc.query(
+    public <T extends State> Optional<T> get(String userId, String sessionId, String key, Class<T> type) {
+        return jdbc
+                .query(
                         "SELECT state_data FROM agent_state "
                                 + "WHERE user_id = ? AND session_id = ? AND state_key = ? AND item_index = 0",
                         (rs, n) -> JsonUtils.getJsonCodec().fromJson(rs.getString("state_data"), type),
-                        user(userId), sessionId, key)
+                        user(userId),
+                        sessionId,
+                        key)
                 .stream()
                 .findFirst();
     }
 
     @Override
-    public <T extends State> List<T> getList(
-            String userId, String sessionId, String key, Class<T> itemType) {
+    public <T extends State> List<T> getList(String userId, String sessionId, String key, Class<T> itemType) {
         return jdbc.query(
                 "SELECT state_data FROM agent_state "
                         + "WHERE user_id = ? AND session_id = ? AND state_key = ? ORDER BY item_index",
                 (rs, n) -> JsonUtils.getJsonCodec().fromJson(rs.getString("state_data"), itemType),
-                user(userId), sessionId, key);
+                user(userId),
+                sessionId,
+                key);
     }
 
     @Override
     public boolean exists(String userId, String sessionId) {
         return jdbc.queryForObject(
-                "SELECT 1 FROM agent_state WHERE user_id = ? AND session_id = ? LIMIT 1",
-                (rs, n) -> true,
-                user(userId), sessionId) != null;
+                        "SELECT 1 FROM agent_state WHERE user_id = ? AND session_id = ? LIMIT 1",
+                        (rs, n) -> true,
+                        user(userId),
+                        sessionId)
+                != null;
     }
 
     @Override
     public void delete(String userId, String sessionId) {
-        jdbc.update(
-                "DELETE FROM agent_state WHERE user_id = ? AND session_id = ?",
-                user(userId), sessionId);
+        jdbc.update("DELETE FROM agent_state WHERE user_id = ? AND session_id = ?", user(userId), sessionId);
     }
 
     @Override
     public Set<String> listSessionIds(String userId) {
         List<String> ids = jdbc.queryForList(
                 "SELECT DISTINCT session_id FROM agent_state WHERE user_id = ? ORDER BY session_id",
-                String.class, user(userId));
+                String.class,
+                user(userId));
         return new HashSet<>(ids);
     }
 }

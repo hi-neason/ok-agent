@@ -19,7 +19,6 @@ import io.okagent.web.agent.AgentChatRequest;
 import io.okagent.web.agent.AgentChatResponse;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -64,13 +63,13 @@ public class AgentDebugServiceImpl implements AgentDebugService {
     public AgentChatResponse chat(UUID agentId, AgentChatRequest request) {
         var draft = loadDraft(agentId);
         if (draft.getModelAssetId() == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST, "该智能体尚未配置模型，请先在配置中选择模型后再发起对话");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "该智能体尚未配置模型，请先在配置中选择模型后再发起对话");
         }
 
         var userId = request.userId();
         var sessionId = resolveSessionId(request.sessionId());
-        var session = sessions.compute(sessionId, (key, existing) -> resolveSession(sessionId, existing, draft, userId));
+        var session =
+                sessions.compute(sessionId, (key, existing) -> resolveSession(sessionId, existing, draft, userId));
         if (session == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Debug session not found or invalid");
         }
@@ -116,7 +115,8 @@ public class AgentDebugServiceImpl implements AgentDebugService {
                         }
                     })
                     .blockLast(CALL_TIMEOUT);
-            var latencyMs = (int) java.time.Duration.between(started, Instant.now()).toMillis();
+            var latencyMs =
+                    (int) java.time.Duration.between(started, Instant.now()).toMillis();
 
             // Prefer AgentResultEvent text over accumulated deltas. Some models only emit
             // deltas and leave the result text empty, so we fall back to delta accumulation.
@@ -242,24 +242,16 @@ public class AgentDebugServiceImpl implements AgentDebugService {
         }
         var title = (firstUserMessage == null || firstUserMessage.isBlank())
                 ? draft.getName()
-                : (firstUserMessage.length() <= 50
-                        ? firstUserMessage
-                        : firstUserMessage.substring(0, 50) + "...");
+                : (firstUserMessage.length() <= 50 ? firstUserMessage : firstUserMessage.substring(0, 50) + "...");
         dialogue.ensureSession(sessionId, draft.getId(), userId, title);
     }
 
-    private void recordTurn(
-            String sessionId, String role, String content, String model, Integer latencyMs) {
+    private void recordTurn(String sessionId, String role, String content, String model, Integer latencyMs) {
         dialogue.recordMessage(sessionId, role, content, model, latencyMs, null);
     }
 
     private void recordTurn(
-            String sessionId,
-            String role,
-            String content,
-            String model,
-            Integer latencyMs,
-            String traceId) {
+            String sessionId, String role, String content, String model, Integer latencyMs, String traceId) {
         dialogue.recordMessage(sessionId, role, content, model, latencyMs, traceId);
     }
 
@@ -270,9 +262,8 @@ public class AgentDebugServiceImpl implements AgentDebugService {
     private void purgeSession(String sessionId, String userId) {
         String effectiveUserId = userId;
         if (effectiveUserId == null) {
-            effectiveUserId = dialogue.findById(sessionId)
-                    .map(DialogueSession::getUserId)
-                    .orElse(null);
+            effectiveUserId =
+                    dialogue.findById(sessionId).map(DialogueSession::getUserId).orElse(null);
         }
         stateStore.delete(effectiveUserId, sessionId);
         dialogue.purge(sessionId);

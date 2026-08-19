@@ -94,14 +94,12 @@ public class KnowledgeRuntimeCatalog {
                 .orElse(null);
 
         Integer effectiveTopK = topK != null ? topK : (binding == null ? null : binding.getTopK());
-        Double effectiveThreshold = scoreThreshold != null
-                ? scoreThreshold
-                : (binding == null ? null : binding.getScoreThreshold());
+        Double effectiveThreshold =
+                scoreThreshold != null ? scoreThreshold : (binding == null ? null : binding.getScoreThreshold());
 
         var provider = providerFor(source);
         KnowledgeSourceConfig config = sourceService.toConfig(source);
-        return provider.retrieve(
-                config, item.getRemoteKnowledgeId(), query, effectiveTopK, effectiveThreshold, userId);
+        return provider.retrieve(config, item.getRemoteKnowledgeId(), query, effectiveTopK, effectiveThreshold, userId);
     }
 
     private KnowledgeCatalogItem requireBoundItem(UUID agentId, UUID catalogItemId) {
@@ -122,7 +120,8 @@ public class KnowledgeRuntimeCatalog {
     }
 
     private Map<UUID, String> sourceKeys(Collection<KnowledgeCatalogItem> items) {
-        var ids = items.stream().map(KnowledgeCatalogItem::getSourceId).distinct().toList();
+        var ids =
+                items.stream().map(KnowledgeCatalogItem::getSourceId).distinct().toList();
         Map<UUID, String> keys = new HashMap<>();
         for (var source : sources.findAllById(ids)) {
             keys.put(source.getId(), source.getSourceKey());
@@ -134,7 +133,7 @@ public class KnowledgeRuntimeCatalog {
         return providers.stream()
                 .filter(p -> p.type().equalsIgnoreCase(source.getSourceType().name()))
                 .findFirst()
-                .orElseThrow(() -> new IllegalStateException(
-                        "No knowledge provider for type " + source.getSourceType()));
+                .orElseThrow(
+                        () -> new IllegalStateException("No knowledge provider for type " + source.getSourceType()));
     }
 }

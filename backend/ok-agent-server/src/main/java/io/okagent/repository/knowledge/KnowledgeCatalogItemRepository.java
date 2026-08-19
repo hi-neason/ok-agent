@@ -9,7 +9,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface KnowledgeCatalogItemRepository extends JpaRepository<KnowledgeCatalogItem, UUID> {
     List<KnowledgeCatalogItem> findBySourceId(UUID sourceId);
+
     Optional<KnowledgeCatalogItem> findBySourceIdAndRemoteKnowledgeId(UUID sourceId, String remoteKnowledgeId);
+
     void deleteBySourceId(UUID sourceId);
+
     List<KnowledgeCatalogItem> findAllByIdIn(Collection<UUID> ids);
 }

@@ -21,6 +21,7 @@ public class AgentAsset {
     /** Default persona injection template; mirrors UserPersonaServiceImpl's fallback rendering. */
     public static final String DEFAULT_PERSONA_PROMPT_TEMPLATE =
             "# 用户画像 (User Profile)\n总结: {summary}\n标签: {tags}\n偏好: {preferences}\n关键事实: {facts}\n长期记忆:\n{memory}";
+
     @Id
     private UUID id;
 
@@ -324,12 +325,9 @@ public class AgentAsset {
 
     /** Applies the user-persona configuration: extraction switch, injection mode, prompt template. */
     public void applyPersonaConfig(
-            boolean personaExtractEnabled,
-            PersonaInjectionMode personaInjectionMode,
-            String personaPromptTemplate) {
+            boolean personaExtractEnabled, PersonaInjectionMode personaInjectionMode, String personaPromptTemplate) {
         this.personaExtractEnabled = personaExtractEnabled;
-        this.personaInjectionMode =
-                personaInjectionMode == null ? PersonaInjectionMode.NONE : personaInjectionMode;
+        this.personaInjectionMode = personaInjectionMode == null ? PersonaInjectionMode.NONE : personaInjectionMode;
         this.personaPromptTemplate = personaPromptTemplate;
         this.updatedAt = Instant.now();
     }

@@ -1,0 +1,116 @@
+.channel-table-row {
+  display: grid;
+  grid-template-columns: 2fr 0.9fr 1.3fr 1fr 1.2fr 0.7fr 1.2fr;
+  gap: 12px;
+  align-items: center;
+}
+
+.channel-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 2px 10px;
+  border-radius: 999px;
+}
+.channel-status::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+.channel-status--success {
+  color: var(--color-text-success, #1d9e75);
+  background: rgba(29, 158, 117, 0.12);
+}
+.channel-status--success::before {
+  background: #1d9e75;
+}
+.channel-status--warning {
+  color: var(--color-text-warning, #ba7517);
+  background: rgba(186, 117, 23, 0.12);
+}
+.channel-status--warning::before {
+  background: #ba7517;
+}
+.channel-status--danger {
+  color: var(--color-text-danger, #a32d2d);
+  background: rgba(226, 75, 74, 0.12);
+}
+.channel-status--danger::before {
+  background: #e24b4a;
+}
+.channel-status--muted {
+  color: var(--color-text-tertiary, #888780);
+  background: rgba(136, 135, 128, 0.12);
+}
+.channel-status--muted::before {
+  background: #888780;
+}
+
+.channel-error {
+  display: block;
+  margin-top: 4px;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text-danger, #a32d2d);
+}
+
+.channel-empty {
+  padding: 48px 16px;
+  text-align: center;
+  color: var(--color-text-tertiary, #888780);
+}
+
+.channel-editor {
+  max-width: 760px;
+}
+
+.channel-section-title {
+  margin: 20px 0 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.channel-callback {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--color-background-secondary, rgba(136, 135, 128, 0.08));
+}
+.channel-callback code {
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  word-break: break-all;
+  color: var(--color-text-primary);
+}
+.channel-callback small {
+  color: var(--color-text-tertiary, #888780);
+}
+
+.channel-form-error {
+  margin-top: 16px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(226, 75, 74, 0.1);
+  color: var(--color-text-danger, #a32d2d);
+  font-size: 13px;
+}
+
+.channel-hint {
+  margin: 14px 0 4px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--color-background-secondary);
+  border: 0.5px solid var(--color-border-tertiary);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.6;
+}

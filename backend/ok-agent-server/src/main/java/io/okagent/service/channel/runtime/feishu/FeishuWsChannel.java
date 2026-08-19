@@ -4,6 +4,7 @@ import com.lark.oapi.event.EventDispatcher;
 import com.lark.oapi.service.im.ImService;
 import com.lark.oapi.service.im.v1.model.P2MessageReceiveV1;
 import com.lark.oapi.ws.Client;
+import io.agentscope.core.agent.RuntimeContext;
 import io.agentscope.core.event.AgentEvent;
 import io.agentscope.core.message.Msg;
 import io.agentscope.extensions.channel.common.BotLoopGuard;
@@ -16,6 +17,7 @@ import io.agentscope.harness.agent.gateway.channel.ChannelRouter;
 import io.agentscope.harness.agent.gateway.channel.InboundMessage;
 import io.agentscope.harness.agent.gateway.channel.OutboundAddress;
 import io.okagent.service.dialogue.DialogueService;
+import io.okagent.service.observe.TraceCollectingMiddleware;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -191,19 +193,24 @@ public final class FeishuWsChannel implements Channel {
         String sessionId = businessSessionId(route.context().canonicalKey());
         String userId = message.senderId();
         String userText = firstText(message);
+        String traceId = UUID.randomUUID().toString().replace("-", "");
+        int turnSeq = dialogue.nextSeq(sessionId);
+        RuntimeContext runtimeCtx = RuntimeContext.builder()
+                .userId(userId)
+                .sessionId(sessionId)
+                .put(TraceCollectingMiddleware.CTX_TRACE_ID, traceId)
+                .put(TraceCollectingMiddleware.CTX_TURN_SEQ, turnSeq)
+                .put(TraceCollectingMiddleware.CTX_AGENT_ID, agentId.toString())
+                .build();
 
         return Mono.fromRunnable(() -> recordTurnStart(sessionId, userId, userText))
                 .then(Mono.fromCallable(Instant::now))
                 .flatMap(started -> g.run(
-                                route.context(),
-                                message.messages(),
-                                route.outboundAddress(),
-                                message.runtimeContext(),
-                                message)
+                                route.context(), message.messages(), route.outboundAddress(), runtimeCtx, message)
                         .flatMap(reply ->
                                 sendReply(route.outboundAddress(), reply).thenReturn(reply))
-                        .doOnNext(reply -> recordTurnEnd(sessionId, reply, started, null))
-                        .doOnError(err -> recordTurnEnd(sessionId, null, started, err)));
+                        .doOnNext(reply -> recordTurnEnd(sessionId, reply, started, null, traceId))
+                        .doOnError(err -> recordTurnEnd(sessionId, null, started, err, traceId)));
     }
 
     /**
@@ -230,15 +237,16 @@ public final class FeishuWsChannel implements Channel {
         }
     }
 
-    private void recordTurnEnd(String sessionId, Msg reply, Instant started, Throwable error) {
+    private void recordTurnEnd(String sessionId, Msg reply, Instant started, Throwable error, String traceId) {
         try {
             int latencyMs = (int) Duration.between(started, Instant.now()).toMillis();
             if (error != null) {
-                dialogue.recordMessage(sessionId, "error", "Agent 执行失败：" + error.getMessage(), null, latencyMs);
+                dialogue.recordMessage(
+                        sessionId, "error", "Agent 执行失败：" + error.getMessage(), null, latencyMs, traceId);
             } else if (reply != null) {
                 String text = reply.getTextContent();
                 if (text != null && !text.isBlank()) {
-                    dialogue.recordMessage(sessionId, "assistant", text.trim(), null, latencyMs);
+                    dialogue.recordMessage(sessionId, "assistant", text.trim(), null, latencyMs, traceId);
                 }
             }
             dialogue.touchSession(sessionId);

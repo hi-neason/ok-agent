@@ -43,7 +43,7 @@ export function IntentPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set([ROOT_ID]));
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
   const load = useCallback(async () => {
     setLoading(true);

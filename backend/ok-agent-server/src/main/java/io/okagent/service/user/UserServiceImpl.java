@@ -2,6 +2,7 @@ package io.okagent.service.user;
 
 import io.okagent.domain.user.User;
 import io.okagent.domain.user.UserGroup;
+import io.okagent.repository.channel.ChannelUserIdentityRepository;
 import io.okagent.repository.user.UserGroupRepository;
 import io.okagent.repository.user.UserRepository;
 import io.okagent.web.user.CreateUserRequest;
@@ -19,10 +20,15 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final UserGroupRepository groupRepository;
+    private final ChannelUserIdentityRepository identityRepository;
 
-    public UserServiceImpl(UserRepository userRepository, UserGroupRepository groupRepository) {
+    public UserServiceImpl(
+            UserRepository userRepository,
+            UserGroupRepository groupRepository,
+            ChannelUserIdentityRepository identityRepository) {
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
+        this.identityRepository = identityRepository;
     }
 
     @Override
@@ -32,7 +38,8 @@ public class UserServiceImpl implements UserService {
         Map<UUID, String> groupNames =
                 groupRepository.findAll().stream().collect(Collectors.toMap(UserGroup::getId, UserGroup::getName));
         return users.stream()
-                .map(user -> UserResponse.from(user, groupName(groupNames, user.getGroupId())))
+                .map(user -> UserResponse.from(user, groupName(groupNames, user.getGroupId()), (int)
+                        identityRepository.countByLinkedUserId(user.getId())))
                 .toList();
     }
 

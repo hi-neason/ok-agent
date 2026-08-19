@@ -4,15 +4,24 @@ import { Button, PageHeader, Toggle, useConfirm } from "../shared";
 import {
   deleteUser,
   deleteUserGroup,
+  fetchUserChannels,
   fetchUserGroups,
   fetchUsers,
+  mergeUsers,
   saveUser,
   saveUserGroup,
 } from "./api";
-import type { UserGroupItem, UserItem } from "./types";
+import type { ChannelIdentity, UserGroupItem, UserItem } from "./types";
 import "./usermgmt.css";
 
 type Tab = "groups" | "users";
+
+const channelLabel: Record<string, string> = {
+  FEISHU: "飞书",
+  DINGTALK: "钉钉",
+  WECOM: "企业微信",
+  WECHAT: "微信",
+};
 
 export function UserManagementPage() {
   const { confirm, Dialog } = useConfirm();
@@ -24,6 +33,10 @@ export function UserManagementPage() {
   const [saving, setSaving] = useState(false);
   const [groupEditing, setGroupEditing] = useState<Partial<UserGroupItem> | null>(null);
   const [userEditing, setUserEditing] = useState<Partial<UserItem> | null>(null);
+  const [channelDrawer, setChannelDrawer] = useState<UserItem | null>(null);
+  const [channels, setChannels] = useState<ChannelIdentity[]>([]);
+  const [mergeTarget, setMergeTarget] = useState<UserItem | null>(null);
+  const [mergeCandidateId, setMergeCandidateId] = useState("");;
 
   const loadGroups = () =>
     fetchUserGroups().then(setGroups).catch(() => setError("加载用户组失败"));
@@ -43,6 +56,42 @@ export function UserManagementPage() {
       .toLowerCase()
       .includes(query.toLowerCase()),
   );
+
+  const openChannels = async (u: UserItem) => {
+    setChannelDrawer(u);
+    setChannels([]);
+    try {
+      setChannels(await fetchUserChannels(u.id));
+    } catch {
+      setError("加载渠道身份失败");
+    }
+  };
+
+  const runMerge = async () => {
+    if (!mergeTarget || !mergeCandidateId || mergeCandidateId === mergeTarget.id) return;
+    const candidate = users.find((u) => u.id === mergeCandidateId);
+    const ok = await confirm({
+      title: "合并用户",
+      message:
+        `确认将「${candidate?.displayName ?? mergeCandidateId}」合并到「${mergeTarget.displayName}」？\n` +
+        "该用户的对话历史、画像、记忆与渠道身份都会归并到目标用户，此操作不可恢复。",
+      confirmText: "确认合并",
+      dangerous: true,
+    });
+    if (!ok) return;
+    setSaving(true);
+    setError("");
+    try {
+      await mergeUsers(mergeTarget.id, mergeCandidateId);
+      setMergeTarget(null);
+      setMergeCandidateId("");
+      loadUsers();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "合并失败");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const saveGroup = async () => {
     if (!groupEditing || saving) return;
@@ -245,11 +294,12 @@ export function UserManagementPage() {
         <section className="run-table um-user-table">
           <div className="table-head">
             <span>账号</span>
-            <span>用户标识</span>
+            <span>来源</span>
             <span>姓名</span>
             <span>邮箱</span>
             <span>电话</span>
             <span>所属用户组</span>
+            <span>渠道</span>
             <span>状态</span>
             <span>操作</span>
           </div>
@@ -261,11 +311,32 @@ export function UserManagementPage() {
                 <span>
                   <b>{u.username}</b>
                 </span>
-                <code>{u.userId}</code>
+                <span>
+                  <span className={`um-source um-source--${u.source.toLowerCase()}`}>
+                    {u.source === "CHANNEL" ? "渠道" : "控制台"}
+                  </span>
+                </span>
                 <span>{u.displayName}</span>
                 <span>{u.email || "—"}</span>
                 <span>{u.phone || "—"}</span>
                 <span>{u.groupName || "—"}</span>
+                <span>
+                  {u.channelCount > 0 ? (
+                    <button
+                      className="link-button um-channel-count"
+                      onClick={() => void openChannels(u)}
+                      title="查看渠道身份"
+                    >
+                      <b>{u.channelCount}</b>
+                      <em>个</em>
+                    </button>
+                  ) : (
+                    <span className="um-channel-count">
+                      <b>0</b>
+                      <em>个</em>
+                    </span>
+                  )}
+                </span>
                 <Toggle
                   on={u.enabled}
                   setOn={(next) =>
@@ -292,6 +363,16 @@ export function UserManagementPage() {
                     }}
                   >
                     编辑
+                  </button>
+                  <button
+                    className="link-button"
+                    onClick={() => {
+                      setMergeTarget(u);
+                      setMergeCandidateId("");
+                      setError("");
+                    }}
+                  >
+                    合并
                   </button>
                   <button
                     className="link-button danger-link"
@@ -477,6 +558,113 @@ export function UserManagementPage() {
                 </Button>
                 <Button onClick={() => void saveUserRecord()} disabled={saving}>
                   {saving ? "保存中…" : "保存"}
+                </Button>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
+
+      {channelDrawer &&
+        createPortal(
+          <div
+            className="model-modal-mask"
+            role="presentation"
+            onMouseDown={() => setChannelDrawer(null)}
+          >
+            <div
+              className="form-surface model-editor"
+              role="dialog"
+              aria-modal="true"
+              onMouseDown={(event) => event.stopPropagation()}
+            >
+              <div className="form-title">
+                <div>
+                  <p className="kicker">USER CHANNELS</p>
+                  <h2>{channelDrawer.displayName} 的渠道身份</h2>
+                </div>
+                <button className="link-button" onClick={() => setChannelDrawer(null)}>
+                  关闭 ×
+                </button>
+              </div>
+              {channels.length === 0 ? (
+                <div className="um-empty">该用户暂无绑定的渠道身份。</div>
+              ) : (
+                <div className="um-channels-row">
+                  {channels.map((c, i) => (
+                    <div className="um-channel-chip" key={i}>
+                      <span className="um-chan-type">
+                        {channelLabel[c.channelType] ?? c.channelType}
+                      </span>
+                      <code>{c.externalId}</code>
+                      <span className="um-chan-meta">
+                        {c.messageCount} 条 · 最近{" "}
+                        {new Date(c.lastSeenAt).toLocaleString("zh-CN", { hour12: false })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="sticky-actions">
+                <Button onClick={() => setChannelDrawer(null)}>关闭</Button>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
+
+      {mergeTarget &&
+        createPortal(
+          <div
+            className="model-modal-mask"
+            role="presentation"
+            onMouseDown={() => !saving && setMergeTarget(null)}
+          >
+            <div
+              className="form-surface model-editor"
+              role="dialog"
+              aria-modal="true"
+              onMouseDown={(event) => event.stopPropagation()}
+            >
+              <div className="form-title">
+                <div>
+                  <p className="kicker">MERGE USER</p>
+                  <h2>合并到「{mergeTarget.displayName}」</h2>
+                </div>
+                <button className="link-button" onClick={() => setMergeTarget(null)}>
+                  关闭 ×
+                </button>
+              </div>
+              <p style={{ fontSize: 13, color: "var(--color-text-secondary)", lineHeight: 1.7 }}>
+                选择要并入 <b>{mergeTarget.displayName}</b> 的另一个用户。被合并用户的对话历史、
+                用户画像、记忆和所有渠道身份都会归并到该用户，被合并用户将被删除，操作不可恢复。
+              </p>
+              <div className="field-grid">
+                <label className="field wide">
+                  <span>选择被合并用户</span>
+                  <select
+                    value={mergeCandidateId}
+                    onChange={(e) => setMergeCandidateId(e.target.value)}
+                  >
+                    <option value="">— 请选择 —</option>
+                    {users
+                      .filter((u) => u.id !== mergeTarget.id)
+                      .map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.displayName}（{u.username}
+                          {u.channelCount ? ` · ${u.channelCount} 渠道` : ""}）
+                        </option>
+                      ))}
+                  </select>
+                </label>
+              </div>
+              {error && <div className="skill-error modal-error">× {error}</div>}
+              <div className="sticky-actions">
+                <Button quiet onClick={() => setMergeTarget(null)} disabled={saving}>
+                  取消
+                </Button>
+                <Button onClick={() => void runMerge()} disabled={saving || !mergeCandidateId}>
+                  {saving ? "合并中…" : "确认合并"}
                 </Button>
               </div>
             </div>

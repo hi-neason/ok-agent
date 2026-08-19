@@ -16,6 +16,7 @@ import io.agentscope.harness.agent.gateway.channel.ChannelConfig;
 import io.agentscope.harness.agent.gateway.channel.ChannelRouter;
 import io.agentscope.harness.agent.gateway.channel.InboundMessage;
 import io.agentscope.harness.agent.gateway.channel.OutboundAddress;
+import io.okagent.service.channel.ChannelIdentityResolver;
 import io.okagent.service.dialogue.DialogueService;
 import io.okagent.service.observe.TraceCollectingMiddleware;
 import java.time.Duration;
@@ -67,8 +68,10 @@ public final class FeishuWsChannel implements Channel {
     private final BotLoopGuard botLoopGuard = new BotLoopGuard();
     private final ChannelRouter router;
     private final DialogueService dialogue;
+    private final ChannelIdentityResolver identityResolver;
     private final UUID agentId;
     private final String agentName;
+    private final String channelType;
 
     private volatile Gateway gateway;
     private volatile Client wsClient;
@@ -81,8 +84,10 @@ public final class FeishuWsChannel implements Channel {
             String appSecret,
             com.lark.oapi.Client apiClient,
             DialogueService dialogue,
+            ChannelIdentityResolver identityResolver,
             UUID agentId,
-            String agentName) {
+            String agentName,
+            String channelType) {
         this.channelId = Objects.requireNonNull(channelId, "channelId");
         this.config = Objects.requireNonNull(config, "config");
         this.appId = Objects.requireNonNull(appId, "appId");
@@ -91,8 +96,10 @@ public final class FeishuWsChannel implements Channel {
         this.mapper = new FeishuEventMapper(channelId);
         this.router = new ChannelRouter(config.defaultAgentId());
         this.dialogue = Objects.requireNonNull(dialogue, "dialogue");
+        this.identityResolver = Objects.requireNonNull(identityResolver, "identityResolver");
         this.agentId = Objects.requireNonNull(agentId, "agentId");
         this.agentName = agentName;
+        this.channelType = channelType;
     }
 
     @Override
@@ -191,7 +198,12 @@ public final class FeishuWsChannel implements Channel {
         }
         var route = router.resolveRoute(config, message);
         String sessionId = businessSessionId(route.context().canonicalKey());
-        String userId = message.senderId();
+        String externalId = message.senderId();
+        // Resolve the provider open_id to the unified one-user-id (app_user.user_id), so
+        // persona/memory/dialogue/trace are keyed by a stable real-person id. Falls back to the
+        // raw external id if provisioning fails.
+        String userId = identityResolver.resolve(
+                channelType, channelId, externalId, null, message.accountId(), externalId, null);
         String userText = firstText(message);
         String traceId = UUID.randomUUID().toString().replace("-", "");
         int turnSeq = dialogue.nextSeq(sessionId);

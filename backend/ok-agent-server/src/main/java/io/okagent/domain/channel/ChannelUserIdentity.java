@@ -91,6 +91,43 @@ public class ChannelUserIdentity {
             long messageCount,
             Instant createdAt,
             Instant updatedAt) {
+        this(
+                null,
+                null,
+                channelType,
+                channelKey,
+                externalId,
+                unionId,
+                tenantKey,
+                displayName,
+                avatarUrl,
+                firstSeenAt,
+                lastSeenAt,
+                lastMessageAt,
+                messageCount,
+                createdAt,
+                updatedAt);
+    }
+
+    /** Full rehydration constructor including the surrogate id and linked one-user-id. */
+    public ChannelUserIdentity(
+            UUID id,
+            UUID linkedUserId,
+            String channelType,
+            String channelKey,
+            String externalId,
+            String unionId,
+            String tenantKey,
+            String displayName,
+            String avatarUrl,
+            Instant firstSeenAt,
+            Instant lastSeenAt,
+            Instant lastMessageAt,
+            long messageCount,
+            Instant createdAt,
+            Instant updatedAt) {
+        this.id = id;
+        this.linkedUserId = linkedUserId;
         this.channelType = channelType;
         this.channelKey = channelKey;
         this.externalId = externalId;

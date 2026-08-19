@@ -1,4 +1,4 @@
-import type { UserGroupItem, UserItem } from "./types";
+import type { ChannelIdentity, UserGroupItem, UserItem } from "./types";
 
 const BASE = "/api/v1";
 
@@ -69,4 +69,25 @@ export async function saveUser(
 export async function deleteUser(id: string): Promise<void> {
   const response = await fetch(`${BASE}/users/${id}`, { method: "DELETE" });
   if (!response.ok) throw new Error("delete user failed");
+}
+
+export async function fetchUserChannels(id: string): Promise<ChannelIdentity[]> {
+  const response = await fetch(`${BASE}/users/${id}/channels`);
+  if (!response.ok) throw new Error("fetch user channels failed");
+  return (await response.json()) as ChannelIdentity[];
+}
+
+export async function mergeUsers(
+  primaryId: string,
+  secondaryId: string,
+): Promise<void> {
+  const response = await fetch(`${BASE}/users/${primaryId}/merge`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ secondaryId }),
+  });
+  if (!response.ok) {
+    const text = await response.text().catch(() => "");
+    throw new Error(text || "merge failed");
+  }
 }

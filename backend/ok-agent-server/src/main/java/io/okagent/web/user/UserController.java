@@ -1,5 +1,7 @@
 package io.okagent.web.user;
 
+import io.okagent.repository.channel.ChannelUserIdentityRepository;
+import io.okagent.service.user.UserMergeService;
 import io.okagent.service.user.UserService;
 import java.util.List;
 import java.util.UUID;
@@ -19,9 +21,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/users")
 public class UserController {
     private final UserService service;
+    private final UserMergeService mergeService;
+    private final ChannelUserIdentityRepository identityRepository;
 
-    public UserController(UserService service) {
+    public UserController(
+            UserService service, UserMergeService mergeService, ChannelUserIdentityRepository identityRepository) {
         this.service = service;
+        this.mergeService = mergeService;
+        this.identityRepository = identityRepository;
     }
 
     /** Returns all users, optionally filtered by group. */
@@ -55,4 +62,27 @@ public class UserController {
     public void delete(@PathVariable UUID id) {
         service.delete(id);
     }
+
+    /** Lists the provider identities (Feishu open_id, etc.) bound to a user. */
+    @GetMapping("/{id}/channels")
+    public List<ChannelIdentityView> channels(@PathVariable UUID id) {
+        return identityRepository.findByLinkedUserId(id).stream()
+                .map(ChannelIdentityView::from)
+                .toList();
+    }
+
+    /** Merges another user (secondary) into this user (primary). */
+    @PostMapping("/{id}/merge")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void merge(@PathVariable UUID id, @RequestBody MergeRequest body) {
+        mergeService.merge(id, body.secondaryId());
+    }
+
+    /** Preview of what a merge would reassign. */
+    @GetMapping("/{id}/merge-preview")
+    public UserMergeService.MergePreview mergePreview(@PathVariable UUID id, @RequestParam UUID secondaryId) {
+        return mergeService.preview(id, secondaryId);
+    }
+
+    record MergeRequest(UUID secondaryId) {}
 }

@@ -5,6 +5,7 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
@@ -25,6 +26,8 @@ public class ChannelUserIdentityRepository {
 
     private static final RowMapper<ChannelUserIdentity> ROW_MAPPER = (rs, i) -> {
         return new ChannelUserIdentity(
+                rs.getObject("id", UUID.class),
+                rs.getObject("linked_user_id", UUID.class),
                 rs.getString("channel_type"),
                 rs.getString("channel_key"),
                 rs.getString("external_id"),
@@ -46,7 +49,7 @@ public class ChannelUserIdentityRepository {
 
     private static final String BASE_SELECT =
             """
-            SELECT channel_type, channel_key, external_id, union_id, tenant_key,
+            SELECT id, linked_user_id, channel_type, channel_key, external_id, union_id, tenant_key,
                    display_name, avatar_url, first_seen_at, last_seen_at, last_message_at,
                    message_count, created_at, updated_at
             FROM channel_user_identity
@@ -133,6 +136,44 @@ public class ChannelUserIdentityRepository {
         Long count = jdbc.queryForObject(
                 "SELECT COUNT(*) FROM channel_user_identity WHERE channel_key = ?", Long.class, channelKey);
         return count == null ? 0 : count;
+    }
+
+    /** Counts provider identities aggregated under a given one-user-id. */
+    public long countByLinkedUserId(UUID userId) {
+        Long count = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM channel_user_identity WHERE linked_user_id = UUID_TO_BIN(?)",
+                Long.class,
+                userId.toString());
+        return count == null ? 0 : count;
+    }
+
+    /** Sets the one-user-id principal an identity aggregates under. */
+    public void linkUser(UUID identityId, UUID userId) {
+        jdbc.update(
+                "UPDATE channel_user_identity SET linked_user_id = UUID_TO_BIN(?), updated_at = NOW(6) "
+                        + "WHERE id = UUID_TO_BIN(?)",
+                userId.toString(),
+                identityId.toString());
+    }
+
+    /** Lists all provider identities aggregated under a given one-user-id. */
+    public List<ChannelUserIdentity> findByLinkedUserId(UUID userId) {
+        return jdbc.query(
+                BASE_SELECT + " WHERE linked_user_id = UUID_TO_BIN(?) ORDER BY last_seen_at DESC",
+                ROW_MAPPER,
+                userId.toString());
+    }
+
+    /**
+     * Reassigns all identities linked to {@code fromUserId} over to {@code toUserId}. Used when
+     * merging two one-user-id principals.
+     */
+    public int reassignLinkedUser(UUID fromUserId, UUID toUserId) {
+        return jdbc.update(
+                "UPDATE channel_user_identity SET linked_user_id = UUID_TO_BIN(?), updated_at = NOW(6) "
+                        + "WHERE linked_user_id = UUID_TO_BIN(?)",
+                toUserId.toString(),
+                fromUserId.toString());
     }
 
     private static String emptyToNull(String s) {

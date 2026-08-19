@@ -3,19 +3,16 @@ package io.okagent.service.channel.runtime;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lark.oapi.Client;
-import io.agentscope.core.agent.RuntimeContext;
 import io.agentscope.harness.agent.HarnessAgent;
 import io.agentscope.harness.agent.gateway.GatewayBootstrap;
 import io.agentscope.harness.agent.gateway.channel.Channel;
 import io.agentscope.harness.agent.gateway.channel.ChannelConfig;
-import io.agentscope.harness.agent.gateway.channel.ChannelRuntimeContextRequest;
-import io.agentscope.harness.agent.gateway.channel.ChannelRuntimeContextResolver;
 import io.agentscope.harness.agent.gateway.channel.DmScope;
 import io.okagent.domain.channel.ChannelAsset;
 import io.okagent.domain.channel.ChannelDmScope;
 import io.okagent.repository.agent.AgentAssetRepository;
 import io.okagent.service.agent.HarnessAgentFactory;
-import io.okagent.service.channel.ChannelUserService;
+import io.okagent.service.channel.ChannelIdentityResolver;
 import io.okagent.service.channel.runtime.feishu.FeishuWsChannel;
 import io.okagent.service.dialogue.DialogueService;
 import io.okagent.service.model.ApiKeyCipher;
@@ -40,19 +37,19 @@ public class ChannelGatewayFactory {
     private final HarnessAgentFactory agentFactory;
     private final AgentAssetRepository agentRepository;
     private final ApiKeyCipher cipher;
-    private final ChannelUserService channelUsers;
+    private final ChannelIdentityResolver identityResolver;
     private final DialogueService dialogue;
 
     public ChannelGatewayFactory(
             HarnessAgentFactory agentFactory,
             AgentAssetRepository agentRepository,
             ApiKeyCipher cipher,
-            ChannelUserService channelUsers,
+            ChannelIdentityResolver identityResolver,
             DialogueService dialogue) {
         this.agentFactory = agentFactory;
         this.agentRepository = agentRepository;
         this.cipher = cipher;
-        this.channelUsers = channelUsers;
+        this.identityResolver = identityResolver;
         this.dialogue = dialogue;
     }
 
@@ -103,8 +100,10 @@ public class ChannelGatewayFactory {
                 appSecret,
                 larkClient,
                 dialogue,
+                identityResolver,
                 agentAsset.getId(),
-                agentAsset.getName());
+                agentAsset.getName(),
+                asset.getType().name());
 
         log.info(
                 "Building Feishu long-connection channel '{}' bound to agent '{}' (dmScope={})",
@@ -115,37 +114,7 @@ public class ChannelGatewayFactory {
         return GatewayBootstrap.builder()
                 .agent(agentKey, agent)
                 .channel(channel)
-                .runtimeContextResolver(inboundUserTracker(asset))
                 .build();
-    }
-
-    /**
-     * Returns a resolver that records the inbound sender as a channel user on every turn while
-     * leaving the caller runtime context unchanged (the gateway still applies sessionId/userId from
-     * the resolved MsgContext afterwards).
-     */
-    private ChannelRuntimeContextResolver inboundUserTracker(ChannelAsset asset) {
-        return new ChannelRuntimeContextResolver() {
-            @Override
-            public RuntimeContext resolve(ChannelRuntimeContextRequest request) {
-                try {
-                    if (request != null && request.inboundMessage() != null) {
-                        var inbound = request.inboundMessage();
-                        channelUsers.recordInbound(
-                                asset.getType().name(),
-                                asset.getChannelKey(),
-                                inbound.senderId(),
-                                null,
-                                inbound.accountId(),
-                                inbound.senderId(),
-                                null);
-                    }
-                } catch (Exception e) {
-                    log.debug("Channel user tracking skipped: {}", e.getMessage());
-                }
-                return null;
-            }
-        };
     }
 
     private Map<String, Object> feishuProperties(ChannelAsset asset) {

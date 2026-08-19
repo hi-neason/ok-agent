@@ -12,7 +12,8 @@ import io.agentscope.core.tool.Toolkit;
 import io.agentscope.extensions.model.openai.OpenAIChatModel;
 import io.agentscope.harness.agent.HarnessAgent;
 import io.agentscope.harness.agent.IsolationScope;
-import io.agentscope.harness.agent.transcript.TranscriptStore;
+import io.agentscope.harness.agent.filesystem.AbstractFilesystem;
+import io.agentscope.harness.agent.filesystem.CompositeFilesystem;
 import io.agentscope.harness.agent.filesystem.remote.RemoteFilesystem;
 import io.agentscope.harness.agent.filesystem.remote.store.NamespaceFactory;
 import io.agentscope.harness.agent.filesystem.spec.LocalFilesystemSpec;
@@ -63,7 +64,6 @@ public class HarnessAgentFactory {
     private final ApiKeyCipher cipher;
     private final HttpTransport httpTransport;
     private final AgentStateStore stateStore;
-    private final TranscriptStore transcriptStore;
     private final JdbcBaseStore baseStore;
     private final UserPersonaService personaService;
     private final WorkflowRuntimeCatalog workflowCatalog;
@@ -80,7 +80,6 @@ public class HarnessAgentFactory {
             ApiKeyCipher cipher,
             HttpTransport httpTransport,
             AgentStateStore stateStore,
-            TranscriptStore transcriptStore,
             JdbcBaseStore baseStore,
             UserPersonaService personaService,
             WorkflowRuntimeCatalog workflowCatalog,
@@ -94,7 +93,6 @@ public class HarnessAgentFactory {
         this.cipher = cipher;
         this.httpTransport = httpTransport;
         this.stateStore = stateStore;
-        this.transcriptStore = transcriptStore;
         this.baseStore = baseStore;
         this.personaService = personaService;
         this.workflowCatalog = workflowCatalog;
@@ -132,7 +130,6 @@ public class HarnessAgentFactory {
                 .maxContextTokens(draft.getMaxContextTokens())
                 .enableAgentTracingLog(draft.isTracingEnabled())
                 .stateStore(stateStore)
-                .transcriptStore(transcriptStore)
                 // No workspace/tools.json file; register MCP servers programmatically.
                 .toolsConfig(toolsConfig(draft))
                 // In-process execution tracing: captures agent/model/tool spans (including
@@ -406,13 +403,35 @@ public class HarnessAgentFactory {
                 Path.of(System.getProperty("user.dir"), ".agentscope", "workspaces", safeName(draft.getAgentKey()));
         var isolationScope = IsolationScope.valueOf(draft.getWorkspaceIsolationScope());
         builder.workspace(workspace);
+
+        // Memory surface backed by the MySQL BaseStore. Harness memory tools/hooks are disabled
+        // (see configureMemory), and persona persists via its own service, so this route is only
+        // relevant for code/workspace flows that touch MEMORY.md or memory/.
+        NamespaceFactory memoryNamespace =
+                rc -> List.of("agents", safeName(draft.getAgentKey()), "memory");
+        RemoteFilesystem memoryFs = new RemoteFilesystem(baseStore, memoryNamespace);
+
         switch (draft.getWorkspaceMode()) {
-            case LOCAL_ROOTED -> builder.filesystem(new LocalFilesystemSpec()
-                    .mode(LocalFsMode.SANDBOXED)
-                    .isolationScope(isolationScope)
-                    .inheritEnv(false)
-                    .projectWritable(false));
+            case LOCAL_ROOTED -> {
+                // 2.0.2 has no Builder.filesystemRoute; replicate it by building the local
+                // filesystem explicitly and wrapping it in a CompositeFilesystem that routes
+                // memory/ and MEMORY.md to the remote store (mirrors upstream 2.0.3 behavior).
+                var localSpec = new LocalFilesystemSpec()
+                        .mode(LocalFsMode.SANDBOXED)
+                        .isolationScope(isolationScope)
+                        .inheritEnv(false)
+                        .projectWritable(false);
+                AbstractFilesystem localFs =
+                        localSpec.toFilesystem(workspace, isolationScope.toNamespaceFactory());
+                AbstractFilesystem composite =
+                        new CompositeFilesystem(
+                                localFs, Map.of("memory/", memoryFs, "MEMORY.md", memoryFs));
+                builder.abstractFilesystem(composite);
+            }
             case DOCKER_SANDBOX -> {
+                // 2.0.2 cannot prefix-route over a sandbox-backed filesystem (upstream 2.0.3 uses
+                // RoutedSandboxFilesystem, absent here). The memory surface is disabled and persona
+                // does not depend on the agent filesystem, so keeping the native docker fs is safe.
                 var spec = new DockerFilesystemSpec()
                         .image(draft.getDockerImage())
                         .memorySizeBytes((long) draft.getSandboxMemoryMb() * 1024 * 1024)
@@ -422,15 +441,6 @@ public class HarnessAgentFactory {
             }
             case DISABLED -> throw new IllegalStateException("Disabled workspace handled above");
         }
-
-        // Route the agent's long-term memory (MEMORY.md + memory/YYYY-MM-DD.md) through the
-        // MySQL-backed BaseStore so it survives JVM restarts instead of living on local disk.
-        // The rest of the workspace (code, shell, etc.) keeps its original backing.
-        NamespaceFactory memoryNamespace =
-                rc -> List.of("agents", safeName(draft.getAgentKey()), "memory");
-        RemoteFilesystem memoryFs = new RemoteFilesystem(baseStore, memoryNamespace);
-        builder.filesystemRoute("memory/", memoryFs);
-        builder.filesystemRoute("MEMORY.md", memoryFs);
 
         if (!draft.isWorkspaceContextEnabled()) {
             builder.disableWorkspaceContext();

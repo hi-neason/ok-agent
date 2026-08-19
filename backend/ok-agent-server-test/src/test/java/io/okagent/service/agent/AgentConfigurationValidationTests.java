@@ -237,6 +237,7 @@ class AgentConfigurationValidationTests {
         String dockerImage = "";
         int sandboxMemoryMb = 512;
         int sandboxCpuCount = 1;
+        String subagentsJson = "";
 
         AgentConfigRequest build() {
             return new AgentConfigRequest(
@@ -275,7 +276,8 @@ class AgentConfigurationValidationTests {
                     shellEnabled,
                     dockerImage,
                     sandboxMemoryMb,
-                    sandboxCpuCount);
+                    sandboxCpuCount,
+                    subagentsJson);
         }
     }
 }

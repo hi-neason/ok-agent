@@ -2,14 +2,12 @@ package io.okagent.infrastructure.store;
 
 import io.agentscope.core.state.AgentStateStore;
 import io.agentscope.core.state.State;
-import io.agentscope.core.state.VersionedState;
 import io.agentscope.core.util.JsonUtils;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -37,11 +35,6 @@ public class JdbcAgentStateStore implements AgentStateStore {
     }
 
     @Override
-    public boolean supportsVersioning() {
-        return true;
-    }
-
-    @Override
     public void save(String userId, String sessionId, String key, State value) {
         String json = JsonUtils.getJsonCodec().toJson(value);
         jdbc.update(
@@ -49,50 +42,6 @@ public class JdbcAgentStateStore implements AgentStateStore {
                         + "VALUES (?, ?, ?, 0, ?, 1) "
                         + "ON DUPLICATE KEY UPDATE state_data = VALUES(state_data), version = version + 1",
                 user(userId), sessionId, key, json);
-    }
-
-    @Override
-    public <T extends State> VersionedState<T> getVersioned(
-            String userId, String sessionId, String key, Class<T> type) {
-        return jdbc.query(
-                        "SELECT state_data, version FROM agent_state "
-                                + "WHERE user_id = ? AND session_id = ? AND state_key = ? AND item_index = 0",
-                        (rs, n) -> new VersionedState<>(
-                                JsonUtils.getJsonCodec().fromJson(rs.getString("state_data"), type),
-                                rs.getLong("version")),
-                        user(userId), sessionId, key)
-                .stream()
-                .findFirst()
-                .orElse(new VersionedState<>(null, 0L));
-    }
-
-    @Override
-    public long saveIfVersion(
-            String userId, String sessionId, String key, State value, long expectedVersion) {
-        if (expectedVersion == UNVERSIONED) {
-            save(userId, sessionId, key, value);
-            return UNVERSIONED;
-        }
-        String u = user(userId);
-        String json = JsonUtils.getJsonCodec().toJson(value);
-        if (expectedVersion == 0L) {
-            try {
-                jdbc.update(
-                        "INSERT INTO agent_state (user_id, session_id, state_key, item_index,"
-                                + " state_data, version) VALUES (?, ?, ?, 0, ?, 1)",
-                        u, sessionId, key, json);
-                return 1L;
-            } catch (DuplicateKeyException e) {
-                return UNVERSIONED;
-            }
-        }
-        long newVersion = expectedVersion + 1L;
-        int updated = jdbc.update(
-                "UPDATE agent_state SET state_data = ?, version = ? "
-                        + "WHERE user_id = ? AND session_id = ? AND state_key = ? AND item_index = 0"
-                        + " AND version = ?",
-                json, newVersion, u, sessionId, key, expectedVersion);
-        return updated == 1 ? newVersion : UNVERSIONED;
     }
 
     @Override

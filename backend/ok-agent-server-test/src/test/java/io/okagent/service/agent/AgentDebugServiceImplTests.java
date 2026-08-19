@@ -16,7 +16,6 @@ import io.agentscope.harness.agent.HarnessAgent;
 import io.okagent.domain.agent.AgentAsset;
 import io.okagent.domain.agent.AgentPermissionMode;
 import io.okagent.infrastructure.store.JdbcAgentStateStore;
-import io.okagent.infrastructure.store.JdbcTranscriptStore;
 import io.okagent.repository.agent.AgentAssetRepository;
 import io.okagent.service.dialogue.DialogueService;
 import io.okagent.service.persona.PersonaExtractionService;
@@ -39,7 +38,6 @@ class AgentDebugServiceImplTests {
         var harnessAgent = mock(HarnessAgent.class);
         var dialogue = mock(DialogueService.class);
         var stateStore = mock(JdbcAgentStateStore.class);
-        var transcriptStore = mock(JdbcTranscriptStore.class);
         var personaExtraction = mock(PersonaExtractionService.class);
         when(agents.findById(agentId)).thenReturn(Optional.of(asset));
         when(factory.build(asset, "debug")).thenReturn(harnessAgent);
@@ -47,7 +45,7 @@ class AgentDebugServiceImplTests {
         when(harnessAgent.streamEvents(any(String.class), any(RuntimeContext.class)))
                 .thenReturn(Flux.just(new AgentResultEvent(new AssistantMessage("Current time returned by tool"))));
 
-        var service = new AgentDebugServiceImpl(agents, factory, dialogue, stateStore, transcriptStore, personaExtraction);
+        var service = new AgentDebugServiceImpl(agents, factory, dialogue, stateStore, personaExtraction);
         var response = service.chat(agentId, new AgentChatRequest("Call the current time tool", "debug-session", "debug"));
 
         verify(harnessAgent)
@@ -82,7 +80,6 @@ class AgentDebugServiceImplTests {
                 factory,
                 dialogue,
                 mock(JdbcAgentStateStore.class),
-                mock(JdbcTranscriptStore.class),
                 personaExtraction);
         service.chat(agentId, new AgentChatRequest("What time is it?", "dlg-session", "debug"));
 

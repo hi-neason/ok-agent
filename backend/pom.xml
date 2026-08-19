@@ -12,7 +12,7 @@
   <name>ok-agent backend</name>
   <properties>
     <java.version>17</java.version>
-    <agentscope.version>2.0.3-SNAPSHOT</agentscope.version>
+    <agentscope.version>2.0.2</agentscope.version>
     <spotless.version>2.43.0</spotless.version>
     <palantir-java-format.version>2.50.0</palantir-java-format.version>
   </properties>
@@ -26,12 +26,12 @@
       <dependency>
         <groupId>io.agentscope</groupId>
         <artifactId>agentscope-core</artifactId>
-        <version>2.0.3-SNAPSHOT</version>
+        <version>${agentscope.version}</version>
       </dependency>
       <dependency>
         <groupId>io.agentscope</groupId>
         <artifactId>agentscope-harness</artifactId>
-        <version>2.0.3-SNAPSHOT</version>
+        <version>${agentscope.version}</version>
       </dependency>
       <dependency>
         <groupId>io.agentscope</groupId>

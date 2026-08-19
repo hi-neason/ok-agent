@@ -14,7 +14,6 @@ import io.agentscope.harness.agent.HarnessAgent;
 import io.okagent.domain.agent.AgentAsset;
 import io.okagent.domain.dialogue.DialogueSession;
 import io.okagent.infrastructure.store.JdbcAgentStateStore;
-import io.okagent.infrastructure.store.JdbcTranscriptStore;
 import io.okagent.repository.agent.AgentAssetRepository;
 import io.okagent.repository.model.ModelAssetRepository;
 import io.okagent.service.agent.HarnessAgentFactory;
@@ -81,7 +80,6 @@ public class IntentRouterService {
     private final HarnessAgentFactory factory;
     private final DialogueService dialogue;
     private final JdbcAgentStateStore stateStore;
-    private final JdbcTranscriptStore transcriptStore;
     private final PersonaExtractionService personaExtraction;
     private final ObjectMapper json = new ObjectMapper();
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build();
@@ -95,7 +93,6 @@ public class IntentRouterService {
             HarnessAgentFactory factory,
             DialogueService dialogue,
             JdbcAgentStateStore stateStore,
-            JdbcTranscriptStore transcriptStore,
             PersonaExtractionService personaExtraction) {
         this.intents = intents;
         this.agents = agents;
@@ -104,7 +101,6 @@ public class IntentRouterService {
         this.factory = factory;
         this.dialogue = dialogue;
         this.stateStore = stateStore;
-        this.transcriptStore = transcriptStore;
         this.personaExtraction = personaExtraction;
     }
 
@@ -479,7 +475,6 @@ public class IntentRouterService {
                     .orElse(null);
         }
         stateStore.delete(effectiveUserId, key);
-        transcriptStore.deleteBySessionId(key);
         dialogue.purge(key);
     }
 

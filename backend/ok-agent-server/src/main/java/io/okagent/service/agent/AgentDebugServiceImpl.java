@@ -11,7 +11,6 @@ import io.agentscope.harness.agent.HarnessAgent;
 import io.okagent.domain.agent.AgentAsset;
 import io.okagent.domain.dialogue.DialogueSession;
 import io.okagent.infrastructure.store.JdbcAgentStateStore;
-import io.okagent.infrastructure.store.JdbcTranscriptStore;
 import io.okagent.repository.agent.AgentAssetRepository;
 import io.okagent.service.dialogue.DialogueService;
 import io.okagent.service.observe.TraceCollectingMiddleware;
@@ -45,7 +44,6 @@ public class AgentDebugServiceImpl implements AgentDebugService {
     private final HarnessAgentFactory factory;
     private final DialogueService dialogue;
     private final JdbcAgentStateStore stateStore;
-    private final JdbcTranscriptStore transcriptStore;
     private final PersonaExtractionService personaExtraction;
     private final Map<String, Session> sessions = new ConcurrentHashMap<>();
 
@@ -54,13 +52,11 @@ public class AgentDebugServiceImpl implements AgentDebugService {
             HarnessAgentFactory factory,
             DialogueService dialogue,
             JdbcAgentStateStore stateStore,
-            JdbcTranscriptStore transcriptStore,
             PersonaExtractionService personaExtraction) {
         this.agents = agents;
         this.factory = factory;
         this.dialogue = dialogue;
         this.stateStore = stateStore;
-        this.transcriptStore = transcriptStore;
         this.personaExtraction = personaExtraction;
     }
 
@@ -279,7 +275,6 @@ public class AgentDebugServiceImpl implements AgentDebugService {
                     .orElse(null);
         }
         stateStore.delete(effectiveUserId, sessionId);
-        transcriptStore.deleteBySessionId(sessionId);
         dialogue.purge(sessionId);
     }
 

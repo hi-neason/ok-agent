@@ -200,8 +200,7 @@ public class ChannelAssetServiceImpl implements ChannelAssetService {
         return write(secrets);
     }
 
-    private Map<String, Boolean> mergeSecretFlags(
-            String existingFlagsJson, ChannelAssetRequest request) {
+    private Map<String, Boolean> mergeSecretFlags(String existingFlagsJson, ChannelAssetRequest request) {
         Map<String, Boolean> flags = new LinkedHashMap<>();
         flags.putAll(readSecretFlags(existingFlagsJson));
         flags.putAll(ChannelAssetResponse.configuredSecrets(request.feishu()));
@@ -217,7 +216,9 @@ public class ChannelAssetServiceImpl implements ChannelAssetService {
         try {
             JsonNode node = JSON.readTree(json);
             if (node.isObject()) {
-                node.fields().forEachRemaining(e -> flags.put(e.getKey(), e.getValue().asBoolean()));
+                node.fields()
+                        .forEachRemaining(
+                                e -> flags.put(e.getKey(), e.getValue().asBoolean()));
             } else if (node.isArray()) {
                 node.forEach(e -> flags.put(e.asText(), true));
             }

@@ -12,7 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -29,11 +28,16 @@ public class ChannelRuntimeManager {
 
     private final ChannelAssetRepository repository;
     private final ChannelGatewayFactory gatewayFactory;
+    private final ChannelRuntimeStatusWriter statusWriter;
     private final Map<UUID, GatewayBootstrap> live = new ConcurrentHashMap<>();
 
-    public ChannelRuntimeManager(ChannelAssetRepository repository, ChannelGatewayFactory gatewayFactory) {
+    public ChannelRuntimeManager(
+            ChannelAssetRepository repository,
+            ChannelGatewayFactory gatewayFactory,
+            ChannelRuntimeStatusWriter statusWriter) {
         this.repository = repository;
         this.gatewayFactory = gatewayFactory;
+        this.statusWriter = statusWriter;
     }
 
     /** Starts all enabled channels once the application context is ready. */
@@ -79,24 +83,24 @@ public class ChannelRuntimeManager {
         stopLive(channelId);
         ChannelAsset asset = repository.findById(channelId).orElse(null);
         if (asset == null || !asset.isEnabled()) {
-            persistStatus(channelId, ChannelRuntimeStatus.STOPPED, null);
+            statusWriter.write(channelId, ChannelRuntimeStatus.STOPPED, null);
             return;
         }
         if (asset.getBoundAgentId() == null) {
-            persistStatus(channelId, ChannelRuntimeStatus.ERROR, "No agent bound to this channel");
+            statusWriter.write(channelId, ChannelRuntimeStatus.ERROR, "No agent bound to this channel");
             log.warn("Channel '{}' has no bound agent; not starting", asset.getChannelKey());
             return;
         }
-        persistStatus(channelId, ChannelRuntimeStatus.STARTING, null);
+        statusWriter.write(channelId, ChannelRuntimeStatus.STARTING, null);
         try {
             GatewayBootstrap bootstrap = gatewayFactory.build(asset);
             bootstrap.start();
             live.put(channelId, bootstrap);
-            persistStatus(channelId, ChannelRuntimeStatus.RUNNING, null);
+            statusWriter.write(channelId, ChannelRuntimeStatus.RUNNING, null);
             log.info("Channel '{}' started and bound to agent {}", asset.getChannelKey(), asset.getBoundAgentId());
         } catch (Exception e) {
             log.warn("Failed to start channel '{}': {}", asset.getChannelKey(), e.getMessage(), e);
-            persistStatus(channelId, ChannelRuntimeStatus.ERROR, truncate(e.getMessage()));
+            statusWriter.write(channelId, ChannelRuntimeStatus.ERROR, e.getMessage());
         }
     }
 
@@ -113,24 +117,5 @@ public class ChannelRuntimeManager {
         } catch (Exception e) {
             log.warn("Error stopping channel {}: {}", channelId, e.getMessage());
         }
-    }
-
-    private void persistStatus(UUID channelId, ChannelRuntimeStatus status, String error) {
-        try {
-            repository.findById(channelId).ifPresent(asset -> {
-                asset.reportRuntime(status, error);
-                repository.save(asset);
-            });
-        } catch (DataIntegrityViolationException e) {
-            // Can race with deletion; ignore.
-            log.debug("Status update skipped for deleted channel {}", channelId);
-        }
-    }
-
-    private String truncate(String message) {
-        if (message == null) {
-            return null;
-        }
-        return message.length() > 1000 ? message.substring(0, 1000) : message;
     }
 }

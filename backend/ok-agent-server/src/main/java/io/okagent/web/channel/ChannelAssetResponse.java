@@ -7,7 +7,6 @@ import io.okagent.domain.channel.ChannelDmScope;
 import io.okagent.domain.channel.ChannelRuntimeStatus;
 import io.okagent.domain.channel.ChannelType;
 import java.time.Instant;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 

@@ -9,13 +9,18 @@ import io.agentscope.core.message.Msg;
 import io.agentscope.extensions.channel.common.BotLoopGuard;
 import io.agentscope.extensions.channel.common.IdempotencyStore;
 import io.agentscope.harness.agent.gateway.Gateway;
+import io.agentscope.harness.agent.gateway.SessionIdUtils;
 import io.agentscope.harness.agent.gateway.channel.Channel;
 import io.agentscope.harness.agent.gateway.channel.ChannelConfig;
 import io.agentscope.harness.agent.gateway.channel.ChannelRouter;
 import io.agentscope.harness.agent.gateway.channel.InboundMessage;
 import io.agentscope.harness.agent.gateway.channel.OutboundAddress;
+import io.okagent.service.dialogue.DialogueService;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -59,13 +64,23 @@ public final class FeishuWsChannel implements Channel {
     private final IdempotencyStore idempotency = new IdempotencyStore();
     private final BotLoopGuard botLoopGuard = new BotLoopGuard();
     private final ChannelRouter router;
+    private final DialogueService dialogue;
+    private final UUID agentId;
+    private final String agentName;
 
     private volatile Gateway gateway;
     private volatile Client wsClient;
     private volatile ExecutorService wsRunner;
 
     public FeishuWsChannel(
-            String channelId, ChannelConfig config, String appId, String appSecret, com.lark.oapi.Client apiClient) {
+            String channelId,
+            ChannelConfig config,
+            String appId,
+            String appSecret,
+            com.lark.oapi.Client apiClient,
+            DialogueService dialogue,
+            UUID agentId,
+            String agentName) {
         this.channelId = Objects.requireNonNull(channelId, "channelId");
         this.config = Objects.requireNonNull(config, "config");
         this.appId = Objects.requireNonNull(appId, "appId");
@@ -73,6 +88,9 @@ public final class FeishuWsChannel implements Channel {
         this.sender = new FeishuOutboundSender(Objects.requireNonNull(apiClient, "apiClient"));
         this.mapper = new FeishuEventMapper(channelId);
         this.router = new ChannelRouter(config.defaultAgentId());
+        this.dialogue = Objects.requireNonNull(dialogue, "dialogue");
+        this.agentId = Objects.requireNonNull(agentId, "agentId");
+        this.agentName = agentName;
     }
 
     @Override
@@ -170,8 +188,74 @@ public final class FeishuWsChannel implements Channel {
             return Mono.error(new IllegalStateException("FeishuWsChannel '" + channelId + "' has no gateway"));
         }
         var route = router.resolveRoute(config, message);
-        return g.run(route.context(), message.messages(), route.outboundAddress(), message.runtimeContext(), message)
-                .flatMap(reply -> sendReply(route.outboundAddress(), reply).thenReturn(reply));
+        String sessionId = businessSessionId(route.context().canonicalKey());
+        String userId = message.senderId();
+        String userText = firstText(message);
+
+        return Mono.fromRunnable(() -> recordTurnStart(sessionId, userId, userText))
+                .then(Mono.fromCallable(Instant::now))
+                .flatMap(started -> g.run(
+                                route.context(),
+                                message.messages(),
+                                route.outboundAddress(),
+                                message.runtimeContext(),
+                                message)
+                        .flatMap(reply ->
+                                sendReply(route.outboundAddress(), reply).thenReturn(reply))
+                        .doOnNext(reply -> recordTurnEnd(sessionId, reply, started, null))
+                        .doOnError(err -> recordTurnEnd(sessionId, null, started, err)));
+    }
+
+    /**
+     * Deterministic business session id derived from the same canonical key the gateway uses to
+     * scope its internal session, so channel turns are grouped consistently with DmScope.
+     */
+    private String businessSessionId(String canonicalKey) {
+        return "ch-" + SessionIdUtils.deterministicHash(channelId, canonicalKey);
+    }
+
+    private void recordTurnStart(String sessionId, String userId, String userText) {
+        try {
+            if (!dialogue.sessionExists(sessionId)) {
+                String title = (userText == null || userText.isBlank())
+                        ? agentName
+                        : (userText.length() <= 50 ? userText : userText.substring(0, 50) + "...");
+                dialogue.ensureSession(sessionId, agentId, userId, title);
+            }
+            if (userText != null && !userText.isBlank()) {
+                dialogue.recordMessage(sessionId, "user", userText, null, null);
+            }
+        } catch (Exception e) {
+            log.warn("Feishu WS: failed to record user turn (session='{}'): {}", sessionId, e.getMessage());
+        }
+    }
+
+    private void recordTurnEnd(String sessionId, Msg reply, Instant started, Throwable error) {
+        try {
+            int latencyMs = (int) Duration.between(started, Instant.now()).toMillis();
+            if (error != null) {
+                dialogue.recordMessage(sessionId, "error", "Agent 执行失败：" + error.getMessage(), null, latencyMs);
+            } else if (reply != null) {
+                String text = reply.getTextContent();
+                if (text != null && !text.isBlank()) {
+                    dialogue.recordMessage(sessionId, "assistant", text.trim(), null, latencyMs);
+                }
+            }
+            dialogue.touchSession(sessionId);
+        } catch (Exception e) {
+            log.warn("Feishu WS: failed to record assistant turn (session='{}'): {}", sessionId, e.getMessage());
+        }
+    }
+
+    private static String firstText(InboundMessage message) {
+        if (message.messages() == null) {
+            return null;
+        }
+        return message.messages().stream()
+                .map(Msg::getTextContent)
+                .filter(t -> t != null && !t.isBlank())
+                .findFirst()
+                .orElse(null);
     }
 
     @Override

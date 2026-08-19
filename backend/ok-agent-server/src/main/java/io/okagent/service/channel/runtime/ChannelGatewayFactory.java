@@ -17,6 +17,7 @@ import io.okagent.repository.agent.AgentAssetRepository;
 import io.okagent.service.agent.HarnessAgentFactory;
 import io.okagent.service.channel.ChannelUserService;
 import io.okagent.service.channel.runtime.feishu.FeishuWsChannel;
+import io.okagent.service.dialogue.DialogueService;
 import io.okagent.service.model.ApiKeyCipher;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -40,16 +41,19 @@ public class ChannelGatewayFactory {
     private final AgentAssetRepository agentRepository;
     private final ApiKeyCipher cipher;
     private final ChannelUserService channelUsers;
+    private final DialogueService dialogue;
 
     public ChannelGatewayFactory(
             HarnessAgentFactory agentFactory,
             AgentAssetRepository agentRepository,
             ApiKeyCipher cipher,
-            ChannelUserService channelUsers) {
+            ChannelUserService channelUsers,
+            DialogueService dialogue) {
         this.agentFactory = agentFactory;
         this.agentRepository = agentRepository;
         this.cipher = cipher;
         this.channelUsers = channelUsers;
+        this.dialogue = dialogue;
     }
 
     /**
@@ -92,7 +96,15 @@ public class ChannelGatewayFactory {
         // Official SDK client used both for the WebSocket long connection (inbound) and the
         // Open API message send (outbound). No public callback URL is required.
         Client larkClient = Client.newBuilder(appId, appSecret).build();
-        Channel channel = new FeishuWsChannel(asset.getChannelKey(), routing, appId, appSecret, larkClient);
+        Channel channel = new FeishuWsChannel(
+                asset.getChannelKey(),
+                routing,
+                appId,
+                appSecret,
+                larkClient,
+                dialogue,
+                agentAsset.getId(),
+                agentAsset.getName());
 
         log.info(
                 "Building Feishu long-connection channel '{}' bound to agent '{}' (dmScope={})",

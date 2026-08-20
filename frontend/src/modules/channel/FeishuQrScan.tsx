@@ -21,7 +21,8 @@ type Phase = "idle" | "loading" | "show" | "success" | "success-secret" | "error
  */
 export function FeishuQrScan({ onSuccess }: Props) {
   const [phase, setPhase] = useState<Phase>("idle");
-  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [qrSvg, setQrSvg] = useState<string | null>(null);
+  const [qrUrl, setQrUrl] = useState<string | null>(null);
   const [error, setError] = useState<string>("");
   const [secondsLeft, setSecondsLeft] = useState(0);
   const qrRendered = useRef(false);
@@ -44,7 +45,8 @@ export function FeishuQrScan({ onSuccess }: Props) {
   const begin = async () => {
     setPhase("loading");
     setError("");
-    setQrDataUrl(null);
+    setQrSvg(null);
+    setQrUrl(null);
     qrRendered.current = false;
     clearTimers();
     try {
@@ -62,12 +64,20 @@ export function FeishuQrScan({ onSuccess }: Props) {
 
       if (s.qrUrl && !qrRendered.current) {
         qrRendered.current = true;
-        const dataUrl = await QRCode.toDataURL(s.qrUrl, {
-          width: 200,
-          margin: 1,
-          color: { dark: "#1a2b45", light: "#ffffff" },
-        });
-        setQrDataUrl(dataUrl);
+        try {
+          // 生成 SVG 字符串直接内联，不依赖 canvas，兼容性最好
+          const svg = await QRCode.toString(s.qrUrl, {
+            type: "svg",
+            margin: 1,
+            color: { dark: "#1a2b45", light: "#ffffff" },
+          });
+          setQrSvg(svg);
+          setQrUrl(s.qrUrl);
+        } catch (qrErr) {
+          // 二维码生成失败时，至少把链接展示出来供用户点击/复制
+          setQrUrl(s.qrUrl);
+          console.warn("二维码渲染失败，改用链接", qrErr);
+        }
       }
 
       if (s.state === "WAITING_SCAN" || s.state === "STARTING") {
@@ -145,9 +155,25 @@ export function FeishuQrScan({ onSuccess }: Props) {
 
       {phase === "loading" && <div className="feishu-qr-loading">正在生成二维码…</div>}
 
-      {(phase === "show" || phase === "expired") && qrDataUrl && (
+      {(phase === "show" || phase === "expired") && qrUrl && (
         <div className={`feishu-qr-body ${phase === "expired" ? "is-expired" : ""}`}>
-          <img src={qrDataUrl} alt="飞书扫码二维码" className="feishu-qr-img" />
+          {qrSvg ? (
+            <span
+              className="feishu-qr-img"
+              // qrcode 库生成的是受信任的静态 SVG 字符串
+              dangerouslySetInnerHTML={{ __html: qrSvg }}
+            />
+          ) : (
+            <a
+              className="feishu-qr-link"
+              href={qrUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              点此在飞书中打开授权
+              <small>{qrUrl}</small>
+            </a>
+          )}
           {phase === "expired" && (
             <div className="feishu-qr-mask">
               <span>已过期</span>

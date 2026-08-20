@@ -45,7 +45,7 @@ public class FeishuAppRegistrationService {
 
     private static final long SESSION_TTL_SECONDS = 600;
 
-    private final ExecutorService executor = Executors.newFixedThreadPool(2, r -> {
+    private final ExecutorService executor = Executors.newCachedThreadPool(r -> {
         Thread t = new Thread(r, "feishu-app-register");
         t.setDaemon(true);
         return t;
@@ -54,6 +54,10 @@ public class FeishuAppRegistrationService {
     private final Map<String, RegistrationSession> sessions = new ConcurrentHashMap<>();
 
     public StartedSession start() {
+        // 重新发起意味着旧二维码作废：取消所有未完成的会话，即时释放阻塞线程，
+        // 避免 RegisterApp.register() 长阻塞（最长 10 分钟）把线程池占满导致新会话排队停在 STARTING。
+        cancelPendingSessions();
+
         String sessionId = UUID.randomUUID().toString();
         RegistrationSession session = new RegistrationSession(sessionId);
         sessions.put(sessionId, session);
@@ -127,9 +131,18 @@ public class FeishuAppRegistrationService {
                 s.error);
     }
 
+    private void cancelPendingSessions() {
+        sessions.forEach((id, s) -> {
+            if (s.state != State.SUCCESS && s.future != null) {
+                s.future.cancel(true);
+            }
+        });
+        sessions.clear();
+    }
+
     @PreDestroy
     public void shutdown() {
-        sessions.values().forEach(s -> s.future.cancel(true));
+        cancelPendingSessions();
         executor.shutdownNow();
     }
 

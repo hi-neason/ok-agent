@@ -15,6 +15,7 @@ import {
   setChannelEnabled,
   setChannelRuntime,
 } from "./api";
+import { FeishuQrScan } from "./FeishuQrScan";
 import type { ChannelInput, ChannelItem } from "./types";
 import "./channel.css";
 
@@ -302,6 +303,19 @@ export function ChannelPage() {
               </div>
 
               <h3 className="channel-section-title">飞书自建应用配置</h3>
+              <FeishuQrScan
+                onSuccess={({ appId, appSecret }) => {
+                  setEditing((cur) =>
+                    cur
+                      ? {
+                          ...cur,
+                          feishu: { ...cur.feishu, appId, appSecret },
+                        }
+                      : cur,
+                  );
+                }}
+              />
+              <div className="channel-or">或手动填写 App ID / App Secret</div>
               <div className="field-grid">
                 <label className="field">
                   <span>App ID（cli_xxx）</span>

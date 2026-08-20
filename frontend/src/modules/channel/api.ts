@@ -58,3 +58,22 @@ export async function deleteChannel(id: string): Promise<void> {
     throw new Error(`删除失败（HTTP ${response.status}）`);
   }
 }
+
+export type FeishuRegisterStatus = {
+  state: "STARTING" | "WAITING_SCAN" | "SUCCESS" | "FAILED" | "EXPIRED" | "NOT_FOUND";
+  qrUrl: string | null;
+  appId: string | null;
+  appSecret: string | null;
+  expireAt: number;
+  error: string | null;
+};
+
+export async function startFeishuRegistration(): Promise<{ sessionId: string }> {
+  const response = await fetch(`${BASE}/feishu/register/start`, { method: "POST" });
+  return parse<{ sessionId: string }>(response);
+}
+
+export async function pollFeishuRegistration(sessionId: string): Promise<FeishuRegisterStatus> {
+  const response = await fetch(`${BASE}/feishu/register/${sessionId}`);
+  return parse<FeishuRegisterStatus>(response);
+}

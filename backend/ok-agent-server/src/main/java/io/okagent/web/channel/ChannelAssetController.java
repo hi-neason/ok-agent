@@ -1,6 +1,7 @@
 package io.okagent.web.channel;
 
 import io.okagent.service.channel.ChannelAssetService;
+import io.okagent.service.channel.runtime.FeishuAppRegistrationService;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -12,9 +13,11 @@ import org.springframework.web.bind.annotation.*;
 public class ChannelAssetController {
 
     private final ChannelAssetService service;
+    private final FeishuAppRegistrationService feishuRegistration;
 
-    public ChannelAssetController(ChannelAssetService service) {
+    public ChannelAssetController(ChannelAssetService service, FeishuAppRegistrationService feishuRegistration) {
         this.service = service;
+        this.feishuRegistration = feishuRegistration;
     }
 
     @GetMapping
@@ -59,5 +62,19 @@ public class ChannelAssetController {
     /** Deletes a channel instance and stops its runtime if active. */
     public void delete(@PathVariable UUID id) {
         service.delete(id);
+    }
+
+    // ---------- Feishu one-click app creation (scan QR) ----------
+
+    @PostMapping("/feishu/register/start")
+    /** Starts a Feishu "create app in one click" device-auth flow; returns a session to poll. */
+    public FeishuAppRegistrationService.StartedSession startFeishuRegistration() {
+        return feishuRegistration.start();
+    }
+
+    @GetMapping("/feishu/register/{sessionId}")
+    /** Polls a Feishu registration flow; on SUCCESS carries the created app's id/secret. */
+    public FeishuAppRegistrationService.SessionStatus feishuRegistrationStatus(@PathVariable String sessionId) {
+        return feishuRegistration.status(sessionId);
     }
 }

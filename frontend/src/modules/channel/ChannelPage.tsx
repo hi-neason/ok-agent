@@ -247,7 +247,16 @@ export function ChannelPage() {
                 </label>
                 <label className="field">
                   <span>渠道类型</span>
-                  <select value={editing.type} disabled={Boolean(editingId)}>
+                  <select
+                    value={editing.type}
+                    disabled={Boolean(editingId)}
+                    onChange={(e) =>
+                      setEditing({
+                        ...editing,
+                        type: e.target.value as ChannelInput["type"],
+                      })
+                    }
+                  >
                     <option value="FEISHU">飞书</option>
                     <option value="DINGTALK" disabled>钉钉（规划中）</option>
                     <option value="WECOM" disabled>企业微信（规划中）</option>

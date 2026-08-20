@@ -1,4 +1,4 @@
-import type { ChannelIdentity, UserGroupItem, UserItem } from "./types";
+import type { ChannelIdentity, UserDetail, UserGroupItem, UserItem } from "./types";
 
 const BASE = "/api/v1";
 
@@ -75,6 +75,12 @@ export async function fetchUserChannels(id: string): Promise<ChannelIdentity[]> 
   const response = await fetch(`${BASE}/users/${id}/channels`);
   if (!response.ok) throw new Error("fetch user channels failed");
   return (await response.json()) as ChannelIdentity[];
+}
+
+export async function fetchUserDetail(id: string): Promise<UserDetail> {
+  const response = await fetch(`${BASE}/users/${id}/detail`);
+  if (!response.ok) throw new Error("fetch user detail failed");
+  return (await response.json()) as UserDetail;
 }
 
 export async function mergeUsers(

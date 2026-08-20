@@ -11,6 +11,7 @@ import {
   observeTraceIdFromPath,
 } from "./modules/observe";
 import { UserManagementPage } from "./modules/usermgmt";
+import { UserDetailPage } from "./modules/usermgmt/UserDetailPage";
 import { PersonaPage } from "./modules/persona";
 import { WorkflowSourcesPage } from "./modules/workflow";
 import { KnowledgeSourcesPage } from "./modules/knowledge";
@@ -127,6 +128,7 @@ const nestedPathPrefixes: [string, Page][] = [
   ["/mcp/", "mcp"],
   ["/agents/", "agents"],
   ["/observability/", "observe"],
+  ["/usermgmt/", "usermgmt"],
 ];
 
 const pageForPath = (path: string): Page =>
@@ -289,11 +291,16 @@ export default function App() {
   );
   const agentConfigMatch = () =>
     window.location.pathname.match(/^\/agents\/([^/]+)\/config(?:\/([a-z]+))?$/);
+  const userDetailMatch = () =>
+    window.location.pathname.match(/^\/usermgmt\/([^/]+)$/);
   const [page, setPage] = useState<Page>(() =>
     pageForPath(window.location.pathname),
   );
   const [agentConfigId, setAgentConfigId] = useState<string | null>(() =>
     agentConfigMatch()?.[1] ?? null,
+  );
+  const [userDetailId, setUserDetailId] = useState<string | null>(() =>
+    userDetailMatch()?.[1] ?? null,
   );
   const [observeSessionId, setObserveSessionId] = useState<string | null>(() =>
     observeSessionIdFromPath(window.location.pathname),
@@ -307,6 +314,7 @@ export default function App() {
     const syncPage = () => {
       setPage(pageForPath(window.location.pathname));
       setAgentConfigId(agentConfigMatch()?.[1] ?? null);
+      setUserDetailId(userDetailMatch()?.[1] ?? null);
       setObserveSessionId(observeSessionIdFromPath(window.location.pathname));
       setObserveTraceId(observeTraceIdFromPath(window.location.pathname));
     };
@@ -322,9 +330,16 @@ export default function App() {
     window.history.pushState({}, "", pagePaths[next]);
     setPage(next);
     setAgentConfigId(null);
+    setUserDetailId(null);
     setObserveSessionId(null);
     setObserveTraceId(null);
   };
+  const openUserDetail = (id: string) => {
+    window.history.pushState({}, "", `/usermgmt/${id}`);
+    setPage("usermgmt");
+    setUserDetailId(id);
+  };
+  const backToUsers = () => navigate("usermgmt");
   const openAgentConfig = (id: string) => {
     window.history.pushState({}, "", `/agents/${id}/config`);
     setPage("agents");
@@ -372,7 +387,11 @@ intents: <IntentPage />,
     custchat: <CustomerChatPage />,
     insight: <WipPlaceholder name="对话洞察" kicker="INSIGHT" />,
     sysconfig: <WipPlaceholder name="系统配置" kicker="SETTINGS" />,
-    usermgmt: <UserManagementPage />,
+    usermgmt: userDetailId ? (
+      <UserDetailPage id={userDetailId} onBack={backToUsers} />
+    ) : (
+      <UserManagementPage onOpenUser={openUserDetail} />
+    ),
   }[page];
   return (
     <main className={`console-shell ${navCollapsed ? "nav-collapsed" : ""}`}>

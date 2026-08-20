@@ -38,3 +38,12 @@ export type UserItem = {
   channelCount: number;
   updatedAt: string;
 };
+
+export type UserDetail = {
+  user: UserItem;
+  channels: ChannelIdentity[];
+  sessionCount: number;
+  personaCount: number;
+  traceCount: number;
+  messageCount: number;
+};

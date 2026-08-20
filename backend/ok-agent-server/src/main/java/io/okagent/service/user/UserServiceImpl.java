@@ -5,13 +5,16 @@ import io.okagent.domain.user.UserGroup;
 import io.okagent.repository.channel.ChannelUserIdentityRepository;
 import io.okagent.repository.user.UserGroupRepository;
 import io.okagent.repository.user.UserRepository;
+import io.okagent.web.user.ChannelIdentityView;
 import io.okagent.web.user.CreateUserRequest;
 import io.okagent.web.user.UpdateUserRequest;
+import io.okagent.web.user.UserDetailResponse;
 import io.okagent.web.user.UserResponse;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -21,14 +24,17 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserGroupRepository groupRepository;
     private final ChannelUserIdentityRepository identityRepository;
+    private final JdbcTemplate jdbc;
 
     public UserServiceImpl(
             UserRepository userRepository,
             UserGroupRepository groupRepository,
-            ChannelUserIdentityRepository identityRepository) {
+            ChannelUserIdentityRepository identityRepository,
+            JdbcTemplate jdbc) {
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.identityRepository = identityRepository;
+        this.jdbc = jdbc;
     }
 
     @Override
@@ -69,6 +75,29 @@ public class UserServiceImpl implements UserService {
     public UserResponse get(UUID id) {
         User user = userRepository.findById(id).orElseThrow(() -> new UserNotFoundException("USER_NOT_FOUND"));
         return UserResponse.from(user, resolveGroupName(user.getGroupId()));
+    }
+
+    @Override
+    public UserDetailResponse detail(UUID id) {
+        User user = userRepository.findById(id).orElseThrow(() -> new UserNotFoundException("USER_NOT_FOUND"));
+        String groupName = resolveGroupName(user.getGroupId());
+        int channelCount = (int) identityRepository.countByLinkedUserId(id);
+        UserResponse profile = UserResponse.from(user, groupName, channelCount);
+        List<ChannelIdentityView> channels = identityRepository.findByLinkedUserId(id).stream()
+                .map(ChannelIdentityView::from)
+                .toList();
+        String uid = user.getUserId();
+        long sessionCount = countByUserId("dialogue_session", uid);
+        long personaCount = countByUserId("user_persona", uid);
+        long traceCount = countByUserId("trace_span", uid);
+        long messageCount =
+                channels.stream().mapToLong(ChannelIdentityView::messageCount).sum();
+        return new UserDetailResponse(profile, channels, sessionCount, personaCount, traceCount, messageCount);
+    }
+
+    private long countByUserId(String table, String userId) {
+        Long c = jdbc.queryForObject("SELECT COUNT(*) FROM " + table + " WHERE user_id = ?", Long.class, userId);
+        return c == null ? 0 : c;
     }
 
     @Override

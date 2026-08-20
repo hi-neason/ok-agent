@@ -12,18 +12,12 @@ import {
   saveUserGroup,
 } from "./api";
 import type { ChannelIdentity, UserGroupItem, UserItem } from "./types";
+import { channelFriendlyName, channelLabel, formatInstant } from "./channelUtil";
 import "./usermgmt.css";
 
 type Tab = "groups" | "users";
 
-const channelLabel: Record<string, string> = {
-  FEISHU: "飞书",
-  DINGTALK: "钉钉",
-  WECOM: "企业微信",
-  WECHAT: "微信",
-};
-
-export function UserManagementPage() {
+export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) => void }) {
   const { confirm, Dialog } = useConfirm();
   const [tab, setTab] = useState<Tab>("groups");
   const [groups, setGroups] = useState<UserGroupItem[]>([]);
@@ -309,14 +303,28 @@ export function UserManagementPage() {
             visibleUsers.map((u) => (
               <div className="table-row" key={u.id}>
                 <span>
-                  <b>{u.username}</b>
+                  <button
+                    className="link-button um-user-link"
+                    onClick={() => onOpenUser?.(u.id)}
+                    title="查看用户详情"
+                  >
+                    <b>{u.username}</b>
+                  </button>
                 </span>
                 <span>
                   <span className={`um-source um-source--${u.source.toLowerCase()}`}>
                     {u.source === "CHANNEL" ? "渠道" : "控制台"}
                   </span>
                 </span>
-                <span>{u.displayName}</span>
+                <span>
+                  <button
+                    className="link-button um-user-link"
+                    onClick={() => onOpenUser?.(u.id)}
+                    title="查看用户详情"
+                  >
+                    {u.displayName}
+                  </button>
+                </span>
                 <span>{u.email || "—"}</span>
                 <span>{u.phone || "—"}</span>
                 <span>{u.groupName || "—"}</span>
@@ -591,18 +599,21 @@ export function UserManagementPage() {
                 <div className="um-empty">该用户暂无绑定的渠道身份。</div>
               ) : (
                 <div className="um-channels-row">
-                  {channels.map((c, i) => (
-                    <div className="um-channel-chip" key={i}>
-                      <span className="um-chan-type">
-                        {channelLabel[c.channelType] ?? c.channelType}
-                      </span>
-                      <code>{c.externalId}</code>
-                      <span className="um-chan-meta">
-                        {c.messageCount} 条 · 最近{" "}
-                        {new Date(c.lastSeenAt).toLocaleString("zh-CN", { hour12: false })}
-                      </span>
-                    </div>
-                  ))}
+                  {channels.map((c, i) => {
+                    const { name, sub } = channelFriendlyName(c);
+                    return (
+                      <div className="um-channel-chip" key={i}>
+                        <span className="um-chan-type">
+                          {channelLabel(c.channelType)}
+                        </span>
+                        <span className="um-chan-name">{name}</span>
+                        <code>{sub}</code>
+                        <span className="um-chan-meta">
+                          {c.messageCount} 条 · 最近 {formatInstant(c.lastSeenAt)}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
               <div className="sticky-actions">
@@ -636,12 +647,12 @@ export function UserManagementPage() {
                 </button>
               </div>
               <p style={{ fontSize: 13, color: "var(--color-text-secondary)", lineHeight: 1.7 }}>
-                选择要并入 <b>{mergeTarget.displayName}</b> 的另一个用户。被合并用户的对话历史、
-                用户画像、记忆和所有渠道身份都会归并到该用户，被合并用户将被删除，操作不可恢复。
+                下方选择的用户将被合并到 <b>{mergeTarget.displayName}</b>：其对话历史、用户画像、记忆和
+                所有渠道身份都会归并到目标用户，<b>被合并用户会被删除，操作不可恢复</b>。
               </p>
               <div className="field-grid">
                 <label className="field wide">
-                  <span>选择被合并用户</span>
+                  <span>选择被合并用户（将并入上方目标并删除）</span>
                   <select
                     value={mergeCandidateId}
                     onChange={(e) => setMergeCandidateId(e.target.value)}
@@ -658,6 +669,25 @@ export function UserManagementPage() {
                   </select>
                 </label>
               </div>
+              {(() => {
+                const candidate = users.find((u) => u.id === mergeCandidateId);
+                if (!candidate) return null;
+                const reversed =
+                  candidate.source === "CONSOLE" && mergeTarget.source === "CHANNEL";
+                return (
+                  <div className={reversed ? "um-merge-warn" : "um-merge-confirm"}>
+                    <span className="um-merge-arrow">
+                      {candidate.displayName} → {mergeTarget.displayName}
+                    </span>
+                    {reversed && (
+                      <small>
+                        注意：被合并方是「控制台」用户，目标是「渠道」用户。通常应把渠道用户合并进控制台用户，
+                        方向反了会导致账号信息落在渠道占位用户上。请确认是否继续。
+                      </small>
+                    )}
+                  </div>
+                );
+              })()}
               {error && <div className="skill-error modal-error">× {error}</div>}
               <div className="sticky-actions">
                 <Button quiet onClick={() => setMergeTarget(null)} disabled={saving}>

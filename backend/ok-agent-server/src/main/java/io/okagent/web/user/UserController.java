@@ -50,6 +50,12 @@ public class UserController {
         return service.get(id);
     }
 
+    /** Returns the aggregated detail view (profile + channels + life-cycle counts) for a user. */
+    @GetMapping("/{id}/detail")
+    public UserDetailResponse detail(@PathVariable UUID id) {
+        return service.detail(id);
+    }
+
     /** Updates an existing user. */
     @PutMapping("/{id}")
     public UserResponse update(@PathVariable UUID id, @RequestBody UpdateUserRequest request) {

@@ -7,15 +7,17 @@ import {
 import "./channel.css";
 
 type Props = {
-  onSuccess: (credentials: { appId: string; appSecret: string }) => void;
+  onSuccess: (credentials: { appId: string; appSecret?: string }) => void;
 };
 
-type Phase = "idle" | "loading" | "show" | "success" | "error" | "expired";
+type Phase = "idle" | "loading" | "show" | "success" | "success-secret" | "error" | "expired";
 
 /**
- * Feishu one-click app creation via QR scan. Calls the backend to start a device-auth
+ * Feishu one-click app authorization via QR scan. Calls the backend to start a device-auth
  * flow, renders the verification URL as a QR code, and polls until the user authorizes
- * in Feishu — then hands the freshly created App ID / Secret back to the parent form.
+ * in Feishu. The scan page lets the user create a new app OR pick an existing one; we hand
+ * the resulting App ID / Secret back to the parent form. For an existing app the secret may
+ * not be returned, in which case the user is prompted to fill it manually.
  */
 export function FeishuQrScan({ onSuccess }: Props) {
   const [phase, setPhase] = useState<Phase>("idle");
@@ -88,10 +90,11 @@ export function FeishuQrScan({ onSuccess }: Props) {
         return;
       }
 
-      if (s.state === "SUCCESS" && s.appId && s.appSecret) {
+      if (s.state === "SUCCESS" && s.appId) {
         clearTimers();
-        setPhase("success");
-        onSuccess({ appId: s.appId, appSecret: s.appSecret });
+        const hasSecret = !!s.appSecret;
+        setPhase(hasSecret ? "success" : "success-secret");
+        onSuccess({ appId: s.appId, appSecret: s.appSecret ?? undefined });
         return;
       }
 
@@ -117,7 +120,7 @@ export function FeishuQrScan({ onSuccess }: Props) {
     return (
       <button type="button" className="feishu-qr-trigger" onClick={() => void begin()}>
         <span className="feishu-qr-icon">▣</span>
-        扫码一键创建飞书应用
+        扫码创建或绑定飞书应用
       </button>
     );
   }
@@ -125,7 +128,7 @@ export function FeishuQrScan({ onSuccess }: Props) {
   return (
     <div className="feishu-qr-panel">
       <div className="feishu-qr-head">
-        <b>扫码创建飞书机器人</b>
+        <b>扫码创建或绑定飞书机器人</b>
         {(phase === "loading" || phase === "show") && (
           <button
             type="button"
@@ -162,13 +165,20 @@ export function FeishuQrScan({ onSuccess }: Props) {
 
       {phase === "show" && (
         <div className="feishu-qr-tip">
-          请使用飞书 App 扫码，在手机上确认创建机器人应用。
+          请使用飞书 App 扫码，可在手机上新建应用或选择已有应用完成授权。
           {secondsLeft > 0 && <span className="feishu-qr-ttl">二维码 {secondsLeft}s 后过期</span>}
         </div>
       )}
 
       {phase === "success" && (
         <div className="feishu-qr-ok">✓ 已获取应用凭证，已自动填入下方表单。</div>
+      )}
+
+      {phase === "success-secret" && (
+        <div className="feishu-qr-ok feishu-qr-ok-warn">
+          ✓ 已绑定应用并自动填入 App ID。绑定已有应用时飞书不会重新下发 App Secret，
+          请在下方手动填写该应用的 App Secret 后保存。
+        </div>
       )}
 
       {phase === "error" && error && (

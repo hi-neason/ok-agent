@@ -60,9 +60,10 @@ public class FeishuAppRegistrationService {
 
         Future<?> future = executor.submit(() -> {
             try {
+                // 不传 createOnly / appId：扫码落地页同时支持「新建应用」和「选择已有应用」，
+                // 已有应用会被增量授予下方预置的 scopes/events。
                 RegisterAppOptions options = RegisterAppOptions.newBuilder()
                         .source("ok-agent")
-                        .createOnly(true)
                         .addons(AppAddons.newBuilder()
                                 .tenantScopes(TENANT_SCOPES)
                                 .tenantEvents(TENANT_EVENTS)
@@ -83,7 +84,11 @@ public class FeishuAppRegistrationService {
                 session.appId = result.getClientId();
                 session.appSecret = result.getClientSecret();
                 session.state = State.SUCCESS;
-                log.info("Feishu app-registration '{}': app created (appId={})", sessionId, result.getClientId());
+                log.info(
+                        "Feishu app-registration '{}': authorized (appId={}, secretReturned={})",
+                        sessionId,
+                        result.getClientId(),
+                        result.getClientSecret() != null && !result.getClientSecret().isBlank());
             } catch (RegisterAppException e) {
                 session.state = State.FAILED;
                 session.error = e.getCode() != null ? e.getCode() + " " + e.getDescription() : e.getMessage();

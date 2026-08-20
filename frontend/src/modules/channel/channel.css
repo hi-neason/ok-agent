@@ -250,6 +250,12 @@
   font-size: 13px;
   text-align: center;
 }
+.feishu-qr-ok-warn {
+  background: rgba(217, 119, 6, 0.12);
+  color: #b7690a;
+  text-align: left;
+  line-height: 1.5;
+}
 .feishu-qr-err {
   margin-top: 10px;
   padding: 8px 12px;

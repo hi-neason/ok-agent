@@ -309,7 +309,11 @@ export function ChannelPage() {
                     cur
                       ? {
                           ...cur,
-                          feishu: { ...cur.feishu, appId, appSecret },
+                          feishu: {
+                            ...cur.feishu,
+                            appId,
+                            ...(appSecret ? { appSecret } : {}),
+                          },
                         }
                       : cur,
                   );

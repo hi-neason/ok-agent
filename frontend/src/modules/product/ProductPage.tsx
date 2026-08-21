@@ -14,7 +14,7 @@ export function ProductPage() {
     <>
       <PageHeader
         kicker="PRODUCT CATALOG / SALES ENABLEMENT"
-        title="产品与方案"
+        title="产品管理"
         description="维护统一的产品/商品目录与组合方案，供智能销售、客服 Agent 按规则召回并由模型精选推荐。支持手动维护，也可接入外部 ERP/CRM/PIM 同步。"
       />
       <nav className="prod-tabs">

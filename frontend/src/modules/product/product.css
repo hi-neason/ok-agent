@@ -36,6 +36,35 @@
   box-shadow: 0 6px 16px rgba(27, 118, 233, 0.28);
 }
 
+/* ---- Toolbar category filter (matches the 44px .mcp-toolbar input) ---- */
+.mcp-toolbar .prod-filter-select {
+  flex: 0 0 auto;
+  height: 44px;
+  padding: 0 38px 0 16px;
+  border: 1px solid var(--line, #d6e5f7);
+  border-radius: 10px;
+  background: #fff;
+  color: #315b88;
+  font: 500 13px "Noto Sans SC", sans-serif;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237f9cbd' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.mcp-toolbar .prod-filter-select:hover {
+  border-color: #9cc6f3;
+}
+
+.mcp-toolbar .prod-filter-select:focus {
+  outline: none;
+  border-color: #1684f5;
+  box-shadow: 0 0 0 3px rgba(22, 132, 245, 0.1);
+}
+
 /* ---- Product table: 7 columns (mcp default is 6) ---- */
 .prod-grid .mcp-row {
   grid-template-columns: 1.5fr 1.2fr 0.75fr 1fr 0.4fr 0.5fr 1fr;

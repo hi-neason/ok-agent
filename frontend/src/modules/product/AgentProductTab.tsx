@@ -226,7 +226,7 @@ export function AgentProductTab({ agentId }: { agentId: string }) {
   return (
     <div className="config-section">
       <div className="section-head">
-        <b>产品与方案</b>
+        <b>产品管理</b>
         <small>
           绑定后，Agent 运行时会获得产品工具：search_products 查询、recommend_products
           规则召回+模型精选、list/get_solution 方案推荐。可见范围按品类/标签/指定产品收窄，未绑定时不注册任何产品工具。
@@ -311,7 +311,7 @@ export function AgentProductTab({ agentId }: { agentId: string }) {
             <span>指定产品（已选 {form.explicitIds.length}）</span>
             <div className="prod-pick-list">
               {products.length === 0 && (
-                <small>暂无产品，请先到「产品与方案」添加。</small>
+                <small>暂无产品，请先到「产品管理」添加。</small>
               )}
               {products
                 .filter((p) => p.status === "ACTIVE")

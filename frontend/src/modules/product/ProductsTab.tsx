@@ -144,7 +144,11 @@ export function ProductsTab() {
           onChange={(e) => setSearch(e.target.value)}
           placeholder="搜索产品名称 / KEY / 品牌 / 品类"
         />
-        <select value={category} onChange={(e) => setCategory(e.target.value)}>
+        <select
+          className="prod-filter-select"
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+        >
           <option value="">全部品类</option>
           {categories.map((c) => (
             <option key={c} value={c}>

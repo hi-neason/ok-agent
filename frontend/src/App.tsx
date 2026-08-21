@@ -65,7 +65,7 @@ const navItems: NavItem[] = [
   { id: "skills", icon: "✦", name: "技能", kicker: "SKILL" },
   { id: "mcp", icon: "⌘", name: "工具", kicker: "MCP" },
   { id: "knowledge", icon: "◫", name: "知识库 - 集成", kicker: "KNOWLEDGE" },
-  { id: "products", icon: "◈", name: "产品与方案", kicker: "PRODUCT" },
+  { id: "products", icon: "◈", name: "产品管理", kicker: "PRODUCT" },
   { id: "workflows", icon: "⌁", name: "工作流 - 集成", kicker: "WORKFLOW" },
   { id: "persona", icon: "◑", name: "用户画像", kicker: "PERSONA" },
   { id: "channels", icon: "⇄", name: "渠道管理", kicker: "CHANNEL" },

@@ -35,6 +35,7 @@ import { AgentSkillsTab } from "./components/tabs/AgentSkillsTab";
 import { AgentMcpTab } from "./components/tabs/AgentMcpTab";
 import { AgentWorkflowTab } from "./components/tabs/AgentWorkflowTab";
 import { AgentKnowledgeTab } from "./components/tabs/AgentKnowledgeTab";
+import { AgentProductTab } from "../product";
 import { AgentMemoryTab } from "./components/tabs/AgentMemoryTab";
 import { AgentWorkspaceTab } from "./components/tabs/AgentWorkspaceTab";
 import { AgentRuntimeTab } from "./components/tabs/AgentRuntimeTab";
@@ -208,6 +209,7 @@ export function AgentConfigPage({
       mcp: 0,
       workflows: 0,
       knowledge: 0,
+      products: 0,
       memory: 0,
       workspace: 0,
       runtime: 0,
@@ -446,6 +448,7 @@ export function AgentConfigPage({
             )}
             {tab === "workflows" && <AgentWorkflowTab agentId={agentId} />}
             {tab === "knowledge" && <AgentKnowledgeTab agentId={agentId} />}
+            {tab === "products" && <AgentProductTab agentId={agentId} />}
             {tab === "memory" && (
               <AgentMemoryTab form={form} setField={setField} errorsByField={errorsByField} />
             )}
@@ -463,7 +466,7 @@ export function AgentConfigPage({
               />
             )}
 
-            {tab !== "workflows" && tab !== "knowledge" && (
+            {tab !== "workflows" && tab !== "knowledge" && tab !== "products" && (
               <>
                 {validation &&
                   (validation.errors.length > 0 || validation.warnings.length > 0) && (

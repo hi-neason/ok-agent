@@ -15,6 +15,7 @@ import { UserDetailPage } from "./modules/usermgmt/UserDetailPage";
 import { PersonaPage } from "./modules/persona";
 import { WorkflowSourcesPage } from "./modules/workflow";
 import { KnowledgeSourcesPage } from "./modules/knowledge";
+import { ProductPage } from "./modules/product";
 import { IntentPage } from "./modules/intent";
 import { ChannelPage } from "./modules/channel";
 import { CustomerChatPage } from "./modules/chat/CustomerChatPage";
@@ -27,6 +28,7 @@ type Page =
   | "skills"
   | "mcp"
   | "knowledge"
+  | "products"
   | "workflows"
   | "release"
   | "observe"
@@ -63,6 +65,7 @@ const navItems: NavItem[] = [
   { id: "skills", icon: "✦", name: "技能", kicker: "SKILL" },
   { id: "mcp", icon: "⌘", name: "工具", kicker: "MCP" },
   { id: "knowledge", icon: "◫", name: "知识库 - 集成", kicker: "KNOWLEDGE" },
+  { id: "products", icon: "◈", name: "产品与方案", kicker: "PRODUCT" },
   { id: "workflows", icon: "⌁", name: "工作流 - 集成", kicker: "WORKFLOW" },
   { id: "persona", icon: "◑", name: "用户画像", kicker: "PERSONA" },
   { id: "channels", icon: "⇄", name: "渠道管理", kicker: "CHANNEL" },
@@ -90,7 +93,7 @@ const navigationGroups: NavigationGroup[] = [
   },
   {
     title: "业务管理",
-    items: (["usermgmt", "persona", "channels", "intents", "insight"] as Page[]).map((id) => navItemById[id]),
+    items: (["usermgmt", "persona", "products", "channels", "intents", "insight"] as Page[]).map((id) => navItemById[id]),
   },
   {
     title: "系统管理",
@@ -105,6 +108,7 @@ const pagePaths: Record<Page, string> = {
   skills: "/skills",
   mcp: "/mcp",
   knowledge: "/knowledge",
+  products: "/products",
   workflows: "/workflows",
   release: "/releases",
   observe: "/observability",
@@ -370,6 +374,7 @@ export default function App() {
     skills: <SkillRegistryPage />,
     mcp: <McpPage />,
     knowledge: <KnowledgeSourcesPage />,
+    products: <ProductPage />,
     workflows: <WorkflowSourcesPage />,
     release: <ReleasePage />,
     observe: (

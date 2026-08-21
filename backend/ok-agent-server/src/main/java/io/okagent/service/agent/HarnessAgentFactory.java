@@ -39,6 +39,9 @@ import io.okagent.service.knowledge.KnowledgeTools;
 import io.okagent.service.model.ApiKeyCipher;
 import io.okagent.service.observe.TraceCollectingMiddleware;
 import io.okagent.service.persona.UserPersonaService;
+import io.okagent.service.product.ProductRuntimeCatalog;
+import io.okagent.service.product.ProductTools;
+import io.okagent.service.product.SolutionRuntimeCatalog;
 import io.okagent.service.workflow.WorkflowRuntimeCatalog;
 import io.okagent.service.workflow.WorkflowTools;
 import java.nio.file.Path;
@@ -70,6 +73,8 @@ public class HarnessAgentFactory {
     private final KnowledgeRuntimeCatalog knowledgeCatalog;
     private final TraceCollectingMiddleware traceMiddleware;
     private final IntentService intents;
+    private final ProductRuntimeCatalog productCatalog;
+    private final SolutionRuntimeCatalog solutionCatalog;
     private final ObjectMapper json = new ObjectMapper();
 
     public HarnessAgentFactory(
@@ -85,7 +90,9 @@ public class HarnessAgentFactory {
             WorkflowRuntimeCatalog workflowCatalog,
             KnowledgeRuntimeCatalog knowledgeCatalog,
             TraceCollectingMiddleware traceMiddleware,
-            IntentService intents) {
+            IntentService intents,
+            ProductRuntimeCatalog productCatalog,
+            SolutionRuntimeCatalog solutionCatalog) {
         this.models = models;
         this.mcpServers = mcpServers;
         this.skills = skills;
@@ -99,6 +106,8 @@ public class HarnessAgentFactory {
         this.knowledgeCatalog = knowledgeCatalog;
         this.traceMiddleware = traceMiddleware;
         this.intents = intents;
+        this.productCatalog = productCatalog;
+        this.solutionCatalog = solutionCatalog;
     }
 
     public HarnessAgent build(AgentAsset draft) {
@@ -159,6 +168,13 @@ public class HarnessAgentFactory {
         if (draft.getId() != null
                 && !knowledgeCatalog.listForAgent(draft.getId()).isEmpty()) {
             toolkit.registerTool(new KnowledgeTools(knowledgeCatalog, draft.getId()));
+        }
+        if (draft.getId() != null && productCatalog.hasProducts(draft.getId())) {
+            toolkit.registerTool(new ProductTools(
+                    productCatalog,
+                    solutionCatalog,
+                    draft.getId(),
+                    productCatalog.capabilities(draft.getId())));
         }
         builder.toolkit(toolkit);
 

@@ -4,6 +4,7 @@ export type AgentTab =
   | "mcp"
   | "workflows"
   | "knowledge"
+  | "products"
   | "memory"
   | "workspace"
   | "runtime"
@@ -15,6 +16,7 @@ export const AGENT_TABS: AgentTab[] = [
   "mcp",
   "workflows",
   "knowledge",
+  "products",
   "memory",
   "workspace",
   "runtime",

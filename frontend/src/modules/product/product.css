@@ -1,0 +1,286 @@
+/* Product & solution module — light theme, aligned with mcp.css / styles.css. */
+
+/* ---- Section tabs (产品目录 / 组合方案 / 外部数据源) ---- */
+.prod-tabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  margin: 0 0 20px;
+  background: #fff;
+  border: 1px solid #d6e5f7;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(27, 114, 210, 0.06);
+}
+
+.prod-tabs button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: #6e8eaf;
+  padding: 9px 18px;
+  border-radius: 8px;
+  font: 500 13px/1 "Noto Sans SC", sans-serif;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: 0.18s;
+}
+
+.prod-tabs button:hover {
+  color: #176cd6;
+  background: #f0f7ff;
+}
+
+.prod-tabs button.active {
+  color: #fff;
+  background: linear-gradient(135deg, #1b76e9, #146fe5);
+  box-shadow: 0 6px 16px rgba(27, 118, 233, 0.28);
+}
+
+/* ---- Product table: 7 columns (mcp default is 6) ---- */
+.prod-grid .mcp-row {
+  grid-template-columns: 1.5fr 1.2fr 0.75fr 1fr 0.4fr 0.5fr 1fr;
+}
+
+/* ---- Scenario tag chips ---- */
+.prod-tags {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.prod-tags em {
+  font-style: normal;
+  font-size: 11px;
+  padding: 2px 9px;
+  border-radius: 11px;
+  background: #eaf4ff;
+  color: #1479ed;
+  border: 1px solid #cfe6ff;
+  white-space: nowrap;
+}
+
+/* ---- Editor modal tweaks ---- */
+.prod-editor {
+  max-width: 780px;
+}
+
+.prod-editor textarea.mono,
+.mono {
+  font-family: var(--mono, "DM Mono", ui-monospace, Menlo, monospace);
+  font-size: 12px;
+}
+
+/* ---- Solutions — line items editor ---- */
+.prod-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.prod-items-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font: 11px var(--mono, "DM Mono", monospace);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #7f9cbd;
+}
+
+.prod-items-empty,
+.prod-items-hint {
+  color: #95adca;
+  font-size: 12px;
+}
+
+.prod-item-row {
+  display: grid;
+  grid-template-columns: 1fr 84px 120px 64px;
+  gap: 8px;
+  align-items: center;
+}
+
+.prod-item-row input,
+.prod-item-row select {
+  background: #fff;
+  border: 1px solid #c7def6;
+  border-radius: 8px;
+  color: #214c7a;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+}
+
+.prod-item-row input:focus,
+.prod-item-row select:focus {
+  border-color: #1684f5;
+  box-shadow: 0 0 0 3px rgba(22, 132, 245, 0.1);
+}
+
+.link-button.danger {
+  color: #cf564c;
+}
+
+/* ---- Agent product binding card ---- */
+.prod-binding {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 14px 0;
+}
+
+.prod-binding-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.prod-binding-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font: 500 11px var(--mono, "DM Mono", monospace);
+  letter-spacing: 0.05em;
+  color: #7f9cbd;
+  flex: 1;
+  min-width: 220px;
+}
+
+.prod-binding-field > span {
+  text-transform: uppercase;
+}
+
+.prod-binding-field input,
+.prod-binding-field select,
+.prod-binding-field textarea {
+  background: #fff;
+  border: 1px solid #c7def6;
+  border-radius: 9px;
+  color: #214c7a;
+  padding: 10px 12px;
+  font: 400 13px "Noto Sans SC", sans-serif;
+  outline: none;
+  transition: 0.15s;
+  resize: vertical;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.prod-binding-field input:focus,
+.prod-binding-field select:focus,
+.prod-binding-field textarea:focus {
+  border-color: #1684f5;
+  box-shadow: 0 0 0 3px rgba(22, 132, 245, 0.1);
+}
+
+.prod-binding-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: 500 13px "Noto Sans SC", sans-serif;
+  color: #315b88;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.prod-tag-suggest {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font: 400 12px "Noto Sans SC", sans-serif;
+  letter-spacing: normal;
+  text-transform: none;
+  color: #95adca;
+}
+
+.prod-tag-suggest button {
+  appearance: none;
+  background: #eaf4ff;
+  border: 1px solid #cfe6ff;
+  color: #1479ed;
+  border-radius: 11px;
+  padding: 2px 10px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: 0.15s;
+}
+
+.prod-tag-suggest button:hover {
+  background: #dceeff;
+  border-color: #9cccfc;
+}
+
+.prod-pick-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 4px;
+  max-height: 260px;
+  overflow-y: auto;
+  border: 1px solid #d6e5f7;
+  border-radius: 10px;
+  padding: 8px;
+  background: #fbfdff;
+}
+
+.prod-pick-list label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font: 400 13px "Noto Sans SC", sans-serif;
+  color: #315b88;
+  padding: 7px 9px;
+  border-radius: 7px;
+  cursor: pointer;
+  letter-spacing: normal;
+  text-transform: none;
+  transition: 0.12s;
+}
+
+.prod-pick-list label:hover {
+  background: #eef6ff;
+}
+
+.prod-pick-list label small {
+  display: block;
+  color: #95adca;
+  font: 11px var(--mono, "DM Mono", monospace);
+  letter-spacing: 0;
+}
+
+.prod-cap-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.prod-cap-list label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font: 400 13px "Noto Sans SC", sans-serif;
+  color: #315b88;
+  cursor: pointer;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.prod-cap-list label.on {
+  color: #146fe5;
+}
+
+.prod-cap-list label small {
+  color: #95adca;
+  font-size: 11px;
+}
+
+.prod-scope-hint {
+  color: #b8742f;
+  font-size: 12px;
+  background: #fff7ec;
+  border: 1px solid #f5d9a8;
+  border-radius: 8px;
+  padding: 9px 12px;
+}

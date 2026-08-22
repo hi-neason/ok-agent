@@ -37,15 +37,9 @@ const STATUS_HINT: Record<string, string> = {
   ERROR: "登录过程出现异常。",
 };
 
-/** True when the content is a remote/image URL we can drop into an <img>. */
-function isImageUrl(value: string | null | undefined): boolean {
-  if (!value) return false;
-  const v = value.trim();
-  return (
-    v.startsWith("data:image/") ||
-    v.startsWith("http://") ||
-    v.startsWith("https://")
-  );
+/** True only for an inline data-URI image we can drop directly into an <img>. */
+function isDataImageUri(value: string | null | undefined): boolean {
+  return !!value && value.trim().startsWith("data:image/");
 }
 
 /**
@@ -83,12 +77,12 @@ export function WechatQrLogin({ channelId, autoStart = true, onCancel }: Props) 
       setQrSvg(null);
       return;
     }
-    // Image URL / data-URI is displayed directly via <img>; no SVG needed.
-    if (isImageUrl(raw)) {
+    // Only an inline data-URI image can be shown directly. Any other value
+    // (https URL, raw token, etc.) is the QR *payload* and must be encoded.
+    if (isDataImageUri(raw)) {
       setQrSvg(null);
       return;
     }
-    // Otherwise the field carries the raw QR payload — encode it ourselves.
     try {
       const svg = await QRCode.toString(raw, {
         type: "svg",
@@ -242,7 +236,7 @@ export function WechatQrLogin({ channelId, autoStart = true, onCancel }: Props) 
   const showQr =
     (phase === "show" || phase === "expired") &&
     status?.qrcodeUrl &&
-    isImageUrl(status.qrcodeUrl)
+    isDataImageUri(status.qrcodeUrl)
       ? "image"
       : (phase === "show" || phase === "expired") && qrSvg
         ? "svg"

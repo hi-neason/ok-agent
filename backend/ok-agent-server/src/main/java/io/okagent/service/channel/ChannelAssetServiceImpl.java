@@ -156,8 +156,11 @@ public class ChannelAssetServiceImpl implements ChannelAssetService {
     @Override
     @Transactional
     public void delete(UUID id) {
-        ChannelAsset asset = find(id);
-        repository.delete(asset);
+        // Version-free bulk delete: a duplicate/concurrent delete (e.g. React StrictMode firing
+        // the request twice) simply removes 0 rows and returns 204, instead of loading the entity
+        // and hitting StaleStateException on the @Version-gated DELETE. The DB ON DELETE CASCADE
+        // takes care of the child channel_ilink_session row.
+        repository.deleteChannelById(id);
         stopAfterCommit(id);
     }
 

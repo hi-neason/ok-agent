@@ -53,12 +53,19 @@ public class WechatIlinkLoginServiceImpl implements WechatIlinkLoginService {
         // path take an exclusive row lock up front. This serializes concurrent startLogin() calls
         // (e.g. the QR panel auto-start firing twice in React StrictMode) without ever upgrading
         // a shared lock to an exclusive one — the pattern that previously caused a deadlock.
-        ChannelIlinkSession session = sessions.findByChannelIdForUpdate(channelId).orElse(null);
-        if (session == null) {
-            // Legacy channel created before eager provisioning: ensure a row exists, then re-lock.
-            sessions.insertIfAbsent(channelId);
-            session = sessions.findByChannelIdForUpdate(channelId)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "渠道登录会话不存在"));
+        ChannelIlinkSession session;
+        try {
+            session = sessions.findByChannelIdForUpdate(channelId).orElse(null);
+            if (session == null) {
+                // Legacy channel created before eager provisioning: ensure a row exists, then re-lock.
+                sessions.insertIfAbsent(channelId);
+                session = sessions.findByChannelIdForUpdate(channelId)
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "渠道登录会话不存在"));
+            }
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            // The channel was deleted (by a concurrent close/cancel) between the existence check
+            // and the session insert — its FK is gone. Report a clean 404 instead of a 500.
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "渠道已被删除", e);
         }
         try {
             IlinkClient client = buildClient(channel);

@@ -24,4 +24,13 @@ public interface ChannelAssetRepository extends JpaRepository<ChannelAsset, UUID
             + "c.updatedAt = CURRENT_TIMESTAMP where c.id = :id")
     int updateRuntimeStatus(
             @Param("id") UUID id, @Param("status") ChannelRuntimeStatus status, @Param("error") String error);
+
+    /**
+     * Deletes a channel by id without an optimistic-lock version predicate. Returns the number of
+     * rows removed (0 if it was already gone). This makes concurrent/duplicate deletes idempotent
+     * instead of throwing {@code StaleStateException} / {@code ObjectOptimisticLockingFailureException}.
+     */
+    @Modifying
+    @Query("delete from ChannelAsset c where c.id = :id")
+    int deleteChannelById(@Param("id") UUID id);
 }

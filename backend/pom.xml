@@ -48,6 +48,11 @@
         <artifactId>agentscope-extensions-channel-feishu</artifactId>
         <version>${agentscope.version}</version>
       </dependency>
+      <dependency>
+        <groupId>io.agentscope</groupId>
+        <artifactId>agentscope-extensions-channel-dingtalk</artifactId>
+        <version>${agentscope.version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 

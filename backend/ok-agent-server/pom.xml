@@ -15,11 +15,7 @@
     <dependency>
       <groupId>io.agentscope</groupId>
       <artifactId>agentscope-extensions-channel-dingtalk</artifactId>
-      <version>2.0.3-SNAPSHOT</version>
-      <exclusions>
-        <!-- Reuse the pinned 2.0.2 common on the classpath; the DingTalk adapter only uses stable APIs. -->
-        <exclusion><groupId>io.agentscope</groupId><artifactId>agentscope-extensions-channel-common</artifactId></exclusion>
-      </exclusions>
+      <version>${agentscope.version}</version>
     </dependency>
     <dependency><groupId>org.springframework</groupId><artifactId>spring-webflux</artifactId></dependency>
     <dependency><groupId>io.projectreactor.netty</groupId><artifactId>reactor-netty-http</artifactId></dependency>

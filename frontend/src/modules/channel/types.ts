@@ -106,5 +106,6 @@ export type ChannelInput = {
   wechat?: WechatChannelInput;
   dingtalk?: DingTalkChannelInput;
   wechatLoginId?: string | null;
+  dingtalkLoginId?: string | null;
   enabled: boolean;
 };

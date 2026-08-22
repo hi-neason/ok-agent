@@ -17,6 +17,7 @@ import {
 } from "./api";
 import { FeishuQrScan } from "./FeishuQrScan";
 import { WechatQrScan } from "./WechatQrScan";
+import { DingTalkQrScan } from "./DingTalkQrScan";
 import { WechatQrLogin } from "./WechatQrLogin";
 import type { ChannelInput, ChannelItem } from "./types";
 import "./channel.css";
@@ -536,6 +537,32 @@ export function ChannelPage() {
               {editing.type === "DINGTALK" && (
                 <>
                   <h3 className="channel-section-title">钉钉企业内部应用（Stream 长连接）</h3>
+                  {editingId ? null : (
+                    <>
+                      <DingTalkQrScan
+                        onSuccess={(loginId, { appKey }) =>
+                          setEditing((cur) =>
+                            cur
+                              ? {
+                                  ...cur,
+                                  dingtalkLoginId: loginId,
+                                  dingtalk: {
+                                    ...(cur.dingtalk ?? {
+                                      appKey: "",
+                                      appSecret: "",
+                                      robotCode: "",
+                                    }),
+                                    appKey: appKey ?? "",
+                                    robotCode: appKey ?? "",
+                                  },
+                                }
+                              : cur,
+                          )
+                        }
+                      />
+                      <div className="channel-or">或手动填写 AppKey / AppSecret / RobotCode</div>
+                    </>
+                  )}
                   <div className="field-grid">
                     <label className="field">
                       <span>AppKey（clientId）</span>

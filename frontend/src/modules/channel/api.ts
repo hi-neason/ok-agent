@@ -105,6 +105,37 @@ export async function pollWechatRegistration(loginId: string): Promise<WechatReg
   return parse<WechatRegisterStatus>(response);
 }
 
+// ---------- DingTalk scan-QR to create/bind a robot (create flow) ----------
+
+export type DingTalkRegisterStatus = {
+  state: "STARTING" | "WAITING_SCAN" | "SUCCESS" | "FAILED" | "EXPIRED" | "NOT_FOUND";
+  /** The verification URL rendered as a QR code (opened in DingTalk to authorize the robot). */
+  verificationUrl: string | null;
+  appKey: string | null;
+  error: string | null;
+  expireAt: number;
+  intervalSeconds: number;
+  loginId: string | null;
+};
+
+export type DingTalkStartedSession = {
+  loginId: string;
+  verificationUrl: string;
+  userCode: string | null;
+  expireAt: number;
+  intervalSeconds: number;
+};
+
+export async function startDingTalkRegistration(): Promise<DingTalkStartedSession> {
+  const response = await fetch(`${BASE}/dingtalk/register/start`, { method: "POST" });
+  return parse<DingTalkStartedSession>(response);
+}
+
+export async function pollDingTalkRegistration(loginId: string): Promise<DingTalkRegisterStatus> {
+  const response = await fetch(`${BASE}/dingtalk/register/${loginId}`);
+  return parse<DingTalkRegisterStatus>(response);
+}
+
 // ---------- WeChat iLink (ClawBot) per-channel QR login (edit flow) ----------
 
 export async function startWechatLogin(id: string): Promise<WechatIlinkStatus> {

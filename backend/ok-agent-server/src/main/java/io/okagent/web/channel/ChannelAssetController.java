@@ -3,6 +3,7 @@ package io.okagent.web.channel;
 import io.okagent.service.channel.ChannelAssetService;
 import io.okagent.service.channel.WechatIlinkLoginService;
 import io.okagent.service.channel.runtime.FeishuAppRegistrationService;
+import io.okagent.service.channel.runtime.dingtalk.DingTalkRegistrationService;
 import io.okagent.service.channel.runtime.wechat.WechatLoginRegistrationService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -18,16 +19,19 @@ public class ChannelAssetController {
     private final FeishuAppRegistrationService feishuRegistration;
     private final WechatIlinkLoginService wechatLogin;
     private final WechatLoginRegistrationService wechatRegistration;
+    private final DingTalkRegistrationService dingtalkRegistration;
 
     public ChannelAssetController(
             ChannelAssetService service,
             FeishuAppRegistrationService feishuRegistration,
             WechatIlinkLoginService wechatLogin,
-            WechatLoginRegistrationService wechatRegistration) {
+            WechatLoginRegistrationService wechatRegistration,
+            DingTalkRegistrationService dingtalkRegistration) {
         this.service = service;
         this.feishuRegistration = feishuRegistration;
         this.wechatLogin = wechatLogin;
         this.wechatRegistration = wechatRegistration;
+        this.dingtalkRegistration = dingtalkRegistration;
     }
 
     @GetMapping
@@ -104,6 +108,24 @@ public class ChannelAssetController {
     /** Polls a WeChat registration flow; on SUCCESS carries the scanned bot's id/userId (no token). */
     public WechatLoginRegistrationService.SessionStatus wechatRegistrationStatus(@PathVariable String loginId) {
         return wechatRegistration.status(loginId);
+    }
+
+    // ---------- DingTalk scan-QR to create/bind a robot (before channel exists) ----------
+
+    @PostMapping("/dingtalk/register/start")
+    /**
+     * Starts a DingTalk device-authorization (scan QR) flow independent of any channel. The
+     * response carries the verification URL (rendered as a QR code) and a loginId to poll. On
+     * confirmation the AppKey/AppSecret are claimed when the channel is saved.
+     */
+    public DingTalkRegistrationService.StartedSession startDingTalkRegistration() {
+        return dingtalkRegistration.start();
+    }
+
+    @GetMapping("/dingtalk/register/{loginId}")
+    /** Polls a DingTalk registration flow; on SUCCESS carries the scanned AppKey (secret is held server-side). */
+    public DingTalkRegistrationService.SessionStatus dingTalkRegistrationStatus(@PathVariable String loginId) {
+        return dingtalkRegistration.status(loginId);
     }
 
     // ---------- WeChat iLink (ClawBot) QR login (per existing channel) ----------

@@ -64,5 +64,6 @@ export function createDraft(): ChannelInput {
       robotCode: "",
     },
     wechatLoginId: null,
+    dingtalkLoginId: null,
   };
 }

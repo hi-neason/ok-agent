@@ -12,6 +12,7 @@ import io.okagent.repository.agent.AgentAssetRepository;
 import io.okagent.repository.channel.ChannelAssetRepository;
 import io.okagent.repository.channel.ChannelIlinkSessionRepository;
 import io.okagent.service.channel.runtime.ChannelRuntimeEvent;
+import io.okagent.service.channel.runtime.dingtalk.DingTalkRegistrationService;
 import io.okagent.service.channel.runtime.wechat.WechatLoginRegistrationService;
 import io.okagent.service.model.ApiKeyCipher;
 import io.okagent.web.channel.ChannelAssetRequest;
@@ -42,6 +43,7 @@ public class ChannelAssetServiceImpl implements ChannelAssetService {
     private final ApplicationEventPublisher events;
     private final ChannelUserService channelUsers;
     private final WechatLoginRegistrationService wechatRegistration;
+    private final DingTalkRegistrationService dingtalkRegistration;
     private final String publicBaseUrl;
 
     public ChannelAssetServiceImpl(
@@ -52,6 +54,7 @@ public class ChannelAssetServiceImpl implements ChannelAssetService {
             ApplicationEventPublisher events,
             ChannelUserService channelUsers,
             WechatLoginRegistrationService wechatRegistration,
+            DingTalkRegistrationService dingtalkRegistration,
             @Value("${ok-agent.channels.public-base-url:}") String publicBaseUrl) {
         this.repository = repository;
         this.agentRepository = agentRepository;
@@ -60,6 +63,7 @@ public class ChannelAssetServiceImpl implements ChannelAssetService {
         this.events = events;
         this.channelUsers = channelUsers;
         this.wechatRegistration = wechatRegistration;
+        this.dingtalkRegistration = dingtalkRegistration;
         this.publicBaseUrl = publicBaseUrl;
     }
 
@@ -74,6 +78,36 @@ public class ChannelAssetServiceImpl implements ChannelAssetService {
     @Override
     @Transactional
     public ChannelAssetResponse create(ChannelAssetRequest request) {
+        // DingTalk scan-to-bind: claim the AppKey/AppSecret from the independent registration
+        // session and fold them into the request before validation/config serialization, so the
+        // normal write path persists appKey/robotCode (=AppKey) and the encrypted appSecret.
+        if (request.type() == ChannelType.DINGTALK && request.dingtalkLoginId() != null
+                && !request.dingtalkLoginId().isBlank()) {
+            DingTalkRegistrationService.ClaimedCredentials creds =
+                    dingtalkRegistration.consume(request.dingtalkLoginId());
+            if (creds == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "请先使用钉钉扫码确认后再保存");
+            }
+            ChannelAssetRequest.DingTalkConfig fromForm = request.dingtalk();
+            ChannelAssetRequest.DingTalkConfig filled = new ChannelAssetRequest.DingTalkConfig(
+                    creds.appKey(),
+                    creds.appSecret(),
+                    creds.appKey(), // robotCode == AppKey for a device-auth-created robot
+                    fromForm != null ? fromForm.apiBase() : null,
+                    fromForm != null ? fromForm.oapiBase() : null,
+                    fromForm != null ? fromForm.streamRegisterUrl() : null);
+            request = new ChannelAssetRequest(
+                    request.name(),
+                    request.type(),
+                    request.boundAgentId(),
+                    request.dmScope(),
+                    request.feishu(),
+                    request.wechat(),
+                    filled,
+                    request.wechatLoginId(),
+                    request.dingtalkLoginId(),
+                    request.enabled());
+        }
         validate(request);
         String channelKey = UUID.randomUUID().toString();
         String configJson = writeConfig(channelKey, request);

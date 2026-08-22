@@ -17,6 +17,7 @@ public record ChannelAssetRequest(
         FeishuConfig feishu,
         WechatConfig wechat,
         DingTalkConfig dingtalk,
+        String wechatLoginId,
         boolean enabled) {
 
     /** Feishu-provider non-secret config and write-only secrets. */

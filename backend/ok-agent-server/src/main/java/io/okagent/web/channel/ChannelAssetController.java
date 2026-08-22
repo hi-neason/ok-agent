@@ -3,6 +3,7 @@ package io.okagent.web.channel;
 import io.okagent.service.channel.ChannelAssetService;
 import io.okagent.service.channel.WechatIlinkLoginService;
 import io.okagent.service.channel.runtime.FeishuAppRegistrationService;
+import io.okagent.service.channel.runtime.wechat.WechatLoginRegistrationService;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -16,14 +17,17 @@ public class ChannelAssetController {
     private final ChannelAssetService service;
     private final FeishuAppRegistrationService feishuRegistration;
     private final WechatIlinkLoginService wechatLogin;
+    private final WechatLoginRegistrationService wechatRegistration;
 
     public ChannelAssetController(
             ChannelAssetService service,
             FeishuAppRegistrationService feishuRegistration,
-            WechatIlinkLoginService wechatLogin) {
+            WechatIlinkLoginService wechatLogin,
+            WechatLoginRegistrationService wechatRegistration) {
         this.service = service;
         this.feishuRegistration = feishuRegistration;
         this.wechatLogin = wechatLogin;
+        this.wechatRegistration = wechatRegistration;
     }
 
     @GetMapping
@@ -84,7 +88,25 @@ public class ChannelAssetController {
         return feishuRegistration.status(sessionId);
     }
 
-    // ---------- WeChat iLink (ClawBot) QR login ----------
+    // ---------- WeChat iLink (ClawBot) independent QR registration (before channel exists) ----------
+
+    @PostMapping("/wechat/register/start")
+    /**
+     * Starts a WeChat iLink QR-login flow independent of any channel (mirrors the Feishu flow).
+     * Returns a loginId to poll; the (encrypted) bot_token is claimed when the channel is saved.
+     */
+    public WechatLoginRegistrationService.StartedSession startWechatRegistration(
+            @RequestBody(required = false) WechatLoginRegistrationService.StartRequest request) {
+        return wechatRegistration.start(request != null ? request : new WechatLoginRegistrationService.StartRequest(null, null));
+    }
+
+    @GetMapping("/wechat/register/{loginId}")
+    /** Polls a WeChat registration flow; on SUCCESS carries the scanned bot's id/userId (no token). */
+    public WechatLoginRegistrationService.SessionStatus wechatRegistrationStatus(@PathVariable String loginId) {
+        return wechatRegistration.status(loginId);
+    }
+
+    // ---------- WeChat iLink (ClawBot) QR login (per existing channel) ----------
 
     @PostMapping("/{id}/wechat/login/start")
     /** Issues a WeChat iLink login QR code; the response carries the qrcodeUrl to render. */

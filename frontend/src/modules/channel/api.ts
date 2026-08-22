@@ -78,7 +78,34 @@ export async function pollFeishuRegistration(sessionId: string): Promise<FeishuR
   return parse<FeishuRegisterStatus>(response);
 }
 
-// ---------- WeChat iLink (ClawBot) QR login ----------
+// ---------- WeChat iLink (ClawBot) independent QR registration (create flow) ----------
+
+export type WechatRegisterStatus = {
+  state: "STARTING" | "WAITING_SCAN" | "SCANNED" | "SUCCESS" | "FAILED" | "EXPIRED" | "NOT_FOUND";
+  /** The `qrcode_img_content` payload to render as a QR image. */
+  qrcodePayload: string | null;
+  botId: string | null;
+  ilinkUserId: string | null;
+  error: string | null;
+  expireAt: number;
+  loginId: string | null;
+};
+
+export async function startWechatRegistration(apiBase?: string, channelVersion?: string): Promise<{ loginId: string }> {
+  const response = await fetch(`${BASE}/wechat/register/start`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ apiBase: apiBase ?? null, channelVersion: channelVersion ?? null }),
+  });
+  return parse<{ loginId: string }>(response);
+}
+
+export async function pollWechatRegistration(loginId: string): Promise<WechatRegisterStatus> {
+  const response = await fetch(`${BASE}/wechat/register/${loginId}`);
+  return parse<WechatRegisterStatus>(response);
+}
+
+// ---------- WeChat iLink (ClawBot) per-channel QR login (edit flow) ----------
 
 export async function startWechatLogin(id: string): Promise<WechatIlinkStatus> {
   const response = await fetch(`${BASE}/${id}/wechat/login/start`, { method: "POST" });

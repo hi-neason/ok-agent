@@ -12,6 +12,7 @@ import io.okagent.repository.agent.AgentAssetRepository;
 import io.okagent.repository.channel.ChannelAssetRepository;
 import io.okagent.repository.channel.ChannelIlinkSessionRepository;
 import io.okagent.service.channel.runtime.ChannelRuntimeEvent;
+import io.okagent.service.channel.runtime.wechat.WechatLoginRegistrationService;
 import io.okagent.service.model.ApiKeyCipher;
 import io.okagent.web.channel.ChannelAssetRequest;
 import io.okagent.web.channel.ChannelAssetResponse;
@@ -40,6 +41,7 @@ public class ChannelAssetServiceImpl implements ChannelAssetService {
     private final ApiKeyCipher cipher;
     private final ApplicationEventPublisher events;
     private final ChannelUserService channelUsers;
+    private final WechatLoginRegistrationService wechatRegistration;
     private final String publicBaseUrl;
 
     public ChannelAssetServiceImpl(
@@ -49,6 +51,7 @@ public class ChannelAssetServiceImpl implements ChannelAssetService {
             ApiKeyCipher cipher,
             ApplicationEventPublisher events,
             ChannelUserService channelUsers,
+            WechatLoginRegistrationService wechatRegistration,
             @Value("${ok-agent.channels.public-base-url:}") String publicBaseUrl) {
         this.repository = repository;
         this.agentRepository = agentRepository;
@@ -56,6 +59,7 @@ public class ChannelAssetServiceImpl implements ChannelAssetService {
         this.cipher = cipher;
         this.events = events;
         this.channelUsers = channelUsers;
+        this.wechatRegistration = wechatRegistration;
         this.publicBaseUrl = publicBaseUrl;
     }
 
@@ -88,11 +92,20 @@ public class ChannelAssetServiceImpl implements ChannelAssetService {
                 request.enabled(),
                 "system");
         ChannelAsset saved = repository.save(asset);
-        // Eagerly create the per-channel iLink session row for WECHAT channels so
-        // startLogin() only ever UPDATEs it. This avoids a concurrent-INSERT race
-        // when the QR panel auto-starts (e.g. React StrictMode double effect).
         if (saved.getType() == ChannelType.WECHAT) {
-            ilinkSessions.save(new ChannelIlinkSession(saved.getId()));
+            // New "scan-first" flow: the QR was driven by an independent registration session.
+            // Claim its confirmed credentials here and persist them onto a fresh iLink session in
+            // the same transaction. No channel row existed before save, so canceling the dialog
+            // leaves nothing behind — and there is no concurrent-insert/delete race.
+            WechatLoginRegistrationService.ClaimedCredentials creds =
+                    wechatRegistration.consume(request.wechatLoginId());
+            if (creds == null) {
+                // Roll back the channel insert: a WECHAT channel cannot be used without a scan.
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "请先使用微信扫码确认后再保存");
+            }
+            ChannelIlinkSession session = new ChannelIlinkSession(saved.getId());
+            session.markLoggedIn(creds.botTokenCiphertext(), creds.botId(), creds.ilinkUserId());
+            ilinkSessions.save(session);
         }
         reconcileAfterCommit(saved.getId());
         return ChannelAssetResponse.from(saved, publicBaseUrl, 0);

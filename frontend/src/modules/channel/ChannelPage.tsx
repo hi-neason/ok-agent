@@ -16,6 +16,7 @@ import {
   setChannelRuntime,
 } from "./api";
 import { FeishuQrScan } from "./FeishuQrScan";
+import { WechatQrScan } from "./WechatQrScan";
 import { WechatQrLogin } from "./WechatQrLogin";
 import type { ChannelInput, ChannelItem } from "./types";
 import "./channel.css";
@@ -27,7 +28,6 @@ export function ChannelPage() {
   const [agentLoadError, setAgentLoadError] = useState<string | null>(null);
   const [editing, setEditing] = useState<ChannelInput | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [tempCreate, setTempCreate] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -56,14 +56,12 @@ export function ChannelPage() {
   const openCreate = () => {
     setError(null);
     setEditingId(null);
-    setTempCreate(false);
     setEditing(createDraft());
   };
 
   const openEdit = (item: ChannelItem) => {
     setError(null);
     setEditingId(item.id);
-    setTempCreate(false);
     setEditing({
       name: item.name,
       type: item.type,
@@ -96,7 +94,7 @@ export function ChannelPage() {
   const switchType = (type: ChannelInput["type"]) => {
     setEditing((cur) => {
       if (!cur) return cur;
-      const next: ChannelInput = { ...cur, type };
+      const next: ChannelInput = { ...cur, type, wechatLoginId: null };
       if (type === "FEISHU") {
         next.feishu = cur.feishu ?? {
           appId: "",
@@ -143,7 +141,6 @@ export function ChannelPage() {
       );
       setEditing(null);
       setEditingId(null);
-      setTempCreate(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -151,43 +148,9 @@ export function ChannelPage() {
     }
   };
 
-  // WECHAT create flow: persist a minimal channel up front so the QR-login
-  // panel can call the per-channel login endpoints. The user can still fill
-  // name / agent afterwards and hit 保存渠道 (update). If they cancel we
-  // delete the temporary channel so it doesn't linger.
-  const startWechatBind = async () => {
-    if (!editing) return;
-    setSaving(true);
-    setError(null);
-    try {
-      const payload: ChannelInput = {
-        ...editing,
-        name: editing.name?.trim() || "微信渠道（待完善）",
-      };
-      const saved = await saveChannel(null, payload);
-      setChannels((current) => [saved, ...current]);
-      setEditingId(saved.id);
-      setTempCreate(true);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const closeEditor = async () => {
-    // Clean up a half-created channel if the user bails out.
-    if (tempCreate && editingId) {
-      try {
-        await deleteChannel(editingId);
-        setChannels((current) => current.filter((x) => x.id !== editingId));
-      } catch {
-        /* best-effort; the orphaned channel can be deleted from the list */
-      }
-    }
+  const closeEditor = () => {
     setEditing(null);
     setEditingId(null);
-    setTempCreate(false);
   };
 
   const toggleEnabled = async (item: ChannelItem, enabled: boolean) => {
@@ -512,30 +475,17 @@ export function ChannelPage() {
                   </div>
 
                   {editingId ? (
-                    <WechatQrLogin
-                      channelId={editingId}
-                      onCancel={
-                        tempCreate ? () => void closeEditor() : undefined
+                    <WechatQrLogin channelId={editingId} />
+                  ) : (
+                    <WechatQrScan
+                      apiBase={editing.wechat?.apiBase}
+                      channelVersion={editing.wechat?.channelVersion}
+                      onSuccess={(loginId) =>
+                        setEditing((cur) =>
+                          cur ? { ...cur, wechatLoginId: loginId } : cur,
+                        )
                       }
                     />
-                  ) : (
-                    <div className="feishu-qr-panel">
-                      <div className="feishu-qr-head">
-                        <b>微信扫码登录（个人号 · ClawBot）</b>
-                      </div>
-                      <div className="feishu-qr-tip">
-                        点击下方按钮，系统将创建渠道并立即调出微信扫码二维码。
-                        扫码成功后再补全渠道名称与绑定 Agent，最后点「保存渠道」即可。
-                        <div style={{ marginTop: 10 }}>
-                          <Button
-                            onClick={startWechatBind}
-                            disabled={saving || !!editingId}
-                          >
-                            {saving ? "正在准备…" : "▣ 开始扫码绑定"}
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
                   )}
 
                   <div className="channel-hint">
@@ -543,7 +493,7 @@ export function ChannelPage() {
                     扫码登录后，bot_token 加密保存在服务端；context_token 用于回复消息，有效期约 24 小时。
                     {editingId
                       ? "请将上方渠道开关打开并启动渠道，登录态生效后会自动拉取消息。"
-                      : "保存渠道后，请在列表中打开开关并启动渠道。"}
+                      : "扫码确认成功后点击「保存渠道」，渠道即创建完成并处于已登录状态。"}
                   </div>
                 </>
               )}

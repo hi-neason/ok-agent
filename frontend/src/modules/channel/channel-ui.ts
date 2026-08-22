@@ -63,5 +63,6 @@ export function createDraft(): ChannelInput {
       appSecret: "",
       robotCode: "",
     },
+    wechatLoginId: null,
   };
 }

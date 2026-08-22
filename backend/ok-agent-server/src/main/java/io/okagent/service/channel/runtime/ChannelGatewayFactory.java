@@ -3,6 +3,7 @@ package io.okagent.service.channel.runtime;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lark.oapi.Client;
+import io.agentscope.extensions.channel.dingtalk.DingTalkChannelProperties;
 import io.agentscope.harness.agent.HarnessAgent;
 import io.agentscope.harness.agent.gateway.GatewayBootstrap;
 import io.agentscope.harness.agent.gateway.channel.Channel;
@@ -10,10 +11,17 @@ import io.agentscope.harness.agent.gateway.channel.ChannelConfig;
 import io.agentscope.harness.agent.gateway.channel.DmScope;
 import io.okagent.domain.channel.ChannelAsset;
 import io.okagent.domain.channel.ChannelDmScope;
+import io.okagent.domain.channel.ChannelIlinkSession;
+import io.okagent.domain.channel.ChannelType;
+import io.okagent.domain.channel.IlinkLoginStatus;
 import io.okagent.repository.agent.AgentAssetRepository;
+import io.okagent.repository.channel.ChannelIlinkSessionRepository;
 import io.okagent.service.agent.HarnessAgentFactory;
 import io.okagent.service.channel.ChannelIdentityResolver;
+import io.okagent.service.channel.runtime.dingtalk.DingTalkStreamChannel;
 import io.okagent.service.channel.runtime.feishu.FeishuWsChannel;
+import io.okagent.service.channel.runtime.wechat.IlinkClient;
+import io.okagent.service.channel.runtime.wechat.WeChatIlinkChannel;
 import io.okagent.service.dialogue.DialogueService;
 import io.okagent.service.model.ApiKeyCipher;
 import java.util.LinkedHashMap;
@@ -22,6 +30,7 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * Builds a framework {@link GatewayBootstrap} for one channel asset: constructs the provider
@@ -39,28 +48,37 @@ public class ChannelGatewayFactory {
     private final ApiKeyCipher cipher;
     private final ChannelIdentityResolver identityResolver;
     private final DialogueService dialogue;
+    private final ChannelIlinkSessionRepository ilinkSessions;
+    private final TransactionTemplate tx;
 
     public ChannelGatewayFactory(
             HarnessAgentFactory agentFactory,
             AgentAssetRepository agentRepository,
             ApiKeyCipher cipher,
             ChannelIdentityResolver identityResolver,
-            DialogueService dialogue) {
+            DialogueService dialogue,
+            ChannelIlinkSessionRepository ilinkSessions,
+            TransactionTemplate tx) {
         this.agentFactory = agentFactory;
         this.agentRepository = agentRepository;
         this.cipher = cipher;
         this.identityResolver = identityResolver;
         this.dialogue = dialogue;
+        this.ilinkSessions = ilinkSessions;
+        this.tx = tx;
     }
 
     /**
      * Builds (but does not start) a gateway bootstrap hosting the given channel and bound agent.
      */
     public GatewayBootstrap build(ChannelAsset asset) {
-        if (asset.getType() != io.okagent.domain.channel.ChannelType.FEISHU) {
-            throw new IllegalArgumentException("Unsupported channel type: " + asset.getType());
-        }
-        return buildFeishu(asset);
+        return switch (asset.getType()) {
+            case FEISHU -> buildFeishu(asset);
+            case WECHAT -> buildWechatIlink(asset);
+            case DINGTALK -> buildDingTalk(asset);
+            case WECOM -> throw new IllegalArgumentException(
+                    "Channel type not yet wired: " + asset.getType());
+        };
     }
 
     private GatewayBootstrap buildFeishu(ChannelAsset asset) {
@@ -109,6 +127,105 @@ public class ChannelGatewayFactory {
                 "Building Feishu long-connection channel '{}' bound to agent '{}' (dmScope={})",
                 asset.getChannelKey(),
                 agentKey,
+                asset.getDmScope());
+
+        return GatewayBootstrap.builder()
+                .agent(agentKey, agent)
+                .channel(channel)
+                .build();
+    }
+
+    private GatewayBootstrap buildWechatIlink(ChannelAsset asset) {
+        UUID agentId = asset.getBoundAgentId();
+        if (agentId == null) {
+            throw new IllegalStateException("Channel '" + asset.getChannelKey() + "' has no bound agent");
+        }
+        var agentAsset = agentRepository
+                .findById(agentId)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Bound agent " + agentId + " for channel '" + asset.getChannelKey() + "' was not found"));
+        HarnessAgent agent = agentFactory.build(agentAsset);
+        String agentKey = agentAsset.getAgentKey();
+
+        ChannelIlinkSession session = ilinkSessions.findByChannelId(asset.getId()).orElse(null);
+        if (session == null
+                || session.getLoginStatus() != IlinkLoginStatus.LOGGED_IN
+                || session.getBotTokenCiphertext() == null
+                || session.getBotTokenCiphertext().isBlank()) {
+            throw new IllegalStateException(
+                    "WeChat iLink channel '" + asset.getChannelKey() + "' is not logged in; scan the QR code first");
+        }
+        String botToken = cipher.decrypt(session.getBotTokenCiphertext());
+        Map<String, Object> props = readMap(asset.getConfigJson());
+        String apiBase = asString(props, "apiBase");
+        String channelVersion = asString(props, "channelVersion");
+        IlinkClient client = new IlinkClient(apiBase, channelVersion);
+
+        ChannelConfig routing = ChannelConfig.builder(asset.getChannelKey())
+                .defaultAgentId(agentKey)
+                .build();
+        WeChatIlinkChannel channel = new WeChatIlinkChannel(
+                asset.getId(),
+                asset.getChannelKey(),
+                routing,
+                client,
+                botToken,
+                ilinkSessions,
+                tx,
+                dialogue,
+                identityResolver,
+                agentAsset.getId(),
+                agentAsset.getName());
+
+        log.info(
+                "Building WeChat iLink channel '{}' bound to agent '{}' (botId={})",
+                asset.getChannelKey(),
+                agentKey,
+                session.getBotId());
+
+        return GatewayBootstrap.builder()
+                .agent(agentKey, agent)
+                .channel(channel)
+                .build();
+    }
+
+    private GatewayBootstrap buildDingTalk(ChannelAsset asset) {
+        UUID agentId = asset.getBoundAgentId();
+        if (agentId == null) {
+            throw new IllegalStateException("Channel '" + asset.getChannelKey() + "' has no bound agent");
+        }
+        var agentAsset = agentRepository
+                .findById(agentId)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Bound agent " + agentId + " for channel '" + asset.getChannelKey() + "' was not found"));
+        HarnessAgent agent = agentFactory.build(agentAsset);
+        String agentKey = agentAsset.getAgentKey();
+
+        Map<String, Object> props = new LinkedHashMap<>(readMap(asset.getConfigJson()));
+        Map<String, String> secrets = readSecrets(asset.getSecretsCiphertext());
+        copyIfPresent(props, secrets, "appSecret");
+        DingTalkChannelProperties properties = DingTalkChannelProperties.from(asset.getChannelKey(), props);
+
+        ChannelConfig routing = ChannelConfig.builder(asset.getChannelKey())
+                .defaultAgentId(agentKey)
+                .dmScope(toDmScope(asset.getDmScope()))
+                .build();
+        Channel channel = new DingTalkStreamChannel(
+                asset.getChannelKey(),
+                routing,
+                properties,
+                dialogue,
+                identityResolver,
+                agentAsset.getId(),
+                agentAsset.getName(),
+                asset.getType().name());
+
+        log.info(
+                "Building DingTalk stream channel '{}' bound to agent '{}' (appKey={}, robotCode={}, dmScope={})",
+                asset.getChannelKey(),
+                agentKey,
+                properties.appKey(),
+                properties.robotCode(),
                 asset.getDmScope());
 
         return GatewayBootstrap.builder()

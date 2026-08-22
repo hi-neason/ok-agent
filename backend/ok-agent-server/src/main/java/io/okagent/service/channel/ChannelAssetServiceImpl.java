@@ -5,10 +5,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.okagent.domain.channel.ChannelAsset;
 import io.okagent.domain.channel.ChannelDmScope;
+import io.okagent.domain.channel.ChannelIlinkSession;
 import io.okagent.domain.channel.ChannelRuntimeStatus;
 import io.okagent.domain.channel.ChannelType;
 import io.okagent.repository.agent.AgentAssetRepository;
 import io.okagent.repository.channel.ChannelAssetRepository;
+import io.okagent.repository.channel.ChannelIlinkSessionRepository;
 import io.okagent.service.channel.runtime.ChannelRuntimeEvent;
 import io.okagent.service.model.ApiKeyCipher;
 import io.okagent.web.channel.ChannelAssetRequest;
@@ -34,6 +36,7 @@ public class ChannelAssetServiceImpl implements ChannelAssetService {
 
     private final ChannelAssetRepository repository;
     private final AgentAssetRepository agentRepository;
+    private final ChannelIlinkSessionRepository ilinkSessions;
     private final ApiKeyCipher cipher;
     private final ApplicationEventPublisher events;
     private final ChannelUserService channelUsers;
@@ -42,12 +45,14 @@ public class ChannelAssetServiceImpl implements ChannelAssetService {
     public ChannelAssetServiceImpl(
             ChannelAssetRepository repository,
             AgentAssetRepository agentRepository,
+            ChannelIlinkSessionRepository ilinkSessions,
             ApiKeyCipher cipher,
             ApplicationEventPublisher events,
             ChannelUserService channelUsers,
             @Value("${ok-agent.channels.public-base-url:}") String publicBaseUrl) {
         this.repository = repository;
         this.agentRepository = agentRepository;
+        this.ilinkSessions = ilinkSessions;
         this.cipher = cipher;
         this.events = events;
         this.channelUsers = channelUsers;
@@ -69,7 +74,7 @@ public class ChannelAssetServiceImpl implements ChannelAssetService {
         String channelKey = UUID.randomUUID().toString();
         String configJson = writeConfig(channelKey, request);
         String secretCiphertext = cipher.encrypt(writeSecrets(request, Map.of()));
-        String secretFlags = write(ChannelAssetResponse.configuredSecrets(request.feishu()));
+        String secretFlags = write(mergeSecretFlags(null, request));
         ChannelAsset asset = new ChannelAsset(
                 UUID.randomUUID(),
                 channelKey,
@@ -83,6 +88,12 @@ public class ChannelAssetServiceImpl implements ChannelAssetService {
                 request.enabled(),
                 "system");
         ChannelAsset saved = repository.save(asset);
+        // Eagerly create the per-channel iLink session row for WECHAT channels so
+        // startLogin() only ever UPDATEs it. This avoids a concurrent-INSERT race
+        // when the QR panel auto-starts (e.g. React StrictMode double effect).
+        if (saved.getType() == ChannelType.WECHAT) {
+            ilinkSessions.save(new ChannelIlinkSession(saved.getId()));
+        }
         reconcileAfterCommit(saved.getId());
         return ChannelAssetResponse.from(saved, publicBaseUrl, 0);
     }
@@ -157,16 +168,29 @@ public class ChannelAssetServiceImpl implements ChannelAssetService {
         if (request.name() == null || request.name().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Channel name is required");
         }
-        if (request.type() != ChannelType.FEISHU) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only FEISHU channels are supported in the MVP");
+        if (request.type() != ChannelType.FEISHU
+                && request.type() != ChannelType.WECHAT
+                && request.type() != ChannelType.DINGTALK) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Unsupported channel type: " + request.type());
         }
         if (request.boundAgentId() != null && !agentRepository.existsById(request.boundAgentId())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Bound agent does not exist");
         }
-        if (request.feishu() == null
-                || request.feishu().appId() == null
-                || request.feishu().appId().isBlank()) {
+        if (request.type() == ChannelType.FEISHU
+                && (request.feishu() == null
+                        || request.feishu().appId() == null
+                        || request.feishu().appId().isBlank())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "feishu.appId is required");
+        }
+        if (request.type() == ChannelType.DINGTALK
+                && (request.dingtalk() == null
+                        || request.dingtalk().appKey() == null
+                        || request.dingtalk().appKey().isBlank()
+                        || request.dingtalk().robotCode() == null
+                        || request.dingtalk().robotCode().isBlank())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "dingtalk.appKey and dingtalk.robotCode are required");
         }
     }
 
@@ -178,6 +202,27 @@ public class ChannelAssetServiceImpl implements ChannelAssetService {
 
     private String writeConfig(String channelKey, ChannelAssetRequest request) {
         Map<String, Object> config = new TreeMap<>();
+        if (request.type() == ChannelType.WECHAT) {
+            if (request.wechat() != null) {
+                if (request.wechat().apiBase() != null && !request.wechat().apiBase().isBlank()) {
+                    config.put("apiBase", request.wechat().apiBase());
+                }
+                if (request.wechat().channelVersion() != null
+                        && !request.wechat().channelVersion().isBlank()) {
+                    config.put("channelVersion", request.wechat().channelVersion());
+                }
+            }
+            return write(config);
+        }
+        if (request.type() == ChannelType.DINGTALK) {
+            ChannelAssetRequest.DingTalkConfig d = request.dingtalk();
+            config.put("appKey", d.appKey());
+            config.put("robotCode", d.robotCode());
+            putConfigIfNotBlank(config, "apiBase", d.apiBase());
+            putConfigIfNotBlank(config, "oapiBase", d.oapiBase());
+            putConfigIfNotBlank(config, "streamRegisterUrl", d.streamRegisterUrl());
+            return write(config);
+        }
         config.put("appId", request.feishu().appId());
         if (request.feishu().apiBase() != null && !request.feishu().apiBase().isBlank()) {
             config.put("apiBase", request.feishu().apiBase());
@@ -192,6 +237,15 @@ public class ChannelAssetServiceImpl implements ChannelAssetService {
 
     private String writeSecrets(ChannelAssetRequest request, Map<String, String> existing) {
         Map<String, String> secrets = new LinkedHashMap<>(existing);
+        if (request.type() == ChannelType.WECHAT) {
+            // iLink authenticates via the QR-scanned bot_token stored on channel_ilink_session;
+            // there are no static secrets to keep here.
+            return write(secrets);
+        }
+        if (request.type() == ChannelType.DINGTALK && request.dingtalk() != null) {
+            putIfNotBlank(secrets, "appSecret", request.dingtalk().appSecret());
+            return write(secrets);
+        }
         if (request.feishu() != null) {
             putIfNotBlank(secrets, "appSecret", request.feishu().appSecret());
             putIfNotBlank(secrets, "encryptKey", request.feishu().encryptKey());
@@ -203,7 +257,13 @@ public class ChannelAssetServiceImpl implements ChannelAssetService {
     private Map<String, Boolean> mergeSecretFlags(String existingFlagsJson, ChannelAssetRequest request) {
         Map<String, Boolean> flags = new LinkedHashMap<>();
         flags.putAll(readSecretFlags(existingFlagsJson));
-        flags.putAll(ChannelAssetResponse.configuredSecrets(request.feishu()));
+        if (request.type() == ChannelType.FEISHU) {
+            flags.putAll(ChannelAssetResponse.configuredSecrets(request.feishu()));
+        } else if (request.type() == ChannelType.DINGTALK && request.dingtalk() != null) {
+            if (notBlank(request.dingtalk().appSecret())) {
+                flags.put("appSecret", true);
+            }
+        }
         return flags;
     }
 
@@ -244,6 +304,16 @@ public class ChannelAssetServiceImpl implements ChannelAssetService {
         if (value != null && !value.isBlank()) {
             map.put(key, value);
         }
+    }
+
+    private void putConfigIfNotBlank(Map<String, Object> map, String key, String value) {
+        if (value != null && !value.isBlank()) {
+            map.put(key, value);
+        }
+    }
+
+    private static boolean notBlank(String s) {
+        return s != null && !s.isBlank();
     }
 
     private String write(Object value) {

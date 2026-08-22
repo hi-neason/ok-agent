@@ -152,6 +152,23 @@
   line-height: 1.6;
 }
 
+.channel-advanced {
+  margin: 10px 0 4px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.channel-advanced summary {
+  cursor: pointer;
+  user-select: none;
+  padding: 6px 0;
+  color: var(--color-text-secondary);
+}
+
+.channel-advanced .field-grid {
+  margin-top: 8px;
+}
+
 /* ---------- 扫码一键创建飞书应用 ---------- */
 .feishu-qr-trigger {
   display: inline-flex;
@@ -213,6 +230,14 @@
   display: block;
   width: 200px;
   height: 200px;
+}
+.feishu-qr-img-tag {
+  display: block;
+  width: 200px;
+  height: 200px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #fff;
 }
 .feishu-qr-link {
   display: flex;

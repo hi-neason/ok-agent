@@ -1,4 +1,4 @@
-import type { ChannelInput, ChannelItem } from "./types";
+import type { ChannelInput, ChannelItem, WechatIlinkStatus } from "./types";
 
 const BASE = "/api/v1/channels";
 
@@ -76,4 +76,26 @@ export async function startFeishuRegistration(): Promise<{ sessionId: string }> 
 export async function pollFeishuRegistration(sessionId: string): Promise<FeishuRegisterStatus> {
   const response = await fetch(`${BASE}/feishu/register/${sessionId}`);
   return parse<FeishuRegisterStatus>(response);
+}
+
+// ---------- WeChat iLink (ClawBot) QR login ----------
+
+export async function startWechatLogin(id: string): Promise<WechatIlinkStatus> {
+  const response = await fetch(`${BASE}/${id}/wechat/login/start`, { method: "POST" });
+  return parse<WechatIlinkStatus>(response);
+}
+
+export async function pollWechatLogin(id: string): Promise<WechatIlinkStatus> {
+  const response = await fetch(`${BASE}/${id}/wechat/login/poll`, { method: "POST" });
+  return parse<WechatIlinkStatus>(response);
+}
+
+export async function fetchWechatLogin(id: string): Promise<WechatIlinkStatus> {
+  const response = await fetch(`${BASE}/${id}/wechat/login`);
+  return parse<WechatIlinkStatus>(response);
+}
+
+export async function wechatLogout(id: string): Promise<WechatIlinkStatus> {
+  const response = await fetch(`${BASE}/${id}/wechat/logout`, { method: "POST" });
+  return parse<WechatIlinkStatus>(response);
 }

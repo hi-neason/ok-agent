@@ -22,6 +22,8 @@ public record ChannelAssetResponse(
         UUID boundAgentId,
         ChannelDmScope dmScope,
         FeishuView feishu,
+        WechatView wechat,
+        DingTalkView dingtalk,
         boolean enabled,
         ChannelRuntimeStatus runtimeStatus,
         String lastError,
@@ -41,11 +43,25 @@ public record ChannelAssetResponse(
             boolean encryptKeyConfigured,
             boolean verificationTokenConfigured) {}
 
+    /** WeChat iLink (ClawBot) settings. Login state is fetched via the dedicated session endpoint. */
+    public record WechatView(String apiBase, String channelVersion) {}
+
+    /** DingTalk Stream settings; appSecret is write-only, only a configured flag is exposed. */
+    public record DingTalkView(
+            String appKey,
+            String robotCode,
+            String apiBase,
+            String oapiBase,
+            String streamRegisterUrl,
+            boolean appSecretConfigured) {}
+
     public static ChannelAssetResponse from(ChannelAsset asset, String publicBaseUrl, long userCount) {
         Map<String, Object> config = readMap(asset.getConfigJson());
         Map<String, Object> secretFlags = readMap(asset.getSecretsConfiguredJson());
 
         FeishuView feishu = null;
+        WechatView wechat = null;
+        DingTalkView dingtalk = null;
         if (asset.getType() == ChannelType.FEISHU) {
             String configuredCallbackPath =
                     str(config, "callbackPath", "/api/channels/feishu/" + asset.getChannelKey() + "/callback");
@@ -56,6 +72,21 @@ public record ChannelAssetResponse(
                     bool(secretFlags, "appSecret"),
                     bool(secretFlags, "encryptKey"),
                     bool(secretFlags, "verificationToken"));
+        } else if (asset.getType() == ChannelType.WECHAT) {
+            wechat = new WechatView(
+                    str(config, "apiBase", "https://ilinkai.weixin.qq.com"),
+                    str(config, "channelVersion", "1.0.2"));
+        } else if (asset.getType() == ChannelType.DINGTALK) {
+            dingtalk = new DingTalkView(
+                    str(config, "appKey", null),
+                    str(config, "robotCode", null),
+                    str(config, "apiBase", "https://api.dingtalk.com"),
+                    str(config, "oapiBase", "https://oapi.dingtalk.com"),
+                    str(
+                            config,
+                            "streamRegisterUrl",
+                            "https://api.dingtalk.com/v1.0/gateway/connections/open"),
+                    bool(secretFlags, "appSecret"));
         }
 
         String callbackUrl = null;
@@ -74,6 +105,8 @@ public record ChannelAssetResponse(
                 asset.getBoundAgentId(),
                 asset.getDmScope(),
                 feishu,
+                wechat,
+                dingtalk,
                 asset.isEnabled(),
                 asset.getRuntimeStatus(),
                 asset.getLastError(),

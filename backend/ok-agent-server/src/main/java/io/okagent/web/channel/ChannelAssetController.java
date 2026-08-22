@@ -1,6 +1,7 @@
 package io.okagent.web.channel;
 
 import io.okagent.service.channel.ChannelAssetService;
+import io.okagent.service.channel.WechatIlinkLoginService;
 import io.okagent.service.channel.runtime.FeishuAppRegistrationService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -14,10 +15,15 @@ public class ChannelAssetController {
 
     private final ChannelAssetService service;
     private final FeishuAppRegistrationService feishuRegistration;
+    private final WechatIlinkLoginService wechatLogin;
 
-    public ChannelAssetController(ChannelAssetService service, FeishuAppRegistrationService feishuRegistration) {
+    public ChannelAssetController(
+            ChannelAssetService service,
+            FeishuAppRegistrationService feishuRegistration,
+            WechatIlinkLoginService wechatLogin) {
         this.service = service;
         this.feishuRegistration = feishuRegistration;
+        this.wechatLogin = wechatLogin;
     }
 
     @GetMapping
@@ -76,5 +82,34 @@ public class ChannelAssetController {
     /** Polls a Feishu registration flow; on SUCCESS carries the created app's id/secret. */
     public FeishuAppRegistrationService.SessionStatus feishuRegistrationStatus(@PathVariable String sessionId) {
         return feishuRegistration.status(sessionId);
+    }
+
+    // ---------- WeChat iLink (ClawBot) QR login ----------
+
+    @PostMapping("/{id}/wechat/login/start")
+    /** Issues a WeChat iLink login QR code; the response carries the qrcodeUrl to render. */
+    public WechatIlinkStatusResponse startWechatLogin(@PathVariable UUID id) {
+        return wechatLogin.startLogin(id);
+    }
+
+    @PostMapping("/{id}/wechat/login/poll")
+    /**
+     * Polls the pending QR scan status. On confirmation it stores the bot_token and (re)starts the
+     * runtime channel.
+     */
+    public WechatIlinkStatusResponse pollWechatLogin(@PathVariable UUID id) {
+        return wechatLogin.pollStatus(id);
+    }
+
+    @GetMapping("/{id}/wechat/login")
+    /** Returns the current WeChat iLink login status without contacting iLink. */
+    public WechatIlinkStatusResponse wechatLoginStatus(@PathVariable UUID id) {
+        return wechatLogin.getStatus(id);
+    }
+
+    @PostMapping("/{id}/wechat/logout")
+    /** Clears the stored iLink bot_token and stops the channel runtime. */
+    public WechatIlinkStatusResponse wechatLogout(@PathVariable UUID id) {
+        return wechatLogin.logout(id);
     }
 }

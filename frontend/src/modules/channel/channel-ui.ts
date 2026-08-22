@@ -58,5 +58,10 @@ export function createDraft(): ChannelInput {
       encryptKey: "",
       verificationToken: "",
     },
+    dingtalk: {
+      appKey: "",
+      appSecret: "",
+      robotCode: "",
+    },
   };
 }

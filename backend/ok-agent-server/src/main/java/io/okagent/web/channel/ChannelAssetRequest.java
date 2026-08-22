@@ -15,6 +15,8 @@ public record ChannelAssetRequest(
         UUID boundAgentId,
         ChannelDmScope dmScope,
         FeishuConfig feishu,
+        WechatConfig wechat,
+        DingTalkConfig dingtalk,
         boolean enabled) {
 
     /** Feishu-provider non-secret config and write-only secrets. */
@@ -25,4 +27,18 @@ public record ChannelAssetRequest(
             String verificationToken,
             @Size(max = 512) String apiBase,
             @Size(max = 512) String callbackPath) {}
+
+    /** WeChat iLink (ClawBot) provider config. iLink uses QR login, so there are no static secrets. */
+    public record WechatConfig(
+            @Size(max = 512) String apiBase,
+            @Size(max = 32) String channelVersion) {}
+
+    /** DingTalk enterprise-internal-app (Stream mode) config. appSecret is write-only. */
+    public record DingTalkConfig(
+            @Size(max = 128) String appKey,
+            String appSecret,
+            @Size(max = 128) String robotCode,
+            @Size(max = 512) String apiBase,
+            @Size(max = 512) String oapiBase,
+            @Size(max = 512) String streamRegisterUrl) {}
 }

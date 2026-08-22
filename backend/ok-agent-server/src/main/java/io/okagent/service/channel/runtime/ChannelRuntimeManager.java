@@ -99,6 +99,15 @@ public class ChannelRuntimeManager {
             statusWriter.write(channelId, ChannelRuntimeStatus.RUNNING, null);
             log.info("Channel '{}' started and bound to agent {}", asset.getChannelKey(), asset.getBoundAgentId());
         } catch (Exception e) {
+            // For WeChat iLink, "not logged in" is an expected idle state (awaiting QR scan),
+            // not a runtime failure — surface it as STOPPED rather than ERROR.
+            String msg = e.getMessage() == null ? "" : e.getMessage();
+            if (asset.getType() == io.okagent.domain.channel.ChannelType.WECHAT
+                    && msg.contains("not logged in")) {
+                statusWriter.write(channelId, ChannelRuntimeStatus.STOPPED, "等待微信扫码登录");
+                log.info("Channel '{}' idle: {} ({}); build message: {}", asset.getChannelKey(), asset.getType(), e.getMessage());
+                return;
+            }
             log.warn("Failed to start channel '{}': {}", asset.getChannelKey(), e.getMessage(), e);
             statusWriter.write(channelId, ChannelRuntimeStatus.ERROR, e.getMessage());
         }

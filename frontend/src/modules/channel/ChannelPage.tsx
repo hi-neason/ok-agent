@@ -141,6 +141,11 @@ export function ChannelPage() {
       );
       setEditing(null);
       setEditingId(null);
+      // A saved+enabled channel reconciles asynchronously after commit; keep polling
+      // until its transient STARTING settles to RUNNING/ERROR.
+      if (saved.enabled) {
+        settleChannel(saved.id);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -153,11 +158,38 @@ export function ChannelPage() {
     setEditingId(null);
   };
 
+  /**
+   * The runtime reconcile (build + connect the provider channel) runs in a transaction
+   * AFTER_COMMIT hook, so the start/enable/create HTTP response can carry a stale STARTING
+   * while the real RUNNING/ERROR is written a moment later. Poll the list until the given
+   * channel leaves the transient STARTING state (or we give up), keeping the row accurate.
+   */
+  const settleChannel = (id: string) => {
+    let attempts = 0;
+    const tick = async () => {
+      attempts += 1;
+      try {
+        const list = await fetchChannels();
+        setChannels(list);
+        const target = list.find((x) => x.id === id);
+        if (target && target.runtimeStatus === "STARTING" && attempts < 15) {
+          window.setTimeout(tick, 500);
+        }
+      } catch {
+        /* ignore — next manual refresh will pick it up */
+      }
+    };
+    window.setTimeout(tick, 400);
+  };
+
   const toggleEnabled = async (item: ChannelItem, enabled: boolean) => {
     const saved = await setChannelEnabled(item.id, enabled);
     setChannels((current) =>
       current.map((x) => (x.id === item.id ? saved : x)),
     );
+    if (enabled) {
+      settleChannel(item.id);
+    }
   };
 
   const toggleRuntime = async (item: ChannelItem, action: "start" | "stop") => {
@@ -165,6 +197,9 @@ export function ChannelPage() {
     setChannels((current) =>
       current.map((x) => (x.id === item.id ? saved : x)),
     );
+    if (action === "start") {
+      settleChannel(item.id);
+    }
   };
 
   const remove = async (item: ChannelItem) => {

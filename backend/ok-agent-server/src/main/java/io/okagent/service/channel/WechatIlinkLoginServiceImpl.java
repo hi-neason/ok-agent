@@ -49,13 +49,17 @@ public class WechatIlinkLoginServiceImpl implements WechatIlinkLoginService {
     @Transactional
     public WechatIlinkStatusResponse startLogin(UUID channelId) {
         ChannelAsset channel = requireWechatChannel(channelId);
-        // Race-safe "find-or-create": two concurrent startLogin calls (e.g. the QR
-        // panel auto-start firing twice in React StrictMode) both insert-if-absent,
-        // then read the same managed row, so neither throws a duplicate-key error.
-        sessions.insertIfAbsent(channelId);
-        sessions.flush();
-        ChannelIlinkSession session = sessions.findByChannelId(channelId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "渠道登录会话不存在"));
+        // The session row is created eagerly when the WECHAT channel is created, so on the hot
+        // path take an exclusive row lock up front. This serializes concurrent startLogin() calls
+        // (e.g. the QR panel auto-start firing twice in React StrictMode) without ever upgrading
+        // a shared lock to an exclusive one — the pattern that previously caused a deadlock.
+        ChannelIlinkSession session = sessions.findByChannelIdForUpdate(channelId).orElse(null);
+        if (session == null) {
+            // Legacy channel created before eager provisioning: ensure a row exists, then re-lock.
+            sessions.insertIfAbsent(channelId);
+            session = sessions.findByChannelIdForUpdate(channelId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "渠道登录会话不存在"));
+        }
         try {
             IlinkClient client = buildClient(channel);
             IlinkClient.QrSession qr = client.requestQrCode();
@@ -73,7 +77,10 @@ public class WechatIlinkLoginServiceImpl implements WechatIlinkLoginService {
     @Transactional
     public WechatIlinkStatusResponse pollStatus(UUID channelId) {
         ChannelAsset channel = requireWechatChannel(channelId);
-        ChannelIlinkSession session = sessions.findByChannelId(channelId)
+        // Lock the row up front: pollStatus runs on a tight timer and may fire concurrently
+        // (StrictMode / retries). A plain find + later update can deadlock the same way startLogin
+        // did, so serialize through the exclusive lock.
+        ChannelIlinkSession session = sessions.findByChannelIdForUpdate(channelId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "请先获取登录二维码"));
         if (session.getLoginStatus() == IlinkLoginStatus.LOGGED_IN) {
             return WechatIlinkStatusResponse.from(session);

@@ -51,15 +51,16 @@ export function AgentRegistryPage({
   const { confirm, Dialog } = useConfirm();
   const [page, setPage] = useState<Page<AgentItem> | null>(null);
   const [pageNumber, setPageNumber] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
   const [error, setError] = useState("");
   const [editing, setEditing] = useState<AgentItem | "new" | null>(null);
   const [form, setForm] = useState({ name: "", description: "", businessDomain: "" });
   const [saving, setSaving] = useState(false);
 
-  const load = async (targetPage: number) => {
+  const load = async (targetPage = pageNumber) => {
     try {
       setError("");
-      setPage(await listAgents(targetPage, 20));
+      setPage(await listAgents(targetPage, pageSize));
     } catch {
       setError(t("agents.loadFailed"));
     }
@@ -67,7 +68,7 @@ export function AgentRegistryPage({
 
   useEffect(() => {
     void load(pageNumber);
-  }, [pageNumber]);
+  }, [pageNumber, pageSize]);
 
   const openNew = () => {
     setForm({ name: "", description: "", businessDomain: "" });
@@ -219,7 +220,12 @@ export function AgentRegistryPage({
             totalPages={page.totalPages}
             totalElements={page.totalElements}
             size={page.size}
+            loading={saving}
             onPageChange={setPageNumber}
+            onSizeChange={(size) => {
+              setPageSize(size);
+              setPageNumber(0);
+            }}
           />
         )}
       </section>

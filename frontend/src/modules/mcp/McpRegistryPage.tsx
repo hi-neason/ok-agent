@@ -26,6 +26,7 @@ export function McpRegistryPage() {
   const { confirm, Dialog } = useConfirm();
   const [page, setPage] = useState<Page<McpServer> | null>(null);
   const [pageNumber, setPageNumber] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<McpServer | null | "new">(null);
   const [draft, setDraft] = useState<McpDraft>(emptyMcpDraft);
@@ -44,16 +45,16 @@ export function McpRegistryPage() {
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "");
-  const load = async (targetPage: number) => {
+  const load = async (targetPage = pageNumber) => {
     try {
-      setPage(await fetchServers(targetPage, 20));
+      setPage(await fetchServers(targetPage, pageSize));
     } catch {
       setNotice({ ok: false, text: t("mcp.loadFailed") });
     }
   };
   useEffect(() => {
     void load(pageNumber);
-  }, [pageNumber]);
+  }, [pageNumber, pageSize]);
   const open = (server?: McpServer) => {
     const nextDraft: McpDraft = server
       ? {
@@ -363,7 +364,12 @@ export function McpRegistryPage() {
             totalPages={page.totalPages}
             totalElements={page.totalElements}
             size={page.size}
+            loading={busy}
             onPageChange={setPageNumber}
+            onSizeChange={(size) => {
+              setPageSize(size);
+              setPageNumber(0);
+            }}
           />
         )}
       </div>

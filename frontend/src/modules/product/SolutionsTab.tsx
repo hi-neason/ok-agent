@@ -38,6 +38,7 @@ export function SolutionsTab() {
   const { confirm, Dialog } = useConfirm();
   const [solutions, setSolutions] = useState<Page<Solution> | null>(null);
   const [pageNumber, setPageNumber] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<Solution | "new" | null>(null);
@@ -45,10 +46,10 @@ export function SolutionsTab() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
 
-  const load = async (targetPage: number) => {
+  const load = async (targetPage = pageNumber) => {
     try {
       const [sols, prods] = await Promise.all([
-        listSolutions(targetPage, 20),
+        listSolutions(targetPage, pageSize),
         listProducts(0, 1000),
       ]);
       setSolutions(sols);
@@ -60,7 +61,7 @@ export function SolutionsTab() {
 
   useEffect(() => {
     void load(pageNumber);
-  }, [pageNumber]);
+  }, [pageNumber, pageSize]);
 
   const open = (s?: Solution) => {
     if (s) {
@@ -223,7 +224,12 @@ export function SolutionsTab() {
             totalPages={solutions.totalPages}
             totalElements={solutions.totalElements}
             size={solutions.size}
+            loading={busy}
             onPageChange={setPageNumber}
+            onSizeChange={(size) => {
+              setPageSize(size);
+              setPageNumber(0);
+            }}
           />
         )}
       </div>

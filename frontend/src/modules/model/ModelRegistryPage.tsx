@@ -9,22 +9,23 @@ export function ModelRegistryPage() {
   const { t } = useTranslation();
   const [page, setPage] = useState<Page<ModelItem> | null>(null);
   const [pageNumber, setPageNumber] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
   const [type, setType] = useState<"ALL" | ModelItem["type"]>("ALL");
   const [editing, setEditing] = useState<ModelItem | null>(null);
   const [testResult, setTestResult] = useState<{
     state: "testing" | "success" | "error";
     message: string;
   } | null>(null);
-  const load = async (targetPage: number) => {
+  const load = async (targetPage = pageNumber) => {
     try {
-      setPage(await fetchModels(targetPage, 20));
+      setPage(await fetchModels(targetPage, pageSize));
     } catch {
       setPage(null);
     }
   };
   useEffect(() => {
     void load(pageNumber);
-  }, [pageNumber]);
+  }, [pageNumber, pageSize]);
   const visible = (page?.content ?? []).filter(
     (model) => type === "ALL" || model.type === type,
   );
@@ -192,7 +193,12 @@ export function ModelRegistryPage() {
             totalPages={page.totalPages}
             totalElements={page.totalElements}
             size={page.size}
+            loading={testResult?.state === "testing"}
             onPageChange={setPageNumber}
+            onSizeChange={(size) => {
+              setPageSize(size);
+              setPageNumber(0);
+            }}
           />
         )}
       </section>

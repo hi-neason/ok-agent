@@ -26,9 +26,11 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
   const [groups, setGroups] = useState<UserGroupItem[]>([]);
   const [groupPage, setGroupPage] = useState<Page<UserGroupItem> | null>(null);
   const [groupPageNumber, setGroupPageNumber] = useState(0);
+  const [groupPageSize, setGroupPageSize] = useState(20);
   const [users, setUsers] = useState<UserItem[]>([]);
   const [usersPage, setUsersPage] = useState<Page<UserItem> | null>(null);
   const [userPageNumber, setUserPageNumber] = useState(0);
+  const [userPageSize, setUserPageSize] = useState(20);
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const [saving, setSaving] = useState(false);
@@ -42,12 +44,12 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
   // Full list (dropdowns) + paged list (tabs)
   const loadGroups = () =>
     fetchUserGroups().then(setGroups).catch(() => setError("加载用户组失败"));
-  const loadGroupPage = (targetPage = 0) =>
-    fetchUserGroupsPage(targetPage, 20).then(setGroupPage).catch(() => setError("加载用户组失败"));
+  const loadGroupPage = (targetPage = groupPageNumber) =>
+    fetchUserGroupsPage(targetPage, groupPageSize).then(setGroupPage).catch(() => setError("加载用户组失败"));
   const loadUsers = () =>
     fetchUsers().then(setUsers).catch(() => setError("加载用户失败"));
-  const loadUsersPage = (targetPage = 0) =>
-    fetchUsersPage(targetPage, 20).then(setUsersPage).catch(() => setError("加载用户失败"));
+  const loadUsersPage = (targetPage = userPageNumber) =>
+    fetchUsersPage(targetPage, userPageSize).then(setUsersPage).catch(() => setError("加载用户失败"));
 
   useEffect(() => {
     loadGroups();
@@ -58,11 +60,11 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
 
   useEffect(() => {
     void loadGroupPage(groupPageNumber);
-  }, [groupPageNumber]);
+  }, [groupPageNumber, groupPageSize]);
 
   useEffect(() => {
     void loadUsersPage(userPageNumber);
-  }, [userPageNumber]);
+  }, [userPageNumber, userPageSize]);
 
   const visibleGroups = (groupPage?.content ?? []).filter((g) =>
     `${g.name} ${g.groupKey} ${g.description}`.toLowerCase().includes(query.toLowerCase()),
@@ -440,6 +442,10 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
           size={groupPage.size}
           loading={saving}
           onPageChange={setGroupPageNumber}
+          onSizeChange={(size) => {
+            setGroupPageSize(size);
+            setGroupPageNumber(0);
+          }}
         />
       )}
       {tab === "users" && usersPage && (
@@ -450,6 +456,10 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
           size={usersPage.size}
           loading={saving}
           onPageChange={setUserPageNumber}
+          onSizeChange={(size) => {
+            setUserPageSize(size);
+            setUserPageNumber(0);
+          }}
         />
       )}
 

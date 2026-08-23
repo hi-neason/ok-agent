@@ -26,6 +26,7 @@ export function ChannelPage() {
   const { confirm, Dialog } = useConfirm();
   const [page, setPage] = useState<Page<ChannelItem> | null>(null);
   const [pageNumber, setPageNumber] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
   const [agents, setAgents] = useState<AgentOption[]>([]);
   const [agentLoadError, setAgentLoadError] = useState<string | null>(null);
   const [editing, setEditing] = useState<ChannelInput | null>(null);
@@ -33,8 +34,8 @@ export function ChannelPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const reload = (targetPage: number) => {
-    void fetchChannels(targetPage)
+  const reload = (targetPage = pageNumber) => {
+    void fetchChannels(targetPage, pageSize)
       .then(setPage)
       .catch(() => undefined);
   };
@@ -47,7 +48,7 @@ export function ChannelPage() {
         setAgentLoadError(list.length === 0 ? "未加载到任何 Agent，请确认后端已启动且存在启用的 Agent。" : null);
       })
       .catch(() => setAgentLoadError("加载 Agent 列表失败，请确认后端服务已启动。"));
-  }, [pageNumber]);
+  }, [pageNumber, pageSize]);
 
   const agentName = useMemo(() => {
     const map = new Map<string, string>();
@@ -305,7 +306,12 @@ export function ChannelPage() {
                 totalPages={page.totalPages}
                 totalElements={page.totalElements}
                 size={page.size}
+                loading={saving}
                 onPageChange={setPageNumber}
+                onSizeChange={(size) => {
+                  setPageSize(size);
+                  setPageNumber(0);
+                }}
               />
             )}
           </>

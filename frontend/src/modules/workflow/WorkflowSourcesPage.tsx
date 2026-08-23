@@ -51,6 +51,7 @@ export function WorkflowSourcesPage() {
   const { confirm, Dialog } = useConfirm();
   const [page, setPage] = useState<Page<WorkflowSource> | null>(null);
   const [pageNumber, setPageNumber] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<WorkflowSource | "new" | null>(null);
   const [draft, setDraft] = useState<WorkflowSourceDraft>(emptySourceDraft());
@@ -58,9 +59,9 @@ export function WorkflowSourcesPage() {
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
   const [catalogFor, setCatalogFor] = useState<WorkflowSource | null>(null);
 
-  const load = async (targetPage = 0) => {
+  const load = async (targetPage = pageNumber) => {
     try {
-      setPage(await listSources(targetPage, 20));
+      setPage(await listSources(targetPage, pageSize));
     } catch (e) {
       setNotice({ ok: false, text: msg(e) });
     }
@@ -68,7 +69,7 @@ export function WorkflowSourcesPage() {
 
   useEffect(() => {
     void load(pageNumber);
-  }, [pageNumber]);
+  }, [pageNumber, pageSize]);
 
   const open = (source?: WorkflowSource) => {
     if (source) {
@@ -279,6 +280,10 @@ export function WorkflowSourcesPage() {
           size={page.size}
           loading={busy}
           onPageChange={setPageNumber}
+          onSizeChange={(size) => {
+            setPageSize(size);
+            setPageNumber(0);
+          }}
         />
       )}
 

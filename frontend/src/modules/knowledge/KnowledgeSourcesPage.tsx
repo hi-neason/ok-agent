@@ -47,6 +47,7 @@ export function KnowledgeSourcesPage() {
   const { confirm, Dialog } = useConfirm();
   const [page, setPage] = useState<Page<KnowledgeSource> | null>(null);
   const [pageNumber, setPageNumber] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<KnowledgeSource | "new" | null>(null);
   const [draft, setDraft] = useState<KnowledgeSourceDraft>(emptySourceDraft());
@@ -54,9 +55,9 @@ export function KnowledgeSourcesPage() {
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
   const [catalogFor, setCatalogFor] = useState<KnowledgeSource | null>(null);
 
-  const load = async (targetPage: number) => {
+  const load = async (targetPage = pageNumber) => {
     try {
-      setPage(await listSources(targetPage, 20));
+      setPage(await listSources(targetPage, pageSize));
     } catch (e) {
       setNotice({ ok: false, text: msg(e) });
     }
@@ -64,7 +65,7 @@ export function KnowledgeSourcesPage() {
 
   useEffect(() => {
     void load(pageNumber);
-  }, [pageNumber]);
+  }, [pageNumber, pageSize]);
 
   const open = (source?: KnowledgeSource) => {
     if (source) {
@@ -271,7 +272,12 @@ export function KnowledgeSourcesPage() {
             totalPages={page.totalPages}
             totalElements={page.totalElements}
             size={page.size}
+            loading={busy}
             onPageChange={setPageNumber}
+            onSizeChange={(size) => {
+              setPageSize(size);
+              setPageNumber(0);
+            }}
           />
         )}
       </div>

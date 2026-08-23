@@ -18,6 +18,7 @@ import "./persona.css";
 export function PersonaPage() {
   const [usersPage, setUsersPage] = useState<Page<UserItem> | null>(null);
   const [userPageNumber, setUserPageNumber] = useState(0);
+  const [userPageSize, setUserPageSize] = useState(20);
   const [agents, setAgents] = useState<AgentItem[]>([]);
   const [coverage, setCoverage] = useState<Record<string, string[]>>({});
   const [query, setQuery] = useState("");
@@ -27,9 +28,6 @@ export function PersonaPage() {
   const [selectedUser, setSelectedUser] = useState<UserItem | null>(null);
 
   useEffect(() => {
-    fetchUsersPage(0, 20)
-      .then(setUsersPage)
-      .catch(() => setError("加载用户失败"));
     fetch("/api/v1/agents")
       .then((r) => r.json())
       .then((ag) => setAgents(Array.isArray(ag) ? ag : ag.items ?? []))
@@ -38,10 +36,10 @@ export function PersonaPage() {
   }, []);
 
   useEffect(() => {
-    void fetchUsersPage(userPageNumber, 20)
+    void fetchUsersPage(userPageNumber, userPageSize)
       .then(setUsersPage)
       .catch(() => setError("加载用户失败"));
-  }, [userPageNumber]);
+  }, [userPageNumber, userPageSize]);
 
   const coverageCount = (userId: string) => coverage[userId]?.length ?? 0;
 
@@ -157,6 +155,10 @@ export function PersonaPage() {
           size={usersPage.size}
           loading={false}
           onPageChange={setUserPageNumber}
+          onSizeChange={(size) => {
+            setUserPageSize(size);
+            setUserPageNumber(0);
+          }}
         />
       )}
     </div>

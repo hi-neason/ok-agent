@@ -45,15 +45,16 @@ export function SourcesTab() {
   const { confirm, Dialog } = useConfirm();
   const [sources, setSources] = useState<Page<ProductSource> | null>(null);
   const [pageNumber, setPageNumber] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<ProductSource | "new" | null>(null);
   const [draft, setDraft] = useState<ProductSourceDraft>(emptySourceDraft());
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
 
-  const load = async (targetPage: number) => {
+  const load = async (targetPage = pageNumber) => {
     try {
-      setSources(await listProductSources(targetPage, 20));
+      setSources(await listProductSources(targetPage, pageSize));
     } catch (e) {
       setNotice({ ok: false, text: msg(e) });
     }
@@ -61,7 +62,7 @@ export function SourcesTab() {
 
   useEffect(() => {
     void load(pageNumber);
-  }, [pageNumber]);
+  }, [pageNumber, pageSize]);
 
   const open = (s?: ProductSource) => {
     if (s) {
@@ -244,7 +245,12 @@ export function SourcesTab() {
             totalPages={sources.totalPages}
             totalElements={sources.totalElements}
             size={sources.size}
+            loading={busy}
             onPageChange={setPageNumber}
+            onSizeChange={(size) => {
+              setPageSize(size);
+              setPageNumber(0);
+            }}
           />
         )}
       </div>

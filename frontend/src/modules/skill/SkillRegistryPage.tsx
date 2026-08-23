@@ -68,6 +68,7 @@ export function SkillRegistryPage() {
   const { confirm, Dialog } = useConfirm();
   const [page, setPage] = useState<Page<SkillItem> | null>(null);
   const [pageNumber, setPageNumber] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [editing, setEditing] = useState<SkillItem | null>(null);
   const [viewing, setViewing] = useState<SkillItem | null>(null);
@@ -87,9 +88,9 @@ export function SkillRegistryPage() {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const load = async (targetPage: number) => {
+  const load = async (targetPage = pageNumber) => {
     try {
-      setPage(await fetchSkills(targetPage, 20));
+      setPage(await fetchSkills(targetPage, pageSize));
     } catch {
       setError(t("skills.loadFailed"));
     }
@@ -97,7 +98,7 @@ export function SkillRegistryPage() {
 
   useEffect(() => {
     void load(pageNumber);
-  }, [t, pageNumber]);
+  }, [t, pageNumber, pageSize]);
 
   const visibleSkills = (page?.content ?? []).filter((skill) =>
     `${skill.name} ${skill.skillKey} ${skill.description}`
@@ -340,7 +341,12 @@ export function SkillRegistryPage() {
             totalPages={page.totalPages}
             totalElements={page.totalElements}
             size={page.size}
+            loading={saving || fileSaving}
             onPageChange={setPageNumber}
+            onSizeChange={(size) => {
+              setPageSize(size);
+              setPageNumber(0);
+            }}
           />
         )}
       </section>

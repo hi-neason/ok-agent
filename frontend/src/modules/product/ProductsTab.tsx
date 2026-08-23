@@ -34,6 +34,7 @@ export function ProductsTab() {
   const { confirm, Dialog } = useConfirm();
   const [products, setProducts] = useState<Page<Product> | null>(null);
   const [pageNumber, setPageNumber] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
   const [editing, setEditing] = useState<Product | "new" | null>(null);
@@ -41,9 +42,9 @@ export function ProductsTab() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
 
-  const load = async (targetPage: number) => {
+  const load = async (targetPage = pageNumber) => {
     try {
-      setProducts(await listProducts(targetPage, 20));
+      setProducts(await listProducts(targetPage, pageSize));
     } catch (e) {
       setNotice({ ok: false, text: msg(e) });
     }
@@ -51,7 +52,7 @@ export function ProductsTab() {
 
   useEffect(() => {
     void load(pageNumber);
-  }, [pageNumber]);
+  }, [pageNumber, pageSize]);
 
   const categories = useMemo(
     () =>
@@ -224,7 +225,12 @@ export function ProductsTab() {
             totalPages={products.totalPages}
             totalElements={products.totalElements}
             size={products.size}
+            loading={busy}
             onPageChange={setPageNumber}
+            onSizeChange={(size) => {
+              setPageSize(size);
+              setPageNumber(0);
+            }}
           />
         )}
       </div>

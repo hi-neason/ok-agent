@@ -28,6 +28,13 @@ const resources = {
         confirm: "确定",
         cancel: "取消",
       },
+      pagination: {
+        total: "共 {{total}} 条",
+        prev: "上一页",
+        next: "下一页",
+        pageInfo: "{{page}} / {{totalPages}}",
+        pageSize: "{{size}} 条/页",
+      },
       models: {
         connectionSucceeded: "连接成功",
         connectionTesting: "正在验证连接…",
@@ -413,6 +420,13 @@ const resources = {
         collapseNavigation: "Collapse or expand navigation",
         confirm: "Confirm",
         cancel: "Cancel",
+      },
+      pagination: {
+        total: "{{total}} total",
+        prev: "Prev",
+        next: "Next",
+        pageInfo: "{{page}} / {{totalPages}}",
+        pageSize: "{{size}} / page",
       },
       models: {
         connectionSucceeded: "Connection succeeded",

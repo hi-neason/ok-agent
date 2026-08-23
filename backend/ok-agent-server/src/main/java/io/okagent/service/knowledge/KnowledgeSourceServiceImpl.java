@@ -14,6 +14,10 @@ import io.okagent.web.knowledge.KnowledgeSourceResponse;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,11 +48,9 @@ public class KnowledgeSourceServiceImpl implements KnowledgeSourceService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<KnowledgeSourceResponse> list() {
-        return sources.findAll().stream()
-                .sorted(Comparator.comparing(KnowledgeSource::getUpdatedAt).reversed())
-                .map(this::response)
-                .toList();
+    public Page<KnowledgeSourceResponse> list(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "updatedAt"));
+        return sources.findAll(pageable).map(this::response);
     }
 
     @Override

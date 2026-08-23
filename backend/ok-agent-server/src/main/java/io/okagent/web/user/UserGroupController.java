@@ -1,6 +1,7 @@
 package io.okagent.web.user;
 
 import io.okagent.service.user.UserGroupService;
+import io.okagent.web.observe.PageResponse;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -23,10 +25,12 @@ public class UserGroupController {
         this.service = service;
     }
 
-    /** Returns all user groups with their current member counts. */
+    /** Returns user groups with their current member counts, newest first, paged. */
     @GetMapping
-    public List<UserGroupResponse> list() {
-        return service.list();
+    public PageResponse<UserGroupResponse> list(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return PageResponse.of(service.list(page, size));
     }
 
     /** Creates a new user group. */

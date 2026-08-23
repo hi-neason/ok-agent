@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { Button, PageHeader, Toggle, useConfirm } from "../shared";
+import { Button, PageHeader, Pagination, Toggle, useConfirm, type Page } from "../shared";
 import {
   SkillConflictError,
   SkillFileConflictError,
@@ -66,7 +66,8 @@ function SkillTree({
 export function SkillRegistryPage() {
   const { t } = useTranslation();
   const { confirm, Dialog } = useConfirm();
-  const [skills, setSkills] = useState<SkillItem[]>([]);
+  const [page, setPage] = useState<Page<SkillItem> | null>(null);
+  const [pageNumber, setPageNumber] = useState(0);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [editing, setEditing] = useState<SkillItem | null>(null);
   const [viewing, setViewing] = useState<SkillItem | null>(null);
@@ -86,13 +87,19 @@ export function SkillRegistryPage() {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    fetchSkills()
-      .then(setSkills)
-      .catch(() => setError(t("skills.loadFailed")));
-  }, [t]);
+  const load = async (targetPage: number) => {
+    try {
+      setPage(await fetchSkills(targetPage, 20));
+    } catch {
+      setError(t("skills.loadFailed"));
+    }
+  };
 
-  const visibleSkills = skills.filter((skill) =>
+  useEffect(() => {
+    void load(pageNumber);
+  }, [t, pageNumber]);
+
+  const visibleSkills = (page?.content ?? []).filter((skill) =>
     `${skill.name} ${skill.skillKey} ${skill.description}`
       .toLowerCase()
       .includes(query.toLowerCase()),
@@ -108,8 +115,8 @@ export function SkillRegistryPage() {
         description: editing.description,
         businessDomain: editing.businessDomain,
       });
-      setSkills((current) =>
-        current.map((skill) => (skill.id === saved.id ? saved : skill)),
+      setPage((p) =>
+        p ? { ...p, content: p.content.map((skill) => (skill.id === saved.id ? saved : skill)) } : p,
       );
       setEditing(null);
     } catch {
@@ -131,10 +138,11 @@ export function SkillRegistryPage() {
     form.append("overwrite", String(overwrite));
     try {
       const saved = await importSkillArchive(form);
-      setSkills((current) => [
-        saved,
-        ...current.filter((item) => item.id !== saved.id),
-      ]);
+      setPage((p) =>
+        p
+          ? { ...p, content: [saved, ...p.content.filter((item) => item.id !== saved.id)] }
+          : p,
+      );
       setUploadOpen(false);
       setArchive(null);
       setUploadName("");
@@ -197,9 +205,9 @@ export function SkillRegistryPage() {
       setSelectedFile(saved);
       setFileDraft(null);
       setFileSuccess(t("skills.fileSaved", { version: saved.version }));
-      const items = await fetchSkills();
-      setSkills(items);
-      setViewing(items.find((item) => item.id === viewing.id) ?? viewing);
+      const items = await fetchSkills(0, 1000);
+      setPage((p) => (p ? { ...p, content: items.content } : p));
+      setViewing(items.content.find((item) => item.id === viewing.id) ?? viewing);
     } catch (failure) {
       setFileError(
         failure instanceof SkillFileConflictError
@@ -214,8 +222,8 @@ export function SkillRegistryPage() {
   const enableSkill = async (skill: SkillItem, enabled: boolean) => {
     try {
       const saved = await setSkillEnabled(skill.id, enabled);
-      setSkills((current) =>
-        current.map((item) => (item.id === saved.id ? saved : item)),
+      setPage((p) =>
+        p ? { ...p, content: p.content.map((item) => (item.id === saved.id ? saved : item)) } : p,
       );
     } catch {
       setError(t("skills.statusFailed"));
@@ -227,7 +235,7 @@ export function SkillRegistryPage() {
       return;
     try {
       await deleteSkill(skill.id);
-      setSkills((current) => current.filter((item) => item.id !== skill.id));
+      setPage((p) => (p ? { ...p, content: p.content.filter((item) => item.id !== skill.id) } : p));
     } catch {
       setError(t("skills.deleteFailed"));
     }
@@ -325,6 +333,15 @@ export function SkillRegistryPage() {
               </span>
             </div>
           ))
+        )}
+        {page && (
+          <Pagination
+            page={page.number}
+            totalPages={page.totalPages}
+            totalElements={page.totalElements}
+            size={page.size}
+            onPageChange={setPageNumber}
+          />
         )}
       </section>
       {uploadOpen &&

@@ -1,4 +1,5 @@
 import type { McpDraft, McpServer, McpTool } from "./types";
+import type { Page } from "../shared";
 
 export type McpInspection = {
   success: boolean;
@@ -6,10 +7,15 @@ export type McpInspection = {
   message?: string;
 };
 
-export async function fetchServers(): Promise<McpServer[]> {
-  const response = await fetch("/api/v1/mcp-servers");
+export async function fetchServers(
+  page = 0,
+  size = 20,
+): Promise<Page<McpServer>> {
+  const response = await fetch(
+    `/api/v1/mcp-servers?page=${page}&size=${size}`,
+  );
   if (!response.ok) throw new Error("load failed");
-  return (await response.json()) as McpServer[];
+  return (await response.json()) as Page<McpServer>;
 }
 
 export async function saveServer(

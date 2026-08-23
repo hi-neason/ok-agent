@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { Button, PageHeader, Toggle, useConfirm } from "../shared";
+import { Button, PageHeader, Pagination, Toggle, useConfirm, type Page } from "../shared";
 import {
   createSource,
   deleteSource,
@@ -45,7 +45,8 @@ export function testLabel(status: string): string {
 
 export function KnowledgeSourcesPage() {
   const { confirm, Dialog } = useConfirm();
-  const [sources, setSources] = useState<KnowledgeSource[]>([]);
+  const [page, setPage] = useState<Page<KnowledgeSource> | null>(null);
+  const [pageNumber, setPageNumber] = useState(0);
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<KnowledgeSource | "new" | null>(null);
   const [draft, setDraft] = useState<KnowledgeSourceDraft>(emptySourceDraft());
@@ -53,17 +54,17 @@ export function KnowledgeSourcesPage() {
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
   const [catalogFor, setCatalogFor] = useState<KnowledgeSource | null>(null);
 
-  const load = async () => {
+  const load = async (targetPage: number) => {
     try {
-      setSources(await listSources());
+      setPage(await listSources(targetPage, 20));
     } catch (e) {
       setNotice({ ok: false, text: msg(e) });
     }
   };
 
   useEffect(() => {
-    void load();
-  }, []);
+    void load(pageNumber);
+  }, [pageNumber]);
 
   const open = (source?: KnowledgeSource) => {
     if (source) {
@@ -111,7 +112,7 @@ export function KnowledgeSourcesPage() {
         await updateSource(editing.id, draft);
       }
       setEditing(null);
-      await load();
+      await load(pageNumber);
     } catch (e) {
       setNotice({ ok: false, text: msg(e) });
     } finally {
@@ -132,7 +133,7 @@ export function KnowledgeSourcesPage() {
             ? `连接成功：${updated.lastTestMessage ?? ""}`
             : `连接失败：${updated.lastTestMessage ?? "未知错误"}`,
       });
-      await load();
+      await load(pageNumber);
     } catch (e) {
       setNotice({ ok: false, text: msg(e) });
     } finally {
@@ -146,7 +147,7 @@ export function KnowledgeSourcesPage() {
     try {
       const items = await syncSource(source.id);
       setNotice({ ok: true, text: `同步完成，发现 ${items.length} 个知识库` });
-      await load();
+      await load(pageNumber);
     } catch (e) {
       setNotice({ ok: false, text: msg(e) });
     } finally {
@@ -157,7 +158,7 @@ export function KnowledgeSourcesPage() {
   const toggle = async (source: KnowledgeSource) => {
     try {
       await setSourceEnabled(source.id, !source.enabled);
-      await load();
+      await load(pageNumber);
     } catch (e) {
       setNotice({ ok: false, text: msg(e) });
     }
@@ -174,7 +175,7 @@ export function KnowledgeSourcesPage() {
     try {
       await deleteSource(source.id);
       if (catalogFor?.id === source.id) setCatalogFor(null);
-      await load();
+      await load(pageNumber);
     } catch (e) {
       setNotice({ ok: false, text: msg(e) });
     }
@@ -182,12 +183,12 @@ export function KnowledgeSourcesPage() {
 
   const visible = useMemo(
     () =>
-      sources.filter((s) =>
+      (page?.content ?? []).filter((s) =>
         `${s.name} ${s.sourceKey} ${s.baseUrl}`
           .toLowerCase()
           .includes(search.toLowerCase()),
       ),
-    [sources, search],
+    [page, search],
   );
 
   return (
@@ -206,7 +207,7 @@ export function KnowledgeSourcesPage() {
           onChange={(e) => setSearch(e.target.value)}
           placeholder="搜索知识库源 / KEY / URL"
         />
-        <span>{sources.length} 个源</span>
+        <span>{page?.totalElements ?? 0} 个源</span>
       </div>
 
       {notice && (
@@ -263,6 +264,15 @@ export function KnowledgeSourcesPage() {
           <div className="mcp-empty">
             ⌁<b>暂无知识库源，点击右上角添加</b>
           </div>
+        )}
+        {page && (
+          <Pagination
+            page={page.number}
+            totalPages={page.totalPages}
+            totalElements={page.totalElements}
+            size={page.size}
+            onPageChange={setPageNumber}
+          />
         )}
       </div>
 
@@ -405,7 +415,7 @@ export function KnowledgeSourcesPage() {
         <CatalogDrawer
           source={catalogFor}
           onClose={() => setCatalogFor(null)}
-          onChanged={load}
+          onChanged={() => void load(pageNumber)}
         />
       )}
     </>

@@ -1,8 +1,8 @@
 package io.okagent.web.agent;
 
 import io.okagent.service.agent.AgentAssetService;
+import io.okagent.web.observe.PageResponse;
 import jakarta.validation.Valid;
-import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -26,10 +26,11 @@ public class AgentAssetController {
         this.service = service;
     }
 
-    /** Returns all editable agent drafts in the current management scope. */
+    /** Returns editable agent drafts in the current management scope. */
     @GetMapping
-    public List<AgentAssetResponse> list() {
-        return service.list();
+    public PageResponse<AgentAssetResponse> list(
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+        return PageResponse.of(service.list(page, size));
     }
 
     /** Returns one editable agent draft by id. */

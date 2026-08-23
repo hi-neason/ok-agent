@@ -7,6 +7,7 @@ import type {
   Solution,
   SolutionDraft,
 } from "./types";
+import type { Page } from "../shared";
 
 async function jsonOrThrow<T>(res: Response): Promise<T> {
   if (!res.ok) {
@@ -84,8 +85,13 @@ function sourcePayload(draft: ProductSourceDraft) {
 
 // ---- Products ----
 
-export async function listProducts(): Promise<Product[]> {
-  return jsonOrThrow<Product[]>(await fetch("/api/v1/products"));
+export async function listProducts(
+  page = 0,
+  size = 20,
+): Promise<Page<Product>> {
+  return jsonOrThrow<Page<Product>>(
+    await fetch(`/api/v1/products?page=${page}&size=${size}`),
+  );
 }
 
 export async function createProduct(draft: ProductDraft): Promise<Product> {
@@ -122,8 +128,13 @@ export async function setProductStatus(
 
 // ---- Solutions ----
 
-export async function listSolutions(): Promise<Solution[]> {
-  return jsonOrThrow<Solution[]>(await fetch("/api/v1/solutions"));
+export async function listSolutions(
+  page = 0,
+  size = 20,
+): Promise<Page<Solution>> {
+  return jsonOrThrow<Page<Solution>>(
+    await fetch(`/api/v1/solutions?page=${page}&size=${size}`),
+  );
 }
 
 export async function createSolution(draft: SolutionDraft): Promise<Solution> {
@@ -160,8 +171,13 @@ export async function setSolutionStatus(
 
 // ---- Product sources ----
 
-export async function listProductSources(): Promise<ProductSource[]> {
-  return jsonOrThrow<ProductSource[]>(await fetch("/api/v1/product-sources"));
+export async function listProductSources(
+  page = 0,
+  size = 20,
+): Promise<Page<ProductSource>> {
+  return jsonOrThrow<Page<ProductSource>>(
+    await fetch(`/api/v1/product-sources?page=${page}&size=${size}`),
+  );
 }
 
 export async function createProductSource(draft: ProductSourceDraft): Promise<ProductSource> {

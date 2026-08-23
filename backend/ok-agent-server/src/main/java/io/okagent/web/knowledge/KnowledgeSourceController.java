@@ -1,6 +1,7 @@
 package io.okagent.web.knowledge;
 
 import io.okagent.service.knowledge.KnowledgeSourceService;
+import io.okagent.web.observe.PageResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -16,10 +17,12 @@ public class KnowledgeSourceController {
         this.service = service;
     }
 
-    /** Lists all external knowledge sources. */
+    /** Lists external knowledge sources, paginated by most-recently-updated. */
     @GetMapping
-    public List<KnowledgeSourceResponse> list() {
-        return service.list();
+    public PageResponse<KnowledgeSourceResponse> list(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return PageResponse.of(service.list(page, size));
     }
 
     /** Returns one knowledge source by id. */

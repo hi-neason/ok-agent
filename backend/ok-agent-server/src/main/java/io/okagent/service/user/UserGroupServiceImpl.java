@@ -8,6 +8,10 @@ import io.okagent.web.user.UpdateUserGroupRequest;
 import io.okagent.web.user.UserGroupResponse;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -21,10 +25,10 @@ public class UserGroupServiceImpl implements UserGroupService {
     }
 
     @Override
-    public List<UserGroupResponse> list() {
-        return groupRepository.findAll().stream()
-                .map(group -> UserGroupResponse.from(group, userRepository.countByGroupId(group.getId())))
-                .toList();
+    public Page<UserGroupResponse> list(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "updatedAt"));
+        return groupRepository.findAll(pageable)
+                .map(group -> UserGroupResponse.from(group, userRepository.countByGroupId(group.getId())));
     }
 
     @Override

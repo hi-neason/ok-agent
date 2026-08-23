@@ -1,37 +1,39 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { Button, PageHeader, Toggle } from "../shared";
+import { Button, PageHeader, Pagination, Toggle, type Page } from "../shared";
 import { fetchModels, requestConnectionTest, saveModel } from "./api";
-import { llmProviders, modelSeed, type ModelItem } from "./types";
+import { llmProviders, type ModelItem } from "./types";
 
 export function ModelRegistryPage() {
   const { t } = useTranslation();
-  const [models, setModels] = useState<ModelItem[]>(modelSeed);
+  const [page, setPage] = useState<Page<ModelItem> | null>(null);
+  const [pageNumber, setPageNumber] = useState(0);
   const [type, setType] = useState<"ALL" | ModelItem["type"]>("ALL");
   const [editing, setEditing] = useState<ModelItem | null>(null);
   const [testResult, setTestResult] = useState<{
     state: "testing" | "success" | "error";
     message: string;
   } | null>(null);
+  const load = async (targetPage: number) => {
+    try {
+      setPage(await fetchModels(targetPage, 20));
+    } catch {
+      setPage(null);
+    }
+  };
   useEffect(() => {
-    void fetchModels()
-      .then(setModels)
-      .catch(() => undefined);
-  }, []);
-  const visible = models.filter(
+    void load(pageNumber);
+  }, [pageNumber]);
+  const visible = (page?.content ?? []).filter(
     (model) => type === "ALL" || model.type === type,
   );
   const save = async () => {
     if (!editing || testResult?.state === "testing") return;
     const existing = Boolean(editing.id);
     try {
-      const saved = await saveModel(editing);
-      setModels((current) =>
-        existing
-          ? current.map((x) => (x.id === saved.id ? { ...saved, updated: "now" } : x))
-          : [{ ...saved, updated: "now" }, ...current],
-      );
+      await saveModel(editing);
+      await load(pageNumber);
       setEditing(null);
     } catch {
       setTestResult({
@@ -110,7 +112,7 @@ export function ModelRegistryPage() {
       />
       <section className="run-table">
         <div className="table-tools">
-          <div className="search-mini">◌ 共 {models.length} 个模型</div>
+          <div className="search-mini">◌ 共 {page?.totalElements ?? 0} 个模型</div>
           <label className="model-type-filter">
             类型
             <select
@@ -148,10 +150,15 @@ export function ModelRegistryPage() {
             <Toggle
               on={model.enabled}
               setOn={(next) =>
-                setModels((current) =>
-                  current.map((x) =>
-                    x.id === model.id ? { ...x, enabled: next } : x,
-                  ),
+                setPage((p) =>
+                  p
+                    ? {
+                        ...p,
+                        content: p.content.map((x) =>
+                          x.id === model.id ? { ...x, enabled: next } : x,
+                        ),
+                      }
+                    : p,
                 )
               }
               label={`Enable ${model.name}`}
@@ -169,8 +176,8 @@ export function ModelRegistryPage() {
               <button
                 className="link-button"
                 onClick={() =>
-                  setModels((current) =>
-                    current.filter((x) => x.id !== model.id),
+                  setPage((p) =>
+                    p ? { ...p, content: p.content.filter((x) => x.id !== model.id) } : p,
                   )
                 }
               >
@@ -179,6 +186,15 @@ export function ModelRegistryPage() {
             </span>
           </div>
         ))}
+        {page && (
+          <Pagination
+            page={page.number}
+            totalPages={page.totalPages}
+            totalElements={page.totalElements}
+            size={page.size}
+            onPageChange={setPageNumber}
+          />
+        )}
       </section>
       {editing &&
         createPortal(

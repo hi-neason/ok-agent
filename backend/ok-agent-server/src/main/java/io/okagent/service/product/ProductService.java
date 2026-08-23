@@ -16,6 +16,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 @Service
 public class ProductService {
@@ -27,11 +31,9 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    public List<ProductResponse> list() {
-        return products.findAll().stream()
-                .sorted((a, b) -> b.getUpdatedAt().compareTo(a.getUpdatedAt()))
-                .map(this::toResponse)
-                .toList();
+    public Page<ProductResponse> list(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "updatedAt"));
+        return products.findAll(pageable).map(this::toResponse);
     }
 
     @Transactional(readOnly = true)

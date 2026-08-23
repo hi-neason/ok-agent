@@ -22,6 +22,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 /**
  * Manages external product sources (ERP/CRM/PIM). Connection testing and synchronization delegate
@@ -49,8 +53,9 @@ public class ProductSourceService {
     }
 
     @Transactional(readOnly = true)
-    public List<ProductSourceResponse> list() {
-        return sources.findAll().stream().map(this::toResponse).toList();
+    public Page<ProductSourceResponse> list(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "updatedAt"));
+        return sources.findAll(pageable).map(this::toResponse);
     }
 
     @Transactional(readOnly = true)

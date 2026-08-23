@@ -1,11 +1,21 @@
 import type { ChannelIdentity, UserDetail, UserGroupItem, UserItem } from "./types";
+import type { Page } from "../shared";
 
 const BASE = "/api/v1";
 
+/** Full list of groups — used for the user-edit dropdown. */
 export async function fetchUserGroups(): Promise<UserGroupItem[]> {
-  const response = await fetch(`${BASE}/user-groups`);
+  const response = await fetch(`${BASE}/user-groups?page=0&size=1000`);
   if (!response.ok) return [];
-  return (await response.json()) as UserGroupItem[];
+  const data = (await response.json()) as Page<UserGroupItem>;
+  return data.content ?? [];
+}
+
+/** Paged groups for the group-management tab. */
+export async function fetchUserGroupsPage(page = 0, size = 20): Promise<Page<UserGroupItem>> {
+  const response = await fetch(`${BASE}/user-groups?page=${page}&size=${size}`);
+  if (!response.ok) return { content: [], totalElements: 0, totalPages: 0, number: page, size } as Page<UserGroupItem>;
+  return (await response.json()) as Page<UserGroupItem>;
 }
 
 export async function saveUserGroup(
@@ -34,13 +44,19 @@ export async function deleteUserGroup(id: string): Promise<void> {
   if (!response.ok) throw new Error("delete group failed");
 }
 
-export async function fetchUsers(groupId?: string): Promise<UserItem[]> {
-  const url = groupId
-    ? `${BASE}/users?groupId=${encodeURIComponent(groupId)}`
-    : `${BASE}/users`;
-  const response = await fetch(url);
+/** Full list of users — used for the merge dropdown. */
+export async function fetchUsers(): Promise<UserItem[]> {
+  const response = await fetch(`${BASE}/users?page=0&size=1000`);
   if (!response.ok) return [];
-  return (await response.json()) as UserItem[];
+  const data = (await response.json()) as Page<UserItem>;
+  return data.content ?? [];
+}
+
+/** Paged users for the user-management tab. */
+export async function fetchUsersPage(page = 0, size = 20): Promise<Page<UserItem>> {
+  const response = await fetch(`${BASE}/users?page=${page}&size=${size}`);
+  if (!response.ok) return { content: [], totalElements: 0, totalPages: 0, number: page, size } as Page<UserItem>;
+  return (await response.json()) as Page<UserItem>;
 }
 
 export async function saveUser(

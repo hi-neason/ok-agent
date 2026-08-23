@@ -1,9 +1,13 @@
 import type { SkillFileContent, SkillFileItem, SkillItem } from "./types";
+import type { Page } from "../shared";
 
-export async function fetchSkills(): Promise<SkillItem[]> {
-  const response = await fetch("/api/v1/skills");
+export async function fetchSkills(
+  page = 0,
+  size = 20,
+): Promise<Page<SkillItem>> {
+  const response = await fetch(`/api/v1/skills?page=${page}&size=${size}`);
   if (!response.ok) throw new Error("load failed");
-  return (await response.json()) as SkillItem[];
+  return (await response.json()) as Page<SkillItem>;
 }
 
 export async function saveSkillMetadata(

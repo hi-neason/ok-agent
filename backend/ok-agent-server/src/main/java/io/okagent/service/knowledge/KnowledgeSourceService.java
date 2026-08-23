@@ -5,12 +5,13 @@ import io.okagent.web.knowledge.KnowledgeSourceRequest;
 import io.okagent.web.knowledge.KnowledgeSourceResponse;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
 
 /** CRUD, connection testing, and catalog synchronization for external knowledge sources. */
 public interface KnowledgeSourceService {
 
-    /** Lists all knowledge sources, newest first. */
-    List<KnowledgeSourceResponse> list();
+    /** Lists knowledge sources paginated by most-recently-updated. */
+    Page<KnowledgeSourceResponse> list(int page, int size);
 
     /** Returns one source by id. */
     KnowledgeSourceResponse get(UUID id);

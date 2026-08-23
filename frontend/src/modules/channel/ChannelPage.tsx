@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { Button, PageHeader, Toggle, useConfirm } from "../shared";
+import { Button, PageHeader, Pagination, Toggle, useConfirm, type Page } from "../shared";
 import { loadAgents, type AgentOption } from "../agent/api";
 import {
   createDraft,
@@ -24,7 +24,8 @@ import "./channel.css";
 
 export function ChannelPage() {
   const { confirm, Dialog } = useConfirm();
-  const [channels, setChannels] = useState<ChannelItem[]>([]);
+  const [page, setPage] = useState<Page<ChannelItem> | null>(null);
+  const [pageNumber, setPageNumber] = useState(0);
   const [agents, setAgents] = useState<AgentOption[]>([]);
   const [agentLoadError, setAgentLoadError] = useState<string | null>(null);
   const [editing, setEditing] = useState<ChannelInput | null>(null);
@@ -32,21 +33,21 @@ export function ChannelPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const reload = () => {
-    void fetchChannels()
-      .then(setChannels)
+  const reload = (targetPage: number) => {
+    void fetchChannels(targetPage)
+      .then(setPage)
       .catch(() => undefined);
   };
 
   useEffect(() => {
-    reload();
+    reload(pageNumber);
     void loadAgents()
       .then((list) => {
         setAgents(list);
         setAgentLoadError(list.length === 0 ? "未加载到任何 Agent，请确认后端已启动且存在启用的 Agent。" : null);
       })
       .catch(() => setAgentLoadError("加载 Agent 列表失败，请确认后端服务已启动。"));
-  }, []);
+  }, [pageNumber]);
 
   const agentName = useMemo(() => {
     const map = new Map<string, string>();
@@ -135,11 +136,7 @@ export function ChannelPage() {
     setError(null);
     try {
       const saved = await saveChannel(editingId, editing);
-      setChannels((current) =>
-        editingId
-          ? current.map((x) => (x.id === saved.id ? saved : x))
-          : [saved, ...current],
-      );
+      reload(pageNumber);
       setEditing(null);
       setEditingId(null);
       // A saved+enabled channel reconciles asynchronously after commit; keep polling
@@ -170,9 +167,9 @@ export function ChannelPage() {
     const tick = async () => {
       attempts += 1;
       try {
-        const list = await fetchChannels();
-        setChannels(list);
-        const target = list.find((x) => x.id === id);
+        const next = await fetchChannels(pageNumber);
+        setPage(next);
+        const target = next.content.find((x) => x.id === id);
         if (target && target.runtimeStatus === "STARTING" && attempts < 15) {
           window.setTimeout(tick, 500);
         }
@@ -184,20 +181,16 @@ export function ChannelPage() {
   };
 
   const toggleEnabled = async (item: ChannelItem, enabled: boolean) => {
-    const saved = await setChannelEnabled(item.id, enabled);
-    setChannels((current) =>
-      current.map((x) => (x.id === item.id ? saved : x)),
-    );
+    await setChannelEnabled(item.id, enabled);
+    reload(pageNumber);
     if (enabled) {
       settleChannel(item.id);
     }
   };
 
   const toggleRuntime = async (item: ChannelItem, action: "start" | "stop") => {
-    const saved = await setChannelRuntime(item.id, action);
-    setChannels((current) =>
-      current.map((x) => (x.id === item.id ? saved : x)),
-    );
+    await setChannelRuntime(item.id, action);
+    reload(pageNumber);
     if (action === "start") {
       settleChannel(item.id);
     }
@@ -211,7 +204,7 @@ export function ChannelPage() {
     });
     if (!ok) return;
     await deleteChannel(item.id);
-    setChannels((current) => current.filter((x) => x.id !== item.id));
+    reload(pageNumber);
   };
 
   return (
@@ -224,9 +217,9 @@ export function ChannelPage() {
       />
       <section className="run-table">
         <div className="table-tools">
-          <div className="search-mini">◌ 共 {channels.length} 个渠道</div>
+          <div className="search-mini">◌ 共 {page?.totalElements ?? 0} 个渠道</div>
         </div>
-        {channels.length === 0 ? (
+        {(page?.content ?? []).length === 0 ? (
           <div className="channel-empty">
             <p>还没有渠道，点击右上角「新增渠道」绑定飞书机器人。</p>
           </div>
@@ -241,7 +234,7 @@ export function ChannelPage() {
               <span>启用</span>
               <span>操作</span>
             </div>
-            {channels.map((item) => (
+            {(page?.content ?? []).map((item) => (
               <div className="table-row channel-table-row" key={item.id}>
                 <span>
                   <b>{item.name}</b>
@@ -306,6 +299,15 @@ export function ChannelPage() {
                 </span>
               </div>
             ))}
+            {page && (
+              <Pagination
+                page={page.number}
+                totalPages={page.totalPages}
+                totalElements={page.totalElements}
+                size={page.size}
+                onPageChange={setPageNumber}
+              />
+            )}
           </>
         )}
       </section>

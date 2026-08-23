@@ -7,6 +7,10 @@ import io.okagent.repository.mcp.*;
 import io.okagent.service.model.ApiKeyCipher;
 import io.okagent.web.mcp.*;
 import java.util.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,11 +34,9 @@ public class McpServerServiceImpl implements McpServerService {
     }
 
     @Override
-    public List<McpServerResponse> list() {
-        return servers.findAll().stream()
-                .sorted(Comparator.comparing(McpServer::getUpdatedAt).reversed())
-                .map(this::response)
-                .toList();
+    public Page<McpServerResponse> list(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "updatedAt"));
+        return servers.findAll(pageable).map(this::response);
     }
 
     @Override

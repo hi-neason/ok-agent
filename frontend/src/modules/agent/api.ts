@@ -1,3 +1,4 @@
+import type { Page } from "../shared";
 import type {
   AgentForm,
   AgentItem,
@@ -41,11 +42,20 @@ export type AgentOption = {
   description: string;
 };
 
+export async function listAgents(
+  page = 0,
+  size = 20,
+): Promise<Page<AgentItem>> {
+  const res = await fetch(`/api/v1/agents?page=${page}&size=${size}`);
+  if (!res.ok) throw new Error("agents failed");
+  return (await res.json()) as Page<AgentItem>;
+}
+
 export async function loadAgents(): Promise<AgentOption[]> {
-  const res = await fetch("/api/v1/agents");
+  const res = await fetch("/api/v1/agents?page=0&size=1000");
   if (!res.ok) return [];
-  const list = (await res.json()) as Array<Record<string, unknown>>;
-  return list
+  const data = (await res.json()) as Page<AgentItem>;
+  return data.content
     .filter((a) => a.enabled !== false)
     .map((a) => ({
       id: String(a.id),

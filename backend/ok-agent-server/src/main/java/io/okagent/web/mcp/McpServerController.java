@@ -1,6 +1,7 @@
 package io.okagent.web.mcp;
 
 import io.okagent.service.mcp.McpServerService;
+import io.okagent.web.observe.PageResponse;
 import jakarta.validation.Valid;
 import java.util.*;
 import org.springframework.http.HttpStatus;
@@ -15,10 +16,12 @@ public class McpServerController {
         this.service = service;
     }
 
-    /** Returns all managed MCP server configurations. */
+    /** Returns managed MCP server configurations, paginated by most-recently-updated. */
     @GetMapping
-    public List<McpServerResponse> list() {
-        return service.list();
+    public PageResponse<McpServerResponse> list(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return PageResponse.of(service.list(page, size));
     }
 
     /** Registers a new reusable MCP server. */

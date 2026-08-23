@@ -7,10 +7,11 @@ import io.okagent.web.skill.SkillFileUpdateRequest;
 import io.okagent.web.skill.SkillMetadataRequest;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
 
 public interface SkillAssetService {
-    /** Returns all reusable skill assets visible to the current management scope. */
-    List<SkillAssetResponse> list();
+    /** Returns reusable skill assets paginated by most-recently-updated. */
+    Page<SkillAssetResponse> list(int page, int size);
 
     /** Imports and parses a complete Skill ZIP archive, optionally replacing a duplicate Skill. */
     SkillAssetResponse importArchive(

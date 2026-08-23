@@ -2,6 +2,7 @@ package io.okagent.web.product;
 
 import io.okagent.domain.product.SolutionStatus;
 import io.okagent.service.product.SolutionService;
+import io.okagent.web.observe.PageResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -17,10 +18,12 @@ public class SolutionController {
         this.service = service;
     }
 
-    /** Lists all solutions/packages. */
+    /** Lists solutions/packages, paginated by most-recently-updated. */
     @GetMapping
-    public List<SolutionResponse> list() {
-        return service.list();
+    public PageResponse<SolutionResponse> list(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return PageResponse.of(service.list(page, size));
     }
 
     /** Returns one solution with its bundled product lines. */

@@ -1,3 +1,4 @@
+import type { Page } from "../shared";
 import type { ChannelInput, ChannelItem, WechatIlinkStatus } from "./types";
 
 const BASE = "/api/v1/channels";
@@ -16,9 +17,12 @@ async function parse<T>(response: Response): Promise<T> {
   throw new Error(detail || `请求失败（HTTP ${response.status}）`);
 }
 
-export async function fetchChannels(): Promise<ChannelItem[]> {
-  const response = await fetch(BASE);
-  return parse<ChannelItem[]>(response);
+export async function fetchChannels(
+  page = 0,
+  size = 20,
+): Promise<Page<ChannelItem>> {
+  const response = await fetch(`${BASE}?page=${page}&size=${size}`);
+  return parse<Page<ChannelItem>>(response);
 }
 
 export async function saveChannel(

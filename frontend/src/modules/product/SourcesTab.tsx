@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { Button, Toggle, useConfirm } from "../shared";
+import { Button, Pagination, Toggle, useConfirm, type Page } from "../shared";
 import {
   createProductSource,
   deleteProductSource,
@@ -43,24 +43,25 @@ function testLabel(status: string | null): string {
 
 export function SourcesTab() {
   const { confirm, Dialog } = useConfirm();
-  const [sources, setSources] = useState<ProductSource[]>([]);
+  const [sources, setSources] = useState<Page<ProductSource> | null>(null);
+  const [pageNumber, setPageNumber] = useState(0);
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<ProductSource | "new" | null>(null);
   const [draft, setDraft] = useState<ProductSourceDraft>(emptySourceDraft());
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
 
-  const load = async () => {
+  const load = async (targetPage: number) => {
     try {
-      setSources(await listProductSources());
+      setSources(await listProductSources(targetPage, 20));
     } catch (e) {
       setNotice({ ok: false, text: msg(e) });
     }
   };
 
   useEffect(() => {
-    void load();
-  }, []);
+    void load(pageNumber);
+  }, [pageNumber]);
 
   const open = (s?: ProductSource) => {
     if (s) {
@@ -91,7 +92,7 @@ export function SourcesTab() {
       if (editing === "new") await createProductSource(draft);
       else if (editing) await updateProductSource(editing.id, draft);
       setEditing(null);
-      await load();
+      await load(pageNumber);
     } catch (e) {
       setNotice({ ok: false, text: msg(e) });
     } finally {
@@ -111,7 +112,7 @@ export function SourcesTab() {
             ? `连接成功：${updated.lastTestMessage ?? ""}`
             : `连接失败：${updated.lastTestMessage ?? "未知错误"}`,
       });
-      await load();
+      await load(pageNumber);
     } catch (e) {
       setNotice({ ok: false, text: msg(e) });
     } finally {
@@ -125,7 +126,7 @@ export function SourcesTab() {
     try {
       const result = await syncProductSource(s.id);
       setNotice({ ok: true, text: `同步完成，新增/更新 ${result.upserted} 个产品` });
-      await load();
+      await load(pageNumber);
     } catch (e) {
       setNotice({ ok: false, text: msg(e) });
     } finally {
@@ -136,7 +137,7 @@ export function SourcesTab() {
   const toggle = async (s: ProductSource) => {
     try {
       await setProductSourceEnabled(s.id, !s.enabled);
-      await load();
+      await load(pageNumber);
     } catch (e) {
       setNotice({ ok: false, text: msg(e) });
     }
@@ -152,7 +153,7 @@ export function SourcesTab() {
       return;
     try {
       await deleteProductSource(s.id);
-      await load();
+      await load(pageNumber);
     } catch (e) {
       setNotice({ ok: false, text: msg(e) });
     }
@@ -160,7 +161,7 @@ export function SourcesTab() {
 
   const visible = useMemo(
     () =>
-      sources.filter((s) =>
+      (sources?.content ?? []).filter((s) =>
         `${s.name} ${s.sourceKey} ${s.baseUrl}`.toLowerCase().includes(search.toLowerCase()),
       ),
     [sources, search],
@@ -175,7 +176,7 @@ export function SourcesTab() {
           onChange={(e) => setSearch(e.target.value)}
           placeholder="搜索数据源名称 / KEY / URL"
         />
-        <span>{sources.length} 个数据源</span>
+        <span>{sources?.totalElements ?? 0} 个数据源</span>
         <span style={{ flex: 1 }} />
         <Button onClick={() => open()}>＋ 添加数据源</Button>
       </div>
@@ -236,6 +237,15 @@ export function SourcesTab() {
           <div className="mcp-empty">
             ⌁<b>暂无数据源，可手动维护产品或接入外部 ERP/CRM</b>
           </div>
+        )}
+        {sources && (
+          <Pagination
+            page={sources.number}
+            totalPages={sources.totalPages}
+            totalElements={sources.totalElements}
+            size={sources.size}
+            onPageChange={setPageNumber}
+          />
         )}
       </div>
 

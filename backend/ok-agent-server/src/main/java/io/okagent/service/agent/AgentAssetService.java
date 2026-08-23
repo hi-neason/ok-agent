@@ -5,12 +5,12 @@ import io.okagent.web.agent.AgentConfigRequest;
 import io.okagent.web.agent.AgentConfigValidationResponse;
 import io.okagent.web.agent.AgentCreateRequest;
 import io.okagent.web.agent.AgentUpdateRequest;
-import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
 
 public interface AgentAssetService {
-    /** Returns all agent drafts in the current management scope, newest first. */
-    List<AgentAssetResponse> list();
+    /** Returns agent drafts in the current management scope, newest first. */
+    Page<AgentAssetResponse> list(int page, int size);
 
     /** Returns one agent draft by id. */
     AgentAssetResponse get(UUID id);

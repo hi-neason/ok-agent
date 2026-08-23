@@ -1,14 +1,23 @@
 import type { ModelApiItem, ModelItem } from "./types";
+import type { Page } from "../shared";
 
-export async function fetchModels(): Promise<ModelItem[]> {
-  const response = await fetch("/api/v1/models");
-  if (!response.ok) return [];
-  const data = (await response.json()) as ModelApiItem[];
-  return data.map((item) => ({
-    ...item,
-    apiKey: "",
-    updated: new Date(item.updatedAt).toLocaleString(),
-  }));
+export async function fetchModels(
+  page = 0,
+  size = 20,
+): Promise<Page<ModelItem>> {
+  const response = await fetch(`/api/v1/models?page=${page}&size=${size}`);
+  if (!response.ok) {
+    return { content: [], totalElements: 0, totalPages: 0, number: page, size };
+  }
+  const data = (await response.json()) as Page<ModelApiItem>;
+  return {
+    ...data,
+    content: data.content.map((item) => ({
+      ...item,
+      apiKey: "",
+      updated: new Date(item.updatedAt).toLocaleString(),
+    })),
+  };
 }
 
 export async function saveModel(model: ModelItem): Promise<ModelItem> {

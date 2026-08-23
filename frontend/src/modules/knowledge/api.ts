@@ -5,6 +5,7 @@ import type {
   KnowledgeSource,
   KnowledgeSourceDraft,
 } from "./types";
+import type { Page } from "../shared";
 
 async function jsonOrThrow<T>(res: Response): Promise<T> {
   if (!res.ok) {
@@ -21,9 +22,12 @@ async function jsonOrThrow<T>(res: Response): Promise<T> {
   return (await res.json()) as T;
 }
 
-export async function listSources(): Promise<KnowledgeSource[]> {
-  const res = await fetch("/api/v1/knowledge/sources");
-  return jsonOrThrow<KnowledgeSource[]>(res);
+export async function listSources(
+  page = 0,
+  size = 20,
+): Promise<Page<KnowledgeSource>> {
+  const res = await fetch(`/api/v1/knowledge/sources?page=${page}&size=${size}`);
+  return jsonOrThrow<Page<KnowledgeSource>>(res);
 }
 
 export async function createSource(draft: KnowledgeSourceDraft): Promise<KnowledgeSource> {

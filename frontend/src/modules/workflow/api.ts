@@ -5,6 +5,7 @@ import type {
   WorkflowSource,
   WorkflowSourceDraft,
 } from "./types";
+import type { Page } from "../shared";
 
 async function jsonOrThrow<T>(res: Response): Promise<T> {
   if (!res.ok) {
@@ -21,9 +22,9 @@ async function jsonOrThrow<T>(res: Response): Promise<T> {
   return (await res.json()) as T;
 }
 
-export async function listSources(): Promise<WorkflowSource[]> {
-  const res = await fetch("/api/v1/workflow/sources");
-  return jsonOrThrow<WorkflowSource[]>(res);
+export async function listSources(page = 0, size = 20): Promise<Page<WorkflowSource>> {
+  const res = await fetch(`/api/v1/workflow/sources?page=${page}&size=${size}`);
+  return jsonOrThrow<Page<WorkflowSource>>(res);
 }
 
 export async function createSource(draft: WorkflowSourceDraft): Promise<WorkflowSource> {

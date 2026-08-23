@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { Button, PageHeader } from "../shared";
-import { fetchUsers } from "../usermgmt/api";
+import { Button, PageHeader, Pagination } from "../shared";
+import type { Page } from "../shared";
+import { fetchUsersPage } from "../usermgmt/api";
 import type { UserItem } from "../usermgmt/types";
 import type { AgentItem } from "../agent/types";
 import {
@@ -15,7 +16,8 @@ import type { Persona } from "./types";
 import "./persona.css";
 
 export function PersonaPage() {
-  const [users, setUsers] = useState<UserItem[]>([]);
+  const [usersPage, setUsersPage] = useState<Page<UserItem> | null>(null);
+  const [userPageNumber, setUserPageNumber] = useState(0);
   const [agents, setAgents] = useState<AgentItem[]>([]);
   const [coverage, setCoverage] = useState<Record<string, string[]>>({});
   const [query, setQuery] = useState("");
@@ -25,26 +27,33 @@ export function PersonaPage() {
   const [selectedUser, setSelectedUser] = useState<UserItem | null>(null);
 
   useEffect(() => {
-    Promise.all([fetchUsers(), fetch("/api/v1/agents").then((r) => r.json())])
-      .then(([us, ag]) => {
-        setUsers(us);
-        setAgents(Array.isArray(ag) ? ag : ag.items ?? []);
-      })
-      .catch(() => setError("加载数据失败"));
+    fetchUsersPage(0, 20)
+      .then(setUsersPage)
+      .catch(() => setError("加载用户失败"));
+    fetch("/api/v1/agents")
+      .then((r) => r.json())
+      .then((ag) => setAgents(Array.isArray(ag) ? ag : ag.items ?? []))
+      .catch(() => {});
     fetchPersonaCoverage().then(setCoverage).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    void fetchUsersPage(userPageNumber, 20)
+      .then(setUsersPage)
+      .catch(() => setError("加载用户失败"));
+  }, [userPageNumber]);
 
   const coverageCount = (userId: string) => coverage[userId]?.length ?? 0;
 
   const visibleUsers = useMemo(() => {
-    return users.filter((u) => {
+    return (usersPage?.content ?? []).filter((u) => {
       const hay = `${u.displayName} ${u.username} ${u.userId} ${u.email ?? ""}`.toLowerCase();
       if (!hay.includes(query.toLowerCase())) return false;
       if (onlyWithPersona && coverageCount(u.userId) === 0) return false;
       return true;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [users, query, onlyWithPersona, coverage]);
+  }, [usersPage, query, onlyWithPersona, coverage]);
 
   const openPersona = (u: UserItem) => {
     setError("");
@@ -139,6 +148,17 @@ export function PersonaPage() {
           );
         })}
       </section>
+
+      {usersPage && (
+        <Pagination
+          page={usersPage.number}
+          totalPages={usersPage.totalPages}
+          totalElements={usersPage.totalElements}
+          size={usersPage.size}
+          loading={false}
+          onPageChange={setUserPageNumber}
+        />
+      )}
     </div>
   );
 }

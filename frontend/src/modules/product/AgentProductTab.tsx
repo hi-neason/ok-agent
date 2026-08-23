@@ -79,11 +79,11 @@ export function AgentProductTab({ agentId }: { agentId: string }) {
       try {
         const [binding, prods] = await Promise.all([
           getAgentProductBinding(agentId),
-          listProducts().catch(() => [] as Product[]),
+          listProducts(0, 1000).catch(() => [] as Product[]),
         ]);
         if (cancelled) return;
         setExisting(binding);
-        setProducts(prods);
+        setProducts(Array.isArray(prods) ? prods : prods.content);
         if (binding) {
           setForm({
             enabled: binding.enabled,

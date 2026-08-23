@@ -2,8 +2,8 @@ package io.okagent.service.channel;
 
 import io.okagent.web.channel.ChannelAssetRequest;
 import io.okagent.web.channel.ChannelAssetResponse;
-import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
 
 /**
  * Lifecycle and CRUD operations for channel assets. Secrets are encrypted at rest and never
@@ -11,8 +11,8 @@ import java.util.UUID;
  */
 public interface ChannelAssetService {
 
-    /** Returns all channel assets in the management scope. */
-    List<ChannelAssetResponse> list();
+    /** Returns channel assets in the management scope. */
+    Page<ChannelAssetResponse> list(int page, int size);
 
     /** Creates a new channel instance with an unguessable channel key. */
     ChannelAssetResponse create(ChannelAssetRequest request);

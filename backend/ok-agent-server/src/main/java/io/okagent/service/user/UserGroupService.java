@@ -5,10 +5,11 @@ import io.okagent.web.user.UpdateUserGroupRequest;
 import io.okagent.web.user.UserGroupResponse;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
 
 public interface UserGroupService {
-    /** Returns all user groups with their current member counts. */
-    List<UserGroupResponse> list();
+    /** Returns user groups with their current member counts, newest first, paged. */
+    Page<UserGroupResponse> list(int page, int size);
 
     /** Creates a new user group with a unique group key. */
     UserGroupResponse create(CreateUserGroupRequest request);

@@ -2,6 +2,7 @@ package io.okagent.web.product;
 
 import io.okagent.domain.product.ProductStatus;
 import io.okagent.service.product.ProductService;
+import io.okagent.web.observe.PageResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -17,10 +18,12 @@ public class ProductController {
         this.service = service;
     }
 
-    /** Lists all products in the unified catalog. */
+    /** Lists products in the unified catalog, paginated by most-recently-updated. */
     @GetMapping
-    public List<ProductResponse> list() {
-        return service.list();
+    public PageResponse<ProductResponse> list(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return PageResponse.of(service.list(page, size));
     }
 
     /** Returns one product by id. */

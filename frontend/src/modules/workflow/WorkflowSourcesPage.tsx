@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { Button, PageHeader, Toggle, useConfirm } from "../shared";
+import { Button, PageHeader, Toggle, useConfirm, Pagination } from "../shared";
+import type { Page } from "../shared";
 import {
   createSource,
   deleteSource,
@@ -48,7 +49,8 @@ export function testLabel(status: string): string {
 
 export function WorkflowSourcesPage() {
   const { confirm, Dialog } = useConfirm();
-  const [sources, setSources] = useState<WorkflowSource[]>([]);
+  const [page, setPage] = useState<Page<WorkflowSource> | null>(null);
+  const [pageNumber, setPageNumber] = useState(0);
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<WorkflowSource | "new" | null>(null);
   const [draft, setDraft] = useState<WorkflowSourceDraft>(emptySourceDraft());
@@ -56,17 +58,17 @@ export function WorkflowSourcesPage() {
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
   const [catalogFor, setCatalogFor] = useState<WorkflowSource | null>(null);
 
-  const load = async () => {
+  const load = async (targetPage = 0) => {
     try {
-      setSources(await listSources());
+      setPage(await listSources(targetPage, 20));
     } catch (e) {
       setNotice({ ok: false, text: msg(e) });
     }
   };
 
   useEffect(() => {
-    void load();
-  }, []);
+    void load(pageNumber);
+  }, [pageNumber]);
 
   const open = (source?: WorkflowSource) => {
     if (source) {
@@ -114,7 +116,7 @@ export function WorkflowSourcesPage() {
         await updateSource(editing.id, draft);
       }
       setEditing(null);
-      await load();
+      await load(pageNumber);
     } catch (e) {
       setNotice({ ok: false, text: msg(e) });
     } finally {
@@ -135,7 +137,7 @@ export function WorkflowSourcesPage() {
             ? `连接成功：${updated.lastTestMessage ?? ""}`
             : `连接失败：${updated.lastTestMessage ?? "未知错误"}`,
       });
-      await load();
+      await load(pageNumber);
     } catch (e) {
       setNotice({ ok: false, text: msg(e) });
     } finally {
@@ -149,7 +151,7 @@ export function WorkflowSourcesPage() {
     try {
       const items = await syncSource(source.id);
       setNotice({ ok: true, text: `同步完成，发现 ${items.length} 个工作流` });
-      await load();
+      await load(pageNumber);
     } catch (e) {
       setNotice({ ok: false, text: msg(e) });
     } finally {
@@ -160,7 +162,7 @@ export function WorkflowSourcesPage() {
   const toggle = async (source: WorkflowSource) => {
     try {
       await setSourceEnabled(source.id, !source.enabled);
-      await load();
+      await load(pageNumber);
     } catch (e) {
       setNotice({ ok: false, text: msg(e) });
     }
@@ -177,7 +179,7 @@ export function WorkflowSourcesPage() {
     try {
       await deleteSource(source.id);
       if (catalogFor?.id === source.id) setCatalogFor(null);
-      await load();
+      await load(pageNumber);
     } catch (e) {
       setNotice({ ok: false, text: msg(e) });
     }
@@ -185,12 +187,12 @@ export function WorkflowSourcesPage() {
 
   const visible = useMemo(
     () =>
-      sources.filter((s) =>
+      (page?.content ?? []).filter((s) =>
         `${s.name} ${s.sourceKey} ${s.baseUrl}`
           .toLowerCase()
           .includes(search.toLowerCase()),
       ),
-    [sources, search],
+    [page, search],
   );
 
   return (
@@ -209,7 +211,7 @@ export function WorkflowSourcesPage() {
           onChange={(e) => setSearch(e.target.value)}
           placeholder="搜索工作流源 / KEY / URL"
         />
-        <span>{sources.length} 个源</span>
+        <span>{page?.totalElements ?? 0} 个源</span>
       </div>
 
       {notice && (
@@ -268,6 +270,17 @@ export function WorkflowSourcesPage() {
           </div>
         )}
       </div>
+
+      {page && (
+        <Pagination
+          page={page.number}
+          totalPages={page.totalPages}
+          totalElements={page.totalElements}
+          size={page.size}
+          loading={busy}
+          onPageChange={setPageNumber}
+        />
+      )}
 
       {editing &&
         createPortal(

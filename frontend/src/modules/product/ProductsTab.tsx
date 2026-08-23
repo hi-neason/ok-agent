@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { Button, Toggle, useConfirm } from "../shared";
+import { Button, Pagination, Toggle, useConfirm, type Page } from "../shared";
 import {
   createProduct,
   deleteProduct,
@@ -32,7 +32,8 @@ const formatPrice = (p: Product) => {
 
 export function ProductsTab() {
   const { confirm, Dialog } = useConfirm();
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<Page<Product> | null>(null);
+  const [pageNumber, setPageNumber] = useState(0);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
   const [editing, setEditing] = useState<Product | "new" | null>(null);
@@ -40,21 +41,25 @@ export function ProductsTab() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
 
-  const load = async () => {
+  const load = async (targetPage: number) => {
     try {
-      setProducts(await listProducts());
+      setProducts(await listProducts(targetPage, 20));
     } catch (e) {
       setNotice({ ok: false, text: msg(e) });
     }
   };
 
   useEffect(() => {
-    void load();
-  }, []);
+    void load(pageNumber);
+  }, [pageNumber]);
 
   const categories = useMemo(
     () =>
-      [...new Set(products.map((p) => p.category).filter((c): c is string => !!c))].sort(),
+      [
+        ...new Set(
+          (products?.content ?? []).map((p) => p.category).filter((c): c is string => !!c),
+        ),
+      ].sort(),
     [products],
   );
 
@@ -95,7 +100,7 @@ export function ProductsTab() {
       if (editing === "new") await createProduct(draft);
       else if (editing) await updateProduct(editing.id, draft);
       setEditing(null);
-      await load();
+      await load(pageNumber);
     } catch (e) {
       setNotice({ ok: false, text: msg(e) });
     } finally {
@@ -106,7 +111,7 @@ export function ProductsTab() {
   const toggleStatus = async (p: Product) => {
     try {
       await setProductStatus(p.id, p.status === "ACTIVE" ? "DISCONTINUED" : "ACTIVE");
-      await load();
+      await load(pageNumber);
     } catch (e) {
       setNotice({ ok: false, text: msg(e) });
     }
@@ -116,7 +121,7 @@ export function ProductsTab() {
     if (!(await confirm({ message: `确认删除产品「${p.name}」？`, dangerous: true }))) return;
     try {
       await deleteProduct(p.id);
-      await load();
+      await load(pageNumber);
     } catch (e) {
       setNotice({ ok: false, text: msg(e) });
     }
@@ -124,7 +129,7 @@ export function ProductsTab() {
 
   const visible = useMemo(
     () =>
-      products.filter((p) => {
+      (products?.content ?? []).filter((p) => {
         if (category && p.category !== category) return false;
         const q = search.trim().toLowerCase();
         if (!q) return true;
@@ -156,7 +161,7 @@ export function ProductsTab() {
             </option>
           ))}
         </select>
-        <span>{visible.length} 个产品</span>
+        <span>{products?.totalElements ?? 0} 个产品</span>
         <span style={{ flex: 1 }} />
         <Button onClick={() => open()}>＋ 添加产品</Button>
       </div>
@@ -212,6 +217,15 @@ export function ProductsTab() {
           <div className="mcp-empty">
             ◈<b>暂无产品，点击右上角添加</b>
           </div>
+        )}
+        {products && (
+          <Pagination
+            page={products.number}
+            totalPages={products.totalPages}
+            totalElements={products.totalElements}
+            size={products.size}
+            onPageChange={setPageNumber}
+          />
         )}
       </div>
 

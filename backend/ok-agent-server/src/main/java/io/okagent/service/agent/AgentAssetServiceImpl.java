@@ -31,6 +31,10 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -68,12 +72,10 @@ public class AgentAssetServiceImpl implements AgentAssetService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<AgentAssetResponse> list() {
+    public Page<AgentAssetResponse> list(int page, int size) {
         var modelNames = modelNames();
-        return agents.findAll().stream()
-                .sorted(Comparator.comparing(AgentAsset::getUpdatedAt).reversed())
-                .map(a -> AgentAssetResponse.from(a, modelNames))
-                .toList();
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "updatedAt"));
+        return agents.findAll(pageable).map(a -> AgentAssetResponse.from(a, modelNames));
     }
 
     @Override

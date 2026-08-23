@@ -24,6 +24,11 @@ import java.util.TreeMap;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -69,10 +74,10 @@ public class ChannelAssetServiceImpl implements ChannelAssetService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ChannelAssetResponse> list() {
-        return repository.findAll().stream()
-                .map(a -> ChannelAssetResponse.from(a, publicBaseUrl, channelUsers.countByChannel(a.getChannelKey())))
-                .toList();
+    public Page<ChannelAssetResponse> list(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "updatedAt"));
+        return repository.findAll(pageable)
+                .map(a -> ChannelAssetResponse.from(a, publicBaseUrl, channelUsers.countByChannel(a.getChannelKey())));
     }
 
     @Override

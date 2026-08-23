@@ -1,6 +1,7 @@
 package io.okagent.web.model;
 
 import io.okagent.service.model.ModelAssetService;
+import io.okagent.web.observe.PageResponse;
 import jakarta.validation.Valid;
 import java.util.*;
 import org.springframework.http.HttpStatus;
@@ -16,9 +17,11 @@ public class ModelAssetController {
     }
 
     @GetMapping
-    /** Returns all model assets available to the current management scope. */
-    public List<ModelAssetResponse> list() {
-        return service.list();
+    /** Returns model assets paginated by most-recently-updated. */
+    public PageResponse<ModelAssetResponse> list(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return PageResponse.of(service.list(page, size));
     }
 
     @PostMapping

@@ -76,8 +76,8 @@ export function McpDebugPage({ serverId }: { serverId: string }) {
   useEffect(() => {
     void (async () => {
       try {
-        const loaded = await fetchServers();
-        const current = loaded.find((item) => item.id === serverId) ?? null;
+        const loaded = await fetchServers(0, 1000);
+        const current = loaded.content.find((item) => item.id === serverId) ?? null;
         setServer(current);
         if (!current) setError(t("mcp.serverNotFound"));
         else await loadTools(false);

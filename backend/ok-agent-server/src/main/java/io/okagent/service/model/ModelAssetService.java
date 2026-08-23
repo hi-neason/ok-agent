@@ -5,10 +5,11 @@ import io.okagent.web.model.ModelAssetResponse;
 import io.okagent.web.model.ModelConnectionTestResponse;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
 
 public interface ModelAssetService {
-    /** Returns all model assets visible to the current management scope. */
-    List<ModelAssetResponse> list();
+    /** Returns model assets paginated by most-recently-updated, visible to the current scope. */
+    Page<ModelAssetResponse> list(int page, int size);
 
     /** Creates a reusable model asset from the supplied validated configuration. */
     ModelAssetResponse create(ModelAssetRequest request);

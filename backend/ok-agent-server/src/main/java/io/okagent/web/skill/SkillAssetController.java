@@ -2,6 +2,7 @@ package io.okagent.web.skill;
 
 import io.okagent.service.skill.SkillArchiveValidationException;
 import io.okagent.service.skill.SkillAssetService;
+import io.okagent.web.observe.PageResponse;
 import jakarta.validation.Valid;
 import java.io.IOException;
 import java.util.List;
@@ -32,10 +33,12 @@ public class SkillAssetController {
         this.service = service;
     }
 
-    /** Returns all reusable skill assets in the current management scope. */
+    /** Returns reusable skill assets paginated by most-recently-updated. */
     @GetMapping
-    public List<SkillAssetResponse> list() {
-        return service.list();
+    public PageResponse<SkillAssetResponse> list(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return PageResponse.of(service.list(page, size));
     }
 
     /** Imports one complete Skill ZIP archive and parses metadata from its root SKILL.md. */

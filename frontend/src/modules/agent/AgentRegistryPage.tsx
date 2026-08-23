@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { useConfirm } from "../shared";
+import { Pagination, useConfirm, type Page } from "../shared";
+import { listAgents } from "./api";
 import type { AgentItem } from "./types";
 
 function mcpToolCount(filters: Record<string, string[]>): number {
@@ -48,25 +49,25 @@ export function AgentRegistryPage({
 }) {
   const { t } = useTranslation();
   const { confirm, Dialog } = useConfirm();
-  const [agents, setAgents] = useState<AgentItem[]>([]);
+  const [page, setPage] = useState<Page<AgentItem> | null>(null);
+  const [pageNumber, setPageNumber] = useState(0);
   const [error, setError] = useState("");
   const [editing, setEditing] = useState<AgentItem | "new" | null>(null);
   const [form, setForm] = useState({ name: "", description: "", businessDomain: "" });
   const [saving, setSaving] = useState(false);
 
-  const load = async () => {
+  const load = async (targetPage: number) => {
     try {
-      const res = await fetch("/api/v1/agents");
-      if (!res.ok) throw new Error();
-      setAgents((await res.json()) as AgentItem[]);
+      setError("");
+      setPage(await listAgents(targetPage, 20));
     } catch {
       setError(t("agents.loadFailed"));
     }
   };
 
   useEffect(() => {
-    void load();
-  }, []);
+    void load(pageNumber);
+  }, [pageNumber]);
 
   const openNew = () => {
     setForm({ name: "", description: "", businessDomain: "" });
@@ -107,7 +108,7 @@ export function AgentRegistryPage({
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error();
-      await load();
+      await load(pageNumber);
       setEditing(null);
     } catch {
       setError(t("agents.saveFailed"));
@@ -119,7 +120,7 @@ export function AgentRegistryPage({
   const remove = async (a: AgentItem) => {
     if (!(await confirm({ message: t("agents.deleteConfirm", { name: a.name }), dangerous: true }))) return;
     const res = await fetch(`/api/v1/agents/${a.id}`, { method: "DELETE" });
-    if (res.ok) await load();
+    if (res.ok) await load(pageNumber);
   };
 
   return (
@@ -140,7 +141,7 @@ export function AgentRegistryPage({
 
       <section className="run-table">
         <div className="table-tools">
-          <div className="search-mini">◌ {agents.length} AGENTS</div>
+          <div className="search-mini">◌ {page?.totalElements ?? 0} AGENTS</div>
         </div>
         <div
           className="table-head"
@@ -158,7 +159,7 @@ export function AgentRegistryPage({
           <span>{t("agents.updatedBy")}</span>
           <span>{t("agents.actions")}</span>
         </div>
-        {agents.map((a) => (
+        {(page?.content ?? []).map((a) => (
           <div
             className="table-row"
             key={a.id}
@@ -212,6 +213,15 @@ export function AgentRegistryPage({
             </span>
           </div>
         ))}
+        {page && (
+          <Pagination
+            page={page.number}
+            totalPages={page.totalPages}
+            totalElements={page.totalElements}
+            size={page.size}
+            onPageChange={setPageNumber}
+          />
+        )}
       </section>
 
       {editing && (

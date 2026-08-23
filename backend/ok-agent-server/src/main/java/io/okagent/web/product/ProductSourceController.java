@@ -1,6 +1,7 @@
 package io.okagent.web.product;
 
 import io.okagent.service.product.ProductSourceService;
+import io.okagent.web.observe.PageResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -16,10 +17,12 @@ public class ProductSourceController {
         this.service = service;
     }
 
-    /** Lists all external product sources. */
+    /** Lists external product sources, paginated by most-recently-updated. */
     @GetMapping
-    public List<ProductSourceResponse> list() {
-        return service.list();
+    public PageResponse<ProductSourceResponse> list(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return PageResponse.of(service.list(page, size));
     }
 
     /** Returns one product source by id. */

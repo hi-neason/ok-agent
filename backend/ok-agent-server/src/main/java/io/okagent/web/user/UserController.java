@@ -3,6 +3,7 @@ package io.okagent.web.user;
 import io.okagent.repository.channel.ChannelUserIdentityRepository;
 import io.okagent.service.user.UserMergeService;
 import io.okagent.service.user.UserService;
+import io.okagent.web.observe.PageResponse;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -31,10 +32,13 @@ public class UserController {
         this.identityRepository = identityRepository;
     }
 
-    /** Returns all users, optionally filtered by group. */
+    /** Returns users, optionally filtered by group, newest first, paged. */
     @GetMapping
-    public List<UserResponse> list(@RequestParam(required = false) UUID groupId) {
-        return service.list(groupId);
+    public PageResponse<UserResponse> list(
+            @RequestParam(required = false) UUID groupId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return PageResponse.of(service.list(groupId, page, size));
     }
 
     /** Creates a new user. */

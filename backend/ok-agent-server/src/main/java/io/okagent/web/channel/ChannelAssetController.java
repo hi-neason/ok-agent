@@ -5,8 +5,8 @@ import io.okagent.service.channel.WechatIlinkLoginService;
 import io.okagent.service.channel.runtime.FeishuAppRegistrationService;
 import io.okagent.service.channel.runtime.dingtalk.DingTalkRegistrationService;
 import io.okagent.service.channel.runtime.wechat.WechatLoginRegistrationService;
+import io.okagent.web.observe.PageResponse;
 import jakarta.validation.Valid;
-import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -35,9 +35,10 @@ public class ChannelAssetController {
     }
 
     @GetMapping
-    /** Returns all channel instances configured in the management scope. */
-    public List<ChannelAssetResponse> list() {
-        return service.list();
+    /** Returns channel instances configured in the management scope. */
+    public PageResponse<ChannelAssetResponse> list(
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+        return PageResponse.of(service.list(page, size));
     }
 
     @PostMapping

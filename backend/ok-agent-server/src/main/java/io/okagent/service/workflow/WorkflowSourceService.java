@@ -5,12 +5,13 @@ import io.okagent.web.workflow.WorkflowSourceRequest;
 import io.okagent.web.workflow.WorkflowSourceResponse;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
 
 /** CRUD, connection testing, and catalog synchronization for external workflow sources. */
 public interface WorkflowSourceService {
 
-    /** Lists all workflow sources, newest first. */
-    List<WorkflowSourceResponse> list();
+    /** Lists all workflow sources, newest first, paged. */
+    Page<WorkflowSourceResponse> list(int page, int size);
 
     /** Returns one source by id. */
     WorkflowSourceResponse get(UUID id);

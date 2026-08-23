@@ -6,10 +6,11 @@ import io.okagent.web.user.UserDetailResponse;
 import io.okagent.web.user.UserResponse;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
 
 public interface UserService {
-    /** Returns all users, optionally filtered by group; each carries its group's display name. */
-    List<UserResponse> list(UUID groupIdFilter);
+    /** Returns users, optionally filtered by group, newest first, paged. */
+    Page<UserResponse> list(UUID groupIdFilter, int page, int size);
 
     /** Creates a new user with a unique username. */
     UserResponse create(CreateUserRequest request);

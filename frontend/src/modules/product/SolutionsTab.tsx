@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { Button, Toggle, useConfirm } from "../shared";
+import { Button, Pagination, Toggle, useConfirm, type Page } from "../shared";
 import {
   createSolution,
   deleteSolution,
@@ -36,7 +36,8 @@ const ROLE_LABELS: Record<SolutionItemRole, string> = {
 
 export function SolutionsTab() {
   const { confirm, Dialog } = useConfirm();
-  const [solutions, setSolutions] = useState<Solution[]>([]);
+  const [solutions, setSolutions] = useState<Page<Solution> | null>(null);
+  const [pageNumber, setPageNumber] = useState(0);
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<Solution | "new" | null>(null);
@@ -44,19 +45,22 @@ export function SolutionsTab() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
 
-  const load = async () => {
+  const load = async (targetPage: number) => {
     try {
-      const [sols, prods] = await Promise.all([listSolutions(), listProducts()]);
+      const [sols, prods] = await Promise.all([
+        listSolutions(targetPage, 20),
+        listProducts(0, 1000),
+      ]);
       setSolutions(sols);
-      setProducts(prods);
+      setProducts(prods.content);
     } catch (e) {
       setNotice({ ok: false, text: msg(e) });
     }
   };
 
   useEffect(() => {
-    void load();
-  }, []);
+    void load(pageNumber);
+  }, [pageNumber]);
 
   const open = (s?: Solution) => {
     if (s) {
@@ -93,7 +97,7 @@ export function SolutionsTab() {
       if (editing === "new") await createSolution(draft);
       else if (editing) await updateSolution(editing.id, draft);
       setEditing(null);
-      await load();
+      await load(pageNumber);
     } catch (e) {
       setNotice({ ok: false, text: msg(e) });
     } finally {
@@ -104,7 +108,7 @@ export function SolutionsTab() {
   const toggleStatus = async (s: Solution) => {
     try {
       await setSolutionStatus(s.id, s.status === "ACTIVE" ? "DISCONTINUED" : "ACTIVE");
-      await load();
+      await load(pageNumber);
     } catch (e) {
       setNotice({ ok: false, text: msg(e) });
     }
@@ -114,7 +118,7 @@ export function SolutionsTab() {
     if (!(await confirm({ message: `确认删除方案「${s.name}」？`, dangerous: true }))) return;
     try {
       await deleteSolution(s.id);
-      await load();
+      await load(pageNumber);
     } catch (e) {
       setNotice({ ok: false, text: msg(e) });
     }
@@ -139,8 +143,9 @@ export function SolutionsTab() {
 
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return solutions;
-    return solutions.filter((s) =>
+    const all = solutions?.content ?? [];
+    if (!q) return all;
+    return all.filter((s) =>
       `${s.name} ${s.solutionKey} ${s.scenario} ${s.targetCustomer}`.toLowerCase().includes(q),
     );
   }, [solutions, search]);
@@ -154,7 +159,7 @@ export function SolutionsTab() {
           onChange={(e) => setSearch(e.target.value)}
           placeholder="搜索方案名称 / KEY / 场景 / 目标客户"
         />
-        <span>{visible.length} 个方案</span>
+        <span>{solutions?.totalElements ?? 0} 个方案</span>
         <span style={{ flex: 1 }} />
         <Button onClick={() => open()}>＋ 添加方案</Button>
       </div>
@@ -211,6 +216,15 @@ export function SolutionsTab() {
           <div className="mcp-empty">
             ▣<b>暂无方案，点击右上角添加</b>
           </div>
+        )}
+        {solutions && (
+          <Pagination
+            page={solutions.number}
+            totalPages={solutions.totalPages}
+            totalElements={solutions.totalElements}
+            size={solutions.size}
+            onPageChange={setPageNumber}
+          />
         )}
       </div>
 

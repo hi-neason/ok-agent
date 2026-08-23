@@ -12,6 +12,10 @@ import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -78,8 +82,9 @@ public class SkillAssetServiceImpl implements SkillAssetService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<SkillAssetResponse> list() {
-        return repository.findAll().stream().map(SkillAssetResponse::from).toList();
+    public Page<SkillAssetResponse> list(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "updatedAt"));
+        return repository.findAll(pageable).map(SkillAssetResponse::from);
     }
 
     @Override

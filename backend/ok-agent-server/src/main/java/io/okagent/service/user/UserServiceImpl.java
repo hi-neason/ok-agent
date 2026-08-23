@@ -14,6 +14,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
@@ -38,15 +42,14 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<UserResponse> list(UUID groupIdFilter) {
-        List<User> users =
-                groupIdFilter != null ? userRepository.findByGroupId(groupIdFilter) : userRepository.findAll();
+    public Page<UserResponse> list(UUID groupIdFilter, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "updatedAt"));
+        Page<User> pageResult =
+                groupIdFilter != null ? userRepository.findByGroupId(groupIdFilter, pageable) : userRepository.findAll(pageable);
         Map<UUID, String> groupNames =
                 groupRepository.findAll().stream().collect(Collectors.toMap(UserGroup::getId, UserGroup::getName));
-        return users.stream()
-                .map(user -> UserResponse.from(user, groupName(groupNames, user.getGroupId()), (int)
-                        identityRepository.countByLinkedUserId(user.getId())))
-                .toList();
+        return pageResult.map(user -> UserResponse.from(
+                user, groupName(groupNames, user.getGroupId()), (int) identityRepository.countByLinkedUserId(user.getId())));
     }
 
     @Override

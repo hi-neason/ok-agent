@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { Button, PageHeader, Toggle, useConfirm } from "../shared";
+import { Button, PageHeader, Toggle, useConfirm, Pagination } from "../shared";
+import type { Page } from "../shared";
 import {
   deleteUser,
   deleteUserGroup,
   fetchUserChannels,
   fetchUserGroups,
+  fetchUserGroupsPage,
   fetchUsers,
+  fetchUsersPage,
   mergeUsers,
   saveUser,
   saveUserGroup,
@@ -21,7 +24,11 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
   const { confirm, Dialog } = useConfirm();
   const [tab, setTab] = useState<Tab>("groups");
   const [groups, setGroups] = useState<UserGroupItem[]>([]);
+  const [groupPage, setGroupPage] = useState<Page<UserGroupItem> | null>(null);
+  const [groupPageNumber, setGroupPageNumber] = useState(0);
   const [users, setUsers] = useState<UserItem[]>([]);
+  const [usersPage, setUsersPage] = useState<Page<UserItem> | null>(null);
+  const [userPageNumber, setUserPageNumber] = useState(0);
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const [saving, setSaving] = useState(false);
@@ -30,22 +37,37 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
   const [channelDrawer, setChannelDrawer] = useState<UserItem | null>(null);
   const [channels, setChannels] = useState<ChannelIdentity[]>([]);
   const [mergeTarget, setMergeTarget] = useState<UserItem | null>(null);
-  const [mergeCandidateId, setMergeCandidateId] = useState("");;
+  const [mergeCandidateId, setMergeCandidateId] = useState("");
 
+  // Full list (dropdowns) + paged list (tabs)
   const loadGroups = () =>
     fetchUserGroups().then(setGroups).catch(() => setError("加载用户组失败"));
+  const loadGroupPage = (targetPage = 0) =>
+    fetchUserGroupsPage(targetPage, 20).then(setGroupPage).catch(() => setError("加载用户组失败"));
   const loadUsers = () =>
     fetchUsers().then(setUsers).catch(() => setError("加载用户失败"));
+  const loadUsersPage = (targetPage = 0) =>
+    fetchUsersPage(targetPage, 20).then(setUsersPage).catch(() => setError("加载用户失败"));
 
   useEffect(() => {
     loadGroups();
+    loadGroupPage(0);
     loadUsers();
+    loadUsersPage(0);
   }, []);
 
-  const visibleGroups = groups.filter((g) =>
+  useEffect(() => {
+    void loadGroupPage(groupPageNumber);
+  }, [groupPageNumber]);
+
+  useEffect(() => {
+    void loadUsersPage(userPageNumber);
+  }, [userPageNumber]);
+
+  const visibleGroups = (groupPage?.content ?? []).filter((g) =>
     `${g.name} ${g.groupKey} ${g.description}`.toLowerCase().includes(query.toLowerCase()),
   );
-  const visibleUsers = users.filter((u) =>
+  const visibleUsers = (usersPage?.content ?? []).filter((u) =>
     `${u.username} ${u.displayName} ${u.email ?? ""} ${u.groupName ?? ""}`
       .toLowerCase()
       .includes(query.toLowerCase()),
@@ -80,6 +102,7 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
       setMergeTarget(null);
       setMergeCandidateId("");
       loadUsers();
+      loadUsersPage(userPageNumber);
     } catch (e) {
       setError(e instanceof Error ? e.message : "合并失败");
     } finally {
@@ -96,6 +119,7 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
     setSaving(true);
     setError("");
     try {
+      const isNew = !groupEditing.id;
       const saved = await saveUserGroup({
         id: groupEditing.id,
         groupKey: groupEditing.groupKey.trim(),
@@ -109,6 +133,8 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
           : [saved, ...cur],
       );
       setGroupEditing(null);
+      if (isNew) setGroupPageNumber(0);
+      else await loadGroupPage(groupPageNumber);
     } catch {
       setError("保存用户组失败");
     } finally {
@@ -125,6 +151,7 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
     setSaving(true);
     setError("");
     try {
+      const isNew = !userEditing.id;
       const saved = await saveUser({
         id: userEditing.id,
         username: userEditing.username.trim(),
@@ -140,6 +167,8 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
           : [saved, ...cur],
       );
       setUserEditing(null);
+      if (isNew) setUserPageNumber(0);
+      else await loadUsersPage(userPageNumber);
     } catch {
       setError("保存用户失败");
     } finally {
@@ -156,6 +185,7 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
     try {
       await deleteUserGroup(g.id);
       setGroups((cur) => cur.filter((x) => x.id !== g.id));
+      await loadGroupPage(groupPageNumber);
     } catch {
       setError("删除用户组失败（可能仍有成员）");
     }
@@ -172,6 +202,7 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
     try {
       await deleteUser(u.id);
       setUsers((cur) => cur.filter((x) => x.id !== u.id));
+      await loadUsersPage(userPageNumber);
     } catch {
       setError("删除用户失败");
     }
@@ -257,9 +288,12 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
                       name: g.name,
                       description: g.description,
                       enabled: next,
-                    }).then((saved) =>
-                      setGroups((cur) => cur.map((x) => (x.id === saved.id ? saved : x))),
-                    )
+                    }).then((saved) => {
+                      setGroups((cur) => cur.map((x) => (x.id === saved.id ? saved : x)));
+                      setGroupPage((p) =>
+                        p ? { ...p, content: p.content.map((x) => (x.id === saved.id ? saved : x)) } : p,
+                      );
+                    })
                   }
                   label={`${g.name} 状态`}
                 />
@@ -356,9 +390,12 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
                       phone: u.phone,
                       groupId: u.groupId,
                       enabled: next,
-                    }).then((saved) =>
-                      setUsers((cur) => cur.map((x) => (x.id === saved.id ? saved : x))),
-                    )
+                    }).then((saved) => {
+                      setUsers((cur) => cur.map((x) => (x.id === saved.id ? saved : x)));
+                      setUsersPage((p) =>
+                        p ? { ...p, content: p.content.map((x) => (x.id === saved.id ? saved : x)) } : p,
+                      );
+                    })
                   }
                   label={`${u.displayName} 状态`}
                 />
@@ -393,6 +430,27 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
             ))
           )}
         </section>
+      )}
+
+      {tab === "groups" && groupPage && (
+        <Pagination
+          page={groupPage.number}
+          totalPages={groupPage.totalPages}
+          totalElements={groupPage.totalElements}
+          size={groupPage.size}
+          loading={saving}
+          onPageChange={setGroupPageNumber}
+        />
+      )}
+      {tab === "users" && usersPage && (
+        <Pagination
+          page={usersPage.number}
+          totalPages={usersPage.totalPages}
+          totalElements={usersPage.totalElements}
+          size={usersPage.size}
+          loading={saving}
+          onPageChange={setUserPageNumber}
+        />
       )}
 
       {groupEditing &&

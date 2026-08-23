@@ -4,6 +4,8 @@ import io.okagent.domain.user.User;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface UserRepository extends JpaRepository<User, UUID> {
@@ -16,4 +18,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     long countByGroupId(UUID groupId);
 
     List<User> findByGroupId(UUID groupId);
+
+    Page<User> findByGroupId(UUID groupId, Pageable pageable);
 }

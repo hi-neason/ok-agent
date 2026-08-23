@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { Button, PageHeader, Toggle, useConfirm } from "../shared";
+import { Button, PageHeader, Pagination, Toggle, useConfirm, type Page } from "../shared";
 import {
   deleteServer,
   fetchServers,
@@ -24,7 +24,8 @@ import {
 export function McpRegistryPage() {
   const { t } = useTranslation();
   const { confirm, Dialog } = useConfirm();
-  const [servers, setServers] = useState<McpServer[]>([]);
+  const [page, setPage] = useState<Page<McpServer> | null>(null);
+  const [pageNumber, setPageNumber] = useState(0);
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<McpServer | null | "new">(null);
   const [draft, setDraft] = useState<McpDraft>(emptyMcpDraft);
@@ -43,16 +44,16 @@ export function McpRegistryPage() {
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "");
-  const load = async () => {
+  const load = async (targetPage: number) => {
     try {
-      setServers(await fetchServers());
+      setPage(await fetchServers(targetPage, 20));
     } catch {
       setNotice({ ok: false, text: t("mcp.loadFailed") });
     }
   };
   useEffect(() => {
-    void load();
-  }, []);
+    void load(pageNumber);
+  }, [pageNumber]);
   const open = (server?: McpServer) => {
     const nextDraft: McpDraft = server
       ? {
@@ -226,7 +227,7 @@ export function McpRegistryPage() {
       } else {
         setNotice({ ok: true, text: t("mcp.saved") });
       }
-      await load();
+      await load(pageNumber);
     } catch {
       setNotice({ ok: false, text: t("mcp.saveFailed") });
     } finally {
@@ -263,7 +264,7 @@ export function McpRegistryPage() {
         ok: true,
         text: t("mcp.connectionSucceeded", { count: inspection.tools.length }),
       });
-      if (saved) await load();
+      if (saved) await load(pageNumber);
     } catch (error) {
       setNotice({
         ok: false,
@@ -279,13 +280,13 @@ export function McpRegistryPage() {
   const remove = async (server: McpServer) => {
     if (!(await confirm({ message: t("mcp.deleteConfirm", { name: server.name }), dangerous: true }))) return;
     await deleteServer(server.id);
-    await load();
+    await load(pageNumber);
   };
   const toggle = async (server: McpServer) => {
     await setServerEnabled(server.id, !server.enabled);
-    await load();
+    await load(pageNumber);
   };
-  const visible = servers.filter((s) =>
+  const visible = (page?.content ?? []).filter((s) =>
     `${s.name} ${s.serverKey} ${s.serverUrl}`
       .toLowerCase()
       .includes(search.toLowerCase()),
@@ -305,7 +306,7 @@ export function McpRegistryPage() {
           onChange={(e) => setSearch(e.target.value)}
           placeholder={t("mcp.search")}
         />
-        <span>{servers.length} MCP Servers</span>
+        <span>{page?.totalElements ?? 0} MCP Servers</span>
       </div>
       <div className="mcp-table">
         <div className="mcp-row head">
@@ -355,6 +356,15 @@ export function McpRegistryPage() {
           <div className="mcp-empty">
             ⌘<b>{t("mcp.empty")}</b>
           </div>
+        )}
+        {page && (
+          <Pagination
+            page={page.number}
+            totalPages={page.totalPages}
+            totalElements={page.totalElements}
+            size={page.size}
+            onPageChange={setPageNumber}
+          />
         )}
       </div>
       {editing &&

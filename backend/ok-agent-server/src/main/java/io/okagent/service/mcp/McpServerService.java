@@ -2,10 +2,11 @@ package io.okagent.service.mcp;
 
 import io.okagent.web.mcp.*;
 import java.util.*;
+import org.springframework.data.domain.Page;
 
 public interface McpServerService {
-    /** Lists all reusable MCP server configurations. */
-    List<McpServerResponse> list();
+    /** Lists reusable MCP server configurations, paginated by most-recently-updated. */
+    Page<McpServerResponse> list(int page, int size);
 
     /** Creates a reusable MCP server configuration. */
     McpServerResponse create(McpServerRequest request);

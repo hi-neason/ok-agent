@@ -1,6 +1,7 @@
 package io.okagent.web.workflow;
 
 import io.okagent.service.workflow.WorkflowSourceService;
+import io.okagent.web.observe.PageResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -16,10 +17,12 @@ public class WorkflowSourceController {
         this.service = service;
     }
 
-    /** Lists all external workflow sources. */
+    /** Lists external workflow sources, newest first, paged. */
     @GetMapping
-    public List<WorkflowSourceResponse> list() {
-        return service.list();
+    public PageResponse<WorkflowSourceResponse> list(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return PageResponse.of(service.list(page, size));
     }
 
     /** Returns one workflow source by id. */

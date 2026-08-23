@@ -51,13 +51,13 @@ export function AgentKnowledgeTab({ agentId }: { agentId: string }) {
       setLoading(true);
       try {
         const [srcs, current] = await Promise.all([
-          listSources(),
+          listSources(0, 1000),
           listAgentBindings(agentId),
         ]);
         if (cancelled) return;
-        setSources(srcs);
+        setSources(srcs.content);
         const catalogLists = await Promise.all(
-          srcs
+          srcs.content
             .filter((s) => s.enabled)
             .map((s) => listCatalog(s.id).catch(() => [] as KnowledgeCatalogItem[])),
         );

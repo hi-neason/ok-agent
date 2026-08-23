@@ -39,13 +39,13 @@ export function AgentWorkflowTab({ agentId }: { agentId: string }) {
       setLoading(true);
       try {
         const [srcs, current] = await Promise.all([
-          listSources(),
+          listSources(0, 1000),
           listAgentBindings(agentId),
         ]);
         if (cancelled) return;
-        setSources(srcs);
+        setSources(srcs.content);
         const catalogLists = await Promise.all(
-          srcs.filter((s) => s.enabled).map((s) => listCatalog(s.id).catch(() => [] as WorkflowCatalogItem[])),
+          srcs.content.filter((s) => s.enabled).map((s) => listCatalog(s.id).catch(() => [] as WorkflowCatalogItem[])),
         );
         if (cancelled) return;
         const all = catalogLists.flat();

@@ -3,6 +3,7 @@ package io.okagent.service.observe;
 import io.agentscope.core.agent.Agent;
 import io.agentscope.core.agent.RuntimeContext;
 import io.agentscope.core.event.AgentEvent;
+import io.agentscope.core.event.AgentResultEvent;
 import io.agentscope.core.event.ModelCallEndEvent;
 import io.agentscope.core.event.TextBlockDeltaEvent;
 import io.agentscope.core.event.ThinkingBlockDeltaEvent;
@@ -20,6 +21,7 @@ import io.okagent.domain.observe.SpanStatus;
 import io.okagent.domain.observe.SpanType;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import org.slf4j.Logger;
@@ -81,13 +83,31 @@ public class TraceCollectingMiddleware implements MiddlewareBase {
 
         AtomicReference<SpanStatus> rootStatus = new AtomicReference<>(SpanStatus.OK);
         AtomicReference<String> rootError = new AtomicReference<>();
+        // Set once the agent has emitted its final reply. The harness subscriber cancels the
+        // upstream event flux as soon as it has taken the reply (e.g. ReActAgent.call -> takeLast(1)
+        // .next(), or an SSE client disconnecting after the last token). That cancellation is not a
+        // failure, so a CANCELLED root span is only appropriate when we were cancelled *before* any
+        // reply was produced (a genuine mid-turn abort).
+        AtomicBoolean resultEmitted = new AtomicBoolean(false);
 
         return next.apply(input)
+                .doOnNext(event -> {
+                    if (event instanceof AgentResultEvent) {
+                        resultEmitted.set(true);
+                    }
+                })
                 .doOnError(e -> {
                     rootStatus.set(SpanStatus.ERROR);
                     rootError.set(e.getMessage());
                 })
-                .doOnCancel(() -> rootStatus.set(SpanStatus.CANCELLED))
+                .doOnCancel(() -> {
+                    // Only downgrade to CANCELLED when the turn ended without producing a reply and
+                    // no error was recorded. If a reply was already emitted the cancellation is just
+                    // the subscriber taking the result, which is a successful turn.
+                    if (rootStatus.get() == SpanStatus.OK && !resultEmitted.get()) {
+                        rootStatus.set(SpanStatus.CANCELLED);
+                    }
+                })
                 .doFinally(signal -> {
                     try {
                         sink.saveAll(trace.finish(rootStatus.get(), rootError.get()));

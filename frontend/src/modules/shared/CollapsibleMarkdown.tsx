@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Markdown } from "./Markdown";
 
 /**
@@ -12,6 +13,7 @@ const COLLAPSE_HEIGHT_EM = 12;
 const COLLAPSE_THRESHOLD = 360;
 
 export function CollapsibleMarkdown({ source }: { source: string }) {
+  const { t } = useTranslation();
   const collapsible = source.length > COLLAPSE_THRESHOLD;
   const [expanded, setExpanded] = useState(!collapsible);
 
@@ -34,7 +36,7 @@ export function CollapsibleMarkdown({ source }: { source: string }) {
           onClick={() => setExpanded((v) => !v)}
           aria-expanded={expanded}
         >
-          {expanded ? "收叠 ▴" : "展开 ▾"}
+          {expanded ? `${t("common.collapse")} ▴` : `${t("common.expand")} ▾`}
         </button>
       </div>
     </div>

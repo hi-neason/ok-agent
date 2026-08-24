@@ -82,36 +82,35 @@ type Page =
 type NavItem = {
   id: Page;
   icon: string;
-  name: string;
   kicker: string;
   wip?: boolean;
 };
 
 type NavigationGroup = {
-  title: string;
+  key: "agent" | "component" | "business" | "system";
   items: NavItem[];
 };
 
 // Full catalog of top-level modules. `wip` marks modules still under construction;
 // a few are intentionally hidden from the primary navigation (see `hiddenNavIds`).
 const navItems: NavItem[] = [
-  { id: "agents", icon: "◈", name: "配置调试", kicker: "AGENT CONFIG" },
-  { id: "custchat", icon: "▣", name: "客服对话", kicker: "CUSTOMER CHAT" },
-  { id: "release", icon: "↗", name: "发布管理", kicker: "RELEASE" },
-  { id: "observe", icon: "◌", name: "运行观测", kicker: "OBSERVE" },
-  { id: "models", icon: "◌", name: "模型", kicker: "MODEL" },
-  { id: "skills", icon: "✦", name: "技能", kicker: "SKILL" },
-  { id: "mcp", icon: "⌘", name: "工具", kicker: "MCP" },
-  { id: "knowledge", icon: "◫", name: "知识库 - 集成", kicker: "KNOWLEDGE" },
-  { id: "products", icon: "◈", name: "产品管理", kicker: "PRODUCT" },
-  { id: "workflows", icon: "⌁", name: "工作流 - 集成", kicker: "WORKFLOW" },
-  { id: "persona", icon: "◑", name: "用户画像", kicker: "PERSONA" },
-  { id: "channels", icon: "⇄", name: "渠道管理", kicker: "CHANNEL" },
-  { id: "intents", icon: "⌥", name: "意图管理", kicker: "INTENT" },
-  { id: "insight", icon: "◍", name: "对话洞察", kicker: "INSIGHT", wip: true },
-  { id: "system", icon: "◎", name: "账号权限", kicker: "ACCESS" },
-  { id: "sysconfig", icon: "⚙", name: "系统配置", kicker: "SETTINGS", wip: true },
-  { id: "usermgmt", icon: "👤", name: "用户管理", kicker: "USER MGMT" },
+  { id: "agents", icon: "◈", kicker: "AGENT CONFIG" },
+  { id: "custchat", icon: "▣", kicker: "CUSTOMER CHAT" },
+  { id: "release", icon: "↗", kicker: "RELEASE" },
+  { id: "observe", icon: "◌", kicker: "OBSERVE" },
+  { id: "models", icon: "◌", kicker: "MODEL" },
+  { id: "skills", icon: "✦", kicker: "SKILL" },
+  { id: "mcp", icon: "⌘", kicker: "MCP" },
+  { id: "knowledge", icon: "◫", kicker: "KNOWLEDGE" },
+  { id: "products", icon: "◈", kicker: "PRODUCT" },
+  { id: "workflows", icon: "⌁", kicker: "WORKFLOW" },
+  { id: "persona", icon: "◑", kicker: "PERSONA" },
+  { id: "channels", icon: "⇄", kicker: "CHANNEL" },
+  { id: "intents", icon: "⌥", kicker: "INTENT" },
+  { id: "insight", icon: "◍", kicker: "INSIGHT", wip: true },
+  { id: "system", icon: "◎", kicker: "ACCESS" },
+  { id: "sysconfig", icon: "⚙", kicker: "SETTINGS", wip: true },
+  { id: "usermgmt", icon: "👤", kicker: "USER MGMT" },
 ];
 
 const navItemById = Object.fromEntries(
@@ -120,21 +119,21 @@ const navItemById = Object.fromEntries(
 
 const navigationGroups: NavigationGroup[] = [
   {
-    title: "Agent管理",
+    key: "agent",
     items: (["agents", "release", "observe", "custchat"] as Page[]).map((id) => navItemById[id]),
   },
   {
-    title: "Component管理",
+    key: "component",
     items: (["models", "skills", "mcp", "knowledge", "workflows"] as Page[]).map(
       (id) => navItemById[id],
     ),
   },
   {
-    title: "业务管理",
+    key: "business",
     items: (["usermgmt", "persona", "products", "channels", "intents", "insight"] as Page[]).map((id) => navItemById[id]),
   },
   {
-    title: "系统管理",
+    key: "system",
     items: (["system", "sysconfig"] as Page[]).map((id) => navItemById[id]),
   },
 ];
@@ -221,10 +220,10 @@ export default function App() {
     return () => window.removeEventListener("popstate", syncPage);
   }, []);
   const selected = modules.find((x) => x.id === page)!;
-  const moduleName = (module: { id: Page; name: string }) =>
-    t(`navigation.${module.id}`, { defaultValue: module.name });
+  const moduleName = (module: { id: Page }) =>
+    t(`navigation.${module.id}`);
   const groupTitleOf = (p: Page | undefined) =>
-    p ? navigationGroups.find((g) => g.items.some((it) => it.id === p))?.title : undefined;
+    p ? navigationGroups.find((g) => g.items.some((it) => it.id === p))?.key : undefined;
   const navigate = (next: Page) => {
     window.history.pushState({}, "", pagePaths[next]);
     setPage(next);
@@ -255,7 +254,7 @@ export default function App() {
     <div className="wip-placeholder">
       <div className="wip-placeholder-mark">WIP</div>
       <h1>{name}</h1>
-      <p>该模块正在建设中，暂未开放。</p>
+      <p>{t("common.wipDescription")}</p>
       <small>{kicker}</small>
     </div>
   );
@@ -285,8 +284,8 @@ persona: <PersonaPage />,
 channels: <ChannelPage />,
 intents: <IntentPage />,
     custchat: <CustomerChatPage />,
-    insight: <WipPlaceholder name="对话洞察" kicker="INSIGHT" />,
-    sysconfig: <WipPlaceholder name="系统配置" kicker="SETTINGS" />,
+    insight: <WipPlaceholder name={moduleName(navItemById.insight)} kicker="INSIGHT" />,
+    sysconfig: <WipPlaceholder name={moduleName(navItemById.sysconfig)} kicker="SETTINGS" />,
     usermgmt: userDetailId ? (
       <UserDetailPage id={userDetailId} onBack={backToUsers} />
     ) : (
@@ -315,7 +314,7 @@ intents: <IntentPage />,
         <p className="nav-caption">HARNESS CONTROL PLANE</p>
         <nav>
           {navigationGroups.map((group) => (
-            <section key={group.title} style={{ marginBottom: 12 }}>
+            <section key={group.key} style={{ marginBottom: 12 }}>
               <p className="nav-group-title"
                 style={{
                   margin: "12px 10px 5px",
@@ -324,7 +323,7 @@ intents: <IntentPage />,
                   letterSpacing: ".12em",
                 }}
               >
-                {group.title.toUpperCase()}
+                {t(`navigationGroups.${group.key}`).toUpperCase()}
               </p>
               {group.items.map((module) => (
                 <button
@@ -355,7 +354,9 @@ intents: <IntentPage />,
             <i>/</i>
             {groupTitleOf(selected.id) && (
               <>
-                <span className="crumb-sub">{groupTitleOf(selected.id)}</span>
+                <span className="crumb-sub">
+                  {t(`navigationGroups.${groupTitleOf(selected.id)}`)}
+                </span>
                 <i>/</i>
               </>
             )}
@@ -374,7 +375,7 @@ intents: <IntentPage />,
                 )
               }
             >
-              {i18n.resolvedLanguage === "zh-CN" ? "EN" : "中"}
+              {i18n.resolvedLanguage === "zh-CN" ? t("common.switchToEnglish") : t("common.switchToChinese")}
             </button>
             <button className="icon-button">◐</button>
             <span className="auth-user-name">{user.displayName}</span>
@@ -389,7 +390,7 @@ intents: <IntentPage />,
           </div>
         </header>
         <section className="page-content" key={page}>
-          <Suspense fallback={<div className="empty-state">正在加载模块…</div>}>
+          <Suspense fallback={<div className="empty-state">{t("common.moduleLoading")}</div>}>
             {content}
           </Suspense>
         </section>

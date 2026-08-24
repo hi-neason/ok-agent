@@ -19,7 +19,7 @@ async function parse<T>(response: Response): Promise<T> {
   } catch {
     /* ignore */
   }
-  throw new Error(detail || `请求失败（HTTP ${response.status}）`);
+  throw new Error(detail || i18n.t("common.requestFailed", { status: response.status }));
 }
 
 export async function listAgents(): Promise<AgentOption[]> {
@@ -118,3 +118,4 @@ export async function rollbackChannel(
   });
   return parse<ReleaseItem>(res);
 }
+import i18n from "../../i18n";

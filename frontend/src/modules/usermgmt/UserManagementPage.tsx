@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 import { Button, PageHeader, Toggle, useConfirm, Pagination } from "../shared";
 import type { Page } from "../shared";
 import {
@@ -21,6 +22,7 @@ import "./usermgmt.css";
 type Tab = "groups" | "users";
 
 export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) => void }) {
+  const { t, i18n } = useTranslation();
   const { confirm, Dialog } = useConfirm();
   const [tab, setTab] = useState<Tab>("groups");
   const [groups, setGroups] = useState<UserGroupItem[]>([]);
@@ -43,13 +45,13 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
 
   // Full list (dropdowns) + paged list (tabs)
   const loadGroups = () =>
-    fetchUserGroups().then(setGroups).catch(() => setError("加载用户组失败"));
+    fetchUserGroups().then(setGroups).catch(() => setError(t("users.loadGroupsFailed")));
   const loadGroupPage = (targetPage = groupPageNumber) =>
-    fetchUserGroupsPage(targetPage, groupPageSize).then(setGroupPage).catch(() => setError("加载用户组失败"));
+    fetchUserGroupsPage(targetPage, groupPageSize).then(setGroupPage).catch(() => setError(t("users.loadGroupsFailed")));
   const loadUsers = () =>
-    fetchUsers().then(setUsers).catch(() => setError("加载用户失败"));
+    fetchUsers().then(setUsers).catch(() => setError(t("users.loadUsersFailed")));
   const loadUsersPage = (targetPage = userPageNumber) =>
-    fetchUsersPage(targetPage, userPageSize).then(setUsersPage).catch(() => setError("加载用户失败"));
+    fetchUsersPage(targetPage, userPageSize).then(setUsersPage).catch(() => setError(t("users.loadUsersFailed")));
 
   useEffect(() => {
     loadGroups();
@@ -81,7 +83,7 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
     try {
       setChannels(await fetchUserChannels(u.id));
     } catch {
-      setError("加载渠道身份失败");
+      setError(t("users.loadChannelsFailed"));
     }
   };
 
@@ -89,11 +91,12 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
     if (!mergeTarget || !mergeCandidateId || mergeCandidateId === mergeTarget.id) return;
     const candidate = users.find((u) => u.id === mergeCandidateId);
     const ok = await confirm({
-      title: "合并用户",
-      message:
-        `确认将「${candidate?.displayName ?? mergeCandidateId}」合并到「${mergeTarget.displayName}」？\n` +
-        "该用户的对话历史、画像、记忆与渠道身份都会归并到目标用户，此操作不可恢复。",
-      confirmText: "确认合并",
+      title: t("users.mergeTitle"),
+      message: t("users.mergeConfirm", {
+        candidate: candidate?.displayName ?? mergeCandidateId,
+        target: mergeTarget.displayName,
+      }),
+      confirmText: t("users.confirmMerge"),
       dangerous: true,
     });
     if (!ok) return;
@@ -106,7 +109,7 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
       loadUsers();
       loadUsersPage(userPageNumber);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "合并失败");
+      setError(e instanceof Error ? e.message : t("users.mergeFailed"));
     } finally {
       setSaving(false);
     }
@@ -115,7 +118,7 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
   const saveGroup = async () => {
     if (!groupEditing || saving) return;
     if (!groupEditing.groupKey?.trim() || !groupEditing.name?.trim()) {
-      setError("标识与名称为必填项");
+      setError(t("users.groupRequired"));
       return;
     }
     setSaving(true);
@@ -138,7 +141,7 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
       if (isNew) setGroupPageNumber(0);
       else await loadGroupPage(groupPageNumber);
     } catch {
-      setError("保存用户组失败");
+      setError(t("users.saveGroupFailed"));
     } finally {
       setSaving(false);
     }
@@ -147,7 +150,7 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
   const saveUserRecord = async () => {
     if (!userEditing || saving) return;
     if (!userEditing.username?.trim() || !userEditing.displayName?.trim()) {
-      setError("账号与姓名为必填项");
+      setError(t("users.userRequired"));
       return;
     }
     setSaving(true);
@@ -172,7 +175,7 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
       if (isNew) setUserPageNumber(0);
       else await loadUsersPage(userPageNumber);
     } catch {
-      setError("保存用户失败");
+      setError(t("users.saveUserFailed"));
     } finally {
       setSaving(false);
     }
@@ -181,22 +184,22 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
   const removeGroup = async (g: UserGroupItem) => {
     const message =
       g.userCount > 0
-        ? `用户组「${g.name}」下还有 ${g.userCount} 个用户，请先移除或转移用户后再删除。`
-        : `确认删除用户组「${g.name}」？`;
+        ? t("users.groupHasUsers", { name: g.name, count: g.userCount })
+        : t("users.deleteGroupConfirm", { name: g.name });
     if (!(await confirm({ message, dangerous: g.userCount === 0 }))) return;
     try {
       await deleteUserGroup(g.id);
       setGroups((cur) => cur.filter((x) => x.id !== g.id));
       await loadGroupPage(groupPageNumber);
     } catch {
-      setError("删除用户组失败（可能仍有成员）");
+      setError(t("users.deleteGroupFailed"));
     }
   };
 
   const removeUser = async (u: UserItem) => {
     if (
       !(await confirm({
-        message: `确认删除用户「${u.displayName}」(${u.username})？`,
+        message: t("users.deleteUserConfirm", { name: u.displayName, username: u.username }),
         dangerous: true,
       }))
     )
@@ -206,7 +209,7 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
       setUsers((cur) => cur.filter((x) => x.id !== u.id));
       await loadUsersPage(userPageNumber);
     } catch {
-      setError("删除用户失败");
+      setError(t("users.deleteUserFailed"));
     }
   };
 
@@ -214,9 +217,9 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
     <>
       <Dialog />
       <PageHeader
-        kicker="USER MANAGEMENT / 用户与用户组"
-        title="用户管理"
-        description="维护用户的基础信息与用户组归属，支持用户组与用户的增删改查。"
+        kicker={t("users.kicker")}
+        title={t("users.title")}
+        description={t("users.description")}
         action={
           <Button
             onClick={() => {
@@ -226,7 +229,7 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
               else setUserEditing({ enabled: true, groupId: groups[0]?.id ?? null });
             }}
           >
-            ＋ {tab === "groups" ? "新建用户组" : "新建用户"}
+            ＋ {tab === "groups" ? t("users.newGroup") : t("users.newUser")}
           </Button>
         }
       />
@@ -239,7 +242,7 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
             setQuery("");
           }}
         >
-          用户组
+          {t("users.groups")}
         </button>
         <button
           className={tab === "users" ? "um-tab active" : "um-tab"}
@@ -248,7 +251,7 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
             setQuery("");
           }}
         >
-          用户
+          {t("users.users")}
         </button>
       </div>
       <label className="search-mini" style={{ marginBottom: 10, display: "inline-flex" }}>
@@ -256,22 +259,22 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
         <input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder={tab === "groups" ? "搜索用户组" : "搜索用户"}
+          placeholder={tab === "groups" ? t("users.searchGroups") : t("users.searchUsers")}
         />
       </label>
 
       {tab === "groups" ? (
         <section className="run-table um-group-table">
           <div className="table-head">
-            <span>用户组</span>
-            <span>标识</span>
-            <span>描述</span>
-            <span>成员</span>
-            <span>状态</span>
-            <span>操作</span>
+            <span>{t("users.groups")}</span>
+            <span>{t("users.identifier")}</span>
+            <span>{t("users.descriptionLabel")}</span>
+            <span>{t("users.members")}</span>
+            <span>{t("common.status")}</span>
+            <span>{t("common.actions")}</span>
           </div>
           {visibleGroups.length === 0 ? (
-            <div className="um-empty">暂无用户组</div>
+            <div className="um-empty">{t("users.noGroups")}</div>
           ) : (
             visibleGroups.map((g) => (
               <div className="table-row" key={g.id}>
@@ -297,7 +300,7 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
                       );
                     })
                   }
-                  label={`${g.name} 状态`}
+                  label={t("users.statusLabel", { name: g.name })}
                 />
                 <span className="model-actions">
                   <button
@@ -307,13 +310,13 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
                       setGroupEditing(g);
                     }}
                   >
-                    编辑
+                    {t("common.edit")}
                   </button>
                   <button
                     className="link-button danger-link"
                     onClick={() => void removeGroup(g)}
                   >
-                    删除
+                    {t("common.delete")}
                   </button>
                 </span>
               </div>
@@ -323,18 +326,18 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
       ) : (
         <section className="run-table um-user-table">
           <div className="table-head">
-            <span>账号</span>
-            <span>来源</span>
-            <span>姓名</span>
-            <span>邮箱</span>
-            <span>电话</span>
-            <span>所属用户组</span>
-            <span>渠道</span>
-            <span>状态</span>
-            <span>操作</span>
+            <span>{t("users.account")}</span>
+            <span>{t("users.source")}</span>
+            <span>{t("users.name")}</span>
+            <span>{t("users.email")}</span>
+            <span>{t("users.phone")}</span>
+            <span>{t("users.group")}</span>
+            <span>{t("users.channel")}</span>
+            <span>{t("common.status")}</span>
+            <span>{t("common.actions")}</span>
           </div>
           {visibleUsers.length === 0 ? (
-            <div className="um-empty">暂无用户</div>
+            <div className="um-empty">{t("users.noUsers")}</div>
           ) : (
             visibleUsers.map((u) => (
               <div className="table-row" key={u.id}>
@@ -342,21 +345,21 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
                   <button
                     className="link-button um-user-link"
                     onClick={() => onOpenUser?.(u.id)}
-                    title="查看用户详情"
+                    title={t("users.viewDetail")}
                   >
                     <b>{u.username}</b>
                   </button>
                 </span>
                 <span>
                   <span className={`um-source um-source--${u.source.toLowerCase()}`}>
-                    {u.source === "CHANNEL" ? "渠道" : "控制台"}
+                    {u.source === "CHANNEL" ? t("users.channel") : t("users.console")}
                   </span>
                 </span>
                 <span>
                   <button
                     className="link-button um-user-link"
                     onClick={() => onOpenUser?.(u.id)}
-                    title="查看用户详情"
+                    title={t("users.viewDetail")}
                   >
                     {u.displayName}
                   </button>
@@ -369,15 +372,15 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
                     <button
                       className="link-button um-channel-count"
                       onClick={() => void openChannels(u)}
-                      title="查看渠道身份"
+                      title={t("users.viewChannels")}
                     >
                       <b>{u.channelCount}</b>
-                      <em>个</em>
+                      <em>{t("users.countUnit")}</em>
                     </button>
                   ) : (
                     <span className="um-channel-count">
                       <b>0</b>
-                      <em>个</em>
+                      <em>{t("users.countUnit")}</em>
                     </span>
                   )}
                 </span>
@@ -399,7 +402,7 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
                       );
                     })
                   }
-                  label={`${u.displayName} 状态`}
+                  label={t("users.statusLabel", { name: u.displayName })}
                 />
                 <span className="model-actions">
                   <button
@@ -409,7 +412,7 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
                       setUserEditing(u);
                     }}
                   >
-                    编辑
+                    {t("common.edit")}
                   </button>
                   <button
                     className="link-button"
@@ -419,13 +422,13 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
                       setError("");
                     }}
                   >
-                    合并
+                    {t("users.merge")}
                   </button>
                   <button
                     className="link-button danger-link"
                     onClick={() => void removeUser(u)}
                   >
-                    删除
+                    {t("common.delete")}
                   </button>
                 </span>
               </div>
@@ -479,35 +482,35 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
               <div className="form-title">
                 <div>
                   <p className="kicker">USER GROUP / {groupEditing.id ? "EDIT" : "CREATE"}</p>
-                  <h2>{groupEditing.id ? groupEditing.name : "新建用户组"}</h2>
+                  <h2>{groupEditing.id ? groupEditing.name : t("users.newGroup")}</h2>
                 </div>
                 <button className="link-button" onClick={() => setGroupEditing(null)}>
-                  关闭 ×
+                  {t("common.close")} ×
                 </button>
               </div>
               <div className="field-grid">
                 <label className="field">
-                  <span>标识 (group key)</span>
+                  <span>{t("users.groupKey")}</span>
                   <input
                     value={groupEditing.groupKey ?? ""}
                     onChange={(event) =>
                       setGroupEditing({ ...groupEditing, groupKey: event.target.value })
                     }
-                    placeholder="如 ops-team"
+                    placeholder={t("users.groupKeyPlaceholder")}
                   />
                 </label>
                 <label className="field">
-                  <span>名称</span>
+                  <span>{t("integrations.name")}</span>
                   <input
                     value={groupEditing.name ?? ""}
                     onChange={(event) =>
                       setGroupEditing({ ...groupEditing, name: event.target.value })
                     }
-                    placeholder="如 运营组"
+                    placeholder={t("users.groupNamePlaceholder")}
                   />
                 </label>
                 <label className="field wide">
-                  <span>描述</span>
+                  <span>{t("users.descriptionLabel")}</span>
                   <input
                     value={groupEditing.description ?? ""}
                     onChange={(event) =>
@@ -516,21 +519,21 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
                   />
                 </label>
                 <label className="field">
-                  <span>启用</span>
+                  <span>{t("common.enabled")}</span>
                   <Toggle
                     on={groupEditing.enabled ?? true}
                     setOn={(next) => setGroupEditing({ ...groupEditing, enabled: next })}
-                    label="启用"
+                    label={t("common.enabled")}
                   />
                 </label>
               </div>
               {error && <div className="skill-error modal-error">× {error}</div>}
               <div className="sticky-actions">
                 <Button quiet onClick={() => setGroupEditing(null)}>
-                  取消
+                  {t("common.cancel")}
                 </Button>
                 <Button onClick={() => void saveGroup()} disabled={saving}>
-                  {saving ? "保存中…" : "保存"}
+                  {saving ? t("common.saving") : t("common.save")}
                 </Button>
               </div>
             </div>
@@ -554,35 +557,35 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
               <div className="form-title">
                 <div>
                   <p className="kicker">USER / {userEditing.id ? "EDIT" : "CREATE"}</p>
-                  <h2>{userEditing.id ? userEditing.displayName : "新建用户"}</h2>
+                  <h2>{userEditing.id ? userEditing.displayName : t("users.newUser")}</h2>
                 </div>
                 <button className="link-button" onClick={() => setUserEditing(null)}>
-                  关闭 ×
+                  {t("common.close")} ×
                 </button>
               </div>
               <div className="field-grid">
                 <label className="field">
-                  <span>账号 (username)</span>
+                  <span>{t("users.username")}</span>
                   <input
                     value={userEditing.username ?? ""}
                     onChange={(event) =>
                       setUserEditing({ ...userEditing, username: event.target.value })
                     }
-                    placeholder="如 zhangsan"
+                    placeholder={t("users.usernamePlaceholder")}
                   />
                 </label>
                 <label className="field">
-                  <span>姓名</span>
+                  <span>{t("users.name")}</span>
                   <input
                     value={userEditing.displayName ?? ""}
                     onChange={(event) =>
                       setUserEditing({ ...userEditing, displayName: event.target.value })
                     }
-                    placeholder="如 张三"
+                    placeholder={t("users.displayNamePlaceholder")}
                   />
                 </label>
                 <label className="field">
-                  <span>邮箱</span>
+                  <span>{t("users.email")}</span>
                   <input
                     value={userEditing.email ?? ""}
                     onChange={(event) =>
@@ -591,7 +594,7 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
                   />
                 </label>
                 <label className="field">
-                  <span>电话</span>
+                  <span>{t("users.phone")}</span>
                   <input
                     value={userEditing.phone ?? ""}
                     onChange={(event) =>
@@ -600,7 +603,7 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
                   />
                 </label>
                 <label className="field">
-                  <span>所属用户组</span>
+                  <span>{t("users.group")}</span>
                   <select
                     value={userEditing.groupId ?? ""}
                     onChange={(event) =>
@@ -610,7 +613,7 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
                       })
                     }
                   >
-                    <option value="">（无）</option>
+                    <option value="">{t("users.none")}</option>
                     {groups.map((g) => (
                       <option key={g.id} value={g.id}>
                         {g.name}
@@ -619,21 +622,21 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
                   </select>
                 </label>
                 <label className="field">
-                  <span>启用</span>
+                  <span>{t("common.enabled")}</span>
                   <Toggle
                     on={userEditing.enabled ?? true}
                     setOn={(next) => setUserEditing({ ...userEditing, enabled: next })}
-                    label="启用"
+                    label={t("common.enabled")}
                   />
                 </label>
               </div>
               {error && <div className="skill-error modal-error">× {error}</div>}
               <div className="sticky-actions">
                 <Button quiet onClick={() => setUserEditing(null)}>
-                  取消
+                  {t("common.cancel")}
                 </Button>
                 <Button onClick={() => void saveUserRecord()} disabled={saving}>
-                  {saving ? "保存中…" : "保存"}
+                  {saving ? t("common.saving") : t("common.save")}
                 </Button>
               </div>
             </div>
@@ -657,27 +660,30 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
               <div className="form-title">
                 <div>
                   <p className="kicker">USER CHANNELS</p>
-                  <h2>{channelDrawer.displayName} 的渠道身份</h2>
+                  <h2>{t("users.channelsTitle", { name: channelDrawer.displayName })}</h2>
                 </div>
                 <button className="link-button" onClick={() => setChannelDrawer(null)}>
-                  关闭 ×
+                  {t("common.close")} ×
                 </button>
               </div>
               {channels.length === 0 ? (
-                <div className="um-empty">该用户暂无绑定的渠道身份。</div>
+                <div className="um-empty">{t("users.channelsEmpty")}</div>
               ) : (
                 <div className="um-channels-row">
                   {channels.map((c, i) => {
-                    const { name, sub } = channelFriendlyName(c);
+                    const { name, sub } = channelFriendlyName(c, t);
                     return (
                       <div className="um-channel-chip" key={i}>
                         <span className="um-chan-type">
-                          {channelLabel(c.channelType)}
+                          {channelLabel(c.channelType, t)}
                         </span>
                         <span className="um-chan-name">{name}</span>
                         <code>{sub}</code>
                         <span className="um-chan-meta">
-                          {c.messageCount} 条 · 最近 {formatInstant(c.lastSeenAt)}
+                          {t("users.channelMeta", {
+                            count: c.messageCount,
+                            time: formatInstant(c.lastSeenAt, i18n.resolvedLanguage ?? "zh-CN"),
+                          })}
                         </span>
                       </div>
                     );
@@ -685,7 +691,7 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
                 </div>
               )}
               <div className="sticky-actions">
-                <Button onClick={() => setChannelDrawer(null)}>关闭</Button>
+                <Button onClick={() => setChannelDrawer(null)}>{t("common.close")}</Button>
               </div>
             </div>
           </div>,
@@ -708,30 +714,31 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
               <div className="form-title">
                 <div>
                   <p className="kicker">MERGE USER</p>
-                  <h2>合并到「{mergeTarget.displayName}」</h2>
+                  <h2>{t("users.mergeInto", { name: mergeTarget.displayName })}</h2>
                 </div>
                 <button className="link-button" onClick={() => setMergeTarget(null)}>
-                  关闭 ×
+                  {t("common.close")} ×
                 </button>
               </div>
               <p style={{ fontSize: 13, color: "var(--color-text-secondary)", lineHeight: 1.7 }}>
-                下方选择的用户将被合并到 <b>{mergeTarget.displayName}</b>：其对话历史、用户画像、记忆和
-                所有渠道身份都会归并到目标用户，<b>被合并用户会被删除，操作不可恢复</b>。
+                {t("users.mergeDescription", { name: mergeTarget.displayName })}
               </p>
               <div className="field-grid">
                 <label className="field wide">
-                  <span>选择被合并用户（将并入上方目标并删除）</span>
+                  <span>{t("users.selectMergeCandidate")}</span>
                   <select
                     value={mergeCandidateId}
                     onChange={(e) => setMergeCandidateId(e.target.value)}
                   >
-                    <option value="">— 请选择 —</option>
+                    <option value="">{t("channels.select")}</option>
                     {users
                       .filter((u) => u.id !== mergeTarget.id)
                       .map((u) => (
                         <option key={u.id} value={u.id}>
                           {u.displayName}（{u.username}
-                          {u.channelCount ? ` · ${u.channelCount} 渠道` : ""}）
+                          {u.channelCount
+                            ? ` · ${t("users.channelOption", { count: u.channelCount })}`
+                            : ""}）
                         </option>
                       ))}
                   </select>
@@ -749,8 +756,7 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
                     </span>
                     {reversed && (
                       <small>
-                        注意：被合并方是「控制台」用户，目标是「渠道」用户。通常应把渠道用户合并进控制台用户，
-                        方向反了会导致账号信息落在渠道占位用户上。请确认是否继续。
+                        {t("users.reverseWarning")}
                       </small>
                     )}
                   </div>
@@ -759,10 +765,10 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
               {error && <div className="skill-error modal-error">× {error}</div>}
               <div className="sticky-actions">
                 <Button quiet onClick={() => setMergeTarget(null)} disabled={saving}>
-                  取消
+                  {t("common.cancel")}
                 </Button>
                 <Button onClick={() => void runMerge()} disabled={saving || !mergeCandidateId}>
-                  {saving ? "合并中…" : "确认合并"}
+                  {saving ? t("users.merging") : t("users.confirmMerge")}
                 </Button>
               </div>
             </div>

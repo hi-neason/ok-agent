@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "../../../shared";
 import {
   listAgentBindings,
@@ -36,6 +37,7 @@ function isBlank(s: string | null | undefined): boolean {
 }
 
 export function AgentKnowledgeTab({ agentId }: { agentId: string }) {
+  const { t } = useTranslation();
   const [sources, setSources] = useState<KnowledgeSource[]>([]);
   const [catalog, setCatalog] = useState<KnowledgeCatalogItem[]>([]);
   const [bindings, setBindings] = useState<Record<string, LocalBinding>>({});
@@ -109,13 +111,13 @@ export function AgentKnowledgeTab({ agentId }: { agentId: string }) {
         if (!isBlank(b.topK)) {
           const n = Number(b.topK);
           if (!Number.isInteger(n) || n < 1 || n > 50) {
-            throw new Error("topK 需为 1–50 的整数（或留空使用默认值）");
+            throw new Error(t("agents.binding.topKInvalid"));
           }
         }
         if (!isBlank(b.scoreThreshold)) {
           const n = Number(b.scoreThreshold);
           if (Number.isNaN(n) || n < 0 || n > 1) {
-            throw new Error("scoreThreshold 需为 0–1 的数值（或留空）");
+            throw new Error(t("agents.binding.thresholdInvalid"));
           }
         }
       }
@@ -128,7 +130,7 @@ export function AgentKnowledgeTab({ agentId }: { agentId: string }) {
       const saved = await replaceAgentBindings(agentId, payload);
       setBindings(bindingsToMap(saved));
       setDirty(false);
-      setNotice({ ok: true, text: "知识库绑定已保存" });
+      setNotice({ ok: true, text: t("agents.binding.saved", { name: t("agents.tab.knowledge") }) });
     } catch (e) {
       setNotice({ ok: false, text: msg(e) });
     } finally {
@@ -136,19 +138,15 @@ export function AgentKnowledgeTab({ agentId }: { agentId: string }) {
     }
   };
 
-  if (loading) return <div className="config-section">加载中…</div>;
+  if (loading) return <div className="config-section">{t("common.loading")}</div>;
 
   const activeCatalog = catalog.filter((c) => c.active);
 
   return (
     <div className="config-section">
       <div className="section-head">
-        <b>外部知识库</b>
-        <small>
-          勾选后，Agent 运行时将获得 list_knowledge_bases / search_knowledge
-          工具，模型按需检索（agentic RAG），并基于返回片段作答。检索参数与描述由「知识库
-          - 集成」目录统一维护，此处仅做绑定与可选微调。
-        </small>
+        <b>{t("agents.binding.knowledgeTitle")}</b>
+        <small>{t("agents.binding.knowledgeHint")}</small>
       </div>
 
       {notice && (
@@ -161,7 +159,7 @@ export function AgentKnowledgeTab({ agentId }: { agentId: string }) {
 
       {activeCatalog.length === 0 ? (
         <small style={{ padding: 8 }}>
-          暂无可用知识库。请先到「知识库 - 集成」添加源并同步（且源需启用）。
+          {t("agents.binding.knowledgeEmpty")}
         </small>
       ) : (
         <div className="binding-list">
@@ -181,7 +179,7 @@ export function AgentKnowledgeTab({ agentId }: { agentId: string }) {
                 <span className="meta">
                   <b>{item.name}</b>
                   <small>
-                    {source?.name ?? item.sourceName} · {item.documentCount} 文档
+                    {source?.name ?? item.sourceName} · {t("agents.binding.documents", { count: item.documentCount })}
                   </small>
                 </span>
                 {bound && (
@@ -189,7 +187,7 @@ export function AgentKnowledgeTab({ agentId }: { agentId: string }) {
                     <p className="wf-binding-desc">
                       {item.description ||
                         item.remoteDescription ||
-                        "（目录未填写描述）"}
+                        t("agents.binding.noDescription")}
                     </p>
                     <button
                       type="button"
@@ -198,12 +196,12 @@ export function AgentKnowledgeTab({ agentId }: { agentId: string }) {
                         setExpanded(expanded === item.id ? null : item.id)
                       }
                     >
-                      {expanded === item.id ? "收起微调" : "高级：描述覆盖 / 检索参数"}
+                      {t(expanded === item.id ? "agents.binding.collapseTuning" : "agents.binding.advancedKnowledge")}
                     </button>
                     {expanded === item.id && (
                       <div className="wf-binding-overrides">
                         <label>
-                          <span>Agent 专属描述（可选，留空用目录描述）</span>
+                          <span>{t("agents.binding.agentDescription")}</span>
                           <textarea
                             rows={2}
                             value={bindings[item.id]?.descriptionOverride ?? ""}
@@ -212,12 +210,12 @@ export function AgentKnowledgeTab({ agentId }: { agentId: string }) {
                                 descriptionOverride: e.target.value,
                               })
                             }
-                            placeholder="覆盖该 Agent 看到的知识库描述"
+                            placeholder={t("agents.binding.knowledgeDescriptionPlaceholder")}
                           />
                         </label>
                         <div style={{ display: "flex", gap: 12 }}>
                           <label style={{ flex: 1 }}>
-                            <span>topK（返回片段数，留空=默认）</span>
+                            <span>{t("agents.binding.topK")}</span>
                             <input
                               type="number"
                               min={1}
@@ -230,7 +228,7 @@ export function AgentKnowledgeTab({ agentId }: { agentId: string }) {
                             />
                           </label>
                           <label style={{ flex: 1 }}>
-                            <span>scoreThreshold（0–1，留空=不过滤）</span>
+                            <span>{t("agents.binding.threshold")}</span>
                             <input
                               type="number"
                               step={0.05}
@@ -258,11 +256,11 @@ export function AgentKnowledgeTab({ agentId }: { agentId: string }) {
 
       <div className="config-save-bar">
         <Button onClick={() => void save()} disabled={saving || !dirty}>
-          {saving ? "保存中…" : "保存知识库绑定"}
+          {t(saving ? "common.saving" : "agents.binding.saveKnowledge")}
         </Button>
-        {dirty && <span className="dirty-flag">未保存的改动</span>}
+        {dirty && <span className="dirty-flag">{t("common.unsavedChanges")}</span>}
         {!dirty && (
-          <span className="wf-binding-count">已绑定 {boundCount} 个</span>
+          <span className="wf-binding-count">{t("agents.binding.boundCount", { count: boundCount })}</span>
         )}
       </div>
     </div>

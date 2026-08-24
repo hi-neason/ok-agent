@@ -71,7 +71,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
           }
           type="button"
         >
-          {i18n.resolvedLanguage === "zh-CN" ? "English" : "中文"}
+          {i18n.resolvedLanguage === "zh-CN" ? t("common.switchToEnglish") : t("common.switchToChinese")}
         </button>
       </section>
     </main>

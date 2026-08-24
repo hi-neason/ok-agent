@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { Button, PageHeader, Pagination, Toggle, useConfirm, type Page } from "../shared";
 import {
   createSource,
@@ -30,20 +32,13 @@ function msg(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
 }
 
-export function testLabel(status: string): string {
-  switch (status) {
-    case "SUCCESS":
-      return "连接正常";
-    case "FAILED":
-      return "连接失败";
-    case "UNSUPPORTED":
-      return "不支持";
-    default:
-      return "未测试";
-  }
+export function testLabel(status: string, t: TFunction): string {
+  const key = ["SUCCESS", "FAILED", "UNSUPPORTED"].includes(status) ? status : "UNTESTED";
+  return t(`integrations.testStatus.${key}`);
 }
 
 export function KnowledgeSourcesPage() {
+  const { t, i18n } = useTranslation();
   const { confirm, Dialog } = useConfirm();
   const [page, setPage] = useState<Page<KnowledgeSource> | null>(null);
   const [pageNumber, setPageNumber] = useState(0);
@@ -87,14 +82,14 @@ export function KnowledgeSourcesPage() {
   };
 
   const validate = (d: KnowledgeSourceDraft): string | null => {
-    if (!d.name.trim()) return "请填写名称";
-    if (!d.sourceKey.trim()) return "请填写 SOURCE_KEY";
+    if (!d.name.trim()) return t("integrations.nameRequired");
+    if (!d.sourceKey.trim()) return t("integrations.sourceKeyRequired");
     if (!/^[a-z0-9-]+$/.test(d.sourceKey))
-      return "SOURCE_KEY 只能包含小写字母、数字和连字符";
-    if (!d.baseUrl.trim()) return "请填写 Base URL";
-    if (editing === "new" && !d.apiKey.trim()) return "请填写 API Key";
+      return t("integrations.sourceKeyInvalid");
+    if (!d.baseUrl.trim()) return t("integrations.baseUrlRequired");
+    if (editing === "new" && !d.apiKey.trim()) return t("integrations.apiKeyRequired");
     if (d.retrieveTimeoutSeconds <= 0 || d.retrieveTimeoutSeconds > 120)
-      return "检索超时需在 1–120 秒之间";
+      return t("knowledge.timeoutInvalid");
     return null;
   };
 
@@ -131,8 +126,10 @@ export function KnowledgeSourcesPage() {
         ok: updated.lastTestStatus === "SUCCESS",
         text:
           updated.lastTestStatus === "SUCCESS"
-            ? `连接成功：${updated.lastTestMessage ?? ""}`
-            : `连接失败：${updated.lastTestMessage ?? "未知错误"}`,
+            ? t("integrations.connectionSuccess", { message: updated.lastTestMessage ?? "" })
+            : t("integrations.connectionFailed", {
+                message: updated.lastTestMessage ?? t("common.unknownError"),
+              }),
       });
       await load(pageNumber);
     } catch (e) {
@@ -147,7 +144,7 @@ export function KnowledgeSourcesPage() {
     setNotice(null);
     try {
       const items = await syncSource(source.id);
-      setNotice({ ok: true, text: `同步完成，发现 ${items.length} 个知识库` });
+      setNotice({ ok: true, text: t("knowledge.synced", { count: items.length }) });
       await load(pageNumber);
     } catch (e) {
       setNotice({ ok: false, text: msg(e) });
@@ -168,7 +165,7 @@ export function KnowledgeSourcesPage() {
   const remove = async (source: KnowledgeSource) => {
     if (
       !(await confirm({
-        message: `确认删除知识库源「${source.name}」？其下发现的知识库与所有 Agent 绑定将一并移除。`,
+        message: t("knowledge.deleteConfirm", { name: source.name }),
         dangerous: true,
       }))
     )
@@ -196,19 +193,19 @@ export function KnowledgeSourcesPage() {
     <>
       <Dialog />
       <PageHeader
-        kicker="KNOWLEDGE / INTEGRATION"
-        title="知识库 - 集成"
-        description="接入外部知识库系统（Dify 等），同步其知识库为全局可复用目录，再在各 Agent 中按需绑定。模型通过检索工具按需查阅，作为回答的事实依据。"
-        action={<Button onClick={() => open()}>＋ 添加知识库源</Button>}
+        kicker={t("knowledge.kicker")}
+        title={t("knowledge.title")}
+        description={t("knowledge.description")}
+        action={<Button onClick={() => open()}>＋ {t("knowledge.addSource")}</Button>}
       />
 
       <div className="mcp-toolbar">
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="搜索知识库源 / KEY / URL"
+          placeholder={t("knowledge.search")}
         />
-        <span>{page?.totalElements ?? 0} 个源</span>
+        <span>{t("integrations.totalSources", { count: page?.totalElements ?? 0 })}</span>
       </div>
 
       {notice && (
@@ -221,12 +218,12 @@ export function KnowledgeSourcesPage() {
 
       <div className="mcp-table">
         <div className="mcp-row head">
-          <span>知识库源</span>
-          <span>类型</span>
-          <span>知识库数</span>
-          <span>最近测试</span>
-          <span>状态</span>
-          <span>操作</span>
+          <span>{t("knowledge.source")}</span>
+          <span>{t("integrations.type")}</span>
+          <span>{t("knowledge.count")}</span>
+          <span>{t("integrations.lastTest")}</span>
+          <span>{t("common.status")}</span>
+          <span>{t("common.actions")}</span>
         </div>
         {visible.map((source) => (
           <div className="mcp-row" key={source.id}>
@@ -241,29 +238,29 @@ export function KnowledgeSourcesPage() {
             </span>
             <span>{source.knowledgeCount}</span>
             <span className={`test-state ${source.lastTestStatus.toLowerCase()}`}>
-              {testLabel(source.lastTestStatus)}
+              {testLabel(source.lastTestStatus, t)}
               {source.lastTestedAt && (
-                <small>{new Date(source.lastTestedAt).toLocaleString("zh-CN")}</small>
+                <small>{new Date(source.lastTestedAt).toLocaleString(i18n.resolvedLanguage)}</small>
               )}
             </span>
             <span>
               <Toggle on={source.enabled} setOn={() => void toggle(source)} />
             </span>
             <span className="row-actions">
-              <button onClick={() => setCatalogFor(source)}>目录</button>
+              <button onClick={() => setCatalogFor(source)}>{t("integrations.catalog")}</button>
               <button onClick={() => void sync(source)} disabled={busy}>
-                同步
+                {t("integrations.sync")}
               </button>
-              <button onClick={() => open(source)}>编辑</button>
+              <button onClick={() => open(source)}>{t("common.edit")}</button>
               <button className="danger" onClick={() => void remove(source)}>
-                删除
+                {t("common.delete")}
               </button>
             </span>
           </div>
         ))}
         {visible.length === 0 && (
           <div className="mcp-empty">
-            ⌁<b>暂无知识库源，点击右上角添加</b>
+            ⌁<b>{t("knowledge.empty")}</b>
           </div>
         )}
         {page && (
@@ -293,21 +290,24 @@ export function KnowledgeSourcesPage() {
               <header>
                 <div>
                   <p className="kicker">
-                    KNOWLEDGE SOURCE / {editing === "new" ? "REGISTER" : "EDIT"}
+                    {t("integrations.sourceKicker", {
+                      kind: t("knowledge.kind"),
+                      mode: editing === "new" ? t("integrations.register") : t("integrations.editMode"),
+                    })}
                   </p>
                   <h2>
                     {editing === "new"
-                      ? "添加知识库源"
+                      ? t("knowledge.addSource")
                       : (editing as KnowledgeSource).name}
                   </h2>
                 </div>
                 <button className="link-button" onClick={() => setEditing(null)}>
-                  关闭 ×
+                  {t("common.close")} ×
                 </button>
               </header>
               <div className="mcp-form">
                 <label>
-                  <span>名称</span>
+                  <span>{t("integrations.name")}</span>
                   <input
                     value={draft.name}
                     onChange={(e) => {
@@ -321,12 +321,12 @@ export function KnowledgeSourcesPage() {
                             : d.sourceKey,
                       }));
                     }}
-                    placeholder="如：产品知识库"
+                    placeholder={t("knowledge.namePlaceholder")}
                   />
                 </label>
                 <label>
                   <span>
-                    SOURCE_KEY <small>· 唯一标识</small>
+                    SOURCE_KEY <small>· {t("integrations.uniqueKey")}</small>
                   </span>
                   <input
                     value={draft.sourceKey}
@@ -335,7 +335,7 @@ export function KnowledgeSourcesPage() {
                   />
                 </label>
                 <label>
-                  <span>类型</span>
+                  <span>{t("integrations.type")}</span>
                   <select
                     value={draft.sourceType}
                     onChange={(e) =>
@@ -351,7 +351,7 @@ export function KnowledgeSourcesPage() {
                 <label className="wide">
                   <span>
                     Base URL <b className="field-required">*</b>
-                    <small>· Dify Cloud 为 https://api.dify.ai/v1</small>
+                    <small>· {t("integrations.cloudHint")}</small>
                   </span>
                   <input
                     value={draft.baseUrl}
@@ -362,7 +362,7 @@ export function KnowledgeSourcesPage() {
                 <label className="wide">
                   <span>
                     Dataset API Key{" "}
-                    {editing !== "new" && <small>· 留空表示不修改已保存的密钥</small>}
+                    {editing !== "new" && <small>· {t("integrations.keepSecret")}</small>}
                     {editing === "new" && <b className="field-required">*</b>}
                   </span>
                   <input
@@ -373,7 +373,7 @@ export function KnowledgeSourcesPage() {
                   />
                 </label>
                 <label>
-                  <span>检索超时（秒）</span>
+                  <span>{t("knowledge.retrieveTimeout")}</span>
                   <input
                     type="number"
                     value={draft.retrieveTimeoutSeconds}
@@ -383,7 +383,7 @@ export function KnowledgeSourcesPage() {
                   />
                 </label>
                 <label>
-                  <span>连接超时（秒）</span>
+                  <span>{t("integrations.connectTimeout")}</span>
                   <input
                     type="number"
                     value={draft.connectTimeoutSeconds}
@@ -405,11 +405,11 @@ export function KnowledgeSourcesPage() {
               <footer>
                 {editing !== "new" && (
                   <Button quiet onClick={() => void test()} disabled={busy}>
-                    {busy ? "测试中…" : "测试连接"}
+                    {busy ? t("integrations.testing") : t("integrations.testConnection")}
                   </Button>
                 )}
                 <Button onClick={() => void save()} disabled={busy}>
-                  {busy ? "保存中…" : "保存"}
+                  {busy ? t("common.saving") : t("common.save")}
                 </Button>
               </footer>
             </div>

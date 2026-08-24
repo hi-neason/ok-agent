@@ -52,8 +52,8 @@ export function AgentMemoryTab({ form, setField }: AgentTabProps) {
         <div className="capability-hero">
           <span>USR</span>
           <div>
-            <b>用户画像（用户记忆）</b>
-            <small>本 Agent 与用户对话后，自动抽取该用户的标签/偏好/事实/长期记忆，并按策略注入 system prompt。与上方"Agent 自身记忆"是两个维度。</small>
+            <b>{t("agents.userMemory.title")}</b>
+            <small>{t("agents.userMemory.hint")}</small>
           </div>
         </div>
         <div className="runtime-grid">
@@ -64,11 +64,11 @@ export function AgentMemoryTab({ form, setField }: AgentTabProps) {
               checked={form.personaExtractEnabled}
               onChange={(e) => setField("personaExtractEnabled", e.target.checked)}
             />
-            开启本 Agent 对用户的记忆抽取（每用户每 30 分钟最多抽取一次，按本 Agent 独立节流）
+            {t("agents.userMemory.enable")}
           </label>
 
           <label className="runtime-field" style={{ gridColumn: "1 / -1" }}>
-            <span>注入用户画像的方式</span>
+            <span>{t("agents.userMemory.mode")}</span>
             <select
               value={form.personaInjectionMode}
               onChange={(e) =>
@@ -78,9 +78,9 @@ export function AgentMemoryTab({ form, setField }: AgentTabProps) {
                 )
               }
             >
-              <option value="NONE">不注入用户画像</option>
-              <option value="SELF_ONLY">仅注入本 Agent 抽取的画像</option>
-              <option value="GLOBAL">全局注入：所有 Agent 对该用户的画像合并注入</option>
+              <option value="NONE">{t("agents.userMemory.modes.NONE")}</option>
+              <option value="SELF_ONLY">{t("agents.userMemory.modes.SELF_ONLY")}</option>
+              <option value="GLOBAL">{t("agents.userMemory.modes.GLOBAL")}</option>
             </select>
           </label>
 
@@ -91,12 +91,12 @@ export function AgentMemoryTab({ form, setField }: AgentTabProps) {
               opacity: form.personaInjectionMode === "NONE" ? 0.5 : 1,
             }}
           >
-            <span>画像注入模板（可选占位符 {"{summary} {tags} {preferences} {facts} {memory}"}）</span>
+            <span>{t("agents.userMemory.template")}</span>
             <textarea
               disabled={form.personaInjectionMode === "NONE"}
               rows={4}
               value={form.personaPromptTemplate}
-              placeholder={"以下是当前用户的画像，请在回答时参考：\n# 用户画像\n{summary}\n标签：{tags}\n偏好：{preferences}\n关键事实：{facts}\n长期记忆：{memory}"}
+              placeholder={t("agents.userMemory.templatePlaceholder")}
               onChange={(e) => setField("personaPromptTemplate", e.target.value)}
             />
           </label>

@@ -3,31 +3,14 @@ import type {
   ChannelRuntimeStatus,
   ChannelType,
 } from "./types";
+import type { TFunction } from "i18next";
 
-export function typeLabel(type: ChannelType): string {
-  switch (type) {
-    case "FEISHU":
-      return "飞书";
-    case "DINGTALK":
-      return "钉钉";
-    case "WECOM":
-      return "企业微信";
-    case "WECHAT":
-      return "微信";
-  }
+export function typeLabel(type: ChannelType, t: TFunction): string {
+  return t(`channels.types.${type}`);
 }
 
-export function runtimeLabel(status: ChannelRuntimeStatus): string {
-  switch (status) {
-    case "RUNNING":
-      return "运行中";
-    case "STARTING":
-      return "启动中";
-    case "STOPPED":
-      return "已停止";
-    case "ERROR":
-      return "异常";
-  }
+export function runtimeLabel(status: ChannelRuntimeStatus, t: TFunction): string {
+  return t(`channels.runtime.${status}`);
 }
 
 export function statusTone(

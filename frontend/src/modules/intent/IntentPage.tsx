@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { PageHeader, Button } from "../shared";
 import {
   createIntent,
@@ -36,6 +37,7 @@ function collectDescendantIds(node: IntentNode, acc: Set<string>) {
 }
 
 export function IntentPage() {
+  const { t } = useTranslation();
   const [tree, setTree] = useState<IntentNode[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isNew, setIsNew] = useState(false);
@@ -50,11 +52,11 @@ export function IntentPage() {
     try {
       setTree(await loadIntentTree());
     } catch {
-      setNotice({ ok: false, text: "加载意图树失败" });
+      setNotice({ ok: false, text: t("intents.loadFailed") });
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void load();
@@ -118,11 +120,11 @@ export function IntentPage() {
 
   const save = async () => {
     if (!form.intentKey.trim() && isNew) {
-      setNotice({ ok: false, text: "意图 Key 不能为空" });
+      setNotice({ ok: false, text: t("intents.keyRequired") });
       return;
     }
     if (!form.name.trim()) {
-      setNotice({ ok: false, text: "意图名称不能为空" });
+      setNotice({ ok: false, text: t("intents.nameRequired") });
       return;
     }
     setSaving(true);
@@ -154,9 +156,9 @@ export function IntentPage() {
         });
         await load();
       }
-      setNotice({ ok: true, text: "已保存" });
+      setNotice({ ok: true, text: t("intents.saved") });
     } catch (e) {
-      setNotice({ ok: false, text: e instanceof Error ? e.message : "保存失败" });
+      setNotice({ ok: false, text: e instanceof Error ? e.message : t("intents.saveFailed") });
     } finally {
       setSaving(false);
     }
@@ -164,15 +166,15 @@ export function IntentPage() {
 
   const remove = async () => {
     if (!selected) return;
-    if (!window.confirm(`确认删除意图「${selected.name}」？若存在子意图将被拒绝。`)) return;
+    if (!window.confirm(t("intents.deleteConfirm", { name: selected.name }))) return;
     try {
       await deleteIntent(selected.id);
       setSelectedId(null);
       setForm(EMPTY);
       await load();
-      setNotice({ ok: true, text: "已删除" });
+      setNotice({ ok: true, text: t("intents.deleted") });
     } catch {
-      setNotice({ ok: false, text: "删除失败（可能仍存在子意图）" });
+      setNotice({ ok: false, text: t("intents.deleteFailed") });
     }
   };
 
@@ -188,7 +190,7 @@ export function IntentPage() {
                 className="intent-chevron"
                 style={{ marginLeft: depth * 14 }}
                 onClick={() => toggleCollapsed(n.node.id)}
-                aria-label={isCollapsed ? "展开" : "折叠"}
+                aria-label={isCollapsed ? t("intents.expand") : t("intents.collapse")}
               >
                 {isCollapsed ? "▸" : "▾"}
               </button>
@@ -215,15 +217,15 @@ export function IntentPage() {
   const showEditor = isNew || selected;
   const newParentName =
     form.parentId == null
-      ? "根意图"
-      : allIntents.find((i) => i.id === form.parentId)?.name ?? "根意图";
+      ? t("intents.root")
+      : allIntents.find((i) => i.id === form.parentId)?.name ?? t("intents.root");
 
   return (
     <>
       <PageHeader
-        kicker="BUSINESS / INTENT TREE"
-        title="意图管理"
-        description="管理客服意图树与每个意图的业务语义（名称、描述、示例 query）。意图与子 Agent 的路由绑定在「Agent 配置 → SubAgent 配置」里维护。"
+        kicker={t("intents.kicker")}
+        title={t("intents.title")}
+        description={t("intents.description")}
       />
       {notice && (
         <div className={notice.ok ? "connection-result connection-result--success" : "skill-error"}>
@@ -234,14 +236,14 @@ export function IntentPage() {
       <div className="intent-layout">
         <aside className="intent-tree">
           {loading ? (
-            <div className="empty-state">加载中…</div>
+            <div className="empty-state">{t("common.loading")}</div>
           ) : (
             <>
               <div className="intent-tree-row">
                 <button
                   className="intent-chevron"
                   onClick={() => toggleCollapsed(ROOT_ID)}
-                  aria-label={collapsed.has(ROOT_ID) ? "展开" : "折叠"}
+                  aria-label={collapsed.has(ROOT_ID) ? t("intents.expand") : t("intents.collapse")}
                 >
                   {collapsed.has(ROOT_ID) ? "▸" : "▾"}
                 </button>
@@ -249,12 +251,12 @@ export function IntentPage() {
                   className={isRootSelected ? "intent-tree-node root active" : "intent-tree-node root"}
                   onClick={selectRoot}
                 >
-                  <span className="intent-name">全部意图</span>
+                  <span className="intent-name">{t("intents.all")}</span>
                 </button>
               </div>
               {!collapsed.has(ROOT_ID) &&
                 (tree.length === 0 ? (
-                  <div className="intent-empty-hint">暂无意图，选中「全部意图」后在右侧新建</div>
+                  <div className="intent-empty-hint">{t("intents.treeEmpty")}</div>
                 ) : (
                   renderTree(tree, 1)
                 ))}
@@ -265,11 +267,11 @@ export function IntentPage() {
           {!showEditor ? (
             <div className="empty-state">
               {isRootSelected
-                ? "选中「全部意图」，点击下方「新建根意图」开始维护意图树。"
-                : "从左侧选择意图查看详情，或在某个节点上新建子意图。"}
+                ? t("intents.rootHint")
+                : t("intents.selectHint")}
               {isRootSelected && (
                 <div className="intent-empty-action">
-                  <Button onClick={() => startNew(null)}>＋ 新建根意图</Button>
+                  <Button onClick={() => startNew(null)}>＋ {t("intents.createRoot")}</Button>
                 </div>
               )}
             </div>
@@ -278,19 +280,22 @@ export function IntentPage() {
               <div className="intent-editor-head">
                 <h2>
                   {isNew
-                    ? `新建${form.parentId == null ? "根意图" : "子意图"}（上级：${newParentName}）`
-                    : "编辑意图"}
+                    ? t("intents.createTitle", {
+                        type: form.parentId == null ? t("intents.root") : t("intents.child"),
+                        parent: newParentName,
+                      })
+                    : t("intents.editTitle")}
                 </h2>
                 {!isNew && (
                   <button className="link-button danger" onClick={remove}>
-                    删除
+                    {t("common.delete")}
                   </button>
                 )}
               </div>
               <div className="intent-form">
                 <div className="intent-form-row">
                   <label>
-                    <span>意图 Key（唯一）</span>
+                    <span>{t("intents.key")}</span>
                     <input
                       value={form.intentKey}
                       disabled={!isNew}
@@ -298,19 +303,19 @@ export function IntentPage() {
                     />
                   </label>
                   <label>
-                    <span>名称</span>
+                    <span>{t("intents.name")}</span>
                     <input
                       value={form.name}
                       onChange={(e) => setForm({ ...form, name: e.target.value })}
                     />
                   </label>
                   <label>
-                    <span>父意图</span>
+                    <span>{t("intents.parent")}</span>
                     <select
                       value={form.parentId ?? ""}
                       onChange={(e) => setForm({ ...form, parentId: e.target.value || null })}
                     >
-                      <option value="">（根意图）</option>
+                      <option value="">{t("intents.rootOption")}</option>
                       {parentOptions.map((i) => (
                         <option key={i.id} value={i.id}>
                           {i.name}
@@ -320,7 +325,7 @@ export function IntentPage() {
                   </label>
                 </div>
                 <label className="span-2">
-                  <span>描述</span>
+                  <span>{t("intents.descriptionLabel")}</span>
                   <textarea
                     rows={2}
                     value={form.description}
@@ -328,16 +333,16 @@ export function IntentPage() {
                   />
                 </label>
                 <label className="span-2">
-                  <span>示例 query（每行一条）</span>
+                  <span>{t("intents.examples")}</span>
                   <textarea
                     rows={4}
                     value={form.examplesText}
-                    placeholder={"我想贷款\n怎么申请额度\n还款方式有哪些"}
+                    placeholder={t("intents.examplesPlaceholder")}
                     onChange={(e) => setForm({ ...form, examplesText: e.target.value })}
                   />
                 </label>
                 <label>
-                  <span>排序</span>
+                  <span>{t("intents.sortOrder")}</span>
                   <input
                     type="number"
                     value={form.sortOrder}
@@ -347,10 +352,10 @@ export function IntentPage() {
               </div>
               <div className="config-save-bar">
                 <Button onClick={save} disabled={saving}>
-                  {saving ? "保存中…" : "保存"}
+                  {saving ? t("common.saving") : t("common.save")}
                 </Button>
                 <button className="ui-button quiet" onClick={() => startNew(form.parentId)}>
-                  ＋ {form.parentId == null ? "新建根意图" : "新建子意图"}
+                  ＋ {form.parentId == null ? t("intents.createRoot") : t("intents.createChild")}
                 </button>
               </div>
             </>

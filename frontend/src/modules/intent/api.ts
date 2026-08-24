@@ -15,7 +15,7 @@ async function jsonOrThrow(res: Response): Promise<unknown> {
 
 export async function loadIntentTree(): Promise<IntentNode[]> {
   const res = await fetch("/api/v1/intents/tree");
-  if (!res.ok) throw new Error("加载意图树失败");
+  if (!res.ok) throw new Error(i18n.t("intents.loadFailed"));
   return (await res.json()) as IntentNode[];
 }
 
@@ -52,3 +52,4 @@ export function flatten(nodes: IntentNode[]): IntentDto[] {
   walk(nodes);
   return out;
 }
+import i18n from "../../i18n";

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 import { Button } from "../shared";
 import { listCatalog, updateCatalogDescription } from "./api";
 import { SOURCE_TYPE_LABELS, type KnowledgeCatalogItem, type KnowledgeSource } from "./types";
@@ -8,8 +9,8 @@ function msg(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
 }
 
-function formatNumber(n: number): string {
-  return new Intl.NumberFormat("zh-CN").format(n);
+function formatNumber(n: number, locale: string): string {
+  return new Intl.NumberFormat(locale).format(n);
 }
 
 export function CatalogDrawer({
@@ -21,6 +22,7 @@ export function CatalogDrawer({
   onClose: () => void;
   onChanged: () => void;
 }) {
+  const { t, i18n } = useTranslation();
   const [items, setItems] = useState<KnowledgeCatalogItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<KnowledgeCatalogItem | null>(null);
@@ -81,25 +83,21 @@ export function CatalogDrawer({
         <header>
           <div>
             <p className="kicker">KNOWLEDGE CATALOG / {source.sourceKey}</p>
-            <h2>{source.name} · 知识库目录</h2>
-            <small>
-              知识库的「适用场景描述」由平台管理员在此维护一次，所有 Agent
-              共享；模型据此判断何时检索该知识库。
-            </small>
+            <h2>{t("knowledge.catalogTitle", { name: source.name })}</h2>
+            <small>{t("knowledge.catalogDescription")}</small>
           </div>
           <button className="link-button" onClick={onClose}>
-            关闭 ×
+            {t("common.close")} ×
           </button>
         </header>
 
         {error && <div className="skill-error">× {error}</div>}
 
         {loading ? (
-          <div className="wf-catalog-empty">加载中…</div>
+          <div className="wf-catalog-empty">{t("common.loading")}</div>
         ) : items.length === 0 ? (
           <div className="wf-catalog-empty">
-            尚未发现知识库。先在列表点击「同步」从{" "}
-            {SOURCE_TYPE_LABELS[source.sourceType]} 拉取。
+            {t("knowledge.catalogEmpty", { source: SOURCE_TYPE_LABELS[source.sourceType] })}
           </div>
         ) : (
           <div className="wf-catalog-body">
@@ -117,7 +115,10 @@ export function CatalogDrawer({
                   <span>
                     <b>{item.name}</b>
                     <small>
-                      {item.documentCount} 文档 · {formatNumber(item.wordCount)} 字
+                      {t("knowledge.documentSummary", {
+                        documents: item.documentCount,
+                        words: formatNumber(item.wordCount, i18n.resolvedLanguage ?? "zh-CN"),
+                      })}
                     </small>
                   </span>
                 </button>
@@ -133,19 +134,23 @@ export function CatalogDrawer({
                       <span
                         className={`tag ${selected.metadataStatus === "READY" ? "green" : ""}`}
                       >
-                        {selected.metadataStatus === "READY" ? "READY" : "NEEDS REVIEW"}
+                        {selected.metadataStatus === "READY" ? "READY" : t("integrations.needsReview")}
                       </span>
                     </div>
                     {!editingDesc && (
                       <button className="link-button" onClick={() => startEdit(selected)}>
-                        编辑描述
+                        {t("integrations.editDescription")}
                       </button>
                     )}
                   </div>
 
                   <div className="kb-stats">
-                    <span>{selected.documentCount} 个文档</span>
-                    <span>{formatNumber(selected.wordCount)} 字</span>
+                    <span>{t("knowledge.documents", { count: selected.documentCount })}</span>
+                    <span>
+                      {t("knowledge.words", {
+                        value: formatNumber(selected.wordCount, i18n.resolvedLanguage ?? "zh-CN"),
+                      })}
+                    </span>
                     {selected.tags.length > 0 && (
                       <span className="kb-tags">
                         {selected.tags.map((t) => (
@@ -160,21 +165,21 @@ export function CatalogDrawer({
                   )}
 
                   <div className="wf-catalog-field">
-                    <label>适用场景描述（所有 Agent 共享）</label>
+                    <label>{t("integrations.usageDescription")}</label>
                     {editingDesc ? (
                       <>
                         <textarea
                           value={descText}
                           rows={4}
                           onChange={(e) => setDescText(e.target.value)}
-                          placeholder="描述这个知识库包含什么内容、什么问题该检索它…"
+                          placeholder={t("knowledge.descriptionPlaceholder")}
                         />
                         <div className="wf-catalog-actions">
                           <Button quiet onClick={() => setEditingDesc(false)}>
-                            取消
+                            {t("common.cancel")}
                           </Button>
                           <Button onClick={() => void saveDescription()} disabled={saving}>
-                            {saving ? "保存中…" : "保存描述"}
+                            {saving ? t("common.saving") : t("integrations.saveDescription")}
                           </Button>
                         </div>
                       </>
@@ -182,7 +187,7 @@ export function CatalogDrawer({
                       <p className="wf-catalog-desc">
                         {selected.description || (
                           <span className="wf-catalog-empty-inline">
-                            尚未填写描述，建议补充适用场景以便模型正确选用。
+                            {t("integrations.descriptionMissing")}
                           </span>
                         )}
                       </p>

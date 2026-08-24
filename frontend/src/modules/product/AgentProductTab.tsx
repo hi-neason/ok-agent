@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "../shared";
 import {
   deleteAgentProductBinding,
@@ -7,8 +8,6 @@ import {
   upsertAgentProductBinding,
 } from "./api";
 import {
-  CAPABILITY_LABELS,
-  SCOPE_LABELS,
   type AgentProductBinding,
   type Product,
   type ProductBindingScope,
@@ -57,6 +56,7 @@ function parseUuidList(value: string | null): string[] {
 }
 
 export function AgentProductTab({ agentId }: { agentId: string }) {
+  const { t } = useTranslation();
   const [products, setProducts] = useState<Product[]>([]);
   const [existing, setExisting] = useState<AgentProductBinding | null>(null);
   const [form, setForm] = useState<FormState>({
@@ -167,13 +167,13 @@ export function AgentProductTab({ agentId }: { agentId: string }) {
 
   const save = async () => {
     if (form.scope === "CATEGORY" && !form.category.trim())
-      return setNotice({ ok: false, text: "按品类时必须填写品类名" });
+      return setNotice({ ok: false, text: t("product.binding.categoryRequired") });
     if (form.scope === "TAG" && !form.tags.trim())
-      return setNotice({ ok: false, text: "按标签时至少填写一个场景标签" });
+      return setNotice({ ok: false, text: t("product.binding.tagRequired") });
     if (form.scope === "EXPLICIT" && form.explicitIds.length === 0)
-      return setNotice({ ok: false, text: "指定产品时至少选择一个产品" });
+      return setNotice({ ok: false, text: t("product.binding.productRequired") });
     if (form.capabilities.size === 0)
-      return setNotice({ ok: false, text: "至少开启一项能力" });
+      return setNotice({ ok: false, text: t("product.binding.capabilityRequired") });
     setSaving(true);
     setNotice(null);
     try {
@@ -185,7 +185,7 @@ export function AgentProductTab({ agentId }: { agentId: string }) {
       });
       setExisting(saved);
       setDirty(false);
-      setNotice({ ok: true, text: "产品绑定已保存" });
+      setNotice({ ok: true, text: t("product.binding.saved") });
     } catch (e) {
       setNotice({ ok: false, text: msg(e) });
     } finally {
@@ -208,7 +208,7 @@ export function AgentProductTab({ agentId }: { agentId: string }) {
         capabilities: new Set(["QUERY"]),
       });
       setDirty(false);
-      setNotice({ ok: true, text: "产品绑定已移除" });
+      setNotice({ ok: true, text: t("product.binding.removed") });
     } catch (e) {
       setNotice({ ok: false, text: msg(e) });
     } finally {
@@ -216,7 +216,7 @@ export function AgentProductTab({ agentId }: { agentId: string }) {
     }
   };
 
-  if (loading) return <div className="config-section">加载中…</div>;
+  if (loading) return <div className="config-section">{t("common.loading")}</div>;
 
   const categories = [
     ...new Set(products.map((p) => p.category).filter((c): c is string => !!c)),
@@ -226,24 +226,21 @@ export function AgentProductTab({ agentId }: { agentId: string }) {
   return (
     <div className="config-section">
       <div className="section-head">
-        <b>产品管理</b>
-        <small>
-          绑定后，Agent 运行时会获得产品工具：search_products 查询、recommend_products
-          规则召回+模型精选、list/get_solution 方案推荐。可见范围按品类/标签/指定产品收窄，未绑定时不注册任何产品工具。
-        </small>
+        <b>{t("product.binding.title")}</b>
+        <small>{t("product.binding.hint")}</small>
       </div>
 
       <div className="prod-binding">
         <div className="prod-binding-row">
           <label className="prod-binding-field">
-            <span>可见范围</span>
+            <span>{t("product.binding.scope")}</span>
             <select
               value={form.scope}
               onChange={(e) => set("scope", e.target.value as ProductBindingScope)}
             >
               {SCOPES.map((s) => (
                 <option key={s} value={s}>
-                  {SCOPE_LABELS[s]}
+                  {t(`product.binding.scopes.${s}`)}
                 </option>
               ))}
             </select>
@@ -254,18 +251,18 @@ export function AgentProductTab({ agentId }: { agentId: string }) {
               checked={form.enabled}
               onChange={(e) => set("enabled", e.target.checked)}
             />
-            <span>启用该绑定</span>
+            <span>{t("product.binding.enable")}</span>
           </label>
         </div>
 
         {form.scope === "CATEGORY" && (
           <label className="prod-binding-field">
-            <span>品类</span>
+            <span>{t("product.binding.category")}</span>
             <input
               list="prod-categories"
               value={form.category}
               onChange={(e) => set("category", e.target.value)}
-              placeholder="选择或输入品类名"
+              placeholder={t("product.binding.categoryPlaceholder")}
             />
             <datalist id="prod-categories">
               {categories.map((c) => (
@@ -277,16 +274,16 @@ export function AgentProductTab({ agentId }: { agentId: string }) {
 
         {form.scope === "TAG" && (
           <label className="prod-binding-field">
-            <span>场景标签（每行一个）</span>
+            <span>{t("product.binding.tags")}</span>
             <textarea
               rows={3}
               value={form.tags}
               onChange={(e) => set("tags", e.target.value)}
-              placeholder={"中小企业\n电商客服"}
+              placeholder={t("product.binding.tagsPlaceholder")}
             />
             {allTags.length > 0 && (
               <small className="prod-tag-suggest">
-                已有标签：
+                {t("product.binding.existingTags")}
                 {allTags.slice(0, 12).map((t) => (
                   <button
                     key={t}
@@ -308,10 +305,10 @@ export function AgentProductTab({ agentId }: { agentId: string }) {
 
         {form.scope === "EXPLICIT" && (
           <div className="prod-binding-field">
-            <span>指定产品（已选 {form.explicitIds.length}）</span>
+            <span>{t("product.binding.selectedProducts", { count: form.explicitIds.length })}</span>
             <div className="prod-pick-list">
               {products.length === 0 && (
-                <small>暂无产品，请先到「产品管理」添加。</small>
+                <small>{t("product.binding.noProducts")}</small>
               )}
               {products
                 .filter((p) => p.status === "ACTIVE")
@@ -334,12 +331,12 @@ export function AgentProductTab({ agentId }: { agentId: string }) {
 
         {form.scope === "NONE" && (
           <small className="prod-scope-hint">
-            选择「不开放」会移除该 Agent 的全部产品工具，等同于不绑定。
+            {t("product.binding.noneHint")}
           </small>
         )}
 
         <div className="prod-binding-field">
-          <span>开放能力</span>
+          <span>{t("product.binding.capabilitiesTitle")}</span>
           <div className="prod-cap-list">
             {CAPABILITIES.map((cap) => {
               const on = form.capabilities.has(cap);
@@ -355,8 +352,8 @@ export function AgentProductTab({ agentId }: { agentId: string }) {
                     onChange={() => toggleCapability(cap)}
                   />
                   <span>
-                    {CAPABILITY_LABELS[cap]}
-                    {implied && <small>（推荐/方案依赖）</small>}
+                    {t(`product.binding.capabilities.${cap}`)}
+                    {implied && <small>{t("product.binding.implied")}</small>}
                   </span>
                 </label>
               );
@@ -375,7 +372,7 @@ export function AgentProductTab({ agentId }: { agentId: string }) {
 
       <div className="config-save-bar">
         <Button onClick={() => void save()} disabled={saving || !dirty}>
-          {saving ? "保存中…" : "保存产品绑定"}
+          {t(saving ? "common.saving" : "product.binding.save")}
         </Button>
         {existing && (
           <button
@@ -383,10 +380,10 @@ export function AgentProductTab({ agentId }: { agentId: string }) {
             onClick={() => void remove()}
             disabled={saving}
           >
-            移除绑定
+            {t("product.binding.remove")}
           </button>
         )}
-        {dirty && <span className="dirty-flag">未保存的改动</span>}
+        {dirty && <span className="dirty-flag">{t("common.unsavedChanges")}</span>}
       </div>
     </div>
   );

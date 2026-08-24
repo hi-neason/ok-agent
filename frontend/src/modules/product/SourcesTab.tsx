@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 import { Button, Pagination, Toggle, useConfirm, type Page } from "../shared";
 import {
   createProductSource,
@@ -11,7 +12,6 @@ import {
   updateProductSource,
 } from "./api";
 import {
-  SOURCE_TYPE_LABELS,
   emptySourceDraft,
   type ProductSource,
   type ProductSourceDraft,
@@ -28,20 +28,8 @@ const slugify = (value: string) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 
-function testLabel(status: string | null): string {
-  switch (status) {
-    case "SUCCESS":
-      return "连接正常";
-    case "FAILED":
-      return "连接失败";
-    case "UNSUPPORTED":
-      return "不支持";
-    default:
-      return "未测试";
-  }
-}
-
 export function SourcesTab() {
+  const { t, i18n } = useTranslation();
   const { confirm, Dialog } = useConfirm();
   const [sources, setSources] = useState<Page<ProductSource> | null>(null);
   const [pageNumber, setPageNumber] = useState(0);
@@ -83,10 +71,10 @@ export function SourcesTab() {
   };
 
   const save = async () => {
-    if (!draft.name.trim()) return setNotice({ ok: false, text: "请填写名称" });
-    if (!draft.sourceKey.trim()) return setNotice({ ok: false, text: "请填写 SOURCE_KEY" });
+    if (!draft.name.trim()) return setNotice({ ok: false, text: t("integrations.nameRequired") });
+    if (!draft.sourceKey.trim()) return setNotice({ ok: false, text: t("integrations.sourceKeyRequired") });
     if (!/^[a-z0-9-]+$/.test(draft.sourceKey))
-      return setNotice({ ok: false, text: "SOURCE_KEY 只能包含小写字母、数字、连字符" });
+      return setNotice({ ok: false, text: t("integrations.sourceKeyInvalid") });
     setBusy(true);
     setNotice(null);
     try {
@@ -110,8 +98,10 @@ export function SourcesTab() {
         ok: updated.lastTestStatus === "SUCCESS",
         text:
           updated.lastTestStatus === "SUCCESS"
-            ? `连接成功：${updated.lastTestMessage ?? ""}`
-            : `连接失败：${updated.lastTestMessage ?? "未知错误"}`,
+            ? t("integrations.connectionSuccess", { message: updated.lastTestMessage ?? "" })
+            : t("integrations.connectionFailed", {
+                message: updated.lastTestMessage ?? t("common.unknownError"),
+              }),
       });
       await load(pageNumber);
     } catch (e) {
@@ -126,7 +116,7 @@ export function SourcesTab() {
     setNotice(null);
     try {
       const result = await syncProductSource(s.id);
-      setNotice({ ok: true, text: `同步完成，新增/更新 ${result.upserted} 个产品` });
+      setNotice({ ok: true, text: t("product.sources.synced", { count: result.upserted }) });
       await load(pageNumber);
     } catch (e) {
       setNotice({ ok: false, text: msg(e) });
@@ -147,7 +137,7 @@ export function SourcesTab() {
   const remove = async (s: ProductSource) => {
     if (
       !(await confirm({
-        message: `确认删除数据源「${s.name}」？已同步的产品会保留（来源置空）。`,
+        message: t("product.sources.deleteConfirm", { name: s.name }),
         dangerous: true,
       }))
     )
@@ -175,11 +165,11 @@ export function SourcesTab() {
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="搜索数据源名称 / KEY / URL"
+          placeholder={t("product.sources.search")}
         />
-        <span>{sources?.totalElements ?? 0} 个数据源</span>
+        <span>{t("product.sources.total", { count: sources?.totalElements ?? 0 })}</span>
         <span style={{ flex: 1 }} />
-        <Button onClick={() => open()}>＋ 添加数据源</Button>
+        <Button onClick={() => open()}>＋ {t("product.sources.add")}</Button>
       </div>
 
       {notice && (
@@ -192,12 +182,12 @@ export function SourcesTab() {
 
       <div className="mcp-table">
         <div className="mcp-row head">
-          <span>数据源</span>
-          <span>类型</span>
-          <span>产品数</span>
-          <span>最近测试</span>
-          <span>状态</span>
-          <span>操作</span>
+          <span>{t("product.sources.source")}</span>
+          <span>{t("integrations.type")}</span>
+          <span>{t("product.sources.productCount")}</span>
+          <span>{t("integrations.lastTest")}</span>
+          <span>{t("common.status")}</span>
+          <span>{t("common.actions")}</span>
         </div>
         {visible.map((s) => (
           <div className="mcp-row" key={s.id}>
@@ -207,14 +197,14 @@ export function SourcesTab() {
               <small>{s.sourceKey}</small>
             </span>
             <span>
-              <code>{SOURCE_TYPE_LABELS[s.sourceType]}</code>
+              <code>{t(`product.sources.sourceTypes.${s.sourceType}`)}</code>
               <small>{s.baseUrl || "—"}</small>
             </span>
             <span>{s.productCount}</span>
             <span className={`test-state ${(s.lastTestStatus ?? "none").toLowerCase()}`}>
-              {testLabel(s.lastTestStatus)}
+              {t(`integrations.testStatus.${["SUCCESS", "FAILED", "UNSUPPORTED"].includes(s.lastTestStatus ?? "") ? s.lastTestStatus : "UNTESTED"}`)}
               {s.lastTestedAt && (
-                <small>{new Date(s.lastTestedAt).toLocaleString("zh-CN")}</small>
+                <small>{new Date(s.lastTestedAt).toLocaleString(i18n.resolvedLanguage)}</small>
               )}
             </span>
             <span>
@@ -222,21 +212,21 @@ export function SourcesTab() {
             </span>
             <span className="row-actions">
               <button onClick={() => void sync(s)} disabled={busy}>
-                同步
+                {t("integrations.sync")}
               </button>
               <button onClick={() => void test(s)} disabled={busy}>
-                测试
+                {t("product.sources.test")}
               </button>
-              <button onClick={() => open(s)}>编辑</button>
+              <button onClick={() => open(s)}>{t("common.edit")}</button>
               <button className="danger" onClick={() => void remove(s)}>
-                删除
+                {t("common.delete")}
               </button>
             </span>
           </div>
         ))}
         {visible.length === 0 && (
           <div className="mcp-empty">
-            ⌁<b>暂无数据源，可手动维护产品或接入外部 ERP/CRM</b>
+            ⌁<b>{t("product.sources.empty")}</b>
           </div>
         )}
         {sources && (
@@ -269,16 +259,16 @@ export function SourcesTab() {
                     PRODUCT SOURCE / {editing === "new" ? "REGISTER" : "EDIT"}
                   </p>
                   <h2>
-                    {editing === "new" ? "添加数据源" : (editing as ProductSource).name}
+                    {editing === "new" ? t("product.sources.add") : (editing as ProductSource).name}
                   </h2>
                 </div>
                 <button className="link-button" onClick={() => setEditing(null)}>
-                  关闭 ×
+                  {t("common.close")} ×
                 </button>
               </header>
               <div className="mcp-form">
                 <label>
-                  <span>名称</span>
+                  <span>{t("integrations.name")}</span>
                   <input
                     value={draft.name}
                     onChange={(e) => {
@@ -296,7 +286,7 @@ export function SourcesTab() {
                 </label>
                 <label>
                   <span>
-                    SOURCE_KEY <small>· 唯一标识</small>
+                    SOURCE_KEY <small>· {t("integrations.uniqueKey")}</small>
                   </span>
                   <input
                     value={draft.sourceKey}
@@ -304,7 +294,7 @@ export function SourcesTab() {
                   />
                 </label>
                 <label>
-                  <span>类型</span>
+                  <span>{t("integrations.type")}</span>
                   <select
                     value={draft.sourceType}
                     onChange={(e) =>
@@ -315,7 +305,7 @@ export function SourcesTab() {
                     }
                   >
                     <option value="HTTP">HTTP / REST</option>
-                    <option value="MANUAL">手动维护</option>
+                    <option value="MANUAL">{t("product.sources.manual")}</option>
                   </select>
                 </label>
                 <label className="wide">
@@ -328,7 +318,7 @@ export function SourcesTab() {
                 </label>
                 <label className="wide">
                   <span>
-                    配置 configJson <small>· JSON 对象，由 Provider 自定义</small>
+                    {t("product.sources.config")} <small>· {t("product.sources.providerJson")}</small>
                   </span>
                   <textarea
                     rows={3}
@@ -340,7 +330,7 @@ export function SourcesTab() {
                 </label>
                 <label className="wide">
                   <span>
-                    凭据 secrets <small>· JSON 对象，加密存储；留空字段表示不修改</small>
+                    {t("product.sources.secrets")} <small>· {t("product.sources.secretsHint")}</small>
                   </span>
                   <textarea
                     rows={3}
@@ -362,7 +352,7 @@ export function SourcesTab() {
 
               <footer>
                 <Button onClick={() => void save()} disabled={busy}>
-                  {busy ? "保存中…" : "保存"}
+                  {busy ? t("common.saving") : t("common.save")}
                 </Button>
               </footer>
             </div>

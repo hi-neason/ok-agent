@@ -157,22 +157,3 @@ export const emptySolutionDraft = (): SolutionDraft => ({
   status: "ACTIVE",
   items: [],
 });
-
-export const SOURCE_TYPE_LABELS: Record<ProductSourceType, string> = {
-  HTTP: "HTTP / REST",
-  MANUAL: "手动维护",
-};
-
-export const SCOPE_LABELS: Record<ProductBindingScope, string> = {
-  ALL: "全部产品",
-  CATEGORY: "按品类",
-  TAG: "按场景标签",
-  EXPLICIT: "指定产品",
-  NONE: "不开放",
-};
-
-export const CAPABILITY_LABELS: Record<ProductCapability, string> = {
-  QUERY: "查询（search/get）",
-  RECOMMEND: "推荐（recommend_products）",
-  SOLUTION: "方案（list/get_solution）",
-};

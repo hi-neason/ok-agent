@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { Button, PageHeader, Pagination } from "../shared";
 import type { Page } from "../shared";
 import { fetchUsersPage } from "../usermgmt/api";
@@ -16,6 +18,7 @@ import type { Persona } from "./types";
 import "./persona.css";
 
 export function PersonaPage() {
+  const { t } = useTranslation();
   const [usersPage, setUsersPage] = useState<Page<UserItem> | null>(null);
   const [userPageNumber, setUserPageNumber] = useState(0);
   const [userPageSize, setUserPageSize] = useState(20);
@@ -38,8 +41,8 @@ export function PersonaPage() {
   useEffect(() => {
     void fetchUsersPage(userPageNumber, userPageSize)
       .then(setUsersPage)
-      .catch(() => setError("加载用户失败"));
-  }, [userPageNumber, userPageSize]);
+      .catch(() => setError(t("persona.loadUsersFailed")));
+  }, [userPageNumber, userPageSize, t]);
 
   const coverageCount = (userId: string) => coverage[userId]?.length ?? 0;
 
@@ -76,9 +79,9 @@ export function PersonaPage() {
   return (
     <div className="persona-page">
       <PageHeader
-        kicker="PERSONA"
-        title="用户画像"
-        description="用户维度的长期记忆与洞察。每个 Agent 独立抽取并持有画像，并按 Agent 配置的策略注入。点击用户查看。"
+        kicker={t("persona.kicker")}
+        title={t("persona.title")}
+        description={t("persona.description")}
       />
       {error && <div className="skill-error">× {error}</div>}
 
@@ -88,7 +91,7 @@ export function PersonaPage() {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="搜索用户 / userId / 邮箱"
+            placeholder={t("persona.search")}
           />
         </label>
         <label className="persona-filter-check">
@@ -97,21 +100,21 @@ export function PersonaPage() {
             checked={onlyWithPersona}
             onChange={(e) => setOnlyWithPersona(e.target.checked)}
           />
-          仅看有画像的用户
+          {t("persona.onlyWithPersona")}
         </label>
       </div>
 
       <section className="run-table persona-table persona-table-cover">
         <div className="table-head">
-          <span>账号</span>
-          <span>用户标识</span>
-          <span>姓名</span>
-          <span>邮箱</span>
-          <span>画像覆盖</span>
-          <span>状态</span>
-          <span>操作</span>
+          <span>{t("persona.account")}</span>
+          <span>{t("persona.userId")}</span>
+          <span>{t("persona.name")}</span>
+          <span>{t("persona.email")}</span>
+          <span>{t("persona.coverage")}</span>
+          <span>{t("common.status")}</span>
+          <span>{t("common.actions")}</span>
         </div>
-        {visibleUsers.length === 0 && <div className="um-empty">暂无用户</div>}
+        {visibleUsers.length === 0 && <div className="um-empty">{t("users.noUsers")}</div>}
         {visibleUsers.map((u) => {
           const ids = coverage[u.userId] ?? [];
           return (
@@ -131,15 +134,15 @@ export function PersonaPage() {
                     <span
                       key={a.id}
                       className={`persona-cover-dot ${ids.includes(a.id) ? "on" : "off"}`}
-                      title={`${a.name}：${ids.includes(a.id) ? "已有画像" : "尚无画像"}`}
+                      title={`${a.name}: ${ids.includes(a.id) ? t("persona.existing") : t("persona.missing")}`}
                     />
                   ))}
                 </span>
               </span>
-              <span>{u.enabled ? "启用" : "停用"}</span>
+              <span>{u.enabled ? t("common.enabled") : t("common.disabled")}</span>
               <span className="model-actions">
                 <button className="link-button" onClick={() => openPersona(u)}>
-                  查看画像
+                  {t("persona.view")}
                 </button>
               </span>
             </div>
@@ -176,6 +179,7 @@ function PersonaDetail({
   onClose: () => void;
   onChanged: () => void;
 }) {
+  const { t, i18n } = useTranslation();
   const [error, setError] = useState("");
   const [previewAgentId, setPreviewAgentId] = useState<string>("");
   const [previewMode, setPreviewMode] = useState<string>("NONE");
@@ -220,7 +224,7 @@ function PersonaDetail({
           await loadAgent(target.id, map[target.id] ?? null, user.userId);
         }
       })
-      .catch(() => setError("加载画像失败"))
+      .catch(() => setError(t("persona.loadFailed")))
       .finally(() => !cancelled && setLoading(false));
     return () => {
       cancelled = true;
@@ -293,7 +297,7 @@ function PersonaDetail({
     try {
       const prefs = parsePrefs(prefsText);
       if (prefs === null) {
-        setNotice({ ok: false, text: "偏好格式应为 键:值，每行一条" });
+        setNotice({ ok: false, text: t("persona.prefsInvalid") });
         return;
       }
       const tags = tagsText
@@ -308,10 +312,10 @@ function PersonaDetail({
       });
       setPersona(saved);
       setPersonaMap((m) => ({ ...m, [agentId]: saved }));
-      setNotice({ ok: true, text: "画像已保存" });
+      setNotice({ ok: true, text: t("persona.saved") });
       onChanged();
     } catch {
-      setNotice({ ok: false, text: "保存失败" });
+      setNotice({ ok: false, text: t("persona.saveFailed") });
     } finally {
       setSaving(false);
     }
@@ -327,9 +331,9 @@ function PersonaDetail({
       setPersona(next);
       setPersonaMap((m) => ({ ...m, [agentId]: next }));
       setMemoryDelta("");
-      setNotice({ ok: true, text: "已追加到长期记忆" });
+      setNotice({ ok: true, text: t("persona.memoryAppended") });
     } catch {
-      setNotice({ ok: false, text: "追加记忆失败" });
+      setNotice({ ok: false, text: t("persona.memoryAppendFailed") });
     } finally {
       setSaving(false);
     }
@@ -343,12 +347,12 @@ function PersonaDetail({
   return (
     <div className="persona-page">
       <PageHeader
-        kicker="PERSONA / 用户画像"
+        kicker={`PERSONA / ${t("persona.title")}`}
         title={user.displayName || user.username}
         description={user.userId}
         action={
           <Button quiet onClick={onClose}>
-            ← 返回列表
+            ← {t("persona.back")}
           </Button>
         }
       />
@@ -358,11 +362,11 @@ function PersonaDetail({
       <section className="form-surface persona-preview">
         <div className="persona-preview-head">
           <div>
-            <b>注入预览（实际注入 system prompt 的内容）</b>
-            <small>以所选 Agent 的配置（注入方式 + 模板）渲染，预览即所得。</small>
+            <b>{t("persona.previewTitle")}</b>
+            <small>{t("persona.previewHint")}</small>
           </div>
           <label className="persona-preview-agent">
-            <span>预览视角</span>
+            <span>{t("persona.previewAgent")}</span>
             <select
               value={previewAgentId}
               onChange={(e) => setPreviewAgentId(e.target.value)}
@@ -378,19 +382,21 @@ function PersonaDetail({
 
         <div className="persona-preview-meta">
           <span className={`persona-chip chip-${previewMode.toLowerCase()}`}>
-            注入方式：{modeLabel(previewMode)}
+            {t("persona.injectionMode", { mode: modeLabel(previewMode, t) })}
           </span>
           {previewAgent && (
             <span className="persona-chip-sub">
-              {previewAgent.personaExtractEnabled ? "✓ 已开启抽取" : "✗ 未开启抽取"}
+              {previewAgent.personaExtractEnabled
+                ? `✓ ${t("persona.extractionEnabled")}`
+                : `✗ ${t("persona.extractionDisabled")}`}
             </span>
           )}
         </div>
 
         <pre className="persona-preview-block">
           {previewLoading
-            ? "加载中…"
-            : previewBlock || "（该 Agent 当前不会注入任何画像：未开启注入或该用户尚无画像数据）"}
+            ? t("common.loading")
+            : previewBlock || t("persona.previewEmpty")}
         </pre>
       </section>
 
@@ -415,14 +421,16 @@ function PersonaDetail({
       {agentId && currentAgent && (
         <section className="form-surface persona-detail">
           <div className="persona-detail-head">
-            <b>{currentAgent.name} 的画像</b>
+            <b>{t("persona.agentPersona", { name: currentAgent.name })}</b>
             <div className="persona-detail-meta">
               <span className={`persona-chip chip-${currentAgent.personaInjectionMode.toLowerCase()}`}>
-                {modeLabel(currentAgent.personaInjectionMode)}
+                {modeLabel(currentAgent.personaInjectionMode, t)}
               </span>
               {persona?.lastExtractedAt && (
                 <span className="persona-chip-sub">
-                  上次自动抽取：{new Date(persona.lastExtractedAt).toLocaleString("zh-CN")}
+                  {t("persona.lastExtracted", {
+                    time: new Date(persona.lastExtractedAt).toLocaleString(i18n.resolvedLanguage),
+                  })}
                 </span>
               )}
             </div>
@@ -430,47 +438,47 @@ function PersonaDetail({
 
           <div className="persona-grid">
             <label className="field wide">
-              <span>一句话总结</span>
+              <span>{t("persona.summary")}</span>
               <input
                 value={summary}
                 onChange={(e) => setSummary(e.target.value)}
-                placeholder="AI 生成或人工维护的用户概括"
+                placeholder={t("persona.summaryPlaceholder")}
               />
             </label>
 
             <label className="field">
-              <span>标签（逗号分隔）</span>
+              <span>{t("persona.tags")}</span>
               <input
                 value={tagsText}
                 onChange={(e) => setTagsText(e.target.value)}
-                placeholder="VIP, 技术决策者"
+                placeholder={t("persona.tagsPlaceholder")}
               />
             </label>
 
             <label className="field">
-              <span>偏好（键:值，每行一条）</span>
+              <span>{t("persona.preferences")}</span>
               <textarea
                 value={prefsText}
                 onChange={(e) => setPrefsText(e.target.value)}
                 rows={3}
-                placeholder={"沟通风格: 简洁直接\n时区: Asia/Shanghai"}
+                placeholder={t("persona.preferencesPlaceholder")}
               />
             </label>
 
             <label className="field wide">
-              <span>关键事实</span>
+              <span>{t("persona.facts")}</span>
               <textarea
                 value={facts}
                 onChange={(e) => setFacts(e.target.value)}
                 rows={3}
-                placeholder="分号分隔的稳定事实"
+                placeholder={t("persona.factsPlaceholder")}
               />
             </label>
           </div>
 
           <div className="sticky-actions">
             <Button onClick={handleSave} disabled={saving}>
-              保存画像
+              {t("persona.save")}
             </Button>
             {notice && (
               <span className={`persona-notice ${notice.ok ? "ok" : "err"}`}>
@@ -481,25 +489,25 @@ function PersonaDetail({
 
           <div className="section-block">
             <div className="section-label">
-              <b>长期记忆 (MEMORY.md)</b>
-              <small>{currentAgent.name} 对该用户的非结构化长文，由对话自动沉淀，可人工校正</small>
+              <b>{t("persona.memory")}</b>
+              <small>{t("persona.memoryHint", { name: currentAgent.name })}</small>
             </div>
             <pre className="persona-memory-view">
-              {persona?.memory || "（暂无长期记忆）"}
+              {persona?.memory || t("persona.memoryEmpty")}
             </pre>
             <div className="persona-memory-add">
               <textarea
                 value={memoryDelta}
                 onChange={(e) => setMemoryDelta(e.target.value)}
                 rows={3}
-                placeholder="追加一段记忆增量…"
+                placeholder={t("persona.memoryPlaceholder")}
               />
               <Button
                 quiet
                 onClick={handleAppendMemory}
                 disabled={saving || !memoryDelta.trim()}
               >
-                追加记忆
+                {t("persona.appendMemory")}
               </Button>
             </div>
           </div>
@@ -509,15 +517,15 @@ function PersonaDetail({
   );
 }
 
-function modeLabel(mode: string): string {
+function modeLabel(mode: string, t: TFunction): string {
   switch (mode) {
     case "GLOBAL":
-      return "全局注入（跨 Agent 合并）";
+      return t("persona.modes.GLOBAL");
     case "SELF_ONLY":
-      return "仅注入本 Agent 画像";
+      return t("persona.modes.SELF_ONLY");
     case "NONE":
     default:
-      return "不注入";
+      return t("persona.modes.NONE");
   }
 }
 

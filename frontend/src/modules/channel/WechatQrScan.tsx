@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
+import { useTranslation } from "react-i18next";
 import {
   pollWechatRegistration,
   startWechatRegistration,
@@ -30,6 +31,7 @@ function isDataImageUri(value: string | null | undefined): boolean {
  * nothing to clean up.
  */
 export function WechatQrScan({ apiBase, channelVersion, onSuccess }: Props) {
+  const { t } = useTranslation();
   const [phase, setPhase] = useState<Phase>("idle");
   const [qrSvg, setQrSvg] = useState<string | null>(null);
   const [qrImage, setQrImage] = useState<string | null>(null);
@@ -91,7 +93,7 @@ export function WechatQrScan({ apiBase, channelVersion, onSuccess }: Props) {
       const { loginId } = await startWechatRegistration(base, ver);
       void poll(loginId);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "发起扫码失败");
+      setError(e instanceof Error ? e.message : t("qr.startFailed"));
       setPhase("error");
     }
   };
@@ -130,13 +132,13 @@ export function WechatQrScan({ apiBase, channelVersion, onSuccess }: Props) {
     if (s.state === "EXPIRED" || s.state === "NOT_FOUND") {
       clearTimers();
       setPhase("expired");
-      setError("二维码已过期，请重新生成");
+      setError(t("qr.expiredError"));
       return;
     }
     if (s.state === "FAILED") {
       clearTimers();
       setPhase("error");
-      setError(s.error || "扫码登录失败");
+      setError(s.error || t("qr.wechat.loginFailed"));
     }
   };
 
@@ -145,7 +147,7 @@ export function WechatQrScan({ apiBase, channelVersion, onSuccess }: Props) {
       const s = await pollWechatRegistration(loginId);
       await apply(s, loginId);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "轮询状态失败");
+      setError(e instanceof Error ? e.message : t("qr.pollFailed"));
       setPhase("error");
     }
   };
@@ -154,7 +156,7 @@ export function WechatQrScan({ apiBase, channelVersion, onSuccess }: Props) {
     return (
       <button type="button" className="feishu-qr-trigger" onClick={() => void begin()}>
         <span className="feishu-qr-icon">▣</span>
-        扫码登录微信个人号
+        {t("qr.wechat.trigger")}
       </button>
     );
   }
@@ -162,7 +164,7 @@ export function WechatQrScan({ apiBase, channelVersion, onSuccess }: Props) {
   return (
     <div className="feishu-qr-panel">
       <div className="feishu-qr-head">
-        <b>微信扫码登录（个人号 · ClawBot）</b>
+        <b>{t("qr.wechat.title")}</b>
         {(phase === "loading" || phase === "show" || phase === "scanned") && (
           <button
             type="button"
@@ -172,17 +174,17 @@ export function WechatQrScan({ apiBase, channelVersion, onSuccess }: Props) {
               setPhase("idle");
             }}
           >
-            取消
+            {t("qr.cancel")}
           </button>
         )}
       </div>
 
-      {phase === "loading" && <div className="feishu-qr-loading">正在生成二维码…</div>}
+      {phase === "loading" && <div className="feishu-qr-loading">{t("qr.generating")}</div>}
 
       {(phase === "show" || phase === "scanned" || phase === "expired") && (qrSvg || qrImage) && (
         <div className={`feishu-qr-body ${phase === "expired" ? "is-expired" : ""}`}>
           {qrImage ? (
-            <img className="feishu-qr-img-tag" src={qrImage} alt="微信登录二维码" />
+            <img className="feishu-qr-img-tag" src={qrImage} alt={t("qr.wechat.alt")} />
           ) : (
             <span
               className="feishu-qr-img"
@@ -191,9 +193,9 @@ export function WechatQrScan({ apiBase, channelVersion, onSuccess }: Props) {
           )}
           {phase === "expired" && (
             <div className="feishu-qr-mask">
-              <span>已过期</span>
+              <span>{t("qr.expired")}</span>
               <button type="button" className="link-button" onClick={() => void begin()}>
-                重新生成
+                {t("qr.regenerate")}
               </button>
             </div>
           )}
@@ -202,17 +204,17 @@ export function WechatQrScan({ apiBase, channelVersion, onSuccess }: Props) {
 
       {phase === "show" && (
         <div className="feishu-qr-tip">
-          请使用<b>微信 App</b> 扫码，在手机上确认登录个人微信号。
-          {secondsLeft > 0 && <span className="feishu-qr-ttl">二维码 {secondsLeft}s 后过期</span>}
+          {t("qr.wechat.tip")}
+          {secondsLeft > 0 && <span className="feishu-qr-ttl">{t("qr.ttl", { seconds: secondsLeft })}</span>}
         </div>
       )}
 
       {phase === "scanned" && (
-        <div className="feishu-qr-ok">✓ 已扫码，请在手机上点击「确认登录」…</div>
+        <div className="feishu-qr-ok">✓ {t("qr.wechat.scanned")}</div>
       )}
 
       {phase === "success" && (
-        <div className="feishu-qr-ok">✓ 已扫码确认，凭据已就绪，点击下方「保存渠道」完成创建。</div>
+        <div className="feishu-qr-ok">✓ {t("qr.ready")}</div>
       )}
 
       {(phase === "error" || phase === "expired") && error && (
@@ -221,7 +223,7 @@ export function WechatQrScan({ apiBase, channelVersion, onSuccess }: Props) {
           {phase === "error" && (
             <div style={{ marginTop: 8 }}>
               <button type="button" className="link-button" onClick={() => void begin()}>
-                重试
+                {t("qr.retry")}
               </button>
             </div>
           )}

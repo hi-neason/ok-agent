@@ -348,7 +348,7 @@ export function AgentConfigPage({
 
   const newSession = async () => {
     if (!selectedUserId) {
-      setNotice({ ok: false, text: "请先选择调试用户" });
+      setNotice({ ok: false, text: t("agents.selectDebugUser") });
       return;
     }
     if (sessionIdRef.current) {
@@ -357,7 +357,7 @@ export function AgentConfigPage({
       } catch (error) {
         setNotice({
           ok: false,
-          text: error instanceof Error ? error.message : "删除当前会话失败",
+          text: error instanceof Error ? error.message : t("agents.deleteSessionFailed"),
         });
         return;
       }
@@ -412,7 +412,7 @@ export function AgentConfigPage({
       setMessages(loaded);
       sessionIdRef.current = sessionId;
     } catch {
-      setNotice({ ok: false, text: "加载历史会话失败" });
+      setNotice({ ok: false, text: t("agents.loadHistoryFailed") });
     }
   };
 

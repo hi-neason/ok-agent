@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
+import { useTranslation } from "react-i18next";
 import {
   pollFeishuRegistration,
   startFeishuRegistration,
@@ -20,6 +21,7 @@ type Phase = "idle" | "loading" | "show" | "success" | "success-secret" | "error
  * not be returned, in which case the user is prompted to fill it manually.
  */
 export function FeishuQrScan({ onSuccess }: Props) {
+  const { t } = useTranslation();
   const [phase, setPhase] = useState<Phase>("idle");
   const [qrSvg, setQrSvg] = useState<string | null>(null);
   const [qrUrl, setQrUrl] = useState<string | null>(null);
@@ -53,7 +55,7 @@ export function FeishuQrScan({ onSuccess }: Props) {
       const { sessionId } = await startFeishuRegistration();
       void poll(sessionId);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "发起扫码失败");
+      setError(e instanceof Error ? e.message : t("qr.startFailed"));
       setPhase("error");
     }
   };
@@ -111,17 +113,17 @@ export function FeishuQrScan({ onSuccess }: Props) {
       if (s.state === "EXPIRED" || s.state === "NOT_FOUND") {
         clearTimers();
         setPhase("expired");
-        setError("二维码已过期，请重新生成");
+        setError(t("qr.expiredError"));
         return;
       }
 
       if (s.state === "FAILED") {
         clearTimers();
         setPhase("error");
-        setError(s.error || "扫码授权失败");
+        setError(s.error || t("qr.feishu.authorizeFailed"));
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "轮询状态失败");
+      setError(e instanceof Error ? e.message : t("qr.pollFailed"));
       setPhase("error");
     }
   };
@@ -130,7 +132,7 @@ export function FeishuQrScan({ onSuccess }: Props) {
     return (
       <button type="button" className="feishu-qr-trigger" onClick={() => void begin()}>
         <span className="feishu-qr-icon">▣</span>
-        扫码创建或绑定飞书应用
+        {t("qr.feishu.trigger")}
       </button>
     );
   }
@@ -138,7 +140,7 @@ export function FeishuQrScan({ onSuccess }: Props) {
   return (
     <div className="feishu-qr-panel">
       <div className="feishu-qr-head">
-        <b>扫码创建或绑定飞书机器人</b>
+        <b>{t("qr.feishu.title")}</b>
         {(phase === "loading" || phase === "show") && (
           <button
             type="button"
@@ -148,12 +150,12 @@ export function FeishuQrScan({ onSuccess }: Props) {
               setPhase("idle");
             }}
           >
-            取消
+            {t("qr.cancel")}
           </button>
         )}
       </div>
 
-      {phase === "loading" && <div className="feishu-qr-loading">正在生成二维码…</div>}
+      {phase === "loading" && <div className="feishu-qr-loading">{t("qr.generating")}</div>}
 
       {(phase === "show" || phase === "expired") && qrUrl && (
         <div className={`feishu-qr-body ${phase === "expired" ? "is-expired" : ""}`}>
@@ -170,19 +172,19 @@ export function FeishuQrScan({ onSuccess }: Props) {
               target="_blank"
               rel="noreferrer"
             >
-              点此在飞书中打开授权
+              {t("qr.feishu.openLink")}
               <small>{qrUrl}</small>
             </a>
           )}
           {phase === "expired" && (
             <div className="feishu-qr-mask">
-              <span>已过期</span>
+              <span>{t("qr.expired")}</span>
               <button
                 type="button"
                 className="link-button"
                 onClick={() => void begin()}
               >
-                重新生成
+                {t("qr.regenerate")}
               </button>
             </div>
           )}
@@ -191,19 +193,18 @@ export function FeishuQrScan({ onSuccess }: Props) {
 
       {phase === "show" && (
         <div className="feishu-qr-tip">
-          请使用飞书 App 扫码，可在手机上新建应用或选择已有应用完成授权。
-          {secondsLeft > 0 && <span className="feishu-qr-ttl">二维码 {secondsLeft}s 后过期</span>}
+          {t("qr.feishu.tip")}
+          {secondsLeft > 0 && <span className="feishu-qr-ttl">{t("qr.ttl", { seconds: secondsLeft })}</span>}
         </div>
       )}
 
       {phase === "success" && (
-        <div className="feishu-qr-ok">✓ 已获取应用凭证，已自动填入下方表单。</div>
+        <div className="feishu-qr-ok">✓ {t("qr.feishu.success")}</div>
       )}
 
       {phase === "success-secret" && (
         <div className="feishu-qr-ok feishu-qr-ok-warn">
-          ✓ 已绑定应用并自动填入 App ID。绑定已有应用时飞书不会重新下发 App Secret，
-          请在下方手动填写该应用的 App Secret 后保存。
+          ✓ {t("qr.feishu.secretMissing")}
         </div>
       )}
 

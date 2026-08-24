@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "../../../shared";
 import {
   listAgentBindings,
@@ -24,6 +25,7 @@ type LocalBinding = {
 };
 
 export function AgentWorkflowTab({ agentId }: { agentId: string }) {
+  const { t } = useTranslation();
   const [sources, setSources] = useState<WorkflowSource[]>([]);
   const [catalog, setCatalog] = useState<WorkflowCatalogItem[]>([]);
   const [bindings, setBindings] = useState<Record<string, LocalBinding>>({});
@@ -110,30 +112,26 @@ export function AgentWorkflowTab({ agentId }: { agentId: string }) {
       const saved = await replaceAgentBindings(agentId, payload);
       setBindings(bindingsToMap(saved));
       setDirty(false);
-      setNotice({ ok: true, text: "工作流绑定已保存" });
+      setNotice({ ok: true, text: t("agents.binding.saved", { name: t("agents.tab.workflows") }) });
     } catch (e) {
       setNotice({
         ok: false,
-        text: e instanceof SyntaxError ? `参数默认值不是合法 JSON：${e.message}` : msg(e),
+        text: e instanceof SyntaxError ? t("agents.binding.invalidJson", { message: e.message }) : msg(e),
       });
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) return <div className="config-section">加载中…</div>;
+  if (loading) return <div className="config-section">{t("common.loading")}</div>;
 
   const activeCatalog = catalog.filter((c) => c.active);
 
   return (
     <div className="config-section">
       <div className="section-head">
-        <b>外部工作流</b>
-        <small>
-          勾选后，Agent 运行时将获得 list_workflows / describe_workflow /
-          start_workflow 三个工具，模型可自主发现并调用。描述与入参 schema
-          由「工作流 - 集成」目录统一维护，此处仅做绑定与可选微调。
-        </small>
+        <b>{t("agents.binding.workflowTitle")}</b>
+        <small>{t("agents.binding.workflowHint")}</small>
       </div>
 
       {notice && (
@@ -146,7 +144,7 @@ export function AgentWorkflowTab({ agentId }: { agentId: string }) {
 
       {activeCatalog.length === 0 ? (
         <small style={{ padding: 8 }}>
-          暂无可用工作流。请先到「工作流 - 集成」添加源并同步（且源需启用）。
+          {t("agents.binding.workflowEmpty")}
         </small>
       ) : (
         <div className="binding-list">
@@ -174,7 +172,7 @@ export function AgentWorkflowTab({ agentId }: { agentId: string }) {
                     <p className="wf-binding-desc">
                       {item.description ||
                         item.remoteDescription ||
-                        "（目录未填写描述）"}
+                        t("agents.binding.noDescription")}
                     </p>
                     <button
                       type="button"
@@ -183,12 +181,12 @@ export function AgentWorkflowTab({ agentId }: { agentId: string }) {
                         setExpanded(expanded === item.id ? null : item.id)
                       }
                     >
-                      {expanded === item.id ? "收起微调" : "高级：描述覆盖 / 参数默认值"}
+                      {t(expanded === item.id ? "agents.binding.collapseTuning" : "agents.binding.advancedWorkflow")}
                     </button>
                     {expanded === item.id && (
                       <div className="wf-binding-overrides">
                         <label>
-                          <span>Agent 专属描述（可选，留空用目录描述）</span>
+                          <span>{t("agents.binding.agentDescription")}</span>
                           <textarea
                             rows={2}
                             value={bindings[item.id]?.descriptionOverride ?? ""}
@@ -197,11 +195,11 @@ export function AgentWorkflowTab({ agentId }: { agentId: string }) {
                                 descriptionOverride: e.target.value,
                               })
                             }
-                            placeholder="覆盖该 Agent 看到的工作流描述"
+                            placeholder={t("agents.binding.workflowDescriptionPlaceholder")}
                           />
                         </label>
                         <label>
-                          <span>参数默认值 JSON（可选）</span>
+                          <span>{t("agents.binding.parameterDefaults")}</span>
                           <textarea
                             rows={3}
                             spellCheck={false}
@@ -211,7 +209,7 @@ export function AgentWorkflowTab({ agentId }: { agentId: string }) {
                                 parameterDefaults: e.target.value,
                               })
                             }
-                            placeholder='{"city": "重庆"}'
+                            placeholder='{"city": "Chongqing"}'
                           />
                         </label>
                       </div>
@@ -226,11 +224,11 @@ export function AgentWorkflowTab({ agentId }: { agentId: string }) {
 
       <div className="config-save-bar">
         <Button onClick={() => void save()} disabled={saving || !dirty}>
-          {saving ? "保存中…" : "保存工作流绑定"}
+          {t(saving ? "common.saving" : "agents.binding.saveWorkflow")}
         </Button>
-        {dirty && <span className="dirty-flag">未保存的改动</span>}
+        {dirty && <span className="dirty-flag">{t("common.unsavedChanges")}</span>}
         {!dirty && boundCount >= 0 && (
-          <span className="wf-binding-count">已绑定 {Object.keys(bindings).length} 个</span>
+          <span className="wf-binding-count">{t("agents.binding.boundCount", { count: Object.keys(bindings).length })}</span>
         )}
       </div>
     </div>

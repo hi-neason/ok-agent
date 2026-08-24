@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
+import { useTranslation } from "react-i18next";
 import {
   pollDingTalkRegistration,
   startDingTalkRegistration,
@@ -23,6 +24,7 @@ type Phase = "idle" | "loading" | "show" | "success" | "error" | "expired";
  * claimed at save time. No channel exists until save — canceling leaves nothing to clean up.
  */
 export function DingTalkQrScan({ onSuccess }: Props) {
+  const { t } = useTranslation();
   const [phase, setPhase] = useState<Phase>("idle");
   const [qrSvg, setQrSvg] = useState<string | null>(null);
   const [error, setError] = useState<string>("");
@@ -81,7 +83,7 @@ export function DingTalkQrScan({ onSuccess }: Props) {
       setPhase("show");
       void poll(loginId, intervalSeconds);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "发起扫码失败");
+      setError(e instanceof Error ? e.message : t("qr.startFailed"));
       setPhase("error");
     }
   };
@@ -101,13 +103,13 @@ export function DingTalkQrScan({ onSuccess }: Props) {
     if (s.state === "EXPIRED" || s.state === "NOT_FOUND") {
       clearTimers();
       setPhase("expired");
-      setError("二维码已过期，请重新生成");
+      setError(t("qr.expiredError"));
       return;
     }
     if (s.state === "FAILED") {
       clearTimers();
       setPhase("error");
-      setError(s.error || "钉钉扫码授权失败");
+      setError(s.error || t("qr.dingtalk.authorizeFailed"));
       return;
     }
     // WAITING_SCAN / STARTING
@@ -120,7 +122,7 @@ export function DingTalkQrScan({ onSuccess }: Props) {
       const s = await pollDingTalkRegistration(loginId);
       apply(s, loginId, intervalSeconds);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "轮询状态失败");
+      setError(e instanceof Error ? e.message : t("qr.pollFailed"));
       setPhase("error");
     }
   };
@@ -129,7 +131,7 @@ export function DingTalkQrScan({ onSuccess }: Props) {
     return (
       <button type="button" className="feishu-qr-trigger" onClick={() => void begin()}>
         <span className="feishu-qr-icon">▣</span>
-        扫码绑定钉钉机器人
+        {t("qr.dingtalk.trigger")}
       </button>
     );
   }
@@ -137,7 +139,7 @@ export function DingTalkQrScan({ onSuccess }: Props) {
   return (
     <div className="feishu-qr-panel">
       <div className="feishu-qr-head">
-        <b>钉钉扫码绑定机器人</b>
+        <b>{t("qr.dingtalk.title")}</b>
         {(phase === "loading" || phase === "show") && (
           <button
             type="button"
@@ -147,12 +149,12 @@ export function DingTalkQrScan({ onSuccess }: Props) {
               setPhase("idle");
             }}
           >
-            取消
+            {t("qr.cancel")}
           </button>
         )}
       </div>
 
-      {phase === "loading" && <div className="feishu-qr-loading">正在生成二维码…</div>}
+      {phase === "loading" && <div className="feishu-qr-loading">{t("qr.generating")}</div>}
 
       {(phase === "show" || phase === "expired") && qrSvg && (
         <div className={`feishu-qr-body ${phase === "expired" ? "is-expired" : ""}`}>
@@ -162,9 +164,9 @@ export function DingTalkQrScan({ onSuccess }: Props) {
           />
           {phase === "expired" && (
             <div className="feishu-qr-mask">
-              <span>已过期</span>
+              <span>{t("qr.expired")}</span>
               <button type="button" className="link-button" onClick={() => void begin()}>
-                重新生成
+                {t("qr.regenerate")}
               </button>
             </div>
           )}
@@ -173,13 +175,13 @@ export function DingTalkQrScan({ onSuccess }: Props) {
 
       {phase === "show" && (
         <div className="feishu-qr-tip">
-          请使用<b>钉钉 App</b> 扫码，在手机上授权创建/绑定机器人。
-          {secondsLeft > 0 && <span className="feishu-qr-ttl">二维码 {secondsLeft}s 后过期</span>}
+          {t("qr.dingtalk.tip")}
+          {secondsLeft > 0 && <span className="feishu-qr-ttl">{t("qr.ttl", { seconds: secondsLeft })}</span>}
         </div>
       )}
 
       {phase === "success" && (
-        <div className="feishu-qr-ok">✓ 已扫码确认，凭据已就绪，点击下方「保存渠道」完成创建。</div>
+        <div className="feishu-qr-ok">✓ {t("qr.ready")}</div>
       )}
 
       {(phase === "error" || phase === "expired") && error && (
@@ -188,7 +190,7 @@ export function DingTalkQrScan({ onSuccess }: Props) {
           {phase === "error" && (
             <div style={{ marginTop: 8 }}>
               <button type="button" className="link-button" onClick={() => void begin()}>
-                重试
+                {t("qr.retry")}
               </button>
             </div>
           )}

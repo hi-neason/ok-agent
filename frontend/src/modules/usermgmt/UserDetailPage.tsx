@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { Button, PageHeader } from "../shared";
 import { fetchUserDetail } from "./api";
 import type { UserDetail as UserDetailType } from "./types";
@@ -16,6 +17,7 @@ function InfoRow({ label, children }: { label: string; children: ReactNode }) {
 }
 
 export function UserDetailPage({ id, onBack }: { id: string; onBack: () => void }) {
+  const { t, i18n } = useTranslation();
   const [detail, setDetail] = useState<UserDetailType | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -25,20 +27,20 @@ export function UserDetailPage({ id, onBack }: { id: string; onBack: () => void 
     setError("");
     fetchUserDetail(id)
       .then(setDetail)
-      .catch(() => setError("加载用户详情失败"))
+      .catch(() => setError(t("users.detail.loadFailed")))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, t]);
 
   if (loading) {
     return (
       <>
         <PageHeader
-          kicker="USER MANAGEMENT / 用户详情"
-          title="加载中…"
-          description="正在读取用户信息与关联渠道。"
+          kicker={t("users.detail.kicker")}
+          title={t("common.loading")}
+          description={t("users.detail.loadingDescription")}
           action={
             <Button quiet onClick={onBack}>
-              ← 返回用户列表
+              ← {t("users.detail.back")}
             </Button>
           }
         />
@@ -50,12 +52,12 @@ export function UserDetailPage({ id, onBack }: { id: string; onBack: () => void 
     return (
       <>
         <PageHeader
-          kicker="USER MANAGEMENT / 用户详情"
-          title="无法加载"
-          description={error || "未找到该用户"}
+          kicker={t("users.detail.kicker")}
+          title={t("users.detail.unableToLoad")}
+          description={error || t("users.detail.notFound")}
           action={
             <Button quiet onClick={onBack}>
-              ← 返回用户列表
+              ← {t("users.detail.back")}
             </Button>
           }
         />
@@ -64,18 +66,21 @@ export function UserDetailPage({ id, onBack }: { id: string; onBack: () => void 
   }
 
   const u = detail.user;
-  const sourceLabel = u.source === "CHANNEL" ? "渠道" : "控制台";
+  const sourceLabel = u.source === "CHANNEL" ? t("users.channel") : t("users.console");
   const sourceClass = u.source === "CHANNEL" ? "um-source--channel" : "um-source--console";
 
   return (
     <>
       <PageHeader
-        kicker="USER MANAGEMENT / 用户详情"
+        kicker={t("users.detail.kicker")}
         title={u.displayName}
-        description={`账号 ${u.username} · 关联 ${detail.channels.length} 个渠道`}
+        description={t("users.detail.summary", {
+          username: u.username,
+          count: detail.channels.length,
+        })}
         action={
           <Button quiet onClick={onBack}>
-            ← 返回用户列表
+            ← {t("users.detail.back")}
           </Button>
         }
       />
@@ -85,53 +90,55 @@ export function UserDetailPage({ id, onBack }: { id: string; onBack: () => void 
         <section className="form-surface ud-card">
           <div className="form-title">
             <div>
-              <p className="kicker">PROFILE / 基本信息</p>
+              <p className="kicker">PROFILE / {t("users.detail.profile")}</p>
               <h2>{u.displayName}</h2>
             </div>
             <span className={`um-source ${sourceClass}`}>{sourceLabel}</span>
           </div>
           <div className="ud-info">
-            <InfoRow label="账号 (username)">{u.username}</InfoRow>
-            <InfoRow label="姓名">{u.displayName}</InfoRow>
-            <InfoRow label="邮箱">{u.email || "—"}</InfoRow>
-            <InfoRow label="电话">{u.phone || "—"}</InfoRow>
-            <InfoRow label="所属用户组">{u.groupName || "—"}</InfoRow>
-            <InfoRow label="状态">
+            <InfoRow label={t("users.username")}>{u.username}</InfoRow>
+            <InfoRow label={t("users.name")}>{u.displayName}</InfoRow>
+            <InfoRow label={t("users.email")}>{u.email || "—"}</InfoRow>
+            <InfoRow label={t("users.phone")}>{u.phone || "—"}</InfoRow>
+            <InfoRow label={t("users.group")}>{u.groupName || "—"}</InfoRow>
+            <InfoRow label={t("common.status")}>
               <span className={u.enabled ? "um-status on" : "um-status off"}>
-                {u.enabled ? "启用" : "停用"}
+                {u.enabled ? t("common.enabled") : t("common.disabled")}
               </span>
             </InfoRow>
-            <InfoRow label="来源">{sourceLabel}</InfoRow>
-            <InfoRow label="内部用户ID">
+            <InfoRow label={t("users.source")}>{sourceLabel}</InfoRow>
+            <InfoRow label={t("users.detail.internalId")}>
               <code className="ud-mono">{u.userId}</code>
             </InfoRow>
-            <InfoRow label="更新时间">{formatInstant(u.updatedAt)}</InfoRow>
+            <InfoRow label={t("users.detail.updatedAt")}>
+              {formatInstant(u.updatedAt, i18n.resolvedLanguage ?? "zh-CN")}
+            </InfoRow>
           </div>
         </section>
 
         <section className="form-surface ud-card">
           <div className="form-title">
             <div>
-              <p className="kicker">ACTIVITY / 数据概览</p>
-              <h2>生命周期统计</h2>
+              <p className="kicker">ACTIVITY / {t("users.detail.activity")}</p>
+              <h2>{t("users.detail.lifecycle")}</h2>
             </div>
           </div>
           <div className="ud-stats">
             <article>
               <span>{detail.sessionCount}</span>
-              <small>对话会话</small>
+              <small>{t("users.detail.sessions")}</small>
             </article>
             <article>
               <span>{detail.personaCount}</span>
-              <small>用户画像</small>
+              <small>{t("users.detail.personas")}</small>
             </article>
             <article>
               <span>{detail.traceCount}</span>
-              <small>运行 Trace</small>
+              <small>{t("users.detail.traces")}</small>
             </article>
             <article>
               <span>{detail.messageCount}</span>
-              <small>渠道消息</small>
+              <small>{t("users.detail.messages")}</small>
             </article>
           </div>
         </section>
@@ -140,32 +147,40 @@ export function UserDetailPage({ id, onBack }: { id: string; onBack: () => void 
       <section className="form-surface ud-card ud-channels">
         <div className="form-title">
           <div>
-            <p className="kicker">CHANNELS / 关联渠道</p>
-            <h2>绑定的渠道身份（{detail.channels.length}）</h2>
+            <p className="kicker">CHANNELS / {t("users.detail.channels")}</p>
+            <h2>{t("users.detail.boundChannels", { count: detail.channels.length })}</h2>
           </div>
         </div>
         {detail.channels.length === 0 ? (
-          <div className="um-empty">该用户暂未绑定任何渠道身份。</div>
+          <div className="um-empty">{t("users.detail.channelsEmpty")}</div>
         ) : (
           <div className="um-channels-list">
             {detail.channels.map((c, i) => {
-              const { name, sub } = channelFriendlyName(c);
+              const { name, sub } = channelFriendlyName(c, t);
               return (
                 <div className="um-channel-card" key={i}>
                   <div className="um-chan-head">
-                    <span className="um-chan-type">{channelLabel(c.channelType)}</span>
+                    <span className="um-chan-type">{channelLabel(c.channelType, t)}</span>
                     <span className="um-chan-name">{name}</span>
                   </div>
                   <code className="um-chan-ext">{sub}</code>
                   <div className="um-chan-meta">
-                    <span>{c.messageCount} 条消息</span>
-                    <span>首次 {formatInstant(c.firstSeenAt)}</span>
-                    <span>最近 {formatInstant(c.lastSeenAt)}</span>
+                    <span>{t("users.detail.messageCount", { count: c.messageCount })}</span>
+                    <span>
+                      {t("users.detail.firstSeen", {
+                        time: formatInstant(c.firstSeenAt, i18n.resolvedLanguage ?? "zh-CN"),
+                      })}
+                    </span>
+                    <span>
+                      {t("users.detail.lastSeen", {
+                        time: formatInstant(c.lastSeenAt, i18n.resolvedLanguage ?? "zh-CN"),
+                      })}
+                    </span>
                   </div>
                   {c.tenantKey && (
                     <div className="um-chan-foot">
-                      <small>租户 {c.tenantKey}</small>
-                      <small>渠道实例 {c.channelKey}</small>
+                      <small>{t("users.detail.tenant", { key: c.tenantKey })}</small>
+                      <small>{t("users.detail.channelInstance", { key: c.channelKey })}</small>
                     </div>
                   )}
                 </div>

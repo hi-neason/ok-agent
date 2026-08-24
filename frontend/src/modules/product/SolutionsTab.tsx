@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 import { Button, Pagination, Toggle, useConfirm, type Page } from "../shared";
 import {
   createSolution,
@@ -28,13 +29,10 @@ const slugify = (value: string) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 
-const ROLE_LABELS: Record<SolutionItemRole, string> = {
-  PRIMARY: "主产品",
-  ADDON: "附加",
-  OPTIONAL: "可选",
-};
+const ROLES: SolutionItemRole[] = ["PRIMARY", "ADDON", "OPTIONAL"];
 
 export function SolutionsTab() {
+  const { t } = useTranslation();
   const { confirm, Dialog } = useConfirm();
   const [solutions, setSolutions] = useState<Page<Solution> | null>(null);
   const [pageNumber, setPageNumber] = useState(0);
@@ -88,10 +86,10 @@ export function SolutionsTab() {
   };
 
   const save = async () => {
-    if (!draft.name.trim()) return setNotice({ ok: false, text: "请填写方案名称" });
-    if (!draft.solutionKey.trim()) return setNotice({ ok: false, text: "请填写方案 KEY" });
+    if (!draft.name.trim()) return setNotice({ ok: false, text: t("product.solutions.nameRequired") });
+    if (!draft.solutionKey.trim()) return setNotice({ ok: false, text: t("product.solutions.keyRequired") });
     if (draft.items.length === 0)
-      return setNotice({ ok: false, text: "至少添加一个产品" });
+      return setNotice({ ok: false, text: t("product.solutions.productRequired") });
     setBusy(true);
     setNotice(null);
     try {
@@ -116,7 +114,7 @@ export function SolutionsTab() {
   };
 
   const remove = async (s: Solution) => {
-    if (!(await confirm({ message: `确认删除方案「${s.name}」？`, dangerous: true }))) return;
+    if (!(await confirm({ message: t("product.solutions.deleteConfirm", { name: s.name }), dangerous: true }))) return;
     try {
       await deleteSolution(s.id);
       await load(pageNumber);
@@ -158,11 +156,11 @@ export function SolutionsTab() {
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="搜索方案名称 / KEY / 场景 / 目标客户"
+          placeholder={t("product.solutions.search")}
         />
-        <span>{solutions?.totalElements ?? 0} 个方案</span>
+        <span>{t("product.solutions.total", { count: solutions?.totalElements ?? 0 })}</span>
         <span style={{ flex: 1 }} />
-        <Button onClick={() => open()}>＋ 添加方案</Button>
+        <Button onClick={() => open()}>＋ {t("product.solutions.add")}</Button>
       </div>
 
       {notice && (
@@ -175,12 +173,12 @@ export function SolutionsTab() {
 
       <div className="mcp-table">
         <div className="mcp-row head">
-          <span>方案</span>
-          <span>场景 / 目标客户</span>
-          <span>包含产品</span>
-          <span>价格说明</span>
-          <span>状态</span>
-          <span>操作</span>
+          <span>{t("product.solutions.solution")}</span>
+          <span>{t("product.solutions.scenarioCustomer")}</span>
+          <span>{t("product.solutions.includedProducts")}</span>
+          <span>{t("product.solutions.priceNote")}</span>
+          <span>{t("common.status")}</span>
+          <span>{t("common.actions")}</span>
         </div>
         {visible.map((s) => (
           <div className="mcp-row" key={s.id}>
@@ -206,16 +204,16 @@ export function SolutionsTab() {
               <Toggle on={s.status === "ACTIVE"} setOn={() => void toggleStatus(s)} />
             </span>
             <span className="row-actions">
-              <button onClick={() => open(s)}>编辑</button>
+              <button onClick={() => open(s)}>{t("common.edit")}</button>
               <button className="danger" onClick={() => void remove(s)}>
-                删除
+                {t("common.delete")}
               </button>
             </span>
           </div>
         ))}
         {visible.length === 0 && (
           <div className="mcp-empty">
-            ▣<b>暂无方案，点击右上角添加</b>
+            ▣<b>{t("product.solutions.empty")}</b>
           </div>
         )}
         {solutions && (
@@ -247,16 +245,16 @@ export function SolutionsTab() {
                   <p className="kicker">
                     SOLUTION / {editing === "new" ? "CREATE" : "EDIT"}
                   </p>
-                  <h2>{editing === "new" ? "添加方案" : (editing as Solution).name}</h2>
+                  <h2>{editing === "new" ? t("product.solutions.add") : (editing as Solution).name}</h2>
                 </div>
                 <button className="link-button" onClick={() => setEditing(null)}>
-                  关闭 ×
+                  {t("common.close")} ×
                 </button>
               </header>
 
               <div className="mcp-form">
                 <label>
-                  <span>方案名称 *</span>
+                  <span>{t("product.solutions.name")}</span>
                   <input
                     value={draft.name}
                     onChange={(e) => {
@@ -274,7 +272,7 @@ export function SolutionsTab() {
                 </label>
                 <label>
                   <span>
-                    SOLUTION_KEY <small>· 唯一标识</small>
+                    SOLUTION_KEY <small>· {t("integrations.uniqueKey")}</small>
                   </span>
                   <input
                     value={draft.solutionKey}
@@ -282,33 +280,33 @@ export function SolutionsTab() {
                   />
                 </label>
                 <label className="wide">
-                  <span>适用场景</span>
+                  <span>{t("product.solutions.scenario")}</span>
                   <input
                     value={draft.scenario}
                     onChange={(e) => setDraft({ ...draft, scenario: e.target.value })}
-                    placeholder="如：电商客服一体化上线"
+                    placeholder={t("product.solutions.scenarioPlaceholder")}
                   />
                 </label>
                 <label className="wide">
-                  <span>目标客户</span>
+                  <span>{t("product.solutions.targetCustomer")}</span>
                   <input
                     value={draft.targetCustomer}
                     onChange={(e) =>
                       setDraft({ ...draft, targetCustomer: e.target.value })
                     }
-                    placeholder="如：年 GMV 千万级电商企业"
+                    placeholder={t("product.solutions.targetPlaceholder")}
                   />
                 </label>
                 <label className="wide">
-                  <span>价格说明</span>
+                  <span>{t("product.solutions.priceNote")}</span>
                   <input
                     value={draft.priceNote}
                     onChange={(e) => setDraft({ ...draft, priceNote: e.target.value })}
-                    placeholder="如：按年订阅，含实施服务"
+                    placeholder={t("product.solutions.pricePlaceholder")}
                   />
                 </label>
                 <label className="wide">
-                  <span>方案描述</span>
+                  <span>{t("product.solutions.description")}</span>
                   <textarea
                     rows={3}
                     value={draft.description}
@@ -318,13 +316,13 @@ export function SolutionsTab() {
 
                 <div className="wide prod-items">
                   <div className="prod-items-head">
-                    <span>包含产品</span>
+                    <span>{t("product.solutions.includedProducts")}</span>
                     <button type="button" className="link-button" onClick={addItem}>
-                      ＋ 添加产品
+                      ＋ {t("product.solutions.addProduct")}
                     </button>
                   </div>
                   {draft.items.length === 0 && (
-                    <small className="prod-items-empty">尚未添加产品</small>
+                    <small className="prod-items-empty">{t("product.solutions.noProducts")}</small>
                   )}
                   {draft.items.map((item, index) => (
                     <div className="prod-item-row" key={index}>
@@ -332,7 +330,7 @@ export function SolutionsTab() {
                         value={item.productId}
                         onChange={(e) => setItem(index, { productId: e.target.value })}
                       >
-                        <option value="">选择产品…</option>
+                        <option value="">{t("product.solutions.selectProduct")}</option>
                         {products.map((p) => (
                           <option key={p.id} value={p.id}>
                             {p.name}（{p.productKey}）
@@ -346,18 +344,18 @@ export function SolutionsTab() {
                         onChange={(e) =>
                           setItem(index, { quantity: Number(e.target.value) || 1 })
                         }
-                        title="数量"
+                        title={t("product.solutions.quantity")}
                       />
                       <select
                         value={item.role}
                         onChange={(e) =>
                           setItem(index, { role: e.target.value as SolutionItemRole })
                         }
-                        title="角色"
+                        title={t("product.solutions.role")}
                       >
-                        {(Object.keys(ROLE_LABELS) as SolutionItemRole[]).map((r) => (
+                        {ROLES.map((r) => (
                           <option key={r} value={r}>
-                            {ROLE_LABELS[r]}
+                            {t(`product.solutions.roles.${r}`)}
                           </option>
                         ))}
                       </select>
@@ -366,19 +364,21 @@ export function SolutionsTab() {
                         className="link-button danger"
                         onClick={() => removeItem(index)}
                       >
-                        移除
+                        {t("product.solutions.remove")}
                       </button>
                     </div>
                   ))}
                   {editing !== "new" && (editing as Solution).items.length > 0 && (
                     <small className="prod-items-hint">
-                      已保存 { (editing as Solution).items.length } 项；排序由添加顺序决定。
+                      {t("product.solutions.savedItems", {
+                        count: (editing as Solution).items.length,
+                      })}
                     </small>
                   )}
                 </div>
 
                 <label>
-                  <span>状态</span>
+                  <span>{t("common.status")}</span>
                   <select
                     value={draft.status}
                     onChange={(e) =>
@@ -388,8 +388,8 @@ export function SolutionsTab() {
                       })
                     }
                   >
-                    <option value="ACTIVE">在售（ACTIVE）</option>
-                    <option value="DISCONTINUED">停售（DISCONTINUED）</option>
+                    <option value="ACTIVE">{t("product.products.active")}</option>
+                    <option value="DISCONTINUED">{t("product.products.discontinued")}</option>
                   </select>
                 </label>
               </div>
@@ -404,7 +404,7 @@ export function SolutionsTab() {
 
               <footer>
                 <Button onClick={() => void save()} disabled={busy}>
-                  {busy ? "保存中…" : "保存"}
+                  {busy ? t("common.saving") : t("common.save")}
                 </Button>
               </footer>
             </div>

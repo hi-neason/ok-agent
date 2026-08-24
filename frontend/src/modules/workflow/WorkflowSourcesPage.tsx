@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { Button, PageHeader, Toggle, useConfirm, Pagination } from "../shared";
 import type { Page } from "../shared";
 import {
@@ -34,20 +36,13 @@ function msg(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
 }
 
-export function testLabel(status: string): string {
-  switch (status) {
-    case "SUCCESS":
-      return "连接正常";
-    case "FAILED":
-      return "连接失败";
-    case "UNSUPPORTED":
-      return "不支持";
-    default:
-      return "未测试";
-  }
+export function testLabel(status: string, t: TFunction): string {
+  const key = ["SUCCESS", "FAILED", "UNSUPPORTED"].includes(status) ? status : "UNTESTED";
+  return t(`integrations.testStatus.${key}`);
 }
 
 export function WorkflowSourcesPage() {
+  const { t, i18n } = useTranslation();
   const { confirm, Dialog } = useConfirm();
   const [page, setPage] = useState<Page<WorkflowSource> | null>(null);
   const [pageNumber, setPageNumber] = useState(0);
@@ -91,14 +86,14 @@ export function WorkflowSourcesPage() {
   };
 
   const validate = (d: WorkflowSourceDraft): string | null => {
-    if (!d.name.trim()) return "请填写名称";
-    if (!d.sourceKey.trim()) return "请填写 SOURCE_KEY";
+    if (!d.name.trim()) return t("integrations.nameRequired");
+    if (!d.sourceKey.trim()) return t("integrations.sourceKeyRequired");
     if (!/^[a-z0-9-]+$/.test(d.sourceKey))
-      return "SOURCE_KEY 只能包含小写字母、数字和连字符";
-    if (!d.baseUrl.trim()) return "请填写 Base URL";
-    if (editing === "new" && !d.apiKey.trim()) return "请填写 API Key";
+      return t("integrations.sourceKeyInvalid");
+    if (!d.baseUrl.trim()) return t("integrations.baseUrlRequired");
+    if (editing === "new" && !d.apiKey.trim()) return t("integrations.apiKeyRequired");
     if (d.executeTimeoutSeconds <= 0 || d.executeTimeoutSeconds > 120)
-      return "同步超时需在 1–120 秒之间（建议小于 120）";
+      return t("workflow.timeoutInvalid");
     return null;
   };
 
@@ -135,8 +130,10 @@ export function WorkflowSourcesPage() {
         ok: updated.lastTestStatus === "SUCCESS",
         text:
           updated.lastTestStatus === "SUCCESS"
-            ? `连接成功：${updated.lastTestMessage ?? ""}`
-            : `连接失败：${updated.lastTestMessage ?? "未知错误"}`,
+            ? t("integrations.connectionSuccess", { message: updated.lastTestMessage ?? "" })
+            : t("integrations.connectionFailed", {
+                message: updated.lastTestMessage ?? t("common.unknownError"),
+              }),
       });
       await load(pageNumber);
     } catch (e) {
@@ -151,7 +148,7 @@ export function WorkflowSourcesPage() {
     setNotice(null);
     try {
       const items = await syncSource(source.id);
-      setNotice({ ok: true, text: `同步完成，发现 ${items.length} 个工作流` });
+      setNotice({ ok: true, text: t("workflow.synced", { count: items.length }) });
       await load(pageNumber);
     } catch (e) {
       setNotice({ ok: false, text: msg(e) });
@@ -172,7 +169,7 @@ export function WorkflowSourcesPage() {
   const remove = async (source: WorkflowSource) => {
     if (
       !(await confirm({
-        message: `确认删除工作流源「${source.name}」？其下发现的工作流与所有 Agent 绑定将一并移除。`,
+        message: t("workflow.deleteConfirm", { name: source.name }),
         dangerous: true,
       }))
     )
@@ -200,19 +197,19 @@ export function WorkflowSourcesPage() {
     <>
       <Dialog />
       <PageHeader
-        kicker="WORKFLOW / INTEGRATION"
-        title="工作流 - 集成"
-        description="接入外部流水线系统（Dify 等），同步其流程为全局可复用目录，再在各 Agent 中按需绑定。流程描述与入参在目录层维护一次，所有 Agent 共享。"
-        action={<Button onClick={() => open()}>＋ 添加工作流源</Button>}
+        kicker={t("workflow.kicker")}
+        title={t("workflow.title")}
+        description={t("workflow.description")}
+        action={<Button onClick={() => open()}>＋ {t("workflow.addSource")}</Button>}
       />
 
       <div className="mcp-toolbar">
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="搜索工作流源 / KEY / URL"
+          placeholder={t("workflow.search")}
         />
-        <span>{page?.totalElements ?? 0} 个源</span>
+        <span>{t("integrations.totalSources", { count: page?.totalElements ?? 0 })}</span>
       </div>
 
       {notice && (
@@ -225,12 +222,12 @@ export function WorkflowSourcesPage() {
 
       <div className="mcp-table">
         <div className="mcp-row head">
-          <span>工作流源</span>
-          <span>类型</span>
-          <span>流程数</span>
-          <span>最近测试</span>
-          <span>状态</span>
-          <span>操作</span>
+          <span>{t("workflow.source")}</span>
+          <span>{t("integrations.type")}</span>
+          <span>{t("workflow.count")}</span>
+          <span>{t("integrations.lastTest")}</span>
+          <span>{t("common.status")}</span>
+          <span>{t("common.actions")}</span>
         </div>
         {visible.map((source) => (
           <div className="mcp-row" key={source.id}>
@@ -245,29 +242,29 @@ export function WorkflowSourcesPage() {
             </span>
             <span>{source.workflowCount}</span>
             <span className={`test-state ${source.lastTestStatus.toLowerCase()}`}>
-              {testLabel(source.lastTestStatus)}
+              {testLabel(source.lastTestStatus, t)}
               {source.lastTestedAt && (
-                <small>{new Date(source.lastTestedAt).toLocaleString("zh-CN")}</small>
+                <small>{new Date(source.lastTestedAt).toLocaleString(i18n.resolvedLanguage)}</small>
               )}
             </span>
             <span>
               <Toggle on={source.enabled} setOn={() => void toggle(source)} />
             </span>
             <span className="row-actions">
-              <button onClick={() => setCatalogFor(source)}>目录</button>
+              <button onClick={() => setCatalogFor(source)}>{t("integrations.catalog")}</button>
               <button onClick={() => void sync(source)} disabled={busy}>
-                同步
+                {t("integrations.sync")}
               </button>
-              <button onClick={() => open(source)}>编辑</button>
+              <button onClick={() => open(source)}>{t("common.edit")}</button>
               <button className="danger" onClick={() => void remove(source)}>
-                删除
+                {t("common.delete")}
               </button>
             </span>
           </div>
         ))}
         {visible.length === 0 && (
           <div className="mcp-empty">
-            ⌁<b>暂无工作流源，点击右上角添加</b>
+            ⌁<b>{t("workflow.empty")}</b>
           </div>
         )}
       </div>
@@ -298,21 +295,24 @@ export function WorkflowSourcesPage() {
               <header>
                 <div>
                   <p className="kicker">
-                    WORKFLOW SOURCE / {editing === "new" ? "REGISTER" : "EDIT"}
+                    {t("integrations.sourceKicker", {
+                      kind: t("workflow.kind"),
+                      mode: editing === "new" ? t("integrations.register") : t("integrations.editMode"),
+                    })}
                   </p>
                   <h2>
                     {editing === "new"
-                      ? "添加工作流源"
+                      ? t("workflow.addSource")
                       : (editing as WorkflowSource).name}
                   </h2>
                 </div>
                 <button className="link-button" onClick={() => setEditing(null)}>
-                  关闭 ×
+                  {t("common.close")} ×
                 </button>
               </header>
               <div className="mcp-form">
                 <label>
-                  <span>名称</span>
+                  <span>{t("integrations.name")}</span>
                   <input
                     value={draft.name}
                     onChange={(e) => {
@@ -326,12 +326,12 @@ export function WorkflowSourcesPage() {
                             : d.sourceKey,
                       }));
                     }}
-                    placeholder="如：旅游 Dify"
+                    placeholder={t("workflow.namePlaceholder")}
                   />
                 </label>
                 <label>
                   <span>
-                    SOURCE_KEY <small>· 唯一标识</small>
+                    SOURCE_KEY <small>· {t("integrations.uniqueKey")}</small>
                   </span>
                   <input
                     value={draft.sourceKey}
@@ -340,7 +340,7 @@ export function WorkflowSourcesPage() {
                   />
                 </label>
                 <label>
-                  <span>类型</span>
+                  <span>{t("integrations.type")}</span>
                   <select
                     value={draft.sourceType}
                     onChange={(e) =>
@@ -356,7 +356,7 @@ export function WorkflowSourcesPage() {
                 <label className="wide">
                   <span>
                     Base URL <b className="field-required">*</b>
-                    <small>· Dify Cloud 为 https://api.dify.ai/v1</small>
+                    <small>· {t("integrations.cloudHint")}</small>
                   </span>
                   <input
                     value={draft.baseUrl}
@@ -367,7 +367,7 @@ export function WorkflowSourcesPage() {
                 <label className="wide">
                   <span>
                     API Key{" "}
-                    {editing !== "new" && <small>· 留空表示不修改已保存的密钥</small>}
+                    {editing !== "new" && <small>· {t("integrations.keepSecret")}</small>}
                     {editing === "new" && <b className="field-required">*</b>}
                   </span>
                   <input
@@ -378,7 +378,7 @@ export function WorkflowSourcesPage() {
                   />
                 </label>
                 <label>
-                  <span>同步超时（秒）</span>
+                  <span>{t("workflow.executeTimeout")}</span>
                   <input
                     type="number"
                     value={draft.executeTimeoutSeconds}
@@ -388,7 +388,7 @@ export function WorkflowSourcesPage() {
                   />
                 </label>
                 <label>
-                  <span>连接超时（秒）</span>
+                  <span>{t("integrations.connectTimeout")}</span>
                   <input
                     type="number"
                     value={draft.connectTimeoutSeconds}
@@ -410,11 +410,11 @@ export function WorkflowSourcesPage() {
               <footer>
                 {editing !== "new" && (
                   <Button quiet onClick={() => void test()} disabled={busy}>
-                    {busy ? "测试中…" : "测试连接"}
+                    {busy ? t("integrations.testing") : t("integrations.testConnection")}
                   </Button>
                 )}
                 <Button onClick={() => void save()} disabled={busy}>
-                  {busy ? "保存中…" : "保存"}
+                  {busy ? t("common.saving") : t("common.save")}
                 </Button>
               </footer>
             </div>

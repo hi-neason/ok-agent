@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 import { Button, PageHeader, Pagination, Toggle, useConfirm, type Page } from "../shared";
 import { loadAgents, type AgentOption } from "../agent/api";
 import {
@@ -23,6 +24,7 @@ import type { ChannelInput, ChannelItem } from "./types";
 import "./channel.css";
 
 export function ChannelPage() {
+  const { t } = useTranslation();
   const { confirm, Dialog } = useConfirm();
   const [page, setPage] = useState<Page<ChannelItem> | null>(null);
   const [pageNumber, setPageNumber] = useState(0);
@@ -45,10 +47,10 @@ export function ChannelPage() {
     void loadAgents()
       .then((list) => {
         setAgents(list);
-        setAgentLoadError(list.length === 0 ? "未加载到任何 Agent，请确认后端已启动且存在启用的 Agent。" : null);
+        setAgentLoadError(list.length === 0 ? t("channels.noAgents") : null);
       })
-      .catch(() => setAgentLoadError("加载 Agent 列表失败，请确认后端服务已启动。"));
-  }, [pageNumber, pageSize]);
+      .catch(() => setAgentLoadError(t("channels.agentsFailed")));
+  }, [pageNumber, pageSize, t]);
 
   const agentName = useMemo(() => {
     const map = new Map<string, string>();
@@ -199,9 +201,9 @@ export function ChannelPage() {
 
   const remove = async (item: ChannelItem) => {
     const ok = await confirm({
-      title: "删除渠道",
-      message: `确认删除渠道「${item.name}」？删除后将停止运行，此操作不可恢复。`,
-      confirmText: "删除",
+      title: t("channels.deleteTitle"),
+      message: t("channels.deleteConfirm", { name: item.name }),
+      confirmText: t("common.delete"),
     });
     if (!ok) return;
     await deleteChannel(item.id);
@@ -211,29 +213,29 @@ export function ChannelPage() {
   return (
     <>
       <PageHeader
-        kicker="CHANNEL / REGISTRY"
-        title="渠道管理"
-        description="将 Agent 绑定到飞书等通讯渠道，用户可通过个人或企业通讯工具与 Agent 对话。"
-        action={<Button onClick={openCreate}>＋ 新增渠道</Button>}
+        kicker={t("channels.kicker")}
+        title={t("channels.title")}
+        description={t("channels.description")}
+        action={<Button onClick={openCreate}>＋ {t("channels.add")}</Button>}
       />
       <section className="run-table">
         <div className="table-tools">
-          <div className="search-mini">◌ 共 {page?.totalElements ?? 0} 个渠道</div>
+          <div className="search-mini">◌ {t("channels.total", { count: page?.totalElements ?? 0 })}</div>
         </div>
         {(page?.content ?? []).length === 0 ? (
           <div className="channel-empty">
-            <p>还没有渠道，点击右上角「新增渠道」绑定飞书机器人。</p>
+            <p>{t("channels.empty")}</p>
           </div>
         ) : (
           <>
             <div className="table-head channel-table-row">
-              <span>渠道名称</span>
-              <span>类型</span>
-              <span>绑定 Agent</span>
-              <span>对话用户</span>
-              <span>运行状态</span>
-              <span>启用</span>
-              <span>操作</span>
+              <span>{t("channels.name")}</span>
+              <span>{t("integrations.type")}</span>
+              <span>{t("channels.boundAgent")}</span>
+              <span>{t("channels.users")}</span>
+              <span>{t("channels.runtimeStatus")}</span>
+              <span>{t("common.enabled")}</span>
+              <span>{t("common.actions")}</span>
             </div>
             {(page?.content ?? []).map((item) => (
               <div className="table-row channel-table-row" key={item.id}>
@@ -249,12 +251,12 @@ export function ChannelPage() {
                           : item.channelKey}
                   </small>
                 </span>
-                <span>{typeLabel(item.type)}</span>
+                <span>{typeLabel(item.type, t)}</span>
                 <span>{agentName(item.boundAgentId)}</span>
-                <span>{item.userCount ?? 0} 人</span>
+                <span>{t("channels.userCount", { count: item.userCount ?? 0 })}</span>
                 <span>
                   <span className={`channel-status channel-status--${statusTone(item.runtimeStatus)}`}>
-                    {runtimeLabel(item.runtimeStatus)}
+                    {runtimeLabel(item.runtimeStatus, t)}
                   </span>
                   {item.lastError && (
                     <small className="channel-error" title={item.lastError}>
@@ -266,7 +268,7 @@ export function ChannelPage() {
                   <Toggle
                     on={item.enabled}
                     setOn={(next) => toggleEnabled(item, next)}
-                    label={`启用 ${item.name}`}
+                    label={t("channels.enableLabel", { name: item.name })}
                   />
                 </span>
                 <span className="model-actions">
@@ -275,27 +277,27 @@ export function ChannelPage() {
                       className="link-button"
                       onClick={() => toggleRuntime(item, "stop")}
                     >
-                      停止
+                      {t("channels.stop")}
                     </button>
                   ) : (
                     <button
                       className="link-button"
                       onClick={() => toggleRuntime(item, "start")}
                     >
-                      启动
+                      {t("channels.start")}
                     </button>
                   )}
                   <button
                     className="link-button"
                     onClick={() => openEdit(item)}
                   >
-                    编辑
+                    {t("common.edit")}
                   </button>
                   <button
                     className="link-button"
                     onClick={() => remove(item)}
                   >
-                    删除
+                    {t("common.delete")}
                   </button>
                 </span>
               </div>
@@ -329,32 +331,32 @@ export function ChannelPage() {
               className="form-surface channel-editor"
               role="dialog"
               aria-modal="true"
-              aria-label="渠道配置"
+              aria-label={t("channels.config")}
               onMouseDown={(event) => event.stopPropagation()}
             >
               <div className="form-title">
                 <div>
-                  <p className="kicker">{editingId ? "编辑渠道" : "新增渠道"}</p>
-                  <h2>{editingId ? editing.name : "新增渠道"}</h2>
+                  <p className="kicker">{editingId ? t("channels.edit") : t("channels.add")}</p>
+                  <h2>{editingId ? editing.name : t("channels.add")}</h2>
                 </div>
                 <button className="link-button" onClick={() => void closeEditor()}>
-                  关闭 ×
+                  {t("common.close")} ×
                 </button>
               </div>
 
               <div className="field-grid">
                 <label className="field">
-                  <span>渠道名称</span>
+                  <span>{t("channels.name")}</span>
                   <input
                     value={editing.name}
-                    placeholder="例如：客服飞书机器人"
+                    placeholder={t("channels.namePlaceholder")}
                     onChange={(e) =>
                       setEditing({ ...editing, name: e.target.value })
                     }
                   />
                 </label>
                 <label className="field">
-                  <span>渠道类型</span>
+                  <span>{t("channels.type")}</span>
                   <select
                     value={editing.type}
                     disabled={Boolean(editingId)}
@@ -362,14 +364,14 @@ export function ChannelPage() {
                       switchType(e.target.value as ChannelInput["type"])
                     }
                   >
-                    <option value="FEISHU">飞书</option>
-                    <option value="WECHAT">微信（个人号 · ClawBot）</option>
-                    <option value="DINGTALK">钉钉（Stream 长连接）</option>
-                    <option value="WECOM" disabled>企业微信（规划中）</option>
+                    <option value="FEISHU">{t("channels.typeOptions.FEISHU")}</option>
+                    <option value="WECHAT">{t("channels.typeOptions.WECHAT")}</option>
+                    <option value="DINGTALK">{t("channels.typeOptions.DINGTALK")}</option>
+                    <option value="WECOM" disabled>{t("channels.typeOptions.WECOM")}</option>
                   </select>
                 </label>
                 <label className="field">
-                  <span>绑定 Agent</span>
+                  <span>{t("channels.boundAgent")}</span>
                   <select
                     value={editing.boundAgentId ?? ""}
                     onChange={(e) =>
@@ -379,7 +381,7 @@ export function ChannelPage() {
                       })
                     }
                   >
-                    <option value="">— 请选择 —</option>
+                    <option value="">{t("channels.select")}</option>
                     {agents.map((a) => (
                       <option key={a.id} value={a.id}>
                         {a.name}
@@ -391,7 +393,7 @@ export function ChannelPage() {
                   )}
                 </label>
                 <label className="field">
-                  <span>会话作用域（DmScope）</span>
+                  <span>{t("channels.scope")}</span>
                   <select
                     value={editing.dmScope}
                     onChange={(e) =>
@@ -401,24 +403,23 @@ export function ChannelPage() {
                       })
                     }
                   >
-                    <option value="PER_PEER">每个对话用户独立会话</option>
-                    <option value="MAIN">所有用户共享一个会话</option>
-                    <option value="PER_CHANNEL_PEER">渠道 + 对话用户</option>
+                    <option value="PER_PEER">{t("channels.scopes.PER_PEER")}</option>
+                    <option value="MAIN">{t("channels.scopes.MAIN")}</option>
+                    <option value="PER_CHANNEL_PEER">{t("channels.scopes.PER_CHANNEL_PEER")}</option>
                     <option value="PER_ACCOUNT_CHANNEL_PEER">
-                      账号 + 渠道 + 对话用户
+                      {t("channels.scopes.PER_ACCOUNT_CHANNEL_PEER")}
                     </option>
                   </select>
                 </label>
               </div>
 
               <div className="channel-hint">
-                渠道绑定的是一个机器人（BOT），任何给该 BOT 发消息的人都会成为对话用户，
-                Agent 的记忆与画像按各自身份自动隔离，无需在此指定归属用户。
+                {t("channels.bindingHint")}
               </div>
 
               {editing.type === "FEISHU" && (
                 <>
-                  <h3 className="channel-section-title">飞书自建应用配置</h3>
+                  <h3 className="channel-section-title">{t("channels.feishuTitle")}</h3>
                   <FeishuQrScan
                     onSuccess={({ appId, appSecret }) => {
                       setEditing((cur) =>
@@ -435,7 +436,7 @@ export function ChannelPage() {
                       );
                     }}
                   />
-                  <div className="channel-or">或手动填写 App ID / App Secret</div>
+                  <div className="channel-or">{t("channels.feishuManual")}</div>
                   <div className="field-grid">
                     <label className="field">
                       <span>App ID（cli_xxx）</span>
@@ -457,7 +458,7 @@ export function ChannelPage() {
                         autoComplete="new-password"
                         value={editing.feishu.appSecret ?? ""}
                         placeholder={
-                          editingId ? "已配置，留空则保持不变" : "必填"
+                          editingId ? t("channels.configuredSecret") : t("channels.required")
                         }
                         onChange={(e) =>
                           setEditing({
@@ -473,19 +474,17 @@ export function ChannelPage() {
                   </div>
 
                   <div className="channel-hint">
-                    保存后系统通过飞书长连接（WebSocket）自动接收消息，<b>无需公网回调地址或内网穿透</b>。
-                    请在飞书开放平台确认：① 开启「机器人」能力；② 事件订阅选择「使用长连接接收事件」，
-                    并添加 <code>im.message.receive_v1</code> 事件；③ 发布应用版本。单聊直接对话，群聊需 @ 机器人。
+                    {t("channels.feishuHint")}
                   </div>
                 </>
               )}
 
               {editing.type === "WECHAT" && (
                 <>
-                  <h3 className="channel-section-title">微信个人号（ClawBot / iLink）</h3>
+                  <h3 className="channel-section-title">{t("channels.wechatTitle")}</h3>
                   <div className="field-grid">
                     <label className="field">
-                      <span>API 地址（apiBase）</span>
+                      <span>{t("channels.apiBase")}</span>
                       <input
                         value={editing.wechat?.apiBase ?? ""}
                         placeholder="https://ilinkai.weixin.qq.com"
@@ -501,7 +500,7 @@ export function ChannelPage() {
                       />
                     </label>
                     <label className="field">
-                      <span>协议版本（channelVersion）</span>
+                      <span>{t("channels.protocolVersion")}</span>
                       <input
                         value={editing.wechat?.channelVersion ?? ""}
                         placeholder="0.1.0"
@@ -533,18 +532,14 @@ export function ChannelPage() {
                   )}
 
                   <div className="channel-hint">
-                    微信个人号走 iLink 长轮询接收消息，<b>仅支持私聊</b>，不支持群聊。
-                    扫码登录后，bot_token 加密保存在服务端；context_token 用于回复消息，有效期约 24 小时。
-                    {editingId
-                      ? "请将上方渠道开关打开并启动渠道，登录态生效后会自动拉取消息。"
-                      : "扫码确认成功后点击「保存渠道」，渠道即创建完成并处于已登录状态。"}
+                    {editingId ? t("channels.wechatHintEdit") : t("channels.wechatHintCreate")}
                   </div>
                 </>
               )}
 
               {editing.type === "DINGTALK" && (
                 <>
-                  <h3 className="channel-section-title">钉钉企业内部应用（Stream 长连接）</h3>
+                  <h3 className="channel-section-title">{t("channels.dingtalkTitle")}</h3>
                   {editingId ? null : (
                     <>
                       <DingTalkQrScan
@@ -568,7 +563,7 @@ export function ChannelPage() {
                           )
                         }
                       />
-                      <div className="channel-or">或手动填写 AppKey / AppSecret / RobotCode</div>
+                      <div className="channel-or">{t("channels.dingtalkManual")}</div>
                     </>
                   )}
                   <div className="field-grid">
@@ -594,7 +589,7 @@ export function ChannelPage() {
                         type="password"
                         autoComplete="new-password"
                         value={editing.dingtalk?.appSecret ?? ""}
-                        placeholder={editingId ? "已配置，留空则保持不变" : "必填"}
+                        placeholder={editingId ? t("channels.configuredSecret") : t("channels.required")}
                         onChange={(e) =>
                           setEditing({
                             ...editing,
@@ -607,7 +602,7 @@ export function ChannelPage() {
                       />
                     </label>
                     <label className="field">
-                      <span>RobotCode（机器人编码）</span>
+                      <span>{t("channels.robotCode")}</span>
                       <input
                         value={editing.dingtalk?.robotCode ?? ""}
                         placeholder="dingxxxxxxxxxx"
@@ -625,7 +620,7 @@ export function ChannelPage() {
                   </div>
 
                   <details className="channel-advanced">
-                    <summary>高级：接口地址覆盖（一般无需修改）</summary>
+                    <summary>{t("channels.advanced")}</summary>
                     <div className="field-grid">
                       <label className="field">
                         <span>API Base</span>
@@ -644,7 +639,7 @@ export function ChannelPage() {
                         />
                       </label>
                       <label className="field">
-                        <span>OAPI Base（旧版 gettoken）</span>
+                        <span>{t("channels.legacyTokenBase")}</span>
                         <input
                           value={editing.dingtalk?.oapiBase ?? ""}
                           placeholder="https://oapi.dingtalk.com"
@@ -660,7 +655,7 @@ export function ChannelPage() {
                         />
                       </label>
                       <label className="field">
-                        <span>Stream 注册地址</span>
+                        <span>{t("channels.streamRegisterUrl")}</span>
                         <input
                           value={editing.dingtalk?.streamRegisterUrl ?? ""}
                           placeholder="https://api.dingtalk.com/v1.0/gateway/connections/open"
@@ -679,9 +674,7 @@ export function ChannelPage() {
                   </details>
 
                   <div className="channel-hint">
-                    钉钉走 Stream 模式（持久 WebSocket）接收消息，<b>无需公网回调地址</b>。
-                    请在钉钉开放平台创建企业内部应用并添加「机器人」能力，发布后获取 AppKey / AppSecret / RobotCode。
-                    单聊直接对话，群聊需 @ 机器人。保存后在渠道列表点击「启动」即可连接。
+                    {t("channels.dingtalkHint")}
                   </div>
                 </>
               )}
@@ -690,10 +683,10 @@ export function ChannelPage() {
 
               <div className="sticky-actions">
                 <Button quiet onClick={() => void closeEditor()} disabled={saving}>
-                  取消
+                  {t("common.cancel")}
                 </Button>
                 <Button onClick={save} disabled={saving}>
-                  {saving ? "保存中…" : "保存渠道"}
+                  {saving ? t("common.saving") : t("channels.save")}
                 </Button>
               </div>
             </div>

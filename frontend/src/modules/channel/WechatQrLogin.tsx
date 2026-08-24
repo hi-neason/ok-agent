@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
+import { useTranslation } from "react-i18next";
 import {
   fetchWechatLogin,
   pollWechatLogin,
@@ -28,15 +29,6 @@ type Phase =
   | "expired"
   | "error";
 
-const STATUS_HINT: Record<string, string> = {
-  LOGGED_OUT: "尚未登录微信个人号。",
-  WAITING_QR: "请使用微信扫码登录。",
-  SCANNED: "已扫码，请在手机上确认登录。",
-  LOGGED_IN: "已登录，渠道运行后将自动接收该微信号的私聊消息。",
-  EXPIRED: "二维码已过期，请重新生成。",
-  ERROR: "登录过程出现异常。",
-};
-
 /** True only for an inline data-URI image we can drop directly into an <img>. */
 function isDataImageUri(value: string | null | undefined): boolean {
   return !!value && value.trim().startsWith("data:image/");
@@ -56,6 +48,7 @@ function isDataImageUri(value: string | null | undefined): boolean {
  * temporary channel.
  */
 export function WechatQrLogin({ channelId, autoStart = true, onCancel }: Props) {
+  const { t, i18n } = useTranslation();
   const [phase, setPhase] = useState<Phase>("idle");
   const [status, setStatus] = useState<WechatIlinkStatus | null>(null);
   const [qrSvg, setQrSvg] = useState<string | null>(null);
@@ -114,7 +107,7 @@ export function WechatQrLogin({ channelId, autoStart = true, onCancel }: Props) 
         case "ERROR":
           clearTimer();
           setPhase("error");
-          setError(s.lastError || "登录异常");
+          setError(s.lastError || t("qr.wechat.loginError"));
           break;
         case "WAITING_QR":
           setPhase("show");
@@ -125,7 +118,7 @@ export function WechatQrLogin({ channelId, autoStart = true, onCancel }: Props) 
           setPhase("idle");
       }
     },
-    [renderQr],
+    [renderQr, t],
   );
 
   const refresh = useCallback(
@@ -136,10 +129,10 @@ export function WechatQrLogin({ channelId, autoStart = true, onCancel }: Props) 
         applyStatus(s);
       } catch (e) {
         setPhase("error");
-        setError(e instanceof Error ? e.message : "加载登录状态失败");
+        setError(e instanceof Error ? e.message : t("qr.wechat.statusLoadFailed"));
       }
     },
-    [applyStatus],
+    [applyStatus, t],
   );
 
   const begin = useCallback(
@@ -154,10 +147,10 @@ export function WechatQrLogin({ channelId, autoStart = true, onCancel }: Props) 
         applyStatus(s);
       } catch (e) {
         setPhase("error");
-        setError(e instanceof Error ? e.message : "发起扫码登录失败");
+        setError(e instanceof Error ? e.message : t("qr.wechat.startLoginFailed"));
       }
     },
-    [applyStatus],
+    [applyStatus, t],
   );
 
   // Load existing status (or auto-start) whenever channelId changes.
@@ -201,7 +194,7 @@ export function WechatQrLogin({ channelId, autoStart = true, onCancel }: Props) 
           const s = await pollWechatLogin(channelId);
           applyStatus(s);
         } catch (e) {
-          setError(e instanceof Error ? e.message : "轮询状态失败");
+          setError(e instanceof Error ? e.message : t("qr.pollFailed"));
           pollTimer.current = window.setTimeout(() => {
             if (!channelId) return;
             void pollWechatLogin(channelId)
@@ -212,7 +205,7 @@ export function WechatQrLogin({ channelId, autoStart = true, onCancel }: Props) 
       })();
     }, 2000);
     return clearTimer;
-  }, [phase, channelId, applyStatus]);
+  }, [phase, channelId, applyStatus, t]);
 
   const logout = useCallback(async () => {
     if (!channelId) return;
@@ -220,9 +213,9 @@ export function WechatQrLogin({ channelId, autoStart = true, onCancel }: Props) 
       const s = await wechatLogout(channelId);
       applyStatus(s);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "登出失败");
+      setError(e instanceof Error ? e.message : t("qr.wechat.logoutFailed"));
     }
-  }, [channelId, applyStatus]);
+  }, [channelId, applyStatus, t]);
 
   const cancelScan = () => {
     clearTimer();
@@ -245,14 +238,14 @@ export function WechatQrLogin({ channelId, autoStart = true, onCancel }: Props) 
   return (
     <div className="feishu-qr-panel">
       <div className="feishu-qr-head">
-        <b>微信扫码登录（个人号 · ClawBot）</b>
+        <b>{t("qr.wechat.title")}</b>
         {phase === "logged-in" && (
           <button
             type="button"
             className="link-button"
             onClick={() => void logout()}
           >
-            退出登录
+            {t("qr.wechat.logout")}
           </button>
         )}
         {(phase === "show" ||
@@ -261,21 +254,21 @@ export function WechatQrLogin({ channelId, autoStart = true, onCancel }: Props) 
           phase === "expired") &&
           onCancel && (
             <button type="button" className="link-button" onClick={cancelScan}>
-              取消
+              {t("qr.cancel")}
             </button>
           )}
       </div>
 
       {!channelId && (
-        <div className="feishu-qr-loading">正在准备扫码绑定…</div>
+        <div className="feishu-qr-loading">{t("qr.wechat.preparing")}</div>
       )}
 
       {channelId && phase === "loading" && (
-        <div className="feishu-qr-loading">正在加载登录状态…</div>
+        <div className="feishu-qr-loading">{t("qr.wechat.loadingStatus")}</div>
       )}
 
       {channelId && phase === "starting" && (
-        <div className="feishu-qr-loading">正在生成登录二维码…</div>
+        <div className="feishu-qr-loading">{t("qr.wechat.generatingLogin")}</div>
       )}
 
       {channelId && showQr === "image" && status?.qrcodeUrl && (
@@ -285,17 +278,17 @@ export function WechatQrLogin({ channelId, autoStart = true, onCancel }: Props) 
           <img
             className="feishu-qr-img-tag"
             src={status.qrcodeUrl}
-            alt="微信登录二维码"
+            alt={t("qr.wechat.alt")}
           />
           {phase === "expired" && (
             <div className="feishu-qr-mask">
-              <span>已过期</span>
+              <span>{t("qr.expired")}</span>
               <button
                 type="button"
                 className="link-button"
                 onClick={() => void begin(channelId)}
               >
-                重新生成
+                {t("qr.regenerate")}
               </button>
             </div>
           )}
@@ -312,13 +305,13 @@ export function WechatQrLogin({ channelId, autoStart = true, onCancel }: Props) 
           />
           {phase === "expired" && (
             <div className="feishu-qr-mask">
-              <span>已过期</span>
+              <span>{t("qr.expired")}</span>
               <button
                 type="button"
                 className="link-button"
                 onClick={() => void begin(channelId)}
               >
-                重新生成
+                {t("qr.regenerate")}
               </button>
             </div>
           )}
@@ -327,32 +320,36 @@ export function WechatQrLogin({ channelId, autoStart = true, onCancel }: Props) 
 
       {channelId && phase === "show" && (
         <div className="feishu-qr-tip">
-          请使用<b>微信 App</b> 扫码，在手机上确认登录个人微信号。
-          登录后该微信号收到的私聊消息将转发给所绑定的 Agent。
+          {t("qr.wechat.forwardingTip")}
         </div>
       )}
 
       {channelId && phase === "scanned" && (
         <div className="feishu-qr-ok">
-          ✓ 已扫码，请在手机上点击「确认登录」…
+          ✓ {t("qr.wechat.scanned")}
         </div>
       )}
 
       {channelId && phase === "logged-in" && status && (
         <div className="feishu-qr-ok">
           <div>
-            ✓ 已登录{status.botId ? `（Bot ID：${status.botId}）` : ""}
-            {status.ilinkUserId ? ` · 用户：${status.ilinkUserId}` : ""}
+            ✓ {t("qr.wechat.loggedIn")}
+            {status.botId ? ` · ${t("qr.wechat.botId", { id: status.botId })}` : ""}
+            {status.ilinkUserId ? ` · ${t("qr.wechat.userId", { id: status.ilinkUserId })}` : ""}
           </div>
           {status.loggedInAt && (
-            <small>登录时间：{new Date(status.loggedInAt).toLocaleString()}</small>
+            <small>
+              {t("qr.wechat.loginTime", {
+                time: new Date(status.loggedInAt).toLocaleString(i18n.resolvedLanguage),
+              })}
+            </small>
           )}
         </div>
       )}
 
       {channelId && phase === "idle" && (
         <div className="feishu-qr-tip">
-          {STATUS_HINT.LOGGED_OUT}
+          {t("qr.wechat.loggedOut")}
           <div style={{ marginTop: 8 }}>
             <button
               type="button"
@@ -360,7 +357,7 @@ export function WechatQrLogin({ channelId, autoStart = true, onCancel }: Props) 
               onClick={() => void begin(channelId)}
             >
               <span className="feishu-qr-icon">▣</span>
-              扫码登录微信
+              {t("qr.wechat.login")}
             </button>
           </div>
         </div>
@@ -368,7 +365,7 @@ export function WechatQrLogin({ channelId, autoStart = true, onCancel }: Props) 
 
       {channelId && phase === "expired" && (
         <div className="feishu-qr-tip">
-          {STATUS_HINT.EXPIRED}
+          {t("qr.expiredError")}
           <div style={{ marginTop: 8 }}>
             <button
               type="button"
@@ -376,7 +373,7 @@ export function WechatQrLogin({ channelId, autoStart = true, onCancel }: Props) 
               onClick={() => void begin(channelId)}
             >
               <span className="feishu-qr-icon">▣</span>
-              重新扫码
+              {t("qr.wechat.rescan")}
             </button>
           </div>
         </div>
@@ -384,14 +381,14 @@ export function WechatQrLogin({ channelId, autoStart = true, onCancel }: Props) 
 
       {channelId && phase === "error" && (
         <div className="feishu-qr-err">
-          × {error || STATUS_HINT.ERROR}
+          × {error || t("qr.wechat.genericError")}
           <div style={{ marginTop: 8 }}>
             <button
               type="button"
               className="link-button"
               onClick={() => void begin(channelId)}
             >
-              重试
+              {t("qr.retry")}
             </button>
           </div>
         </div>

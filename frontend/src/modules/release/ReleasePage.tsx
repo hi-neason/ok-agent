@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button, PageHeader } from "../shared";
 import {
   createVersion,
@@ -24,21 +25,16 @@ function shortHash(hash: string | null | undefined): string {
   return hash ? hash.slice(0, 8) : "—";
 }
 
-function formatTime(iso: string): string {
+function formatTime(iso: string, locale: string): string {
   try {
-    return new Date(iso).toLocaleString("zh-CN", { hour12: false });
+    return new Date(iso).toLocaleString(locale, { hour12: false });
   } catch {
     return iso;
   }
 }
 
-const statusLabel: Record<ReleaseItem["status"], string> = {
-  PROMOTED: "线上",
-  SUPERSEDED: "已取代",
-  ROLLED_BACK: "已回滚",
-};
-
 export function ReleasePage() {
+  const { t, i18n } = useTranslation();
   const [agents, setAgents] = useState<AgentOption[]>([]);
   const [channels, setChannels] = useState<ChannelOption[]>([]);
   const [agentId, setAgentId] = useState<string>("");
@@ -167,13 +163,13 @@ export function ReleasePage() {
   return (
     <>
       <PageHeader
-        kicker="RELEASE MANAGEMENT / VERSIONING"
-        title="发布管理"
-        description="从 Agent 草稿冻结出不可变版本（v1、v2…），将版本发布到渠道；运行态只读取已发布快照，不读取草稿。"
+        kicker={t("release.kicker")}
+        title={t("release.title")}
+        description={t("release.description")}
       />
       <div className="rel-toolbar">
         <label className="rel-field">
-          <span>选择 Agent</span>
+          <span>{t("release.selectAgent")}</span>
           <select
             value={agentId}
             onChange={(e) => {
@@ -196,39 +192,35 @@ export function ReleasePage() {
       <div className="rel-layout">
         <section className="rel-col">
           <div className="rel-card">
-            <h3>保存新版本</h3>
-            <p className="rel-hint">
-              将当前草稿冻结为不可变版本。引用的子 Agent 会被固定到它的最新版本。
-            </p>
+            <h3>{t("release.createTitle")}</h3>
+            <p className="rel-hint">{t("release.createHint")}</p>
             <label className="rel-field">
-              <span>版本标签（可选）</span>
+              <span>{t("release.versionLabel")}</span>
               <input
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
-                placeholder="如 v1.0.0 / 大促版本"
+                placeholder={t("release.versionLabelPlaceholder")}
               />
             </label>
             <label className="rel-field">
-              <span>变更说明</span>
+              <span>{t("release.changelog")}</span>
               <textarea
                 value={changelog}
                 onChange={(e) => setChangelog(e.target.value)}
                 rows={3}
-                placeholder="本次版本改了什么"
+                placeholder={t("release.changelogPlaceholder")}
               />
             </label>
             <Button onClick={handleCreateVersion} disabled={saving}>
-              {saving ? "冻结中…" : "冻结为新版本"}
+              {saving ? t("release.freezing") : t("release.freeze")}
             </Button>
           </div>
 
           <div className="rel-card">
-            <h3>版本时间线</h3>
-            {loading && <p className="rel-hint">加载中…</p>}
+            <h3>{t("release.timeline")}</h3>
+            {loading && <p className="rel-hint">{t("common.loading")}</p>}
             {!loading && versions.length === 0 && (
-              <p className="rel-hint">
-                还没有版本。点击上方「冻结为新版本」从当前草稿创建第一个版本。
-              </p>
+              <p className="rel-hint">{t("release.emptyVersions")}</p>
             )}
             <ul className="rel-timeline">
               {versions.map((v) => {
@@ -244,7 +236,7 @@ export function ReleasePage() {
                     <div className="rel-vhead">
                       <b>v{v.versionNo}</b>
                       <code>{shortHash(v.contentHash)}</code>
-                      {promoted && <span className="rel-tag live">线上</span>}
+                      {promoted && <span className="rel-tag live">{t("release.live")}</span>}
                     </div>
                     {v.versionLabel && (
                       <div className="rel-vlabel">{v.versionLabel}</div>
@@ -253,7 +245,7 @@ export function ReleasePage() {
                       <div className="rel-changelog">{v.changelog}</div>
                     )}
                     <div className="rel-vmeta">
-                      {v.createdBy} · {formatTime(v.createdAt)}
+                      {v.createdBy} · {formatTime(v.createdAt, i18n.resolvedLanguage ?? "zh-CN")}
                     </div>
                   </li>
                 );
@@ -266,32 +258,32 @@ export function ReleasePage() {
           {selected ? (
             <div className="rel-card">
               <h3>
-                版本 v{selected.versionNo} 详情
+                {t("release.detailTitle", { version: selected.versionNo })}
                 {selected.versionLabel ? ` · ${selected.versionLabel}` : ""}
               </h3>
               <div className="rel-detail-grid">
-                <span>内容指纹</span>
+                <span>{t("release.contentHash")}</span>
                 <code>{selected.contentHash}</code>
-                <span>创建人</span>
+                <span>{t("release.createdBy")}</span>
                 <span>{selected.createdBy}</span>
-                <span>创建时间</span>
-                <span>{formatTime(selected.createdAt)}</span>
-                <span>父版本</span>
+                <span>{t("release.createdAt")}</span>
+                <span>{formatTime(selected.createdAt, i18n.resolvedLanguage ?? "zh-CN")}</span>
+                <span>{t("release.parentVersion")}</span>
                 <code>{shortHash(selected.parentVersionId)}</code>
               </div>
               <details className="rel-snapshot">
-                <summary>查看冻结快照（snapshot_json）</summary>
+                <summary>{t("release.viewSnapshot")}</summary>
                 <pre>{snapshotPretty}</pre>
               </details>
 
               <div className="rel-publish">
                 <label className="rel-field">
-                  <span>发布到渠道</span>
+                  <span>{t("release.publishTo")}</span>
                   <select
                     value={targetChannelId}
                     onChange={(e) => setTargetChannelId(e.target.value)}
                   >
-                    <option value="">请选择渠道…</option>
+                    <option value="">{t("release.selectChannel")}</option>
                     {agentChannels.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name}（{c.type}）
@@ -303,17 +295,19 @@ export function ReleasePage() {
                   onClick={handlePublish}
                   disabled={publishing || !targetChannelId}
                 >
-                  {publishing ? "发布中…" : `发布 v${selected.versionNo} →`}
+                  {publishing
+                    ? t("release.publishing")
+                    : t("release.publishVersion", { version: selected.versionNo })}
                 </Button>
               </div>
             </div>
           ) : (
-            <div className="rel-card rel-hint">选择左侧版本查看详情。</div>
+            <div className="rel-card rel-hint">{t("release.selectVersion")}</div>
           )}
 
           <div className="rel-card">
-            <h3>渠道当前版本</h3>
-            {channels.length === 0 && <p className="rel-hint">暂无渠道。</p>}
+            <h3>{t("release.channelVersions")}</h3>
+            {channels.length === 0 && <p className="rel-hint">{t("release.noChannels")}</p>}
             <ul className="rel-channels">
               {channels.map((c) => {
                 const current = channelCurrent[c.id];
@@ -332,13 +326,13 @@ export function ReleasePage() {
                           <button
                             className="rel-link"
                             onClick={() => handleRollback(c.id)}
-                            title="回滚到上一个版本"
+                            title={t("release.rollbackTitle")}
                           >
-                            回滚
+                            {t("release.rollback")}
                           </button>
                         </>
                       ) : (
-                        <span className="rel-tag idle">未发布</span>
+                        <span className="rel-tag idle">{t("release.unpublished")}</span>
                       )}
                     </div>
                   </li>
@@ -348,8 +342,8 @@ export function ReleasePage() {
           </div>
 
           <div className="rel-card">
-            <h3>发布历史</h3>
-            {releases.length === 0 && <p className="rel-hint">暂无发布记录。</p>}
+            <h3>{t("release.history")}</h3>
+            {releases.length === 0 && <p className="rel-hint">{t("release.noHistory")}</p>}
             <ul className="rel-history">
               {releases.map((r) => {
                 const ch = channels.find((c) => c.id === r.targetId);
@@ -357,12 +351,12 @@ export function ReleasePage() {
                   <li key={r.id}>
                     <b>v{r.versionNo}</b>
                     <span className={`rel-status ${r.status.toLowerCase()}`}>
-                      {statusLabel[r.status]}
+                      {t(`release.status.${r.status}`)}
                     </span>
                     <span className="rel-h-target">
                       {ch ? ch.name : r.targetId}
                     </span>
-                    <small>{formatTime(r.publishedAt)}</small>
+                    <small>{formatTime(r.publishedAt, i18n.resolvedLanguage ?? "zh-CN")}</small>
                   </li>
                 );
               })}

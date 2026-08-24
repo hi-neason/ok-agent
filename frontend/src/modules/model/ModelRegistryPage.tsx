@@ -64,7 +64,7 @@ export function ModelRegistryPage() {
         result.message ||
         result.detail ||
         result.title ||
-        `请求失败（HTTP ${status}）`;
+        t("common.requestFailed", { status });
       const statusSuffix =
         result.statusCode && !message.includes(`HTTP ${result.statusCode}`)
           ? `（HTTP ${result.statusCode}）`
@@ -87,9 +87,9 @@ export function ModelRegistryPage() {
   return (
     <>
       <PageHeader
-        kicker="MODEL ASSETS / REGISTRY"
-        title="模型管理"
-        description="统一管理文本、语音、视觉、OCR 和音视频模型。Agent 仅引用已启用的模型资产与其版本。"
+        kicker={t("models.kicker")}
+        title={t("models.title")}
+        description={t("models.description")}
         action={
           <Button
             onClick={() => {
@@ -107,36 +107,31 @@ export function ModelRegistryPage() {
               });
             }}
           >
-            ＋ 新增模型
+            ＋ {t("models.add")}
           </Button>
         }
       />
       <section className="run-table">
         <div className="table-tools">
-          <div className="search-mini">◌ 共 {page?.totalElements ?? 0} 个模型</div>
+          <div className="search-mini">◌ {t("models.total", { count: page?.totalElements ?? 0 })}</div>
           <label className="model-type-filter">
-            类型
+            {t("models.type")}
             <select
               value={type}
               onChange={(event) => setType(event.target.value as typeof type)}
             >
-              <option value="ALL">全部类型</option>
-              <option value="LLM">大语言模型</option>
-              <option value="SPEECH">语音模型</option>
-              <option value="VISION">视觉模型</option>
-              <option value="OCR">OCR 模型</option>
-              <option value="AUDIO_VIDEO">音视频模型</option>
+              <option value="ALL">{t("models.allTypes")}</option>
+              {(["LLM", "SPEECH", "VISION", "OCR", "AUDIO_VIDEO"] as const).map((modelType) => (
+                <option key={modelType} value={modelType}>{t(`models.types.${modelType}`)}</option>
+              ))}
             </select>
           </label>
         </div>
         <div className="table-head model-table-row">
-          <span>模型名称</span>
-          <span>类型</span>
-          <span>提供商</span>
-          <span>模型 ID</span>
-          <span>密钥引用</span>
-          <span>启用状态</span>
-          <span>操作</span>
+          <span>{t("models.name")}</span><span>{t("models.type")}</span>
+          <span>{t("models.provider")}</span><span>{t("models.modelId")}</span>
+          <span>{t("models.apiKeyReference")}</span><span>{t("models.enabledStatus")}</span>
+          <span>{t("common.actions")}</span>
         </div>
         {visible.map((model) => (
           <div className="table-row model-table-row" key={model.id}>
@@ -147,7 +142,7 @@ export function ModelRegistryPage() {
             <span>{model.type.replace("_", " / ")}</span>
             <span>{model.provider}</span>
             <code>{model.modelId}</code>
-            <code>{model.apiKeyConfigured ? "已配置" : "未配置"}</code>
+            <code>{t(model.apiKeyConfigured ? "common.configured" : "common.notConfigured")}</code>
             <Toggle
               on={model.enabled}
               setOn={(next) =>
@@ -172,7 +167,7 @@ export function ModelRegistryPage() {
                   setEditing(model);
                 }}
               >
-                编辑
+                {t("common.edit")}
               </button>
               <button
                 className="link-button"
@@ -182,7 +177,7 @@ export function ModelRegistryPage() {
                   )
                 }
               >
-                删除
+                {t("common.delete")}
               </button>
             </span>
           </div>
@@ -213,21 +208,21 @@ export function ModelRegistryPage() {
               className="form-surface model-editor"
               role="dialog"
               aria-modal="true"
-              aria-label="模型配置"
+              aria-label={t("models.configAria")}
               onMouseDown={(event) => event.stopPropagation()}
             >
               <div className="form-title">
                 <div>
                   <p className="kicker">
-                    {editing.id ? "编辑模型" : "新增模型"}
+                    {t(editing.id ? "models.edit" : "models.add")}
                   </p>
-                  <h2>{editing.id ? editing.name : "新增模型"}</h2>
+                  <h2>{editing.id ? editing.name : t("models.add")}</h2>
                 </div>
                 <button
                   className="link-button"
                   onClick={() => setEditing(null)}
                 >
-                  关闭 ×
+                  {t("models.close")}
                 </button>
               </div>
               <div className="provider-pills">
@@ -247,7 +242,7 @@ export function ModelRegistryPage() {
               </div>
               <div className="field-grid">
                 <label className="field">
-                  <span>名称</span>
+                  <span>{t("models.nameField")}</span>
                   <input
                     value={editing.name}
                     onChange={(e) =>
@@ -256,7 +251,7 @@ export function ModelRegistryPage() {
                   />
                 </label>
                 <label className="field">
-                  <span>模型提供商</span>
+                  <span>{t("models.providerField")}</span>
                   {editing.type === "LLM" ? (
                     <>
                       <select
@@ -278,13 +273,13 @@ export function ModelRegistryPage() {
                             {name}
                           </option>
                         ))}
-                        <option value="CUSTOM">自定义</option>
+                        <option value="CUSTOM">{t("models.custom")}</option>
                       </select>
                       {!llmProviders.some(
                         ([name]) => name === editing.provider,
                       ) && (
                         <input
-                          placeholder="请输入自定义模型厂商"
+                          placeholder={t("models.customProviderPlaceholder")}
                           value={editing.provider}
                           onChange={(event) =>
                             setEditing({
@@ -305,7 +300,7 @@ export function ModelRegistryPage() {
                   )}
                 </label>
                 <label className="field">
-                  <span>模型（MODEL_ID）</span>
+                  <span>{t("models.modelIdField")}</span>
                   <input
                     value={editing.modelId}
                     onChange={(e) =>
@@ -314,7 +309,7 @@ export function ModelRegistryPage() {
                   />
                 </label>
                 <label className="field">
-                  <span>API 密钥（API_KEY）</span>
+                  <span>{t("models.apiKeyField")}</span>
                   <input
                     type="password"
                     autoComplete="new-password"
@@ -330,7 +325,7 @@ export function ModelRegistryPage() {
                   />
                 </label>
                 <label className="field wide">
-                  <span>服务地址（BASE_URL）</span>
+                  <span>{t("models.baseUrlField")}</span>
                   <input
                     value={editing.endpoint}
                     onChange={(e) =>
@@ -370,7 +365,7 @@ export function ModelRegistryPage() {
                       ? t("models.connectionRetry")
                       : t("models.connectionTest")}
                 </Button>
-                <Button onClick={save}>保存模型</Button>
+                <Button onClick={save}>{t("models.save")}</Button>
               </div>
             </div>
           </div>,

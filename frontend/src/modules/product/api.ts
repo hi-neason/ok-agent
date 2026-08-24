@@ -8,6 +8,7 @@ import type {
   SolutionDraft,
 } from "./types";
 import type { Page } from "../shared";
+import i18n from "../../i18n";
 
 async function jsonOrThrow<T>(res: Response): Promise<T> {
   if (!res.ok) {
@@ -47,7 +48,7 @@ function parseJsonObject(raw: string, label: string): Record<string, unknown> {
     if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) return parsed;
     throw new Error("not an object");
   } catch {
-    throw new Error(`${label} 必须是合法的 JSON 对象（如 {"key":"value"}）`);
+    throw new Error(i18n.t("product.sources.jsonInvalid", { label }));
   }
 }
 
@@ -60,7 +61,7 @@ function productPayload(draft: ProductDraft) {
     priceMin: draft.priceMin === null || Number.isNaN(draft.priceMin) ? null : draft.priceMin,
     priceMax: draft.priceMax === null || Number.isNaN(draft.priceMax) ? null : draft.priceMax,
     currency: draft.currency.trim() || "CNY",
-    spec: parseJsonObject(draft.spec, "规格(spec)"),
+    spec: parseJsonObject(draft.spec, i18n.t("product.sources.specLabel")),
     sellingPoints: draft.sellingPoints.trim() || null,
     scenarioTags: splitList(draft.scenarioTags),
     imageUrls: splitList(draft.imageUrls),
@@ -71,7 +72,7 @@ function productPayload(draft: ProductDraft) {
 }
 
 function sourcePayload(draft: ProductSourceDraft) {
-  const secrets = parseJsonObject(draft.secretsJson, "凭据(secrets)") as Record<string, string>;
+  const secrets = parseJsonObject(draft.secretsJson, i18n.t("product.sources.secretsLabel")) as Record<string, string>;
   return {
     sourceKey: draft.sourceKey.trim(),
     name: draft.name.trim(),

@@ -101,7 +101,7 @@ export function AgentSubAgentTab({
   );
 
   const agentName = (id: string | null) =>
-    id ? agents.find((a) => a.id === id)?.name ?? "（已删除的智能体）" : "";
+    id ? agents.find((a) => a.id === id)?.name ?? t("agents.subagents.deleted") : "";
 
   const renderIntentTree = (
     nodes: IntentNode[],
@@ -143,7 +143,7 @@ export function AgentSubAgentTab({
                 className="intent-chevron"
                 style={{ marginLeft: depth * 14 }}
                 onClick={() => toggleCollapsed(n.node.intentKey)}
-                aria-label={isCollapsed ? "展开" : "折叠"}
+                aria-label={t(isCollapsed ? "common.expand" : "common.collapse")}
               >
                 {isCollapsed ? "▸" : "▾"}
               </button>
@@ -167,7 +167,7 @@ export function AgentSubAgentTab({
               />
               <span className="intent-name">{n.node.name}</span>
               {claimedByOther && claimerName && (
-                <em className="intent-claimed-by">已由「{claimerName}」绑定</em>
+                <em className="intent-claimed-by">{t("agents.subagents.claimed", { name: claimerName })}</em>
               )}
             </label>
           </div>
@@ -188,19 +188,16 @@ export function AgentSubAgentTab({
           {t("agents.tab.subagents")}
         </p>
         <button className="ui-button quiet" onClick={addOne}>
-          ＋ {t("agents.subagents.add", { defaultValue: "新增子 Agent" })}
+          ＋ {t("agents.subagents.add")}
         </button>
       </div>
       <p className="form-hint">
-        {t("agents.subagents.hint", {
-          defaultValue:
-            "子 Agent 直接引用平台中已配置好的智能体，沿用它自身的模型、工具、MCP 与系统提示词，无需在此重复配置。为每个子 Agent 勾选它负责的意图（勾选父意图即覆盖其下所有子意图）；同一个意图只能由一个子 Agent 负责。",
-        })}
+        {t("agents.subagents.hint")}
       </p>
 
       {subagents.length === 0 && (
         <div className="empty-state">
-          {t("agents.subagents.empty", { defaultValue: "尚未引用子 Agent" })}
+          {t("agents.subagents.empty")}
         </div>
       )}
 
@@ -216,21 +213,21 @@ export function AgentSubAgentTab({
         return (
           <div className="subagent-card" key={idx}>
             <div className="subagent-card-head">
-              <strong>{agent ? agent.name : `子 Agent #${idx + 1}`}</strong>
+              <strong>{agent ? agent.name : t("agents.subagents.fallbackName", { index: idx + 1 })}</strong>
               <button className="link-button danger" onClick={() => removeAt(idx)}>
-                {t("common.remove", { defaultValue: "移除" })}
+                {t("common.remove")}
               </button>
             </div>
             <div className="subagent-grid">
               <label className="span-2">
-                <span>引用智能体</span>
+                <span>{t("agents.subagents.reference")}</span>
                 <select
                   value={s.agentId ?? ""}
                   onChange={(e) =>
                     patch(idx, { agentId: e.target.value || null })
                   }
                 >
-                  <option value="">（请选择智能体…）</option>
+                  <option value="">{t("agents.subagents.select")}</option>
                   {options.map((a) => (
                     <option key={a.id} value={a.id}>
                       {a.name}（{a.agentKey}）
@@ -247,12 +244,12 @@ export function AgentSubAgentTab({
                   </div>
                   {agent.description && (
                     <div>
-                      <span className="meta-label">描述</span>
+                      <span className="meta-label">{t("agents.subagents.description")}</span>
                       <span>{agent.description}</span>
                     </div>
                   )}
                   <div className="meta-hint">
-                    模型、工具、MCP、知识库、系统提示词等均沿用该智能体自身配置。
+                    {t("agents.subagents.inherited")}
                   </div>
                 </div>
               )}
@@ -260,12 +257,12 @@ export function AgentSubAgentTab({
               <div className="span-2 subagent-intents">
                 <details>
                   <summary>
-                    负责意图
+                    {t("agents.subagents.intents")}
                     <span className="subagent-intent-count">{selected.size}</span>
                   </summary>
                   {allIntents.length === 0 ? (
                     <div className="form-hint" style={{ margin: "8px 0 0" }}>
-                      全局意图树为空，请先在「业务管理 → 意图管理」维护意图。
+                      {t("agents.subagents.noIntents")}
                     </div>
                   ) : (
                     <div className="intent-picker">
@@ -283,14 +280,14 @@ export function AgentSubAgentTab({
                             patch(idx, { intentKeys: [...next] });
                           }}
                         >
-                          全选可用
+                          {t("agents.subagents.selectAvailable")}
                         </button>
                         <button
                           type="button"
                           className="link-button"
                           onClick={() => patch(idx, { intentKeys: [] })}
                         >
-                          清空
+                          {t("agents.subagents.clear")}
                         </button>
                       </div>
                       <div className="intent-tree intent-check-tree">

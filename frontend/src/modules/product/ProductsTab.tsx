@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 import { Button, Pagination, Toggle, useConfirm, type Page } from "../shared";
 import {
   createProduct,
@@ -31,6 +32,7 @@ const formatPrice = (p: Product) => {
 };
 
 export function ProductsTab() {
+  const { t } = useTranslation();
   const { confirm, Dialog } = useConfirm();
   const [products, setProducts] = useState<Page<Product> | null>(null);
   const [pageNumber, setPageNumber] = useState(0);
@@ -91,10 +93,10 @@ export function ProductsTab() {
   };
 
   const save = async () => {
-    if (!draft.name.trim()) return setNotice({ ok: false, text: "请填写产品名称" });
-    if (!draft.productKey.trim()) return setNotice({ ok: false, text: "请填写产品 KEY" });
+    if (!draft.name.trim()) return setNotice({ ok: false, text: t("product.products.nameRequired") });
+    if (!draft.productKey.trim()) return setNotice({ ok: false, text: t("product.products.keyRequired") });
     if (!/^[a-z0-9-]+$/.test(draft.productKey))
-      return setNotice({ ok: false, text: "产品 KEY 只能包含小写字母、数字、连字符" });
+      return setNotice({ ok: false, text: t("product.products.keyInvalid") });
     setBusy(true);
     setNotice(null);
     try {
@@ -119,7 +121,7 @@ export function ProductsTab() {
   };
 
   const remove = async (p: Product) => {
-    if (!(await confirm({ message: `确认删除产品「${p.name}」？`, dangerous: true }))) return;
+    if (!(await confirm({ message: t("product.products.deleteConfirm", { name: p.name }), dangerous: true }))) return;
     try {
       await deleteProduct(p.id);
       await load(pageNumber);
@@ -148,23 +150,23 @@ export function ProductsTab() {
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="搜索产品名称 / KEY / 品牌 / 品类"
+          placeholder={t("product.products.search")}
         />
         <select
           className="prod-filter-select"
           value={category}
           onChange={(e) => setCategory(e.target.value)}
         >
-          <option value="">全部品类</option>
+          <option value="">{t("product.products.allCategories")}</option>
           {categories.map((c) => (
             <option key={c} value={c}>
               {c}
             </option>
           ))}
         </select>
-        <span>{products?.totalElements ?? 0} 个产品</span>
+        <span>{t("product.products.total", { count: products?.totalElements ?? 0 })}</span>
         <span style={{ flex: 1 }} />
-        <Button onClick={() => open()}>＋ 添加产品</Button>
+        <Button onClick={() => open()}>＋ {t("product.products.add")}</Button>
       </div>
 
       {notice && (
@@ -177,13 +179,13 @@ export function ProductsTab() {
 
       <div className="mcp-table prod-grid">
         <div className="mcp-row head">
-          <span>产品</span>
-          <span>品类 / 品牌</span>
-          <span>价格区间</span>
-          <span>场景标签</span>
-          <span>权重</span>
-          <span>状态</span>
-          <span>操作</span>
+          <span>{t("product.products.product")}</span>
+          <span>{t("product.products.categoryBrand")}</span>
+          <span>{t("product.products.price")}</span>
+          <span>{t("product.products.scenarioTags")}</span>
+          <span>{t("product.products.weight")}</span>
+          <span>{t("common.status")}</span>
+          <span>{t("common.actions")}</span>
         </div>
         {visible.map((p) => (
           <div className="mcp-row" key={p.id}>
@@ -207,16 +209,16 @@ export function ProductsTab() {
               <Toggle on={p.status === "ACTIVE"} setOn={() => void toggleStatus(p)} />
             </span>
             <span className="row-actions">
-              <button onClick={() => open(p)}>编辑</button>
+              <button onClick={() => open(p)}>{t("common.edit")}</button>
               <button className="danger" onClick={() => void remove(p)}>
-                删除
+                {t("common.delete")}
               </button>
             </span>
           </div>
         ))}
         {visible.length === 0 && (
           <div className="mcp-empty">
-            ◈<b>暂无产品，点击右上角添加</b>
+            ◈<b>{t("product.products.empty")}</b>
           </div>
         )}
         {products && (
@@ -248,16 +250,16 @@ export function ProductsTab() {
                   <p className="kicker">
                     PRODUCT / {editing === "new" ? "CREATE" : "EDIT"}
                   </p>
-                  <h2>{editing === "new" ? "添加产品" : (editing as Product).name}</h2>
+                  <h2>{editing === "new" ? t("product.products.add") : (editing as Product).name}</h2>
                 </div>
                 <button className="link-button" onClick={() => setEditing(null)}>
-                  关闭 ×
+                  {t("common.close")} ×
                 </button>
               </header>
 
               <div className="mcp-form">
                 <label>
-                  <span>产品名称 *</span>
+                  <span>{t("product.products.name")}</span>
                   <input
                     value={draft.name}
                     onChange={(e) => {
@@ -275,7 +277,7 @@ export function ProductsTab() {
                 </label>
                 <label>
                   <span>
-                    PRODUCT_KEY <small>· 唯一标识</small>
+                    PRODUCT_KEY <small>· {t("integrations.uniqueKey")}</small>
                   </span>
                   <input
                     value={draft.productKey}
@@ -283,22 +285,22 @@ export function ProductsTab() {
                   />
                 </label>
                 <label>
-                  <span>品牌</span>
+                  <span>{t("product.products.brand")}</span>
                   <input
                     value={draft.brand}
                     onChange={(e) => setDraft({ ...draft, brand: e.target.value })}
                   />
                 </label>
                 <label>
-                  <span>品类</span>
+                  <span>{t("product.products.category")}</span>
                   <input
                     value={draft.category}
                     onChange={(e) => setDraft({ ...draft, category: e.target.value })}
-                    placeholder="如：智能客服 / 硬件 / 增值服务"
+                    placeholder={t("product.products.categoryPlaceholder")}
                   />
                 </label>
                 <label>
-                  <span>最低价</span>
+                  <span>{t("product.products.priceMin")}</span>
                   <input
                     type="number"
                     value={draft.priceMin ?? ""}
@@ -311,7 +313,7 @@ export function ProductsTab() {
                   />
                 </label>
                 <label>
-                  <span>最高价</span>
+                  <span>{t("product.products.priceMax")}</span>
                   <input
                     type="number"
                     value={draft.priceMax ?? ""}
@@ -324,7 +326,7 @@ export function ProductsTab() {
                   />
                 </label>
                 <label>
-                  <span>币种</span>
+                  <span>{t("product.products.currency")}</span>
                   <input
                     value={draft.currency}
                     onChange={(e) => setDraft({ ...draft, currency: e.target.value })}
@@ -332,7 +334,7 @@ export function ProductsTab() {
                 </label>
                 <label>
                   <span>
-                    权重 <small>· 越高越优先推荐</small>
+                    {t("product.products.weight")} <small>· {t("product.products.weightHint")}</small>
                   </span>
                   <input
                     type="number"
@@ -341,16 +343,16 @@ export function ProductsTab() {
                   />
                 </label>
                 <label className="wide">
-                  <span>场景标签（每行一个或逗号分隔）</span>
+                  <span>{t("product.products.tags")}</span>
                   <textarea
                     rows={2}
                     value={draft.scenarioTags}
                     onChange={(e) => setDraft({ ...draft, scenarioTags: e.target.value })}
-                    placeholder={"中小企业\n电商客服"}
+                    placeholder={t("product.products.tagsPlaceholder")}
                   />
                 </label>
                 <label className="wide">
-                  <span>图片 URL（每行一个）</span>
+                  <span>{t("product.products.images")}</span>
                   <textarea
                     rows={2}
                     value={draft.imageUrls}
@@ -358,7 +360,7 @@ export function ProductsTab() {
                   />
                 </label>
                 <label className="wide">
-                  <span>卖点（selling points）</span>
+                  <span>{t("product.products.sellingPoints")}</span>
                   <textarea
                     rows={3}
                     value={draft.sellingPoints}
@@ -367,18 +369,18 @@ export function ProductsTab() {
                 </label>
                 <label className="wide">
                   <span>
-                    规格 spec <small>· JSON 对象</small>
+                    {t("product.products.spec")} <small>· {t("product.products.jsonObject")}</small>
                   </span>
                   <textarea
                     rows={3}
                     className="mono"
                     value={draft.spec}
                     onChange={(e) => setDraft({ ...draft, spec: e.target.value })}
-                    placeholder='{"并发路数":"100","部署方式":"SaaS"}'
+                    placeholder={t("product.products.specPlaceholder")}
                   />
                 </label>
                 <label className="wide">
-                  <span>详细描述</span>
+                  <span>{t("product.products.details")}</span>
                   <textarea
                     rows={4}
                     value={draft.description}
@@ -386,7 +388,7 @@ export function ProductsTab() {
                   />
                 </label>
                 <label>
-                  <span>状态</span>
+                  <span>{t("common.status")}</span>
                   <select
                     value={draft.status}
                     onChange={(e) =>
@@ -396,8 +398,8 @@ export function ProductsTab() {
                       })
                     }
                   >
-                    <option value="ACTIVE">在售（ACTIVE）</option>
-                    <option value="DISCONTINUED">停售（DISCONTINUED）</option>
+                    <option value="ACTIVE">{t("product.products.active")}</option>
+                    <option value="DISCONTINUED">{t("product.products.discontinued")}</option>
                   </select>
                 </label>
               </div>
@@ -412,7 +414,7 @@ export function ProductsTab() {
 
               <footer>
                 <Button onClick={() => void save()} disabled={busy}>
-                  {busy ? "保存中…" : "保存"}
+                  {busy ? t("common.saving") : t("common.save")}
                 </Button>
               </footer>
             </div>

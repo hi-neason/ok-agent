@@ -14,7 +14,7 @@ async function parse<T>(response: Response): Promise<T> {
   } catch {
     /* ignore */
   }
-  throw new Error(detail || `请求失败（HTTP ${response.status}）`);
+  throw new Error(detail || i18n.t("common.requestFailed", { status: response.status }));
 }
 
 export async function fetchChannels(
@@ -59,7 +59,7 @@ export async function setChannelRuntime(
 export async function deleteChannel(id: string): Promise<void> {
   const response = await fetch(`${BASE}/${id}`, { method: "DELETE" });
   if (!response.ok && response.status !== 204) {
-    throw new Error(`删除失败（HTTP ${response.status}）`);
+    throw new Error(i18n.t("common.deleteFailed", { status: response.status }));
   }
 }
 
@@ -161,3 +161,4 @@ export async function wechatLogout(id: string): Promise<WechatIlinkStatus> {
   const response = await fetch(`${BASE}/${id}/wechat/logout`, { method: "POST" });
   return parse<WechatIlinkStatus>(response);
 }
+import i18n from "../../i18n";

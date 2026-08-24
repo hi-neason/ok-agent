@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 import { Button } from "../shared";
 import { listCatalog, updateCatalogDescription } from "./api";
 import { SOURCE_TYPE_LABELS, type WorkflowCatalogItem, type WorkflowSource } from "./types";
@@ -26,6 +27,7 @@ export function CatalogDrawer({
   onClose: () => void;
   onChanged: () => void;
 }) {
+  const { t } = useTranslation();
   const [items, setItems] = useState<WorkflowCatalogItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<WorkflowCatalogItem | null>(null);
@@ -86,25 +88,21 @@ export function CatalogDrawer({
         <header>
           <div>
             <p className="kicker">WORKFLOW CATALOG / {source.sourceKey}</p>
-            <h2>{source.name} · 流程目录</h2>
-            <small>
-              流程的「适用场景描述」由平台管理员在此维护一次，所有 Agent
-              共享；同步会自动发现入参 schema。
-            </small>
+            <h2>{t("workflow.catalogTitle", { name: source.name })}</h2>
+            <small>{t("workflow.catalogDescription")}</small>
           </div>
           <button className="link-button" onClick={onClose}>
-            关闭 ×
+            {t("common.close")} ×
           </button>
         </header>
 
         {error && <div className="skill-error">× {error}</div>}
 
         {loading ? (
-          <div className="wf-catalog-empty">加载中…</div>
+          <div className="wf-catalog-empty">{t("common.loading")}</div>
         ) : items.length === 0 ? (
           <div className="wf-catalog-empty">
-            尚未发现流程。先在列表点击「同步」从{" "}
-            {SOURCE_TYPE_LABELS[source.sourceType]} 拉取。
+            {t("workflow.catalogEmpty", { source: SOURCE_TYPE_LABELS[source.sourceType] })}
           </div>
         ) : (
           <div className="wf-catalog-body">
@@ -136,12 +134,12 @@ export function CatalogDrawer({
                       <span
                         className={`tag ${selected.metadataStatus === "READY" ? "green" : ""}`}
                       >
-                        {selected.metadataStatus === "READY" ? "READY" : "NEEDS REVIEW"}
+                        {selected.metadataStatus === "READY" ? "READY" : t("integrations.needsReview")}
                       </span>
                     </div>
                     {!editingDesc && (
                       <button className="link-button" onClick={() => startEdit(selected)}>
-                        编辑描述
+                        {t("integrations.editDescription")}
                       </button>
                     )}
                   </div>
@@ -151,21 +149,21 @@ export function CatalogDrawer({
                   )}
 
                   <div className="wf-catalog-field">
-                    <label>适用场景描述（所有 Agent 共享）</label>
+                    <label>{t("integrations.usageDescription")}</label>
                     {editingDesc ? (
                       <>
                         <textarea
                           value={descText}
                           rows={4}
                           onChange={(e) => setDescText(e.target.value)}
-                          placeholder="描述这个工作流做什么、什么场景下该选用它、需要用户提供什么信息…"
+                          placeholder={t("workflow.descriptionPlaceholder")}
                         />
                         <div className="wf-catalog-actions">
                           <Button quiet onClick={() => setEditingDesc(false)}>
-                            取消
+                            {t("common.cancel")}
                           </Button>
                           <Button onClick={() => void saveDescription()} disabled={saving}>
-                            {saving ? "保存中…" : "保存描述"}
+                            {saving ? t("common.saving") : t("integrations.saveDescription")}
                           </Button>
                         </div>
                       </>
@@ -173,7 +171,7 @@ export function CatalogDrawer({
                       <p className="wf-catalog-desc">
                         {selected.description || (
                           <span className="wf-catalog-empty-inline">
-                            尚未填写描述，建议补充适用场景以便模型正确选用。
+                            {t("integrations.descriptionMissing")}
                           </span>
                         )}
                       </p>
@@ -181,9 +179,9 @@ export function CatalogDrawer({
                   </div>
 
                   <div className="wf-catalog-field">
-                    <label>入参 Schema（同步自动发现）</label>
+                    <label>{t("workflow.inputSchema")}</label>
                     <pre className="wf-catalog-schema">
-                      {prettySchema(selected.inputSchemaJson) || "（无）"}
+                      {prettySchema(selected.inputSchemaJson) || t("workflow.none")}
                     </pre>
                   </div>
                 </>

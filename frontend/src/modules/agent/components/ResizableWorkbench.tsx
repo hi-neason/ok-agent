@@ -5,6 +5,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useTranslation } from "react-i18next";
 
 const STORAGE_KEY = "ok-agent.config-width";
 const DEFAULT_WIDTH = 54;
@@ -42,6 +43,7 @@ export function ResizableWorkbench({
   left: ReactNode;
   right: ReactNode;
 }) {
+  const { t } = useTranslation();
   const [width, setWidth] = useState<number>(() => {
     const raw = Number(window.localStorage.getItem(STORAGE_KEY));
     return Number.isFinite(raw) && raw >= MIN_WIDTH && raw <= MAX_WIDTH
@@ -128,7 +130,7 @@ export function ResizableWorkbench({
             type="button"
             className="link-button"
             onClick={() => setLeftHidden(false)}
-            title="展开配置区"
+            title={t("agents.expandConfig")}
           >
             ›
           </button>
@@ -142,7 +144,7 @@ export function ResizableWorkbench({
           className={`agent-panel-resizer${dragging ? " dragging" : ""}`}
           role="separator"
           aria-orientation="vertical"
-          aria-label="拖动调整配置区和调试区宽度"
+          aria-label={t("agents.resizePanels")}
           tabIndex={0}
           onPointerDown={onPointerDown}
           onKeyDown={onKeyDown}
@@ -152,7 +154,7 @@ export function ResizableWorkbench({
           <button
             type="button"
             className="resizer-collapse resizer-collapse--left"
-            title="收起配置区"
+            title={t("agents.collapseConfig")}
             onClick={() => setLeftHidden(true)}
           >
             ‹
@@ -160,7 +162,7 @@ export function ResizableWorkbench({
           <button
             type="button"
             className="resizer-collapse resizer-collapse--right"
-            title="收起调试区"
+            title={t("agents.collapseDebug")}
             onClick={() => setRightHidden(true)}
           >
             ›
@@ -174,7 +176,7 @@ export function ResizableWorkbench({
             type="button"
             className="link-button"
             onClick={() => setRightHidden(false)}
-            title="展开调试区"
+            title={t("agents.expandDebug")}
           >
             ‹
           </button>

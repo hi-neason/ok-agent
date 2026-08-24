@@ -77,28 +77,28 @@ export function AgentDebugPanel({
         }}
       >
         <label>
-          调试用户
+          {t("agents.debugUser")}
           <select
             style={selectStyle}
             value={selectedUserId ?? ""}
             onChange={(e) => onSelectUser(e.target.value)}
           >
-            <option value="">全部用户（跨用户）</option>
+            <option value="">{t("agents.allUsers")}</option>
             {users.map((u) => (
               <option key={u.userId} value={u.userId}>
-                {u.username === "debug" ? "DEBUG用户（内置）" : u.displayName || u.username}
+                {u.username === "debug" ? t("agents.builtinDebugUser") : u.displayName || u.username}
               </option>
             ))}
           </select>
         </label>
         <label>
-          历史会话
+          {t("agents.historySession")}
           <select
             style={selectStyle}
             value={selectedSessionId ?? ""}
             onChange={(e) => onSelectSession(e.target.value)}
           >
-            <option value="">— 新会话 / 选择历史 —</option>
+            <option value="">{t("agents.newOrHistory")}</option>
             {sessions.map((s) => {
               const owner = s.userId ? userMap[s.userId] : undefined;
               const ownerLabel = owner
@@ -118,7 +118,7 @@ export function AgentDebugPanel({
         {messages.length === 0 && (
           <div className="chat-empty">
             <i>◈</i>
-            {userHasNoSelection ? "请先在上方选择调试用户" : t("agents.chatEmpty")}
+            {userHasNoSelection ? t("agents.selectDebugUser") : t("agents.chatEmpty")}
           </div>
         )}
         {messages.map((m, i) => (
@@ -142,7 +142,7 @@ export function AgentDebugPanel({
               onSend();
             }
           }}
-          placeholder={userHasNoSelection ? "请先选择调试用户" : t("agents.typeMessage")}
+          placeholder={userHasNoSelection ? t("agents.selectDebugUser") : t("agents.typeMessage")}
           disabled={userHasNoSelection}
         />
         <button

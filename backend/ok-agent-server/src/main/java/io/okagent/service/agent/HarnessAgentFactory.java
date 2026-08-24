@@ -55,7 +55,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-/** Builds a throwaway {@link HarnessAgent} from an {@link AgentAsset} draft for the debug runtime. */
+/**
+ * Builds a throwaway {@link HarnessAgent} from a {@link ResolvedAgentConfig}. The same builder
+ * serves two callers: the debug runtime passes a {@link DraftAgentConfig} (editable draft, so
+ * changes are reflected immediately), and production passes a release-snapshot config so the
+ * runtime never reads a draft and sub-agents run their pinned versions.
+ */
 @Component
 public class HarnessAgentFactory {
     private static final Logger log = LoggerFactory.getLogger(HarnessAgentFactory.class);
@@ -110,87 +115,88 @@ public class HarnessAgentFactory {
         this.solutionCatalog = solutionCatalog;
     }
 
+    /** Debug entry: builds from the editable draft, resolving child agents from their current drafts. */
     public HarnessAgent build(AgentAsset draft) {
-        return build(draft, null, false);
+        return build(draftConfig(draft), null, false);
     }
 
+    /** Debug entry: builds from the editable draft with a user context for persona injection. */
     public HarnessAgent build(AgentAsset draft, String userId) {
-        return build(draft, userId, false);
+        return build(draftConfig(draft), userId, false);
+    }
+
+    /** Production/debug entry: builds from an already-resolved config (draft or release snapshot). */
+    public HarnessAgent build(ResolvedAgentConfig config, String userId) {
+        return build(config, userId, false);
     }
 
     /**
-     * Builds a subordinate (leaf) agent from an existing {@link AgentAsset} — used as a custom
-     * subagent factory so a referenced child agent runs with its OWN model/MCP/skills/systemPrompt
-     * rather than inheriting the router's. The result is forced to a leaf ({@code disableSubagents})
-     * to prevent a child from further spawning and creating delegation cycles.
+     * Builds a subordinate (leaf) agent from a child config. Forced to a leaf so a delegated child
+     * cannot itself spawn and create delegation cycles.
      */
-    public HarnessAgent buildSubordinate(AgentAsset child, String userId) {
+    public HarnessAgent buildSubordinate(ResolvedAgentConfig child, String userId) {
         return build(child, userId, true);
     }
 
-    private HarnessAgent build(AgentAsset draft, String userId, boolean asLeaf) {
+    /** Wraps a draft and its currently-referenced child drafts into a config for the debug runtime. */
+    public DraftAgentConfig draftConfig(AgentAsset draft) {
+        List<ResolvedSubagent> children = new ArrayList<>();
+        for (var entry : parseSubagentRefs(draft).entrySet()) {
+            agents.findById(entry.getKey())
+                    .filter(AgentAsset::isEnabled)
+                    .ifPresent(child -> children.add(new ResolvedSubagent(draftConfig(child), entry.getValue())));
+        }
+        return new DraftAgentConfig(draft, children);
+    }
+
+    private HarnessAgent build(ResolvedAgentConfig cfg, String userId, boolean asLeaf) {
         var builder = HarnessAgent.builder()
-                .name(safeName(draft.getAgentKey()))
-                .description(draft.getDescription() == null ? "" : draft.getDescription())
-                .sysPrompt(systemPrompt(draft, userId))
-                .maxIters(draft.getMaxIters())
-                .modelExecutionConfig(modelExecutionConfig(draft))
-                .toolExecutionConfig(toolExecutionConfig(draft))
-                .maxContextTokens(draft.getMaxContextTokens())
-                .enableAgentTracingLog(draft.isTracingEnabled())
+                .name(safeName(cfg.getAgentKey()))
+                .description(cfg.getDescription() == null ? "" : cfg.getDescription())
+                .sysPrompt(systemPrompt(cfg, userId))
+                .maxIters(cfg.getMaxIters())
+                .modelExecutionConfig(modelExecutionConfig(cfg))
+                .toolExecutionConfig(toolExecutionConfig(cfg))
+                .maxContextTokens(cfg.getMaxContextTokens())
+                .enableAgentTracingLog(cfg.isTracingEnabled())
                 .stateStore(stateStore)
-                // No workspace/tools.json file; register MCP servers programmatically.
-                .toolsConfig(toolsConfig(draft))
-                // In-process execution tracing: captures agent/model/tool spans (including
-                // knowledge-base and workflow tools) and persists them to MySQL.
+                .toolsConfig(toolsConfig(cfg))
                 .middleware(traceMiddleware);
         if (asLeaf) {
-            // A subordinate (referenced child) agent must never itself spawn sub-agents,
-            // otherwise delegation can recurse. Force single-agent/leaf behaviour.
             builder.disableSubagents();
         } else {
-            // Router (main-sub) topology: when the agent references other agents as sub-agents,
-            // register them so the harness exposes agent_spawn/agent_send and the LLM can delegate
-            // by name. Otherwise keep the single-agent behaviour. Defensive: a malformed
-            // declaration must never break the whole router build, so failures fall back to the
-            // single-agent mode.
-            applySubagents(builder, draft, userId);
+            applySubagents(builder, cfg, userId);
         }
 
-        // Register external tools (workflows + knowledge) when this agent has bindings. The
-        // harness copies this toolkit during build() and then appends its own built-in tools
-        // (memory/filesystem/shell/web), so none of those are lost.
         Toolkit toolkit = new Toolkit();
-        if (draft.getId() != null
-                && !workflowCatalog.listForAgent(draft.getId()).isEmpty()) {
-            toolkit.registerTool(new WorkflowTools(workflowCatalog, draft.getId()));
+        if (cfg.getId() != null && !workflowCatalog.listForAgent(cfg.getId()).isEmpty()) {
+            toolkit.registerTool(new WorkflowTools(workflowCatalog, cfg.getId()));
         }
-        if (draft.getId() != null
-                && !knowledgeCatalog.listForAgent(draft.getId()).isEmpty()) {
-            toolkit.registerTool(new KnowledgeTools(knowledgeCatalog, draft.getId()));
+        if (cfg.getId() != null && !knowledgeCatalog.listForAgent(cfg.getId()).isEmpty()) {
+            toolkit.registerTool(new KnowledgeTools(knowledgeCatalog, cfg.getId()));
         }
-        if (draft.getId() != null && productCatalog.hasProducts(draft.getId())) {
+        if (cfg.getId() != null && productCatalog.hasProducts(cfg.getId())) {
             toolkit.registerTool(new ProductTools(
                     productCatalog,
                     solutionCatalog,
-                    draft.getId(),
-                    productCatalog.capabilities(draft.getId())));
+                    cfg.getId(),
+                    productCatalog.capabilities(cfg.getId())));
         }
         builder.toolkit(toolkit);
 
-        configureWorkspace(builder, draft);
-        configureMemory(builder, draft);
+        configureWorkspace(builder, cfg);
+        configureMemory(builder);
 
-        if (!draft.isCompactionEnabled()) {
+        if (!cfg.isCompactionEnabled()) {
             builder.disableCompaction();
         }
-        if (!draft.isToolResultEvictionEnabled()) {
+        if (!cfg.isToolResultEvictionEnabled()) {
             builder.disableToolResultEviction();
         }
 
-        resolveModel(draft).ifPresent(model -> builder.model(model));
+        resolveModel(cfg).ifPresent(builder::model);
 
-        var skillRepo = skillRepository(draft);
+        var skillRepo = skillRepository(cfg);
         if (skillRepo != null) {
             builder.skillRepository(skillRepo);
         } else {
@@ -201,31 +207,17 @@ public class HarnessAgentFactory {
     }
 
     /**
-     * Enables sub-agents when the draft references other agents, otherwise keeps single-agent mode.
-     * A malformed declaration must never break the whole router build, so parsing failures fall
-     * back to {@code disableSubagents()}.
-     *
-     * <p>Each referenced agent is wired with TWO same-named registrations that the harness merges:
-     * a {@link SubagentDeclaration} carrying the child's name/description (so the router LLM knows
-     * <em>when</em> to delegate) and a custom {@code subagentFactory} that builds the child from
-     * <em>its own</em> AgentAsset — its own model, MCP servers, skills, system prompt and workspace
-     * — instead of inheriting the router's. The built child is forced to a leaf
-     * ({@link #buildSubordinate}) to prevent delegation cycles.
+     * Registers each resolved sub-agent with both a {@link SubagentDeclaration} (name + enriched
+     * description so the router LLM knows when to delegate) and a custom factory that builds the
+     * child from its OWN resolved config — for a release that is the pinned child snapshot, never
+     * the child's current draft. Built children are forced to a leaf to prevent cycles.
      */
-    private void applySubagents(HarnessAgent.Builder builder, AgentAsset draft, String userId) {
-        List<SubagentRef> refs;
-        try {
-            refs = loadReferencedSubagents(draft);
-        } catch (Exception e) {
-            log.warn("Failed to load referenced sub-agents for agent={}: {}", draft.getAgentKey(), e.getMessage());
-            refs = List.of();
-        }
-        if (refs.isEmpty()) {
+    private void applySubagents(HarnessAgent.Builder builder, ResolvedAgentConfig cfg, String userId) {
+        List<ResolvedSubagent> refs = cfg.getSubagents();
+        if (refs == null || refs.isEmpty()) {
             builder.disableSubagents();
             return;
         }
-        // Build a lookup of intentKey -> intent metadata so we can enrich each sub-agent's
-        // declaration description with the intents it is responsible for.
         Map<String, IntentDto> intentByKey = new LinkedHashMap<>();
         try {
             for (IntentNode node : intents.getTree()) {
@@ -234,19 +226,9 @@ public class HarnessAgentFactory {
         } catch (Exception e) {
             log.warn("Failed to load intent tree for sub-agent descriptions: {}", e.getMessage());
         }
-        // Register each referenced child with TWO same-named registrations that the harness
-        // merges: (1) a SubagentDeclaration carrying the enriched description so the router LLM
-        // sees "负责意图：…" in the ### Available agent ids list, and (2) a custom subagentFactory
-        // that builds the child from its OWN AgentAsset (its own model, MCP, skills, system
-        // prompt, workspace) instead of inheriting the router's config via the declaration's
-        // default factory. The built child is forced to a leaf (asLeaf=true) to prevent
-        // delegation cycles. The dual registration creates a cosmetic duplicate entry in the
-        // agent list (the factory entry's description falls back to its name/UUID), but
-        // function-calling is driven by the routing directive which names the exact agent_id,
-        // so the duplicate does not affect delegation correctness.
         List<SubagentDeclaration> declarations = new ArrayList<>();
-        for (SubagentRef ref : refs) {
-            AgentAsset child = ref.child();
+        for (ResolvedSubagent ref : refs) {
+            ResolvedAgentConfig child = ref.config();
             String name = safeName(child.getAgentKey());
             String desc = buildSubagentDescription(child, ref.intentKeys(), intentByKey);
             declarations.add(SubagentDeclaration.builder()
@@ -254,21 +236,15 @@ public class HarnessAgentFactory {
                     .description(desc)
                     .mode(SubagentDeclaration.Mode.SUBAGENT)
                     .build());
-            final AgentAsset capturedChild = child;
-            builder.subagentFactory(name, ignored -> buildSubordinate(capturedChild, userId));
+            builder.subagentFactory(name, ignored -> buildSubordinate(child, userId));
         }
         builder.subagents(declarations);
     }
 
-    /**
-     * Enriches the child agent's own description with the intents it handles so the router LLM
-     * can make an informed delegation decision from the {@code ### Available agent ids} list.
-     */
     private static String buildSubagentDescription(
-            AgentAsset child, List<String> intentKeys, Map<String, IntentDto> intentByKey) {
+            ResolvedAgentConfig child, List<String> intentKeys, Map<String, IntentDto> intentByKey) {
         StringBuilder sb = new StringBuilder();
-        String own =
-                child.getDescription() == null ? "" : child.getDescription().trim();
+        String own = child.getDescription() == null ? "" : child.getDescription().trim();
         if (!own.isEmpty()) {
             sb.append(own);
         }
@@ -303,50 +279,33 @@ public class HarnessAgentFactory {
         }
     }
 
-    /**
-     * Parses {@code agent_asset.subagents_json} as a list of {@code {"agentId": ..., "intentKeys":
-     * [...]}} references and loads each target AgentAsset. Duplicate agentIds are collapsed;
-     * self-references and missing targets are skipped. The returned refs carry each child's
-     * declared {@code intentKeys} so the caller can enrich the sub-agent description.
-     */
-    private List<SubagentRef> loadReferencedSubagents(AgentAsset draft) {
+    /** Parses {@code [{"agentId":...,"intentKeys":[...]}]} from a draft, collapsing duplicate ids. */
+    private Map<UUID, List<String>> parseSubagentRefs(AgentAsset draft) {
+        Map<UUID, List<String>> out = new LinkedHashMap<>();
         String raw = draft.getSubagentsJson();
         if (raw == null || raw.isBlank() || "[]".equals(raw.trim())) {
-            return List.of();
+            return out;
         }
-        List<Map<String, Object>> defs;
         try {
-            defs = json.readValue(raw, new TypeReference<List<Map<String, Object>>>() {});
+            List<Map<String, Object>> defs = json.readValue(raw, new TypeReference<List<Map<String, Object>>>() {});
+            for (Map<String, Object> def : defs) {
+                String idText = asText(def.get("agentId"));
+                if (idText.isBlank()) continue;
+                try {
+                    UUID id = UUID.fromString(idText);
+                    if (id.equals(draft.getId())) continue;
+                    List<String> keys = new ArrayList<>(out.getOrDefault(id, new ArrayList<>()));
+                    for (Object k : asObjectList(def.get("intentKeys"))) {
+                        String s = asText(k);
+                        if (!s.isBlank() && !keys.contains(s)) keys.add(s);
+                    }
+                    out.put(id, keys);
+                } catch (IllegalArgumentException e) {
+                    log.warn("Skipping sub-agent with invalid agentId '{}' for agent={}", idText, draft.getAgentKey());
+                }
+            }
         } catch (Exception e) {
             log.warn("subagents_json is not a valid JSON array for agent={}", draft.getAgentKey());
-            return List.of();
-        }
-        // Preserve order but collapse duplicate agentIds (union their intentKeys).
-        Map<UUID, List<String>> intentKeysByAgent = new LinkedHashMap<>();
-        for (Map<String, Object> def : defs) {
-            String idText = asText(def.get("agentId"));
-            if (idText.isBlank()) continue;
-            try {
-                UUID id = UUID.fromString(idText);
-                if (id.equals(draft.getId())) continue;
-                List<String> keys = new ArrayList<>(intentKeysByAgent.getOrDefault(id, new ArrayList<>()));
-                for (Object k : asObjectList(def.get("intentKeys"))) {
-                    String s = asText(k);
-                    if (!s.isBlank() && !keys.contains(s)) keys.add(s);
-                }
-                intentKeysByAgent.put(id, keys);
-            } catch (IllegalArgumentException e) {
-                log.warn("Skipping sub-agent with invalid agentId '{}' for agent={}", idText, draft.getAgentKey());
-            }
-        }
-        if (intentKeysByAgent.isEmpty()) {
-            return List.of();
-        }
-        List<SubagentRef> out = new ArrayList<>();
-        for (var a : agents.findAllById(intentKeysByAgent.keySet())) {
-            if (a != null && a.isEnabled()) {
-                out.add(new SubagentRef(a, intentKeysByAgent.get(a.getId())));
-            }
         }
         return out;
     }
@@ -357,45 +316,15 @@ public class HarnessAgentFactory {
         return List.of();
     }
 
-    /** A referenced child agent paired with the intentKeys it claims. */
-    private record SubagentRef(AgentAsset child, List<String> intentKeys) {}
-
-    private static String asText(Object v) {
-        return v == null ? "" : String.valueOf(v).trim();
-    }
-
-    private static String asText(Object v, String fallback) {
-        String s = asText(v);
-        return s.isEmpty() ? fallback : s;
-    }
-
-    @SuppressWarnings("unchecked")
-    private static List<String> asStringList(Object v) {
-        if (v instanceof List<?> list) {
-            List<String> out = new ArrayList<>();
-            for (Object o : list) {
-                if (o != null) {
-                    out.add(String.valueOf(o));
-                }
-            }
-            return out;
-        }
-        return List.of();
-    }
-
-    /**
-     * Builds the {@link ToolsConfig} for the bound MCP servers. Registered by the harness after it
-     * copies the toolkit, so MCP clients survive the copy and are reachable during tool execution.
-     */
-    private ToolsConfig toolsConfig(AgentAsset draft) {
-        var ids = readUuidList(draft.getMcpServerIdsJson());
+    private ToolsConfig toolsConfig(ResolvedAgentConfig cfg) {
+        var ids = readUuidList(cfg.getMcpServerIdsJson());
         if (ids.isEmpty()) {
             var empty = new ToolsConfig();
             empty.setMcpServers(Map.of());
             return empty;
         }
         Map<String, McpServerConfig> servers = new LinkedHashMap<>();
-        var toolFilters = readToolFilters(draft.getMcpToolFiltersJson());
+        var toolFilters = readToolFilters(cfg.getMcpToolFiltersJson());
         for (McpServer server : mcpServers.findAllById(ids)) {
             var serverConfig = toMcpServerConfig(server);
             var allowlist = toolFilters.getOrDefault(server.getId().toString(), List.of());
@@ -409,28 +338,22 @@ public class HarnessAgentFactory {
         return config;
     }
 
-    private void configureWorkspace(HarnessAgent.Builder builder, AgentAsset draft) {
-        if (draft.getWorkspaceMode() == io.okagent.domain.agent.AgentWorkspaceMode.DISABLED) {
+    private void configureWorkspace(HarnessAgent.Builder builder, ResolvedAgentConfig cfg) {
+        if (cfg.getWorkspaceMode() == io.okagent.domain.agent.AgentWorkspaceMode.DISABLED) {
             builder.disableWorkspaceContext().disableFilesystemTools().disableShellTool();
             return;
         }
 
         var workspace =
-                Path.of(System.getProperty("user.dir"), ".agentscope", "workspaces", safeName(draft.getAgentKey()));
-        var isolationScope = IsolationScope.valueOf(draft.getWorkspaceIsolationScope());
+                Path.of(System.getProperty("user.dir"), ".agentscope", "workspaces", safeName(cfg.getAgentKey()));
+        var isolationScope = IsolationScope.valueOf(cfg.getWorkspaceIsolationScope());
         builder.workspace(workspace);
 
-        // Memory surface backed by the MySQL BaseStore. Harness memory tools/hooks are disabled
-        // (see configureMemory), and persona persists via its own service, so this route is only
-        // relevant for code/workspace flows that touch MEMORY.md or memory/.
-        NamespaceFactory memoryNamespace = rc -> List.of("agents", safeName(draft.getAgentKey()), "memory");
+        NamespaceFactory memoryNamespace = rc -> List.of("agents", safeName(cfg.getAgentKey()), "memory");
         RemoteFilesystem memoryFs = new RemoteFilesystem(baseStore, memoryNamespace);
 
-        switch (draft.getWorkspaceMode()) {
+        switch (cfg.getWorkspaceMode()) {
             case LOCAL_ROOTED -> {
-                // 2.0.2 has no Builder.filesystemRoute; replicate it by building the local
-                // filesystem explicitly and wrapping it in a CompositeFilesystem that routes
-                // memory/ and MEMORY.md to the remote store (mirrors upstream 2.0.3 behavior).
                 var localSpec = new LocalFilesystemSpec()
                         .mode(LocalFsMode.SANDBOXED)
                         .isolationScope(isolationScope)
@@ -442,36 +365,27 @@ public class HarnessAgentFactory {
                 builder.abstractFilesystem(composite);
             }
             case DOCKER_SANDBOX -> {
-                // 2.0.2 cannot prefix-route over a sandbox-backed filesystem (upstream 2.0.3 uses
-                // RoutedSandboxFilesystem, absent here). The memory surface is disabled and persona
-                // does not depend on the agent filesystem, so keeping the native docker fs is safe.
                 var spec = new DockerFilesystemSpec()
-                        .image(draft.getDockerImage())
-                        .memorySizeBytes((long) draft.getSandboxMemoryMb() * 1024 * 1024)
-                        .cpuCount((long) draft.getSandboxCpuCount());
+                        .image(cfg.getDockerImage())
+                        .memorySizeBytes((long) cfg.getSandboxMemoryMb() * 1024 * 1024)
+                        .cpuCount((long) cfg.getSandboxCpuCount());
                 spec.isolationScope(isolationScope);
                 builder.filesystem(spec);
             }
             case DISABLED -> throw new IllegalStateException("Disabled workspace handled above");
         }
 
-        if (!draft.isWorkspaceContextEnabled()) {
+        if (!cfg.isWorkspaceContextEnabled()) {
             builder.disableWorkspaceContext();
         }
-        if (!draft.isShellEnabled()) {
+        if (!cfg.isShellEnabled()) {
             builder.disableShellTool();
         }
     }
 
-    private void configureMemory(HarnessAgent.Builder builder, AgentAsset draft) {
-        // Harness 自带的长期记忆表面（MEMORY.md 自动 flush + memory_* 工具）在多用户产品场景下
-        // 不适用：
-        //   1. MemoryFlushMiddleware 用 concatWith 挂在回复流尾部，每轮触发一次二次 LLM 抽取
-        //      （实测约 30s），直接 blockLast 阻塞接口返回；
-        //   2. memory namespace 仅按 agentKey 隔离（agents/{agentKey}/memory），成千上万用户
-        //      共享同一份 MEMORY.md，自动 flush 与 memory_save 都会造成跨用户污染与并发覆盖。
-        // 用户维度的长期记忆已由 persona 模块（user_persona 表 + 按 (userId,agentId) 异步抽取 +
-        // systemPrompt 注入 <user_profile>）独立承担，因此统一关闭 harness 记忆表面。
+    private void configureMemory(HarnessAgent.Builder builder) {
+        // Harness 自带的长期记忆表面在多用户产品场景下不适用（会二次 LLM 阻塞、按 agentKey 共享造成跨用户
+        // 污染）；用户维度记忆由 persona 模块独立承担，因此统一关闭 harness 记忆表面。
         builder.disableMemoryTools().disableMemoryHooks();
     }
 
@@ -521,39 +435,38 @@ public class HarnessAgentFactory {
         return cfg;
     }
 
-    private String systemPrompt(AgentAsset draft, String userId) {
-        var prompt =
-                draft.getSystemPrompt() == null ? "" : draft.getSystemPrompt().trim();
+    private String systemPrompt(ResolvedAgentConfig cfg, String userId) {
+        var prompt = cfg.getSystemPrompt() == null ? "" : cfg.getSystemPrompt().trim();
         var base = prompt.isEmpty() ? "You are a helpful assistant." : prompt;
-        var mode = draft.getPersonaInjectionMode();
+        var mode = cfg.getPersonaInjectionMode();
         if (mode == null
                 || mode == io.okagent.domain.agent.PersonaInjectionMode.NONE
                 || userId == null
                 || userId.isBlank()
-                || draft.getId() == null) {
+                || cfg.getId() == null) {
             return base;
         }
         var block =
-                personaService.getProfileBlock(userId, draft.getId(), mode.name(), draft.getPersonaPromptTemplate());
+                personaService.getProfileBlock(userId, cfg.getId(), mode.name(), cfg.getPersonaPromptTemplate());
         if (block == null || block.isBlank()) {
             return base;
         }
         return base + "\n\n<user_profile>\n" + block.strip() + "\n</user_profile>";
     }
 
-    private java.util.Optional<OpenAIChatModel> resolveModel(AgentAsset draft) {
-        if (draft.getModelAssetId() == null) {
+    private java.util.Optional<OpenAIChatModel> resolveModel(ResolvedAgentConfig cfg) {
+        if (cfg.getModelAssetId() == null) {
             return java.util.Optional.empty();
         }
-        return models.findById(draft.getModelAssetId())
+        return models.findById(cfg.getModelAssetId())
                 .filter(ModelAsset::isEnabled)
                 .map(model -> {
                     var options = GenerateOptions.builder()
-                            .temperature(draft.getTemperature())
-                            .topP(draft.getTopP())
-                            .topK(draft.getTopK())
-                            .maxTokens(draft.getMaxTokens())
-                            .parallelToolCalls(draft.isParallelToolCalls())
+                            .temperature(cfg.getTemperature())
+                            .topP(cfg.getTopP())
+                            .topK(cfg.getTopK())
+                            .maxTokens(cfg.getMaxTokens())
+                            .parallelToolCalls(cfg.isParallelToolCalls())
                             .build();
                     return OpenAIChatModel.builder()
                             .apiKey(cipher.decrypt(model.getApiKeyCiphertext()))
@@ -566,10 +479,10 @@ public class HarnessAgentFactory {
                 });
     }
 
-    private ExecutionConfig modelExecutionConfig(AgentAsset draft) {
+    private ExecutionConfig modelExecutionConfig(ResolvedAgentConfig cfg) {
         return ExecutionConfig.builder()
-                .timeout(Duration.ofSeconds(draft.getModelTimeoutSeconds()))
-                .maxAttempts(draft.getMaxRetries() + 1)
+                .timeout(Duration.ofSeconds(cfg.getModelTimeoutSeconds()))
+                .maxAttempts(cfg.getMaxRetries() + 1)
                 .initialBackoff(Duration.ofSeconds(2))
                 .maxBackoff(Duration.ofSeconds(30))
                 .backoffMultiplier(2.0)
@@ -577,23 +490,21 @@ public class HarnessAgentFactory {
                 .build();
     }
 
-    private ExecutionConfig toolExecutionConfig(AgentAsset draft) {
+    private ExecutionConfig toolExecutionConfig(ResolvedAgentConfig cfg) {
         return ExecutionConfig.builder()
-                .timeout(Duration.ofSeconds(draft.getToolTimeoutSeconds()))
+                .timeout(Duration.ofSeconds(cfg.getToolTimeoutSeconds()))
                 .maxAttempts(1)
                 .build();
     }
 
-    private AgentSkillRepository skillRepository(AgentAsset draft) {
-        var ids = readUuidList(draft.getSkillIdsJson());
+    private AgentSkillRepository skillRepository(ResolvedAgentConfig cfg) {
+        var ids = readUuidList(cfg.getSkillIdsJson());
         if (ids.isEmpty()) {
             return null;
         }
         List<AgentSkill> bound = new ArrayList<>();
         for (SkillAsset skill : skills.findAllById(ids)) {
-            if (!skill.isEnabled()
-                    || skill.getContent() == null
-                    || skill.getContent().isBlank()) {
+            if (!skill.isEnabled() || skill.getContent() == null || skill.getContent().isBlank()) {
                 continue;
             }
             var metadata = new LinkedHashMap<String, Object>();
@@ -650,8 +561,7 @@ public class HarnessAgentFactory {
 
     @SuppressWarnings("unchecked")
     private Map<String, Object> readSecrets(McpServer server) {
-        if (server.getSecretsCiphertext() == null
-                || server.getSecretsCiphertext().isBlank()) {
+        if (server.getSecretsCiphertext() == null || server.getSecretsCiphertext().isBlank()) {
             return Map.of();
         }
         try {
@@ -660,6 +570,10 @@ public class HarnessAgentFactory {
         } catch (Exception e) {
             return Map.of();
         }
+    }
+
+    private static String asText(Object v) {
+        return v == null ? "" : String.valueOf(v).trim();
     }
 
     private String safeName(String agentKey) {

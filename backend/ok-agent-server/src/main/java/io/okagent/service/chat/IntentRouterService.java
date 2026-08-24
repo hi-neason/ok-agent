@@ -1,6 +1,5 @@
 package io.okagent.service.chat;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.agentscope.core.agent.RuntimeContext;
@@ -12,11 +11,19 @@ import io.agentscope.core.message.Msg;
 import io.agentscope.core.permission.PermissionMode;
 import io.agentscope.harness.agent.HarnessAgent;
 import io.okagent.domain.agent.AgentAsset;
+import io.okagent.domain.channel.ChannelAsset;
 import io.okagent.domain.dialogue.DialogueSession;
+import io.okagent.domain.release.AgentRelease;
+import io.okagent.domain.release.AgentVersion;
 import io.okagent.infrastructure.store.JdbcAgentStateStore;
 import io.okagent.repository.agent.AgentAssetRepository;
+import io.okagent.repository.channel.ChannelAssetRepository;
 import io.okagent.repository.model.ModelAssetRepository;
+import io.okagent.repository.release.AgentReleaseRepository;
+import io.okagent.repository.release.AgentVersionRepository;
 import io.okagent.service.agent.HarnessAgentFactory;
+import io.okagent.service.agent.ResolvedAgentConfig;
+import io.okagent.service.agent.ResolvedSubagent;
 import io.okagent.service.dialogue.DialogueService;
 import io.okagent.service.intent.IntentClassification;
 import io.okagent.service.intent.IntentDto;
@@ -25,6 +32,7 @@ import io.okagent.service.intent.IntentService;
 import io.okagent.service.model.ApiKeyCipher;
 import io.okagent.service.observe.TraceCollectingMiddleware;
 import io.okagent.service.persona.PersonaExtractionService;
+import io.okagent.service.release.ReleaseAgentConfig;
 import io.okagent.web.chat.ProductionChatRequest;
 import io.okagent.web.chat.ProductionChatResponse;
 import java.net.URI;
@@ -34,7 +42,6 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -51,30 +58,24 @@ import reactor.core.Exceptions;
 /**
  * Production chat entry point for the intent-routed, multi-agent customer-service topology.
  *
- * <p>Flow per message: (1) an LLM classifier maps the query onto the intent tree and returns the
- * matched {@code intentKey} + confidence; (2) the matched intentKey is reverse-resolved against
- * the router agent's {@code subagents_json} — the sub-agent whose declared {@code intentKeys}
- * contains it is the delegate; (3) when a delegate is found, a routing directive is prepended to
- * the user message and the router agent (which has the sub-agents configured) streams the reply,
- * delegating to the chosen sub-agent internally via agent_spawn/agent_send. When no sub-agent
- * claims the intent (or confidence is low), the query falls through to the router agent directly.
- *
- * <p>This deliberately does NOT reuse the debug controller: production traffic is identified by
- * (channel, session) and is routed, not manually selected by an agentId in the URL.
+ * <p>Production traffic is resolved from a channel's currently-promoted release: the channel points
+ * at an {@link AgentRelease}, which points at an immutable {@link AgentVersion} whose snapshot is
+ * built into a {@link HarnessAgent}. The runtime never reads the editable draft for a published
+ * channel. If a channel has no release yet the service falls back to the draft (for pre-go-lucky
+ * testing), logging a warning so the gap is visible.
  */
 @Service
 public class IntentRouterService {
     private static final Logger log = LoggerFactory.getLogger(IntentRouterService.class);
-    // Agentic loops can involve multiple LLM round-trips (router decision → sub-agent execution
-    // → result synthesis). 120s is too tight for the whole stream once a sub-agent is spawned,
-    // so give the overall turn a generous budget; per-call HTTP/model timeouts still bound
-    // individual requests.
     private static final Duration CALL_TIMEOUT = Duration.ofSeconds(300);
     private static final double CONFIDENCE_FALLBACK = 0.6;
     private static final int MAX_SESSIONS = 200;
 
     private final IntentService intents;
     private final AgentAssetRepository agents;
+    private final ChannelAssetRepository channels;
+    private final AgentReleaseRepository releases;
+    private final AgentVersionRepository versions;
     private final ModelAssetRepository models;
     private final ApiKeyCipher cipher;
     private final HarnessAgentFactory factory;
@@ -89,6 +90,9 @@ public class IntentRouterService {
     public IntentRouterService(
             IntentService intents,
             AgentAssetRepository agents,
+            ChannelAssetRepository channels,
+            AgentReleaseRepository releases,
+            AgentVersionRepository versions,
             ModelAssetRepository models,
             ApiKeyCipher cipher,
             HarnessAgentFactory factory,
@@ -97,6 +101,9 @@ public class IntentRouterService {
             PersonaExtractionService personaExtraction) {
         this.intents = intents;
         this.agents = agents;
+        this.channels = channels;
+        this.releases = releases;
+        this.versions = versions;
         this.models = models;
         this.cipher = cipher;
         this.factory = factory;
@@ -109,22 +116,26 @@ public class IntentRouterService {
         if (req.message() == null || req.message().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "message is required");
         }
-        var draft = agents.findById(req.agentId())
+        AgentAsset draft = agents.findById(req.agentId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Router agent not found"));
-        if (draft.getModelAssetId() == null) {
+
+        // Resolve the runtime config: a published channel runs its release snapshot; otherwise fall
+        // back to the draft (pre-go-live testing). The resolved config also carries the release id
+        // for observability attribution.
+        ResolvedRuntime runtime = resolveRuntime(req, draft);
+        ResolvedAgentConfig cfg = runtime.config();
+        if (cfg.getModelAssetId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "该路由智能体尚未配置模型，请先选择模型");
         }
 
         var userId = req.userId();
         var sessionKey = deriveSessionKey(req.channelId(), req.sessionId());
-        var session = sessions.compute(sessionKey, (k, ex) -> resolveSession(k, ex, draft, userId));
+        var session = sessions.compute(sessionKey, (k, ex) -> resolveSession(k, ex, cfg, userId));
         if (session == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Session not found or invalid");
         }
 
-        // 1) Classify the query against the intent tree.
-        var classification = classify(req.message(), draft);
-        // 2) Build the user turn (with an optional routing directive for the router agent).
+        var classification = classify(req.message(), cfg);
         var turnMessage = buildRoutedMessage(req.message(), classification);
 
         try {
@@ -135,13 +146,13 @@ public class IntentRouterService {
                     .sessionId(sessionKey)
                     .put(TraceCollectingMiddleware.CTX_TRACE_ID, traceId)
                     .put(TraceCollectingMiddleware.CTX_TURN_SEQ, turnSeq)
-                    .put(TraceCollectingMiddleware.CTX_AGENT_ID, draft.getId().toString())
+                    .put(TraceCollectingMiddleware.CTX_AGENT_ID, cfg.getId().toString())
                     .build();
             session.agent.setPermissionMode(
-                    ctx, PermissionMode.valueOf(draft.getPermissionMode().name()));
+                    ctx, PermissionMode.valueOf(cfg.getPermissionMode().name()));
 
-            ensureSession(sessionKey, draft, turnMessage, userId);
-            recordTurn(sessionKey, "user", req.message(), null, null, traceId);
+            ensureSession(sessionKey, cfg, runtime, turnMessage, userId);
+            recordTurn(sessionKey, "user", req.message(), null, null, traceId, runtime);
 
             var answer = new StringBuilder();
             var finalMsg = new AtomicReference<Msg>();
@@ -164,11 +175,6 @@ public class IntentRouterService {
                     .blockLast(CALL_TIMEOUT);
             var latencyMs = (int) Duration.between(started, Instant.now()).toMillis();
 
-            // Prefer AgentResultEvent text over accumulated TextBlockDeltaEvent content.
-            // When sub-agent delegation occurs, the sub-agent's text deltas also flow into
-            // the parent event stream, so naive accumulation duplicates the content — the
-            // sub-agent's reply followed by the parent's synthesis. AgentResultEvent carries
-            // only the main agent's final synthesized result.
             String text = null;
             if (finalMsg.get() != null) {
                 String resultText = finalMsg.get().getTextContent();
@@ -191,12 +197,12 @@ public class IntentRouterService {
             }
 
             if (text == null || text.isBlank()) {
-                recordTurn(sessionKey, "error", reply, null, latencyMs, traceId);
+                recordTurn(sessionKey, "error", reply, null, latencyMs, traceId, runtime);
             } else {
-                recordTurn(sessionKey, "assistant", reply, null, latencyMs, traceId);
+                recordTurn(sessionKey, "assistant", reply, null, latencyMs, traceId, runtime);
             }
             touchSession(sessionKey);
-            personaExtraction.extractAsync(draft.getId(), userId, sessionKey);
+            personaExtraction.extractAsync(cfg.getId(), userId, sessionKey);
             return new ProductionChatResponse(
                     sessionKey,
                     reply,
@@ -212,13 +218,49 @@ public class IntentRouterService {
         }
     }
 
+    /** Resolves the runtime config and its release attribution for a production request. */
+    private ResolvedRuntime resolveRuntime(ProductionChatRequest req, AgentAsset draft) {
+        if (req.channelId() != null && !req.channelId().isBlank()) {
+            try {
+                UUID channelId = UUID.fromString(req.channelId().trim());
+                ChannelAsset channel = channels.findById(channelId).orElse(null);
+                if (channel != null && channel.getCurrentReleaseId() != null) {
+                    AgentRelease release =
+                            releases.findById(channel.getCurrentReleaseId()).orElse(null);
+                    if (release != null) {
+                        AgentVersion version = versions.findById(release.getVersionId()).orElse(null);
+                        if (version != null) {
+                            return new ResolvedRuntime(
+                                    ReleaseAgentConfig.fromSnapshot(version.getSnapshotJson()),
+                                    release.getId(),
+                                    version.getVersionNo(),
+                                    true);
+                        }
+                    }
+                    log.warn(
+                            "Channel {} has current_release_id={} but the release/version is missing; falling back to draft",
+                            channelId,
+                            channel.getCurrentReleaseId());
+                }
+            } catch (IllegalArgumentException e) {
+                log.warn("Production request has non-UUID channelId '{}'; using draft", req.channelId());
+            }
+        }
+        // No published release on this channel (or no channel): build from draft so pre-go-live
+        // testing keeps working. This path should disappear once every channel is published.
+        log.info("No release for channel={}; serving draft for agent={}", req.channelId(), draft.getAgentKey());
+        return new ResolvedRuntime(factory.draftConfig(draft), null, null, false);
+    }
+
+    private record ResolvedRuntime(
+            ResolvedAgentConfig config, UUID releaseId, Integer versionNo, boolean fromRelease) {}
+
     /**
-     * Classifies a query onto the intent tree using the router agent's own model, then
-     * reverse-resolves the matched intentKey against the router's {@code subagents_json} to find
-     * which sub-agent claims it. Best-effort: any failure yields a fallback classification with
-     * no delegate so the router agent handles the query directly.
+     * Classifies a query against the intent tree, then reverse-resolves the matched intentKey against
+     * the router's already-resolved sub-agents (each carries its declared intentKeys) to find the
+     * delegate. Best-effort: any failure yields a fallback classification with no delegate.
      */
-    private IntentClassification classify(String query, AgentAsset router) {
+    private IntentClassification classify(String query, ResolvedAgentConfig router) {
         List<IntentDto> flat = flatten(intents.getTree());
         if (flat.isEmpty()) {
             return new IntentClassification(null, null, 0.0, null, true);
@@ -263,63 +305,27 @@ public class IntentRouterService {
                     null,
                     true);
         }
-        // Reverse-resolve: which sub-agent declared responsibility for this intentKey?
         String delegate = resolveDelegate(router, matched.intentKey());
         if (delegate == null) {
-            // Intent recognised but no sub-agent claims it → fall back to the router itself.
             return new IntentClassification(matched.intentKey(), matched.name(), confidence, null, true);
         }
         return new IntentClassification(matched.intentKey(), matched.name(), confidence, delegate, false);
     }
 
-    /**
-     * Finds the referenced sub-agent (its {@code agentKey}) declared on the router agent whose
-     * {@code intentKeys} array contains the given intentKey. Each subagents_json entry is
-     * {@code {"agentId": ..., "intentKeys": [...]}}; we load the target AgentAsset to resolve the
-     * key the harness exposes to agent_spawn. Returns null when no reference claims the intent.
-     */
-    private String resolveDelegate(AgentAsset router, String intentKey) {
-        String raw = router.getSubagentsJson();
-        if (raw == null || raw.isBlank() || "[]".equals(raw.trim())) {
-            return null;
-        }
-        List<Map<String, Object>> defs;
-        try {
-            defs = json.readValue(raw, new TypeReference<List<Map<String, Object>>>() {});
-        } catch (Exception e) {
-            log.warn("subagents_json is not a valid JSON array for agent={}", router.getAgentKey());
-            return null;
-        }
-        for (Map<String, Object> def : defs) {
-            Object keys = def.get("intentKeys");
-            if (!(keys instanceof List<?> list)) continue;
-            boolean claimed = false;
-            for (Object k : list) {
-                if (k != null && intentKey.equals(String.valueOf(k).trim())) {
-                    claimed = true;
-                    break;
+    /** Finds the resolved sub-agent whose declared intentKeys contain the intentKey, returning its agentKey. */
+    private String resolveDelegate(ResolvedAgentConfig router, String intentKey) {
+        List<ResolvedSubagent> subs = router.getSubagents();
+        if (subs == null) return null;
+        for (ResolvedSubagent sub : subs) {
+            if (sub.intentKeys() == null) continue;
+            for (String k : sub.intentKeys()) {
+                if (intentKey.equals(k)) {
+                    String key = sub.config().getAgentKey();
+                    return (key == null || key.isBlank()) ? null : key;
                 }
-            }
-            if (!claimed) continue;
-            String agentId = asText(def.get("agentId"));
-            if (agentId.isBlank()) continue;
-            try {
-                var child = agents.findById(UUID.fromString(agentId)).orElse(null);
-                if (child != null
-                        && child.isEnabled()
-                        && child.getAgentKey() != null
-                        && !child.getAgentKey().isBlank()) {
-                    return child.getAgentKey();
-                }
-            } catch (IllegalArgumentException e) {
-                log.warn("Sub-agent reference has invalid agentId '{}' on router={}", agentId, router.getAgentKey());
             }
         }
         return null;
-    }
-
-    private static String asText(Object v) {
-        return v == null ? "" : String.valueOf(v).trim();
     }
 
     private String buildRoutedMessage(String query, IntentClassification c) {
@@ -364,7 +370,7 @@ public class IntentRouterService {
 
     private String callLlm(io.okagent.domain.model.ModelAsset model, String prompt) {
         try {
-            Map<String, Object> body = new LinkedHashMap<>();
+            Map<String, Object> body = new java.util.LinkedHashMap<>();
             body.put("model", model.getModelId());
             body.put("temperature", 0.0);
             body.put("max_tokens", 500);
@@ -427,10 +433,10 @@ public class IntentRouterService {
         return ch + "::" + sid;
     }
 
-    private Session resolveSession(String key, Session existing, AgentAsset draft, String userId) {
+    private Session resolveSession(String key, Session existing, ResolvedAgentConfig cfg, String userId) {
         if (existing != null
-                && existing.agentId.equals(draft.getId())
-                && existing.configChangedAt.equals(draft.getUpdatedAt())
+                && existing.agentId.equals(cfg.getId())
+                && existing.configKey.equals(cfg.contentHash())
                 && java.util.Objects.equals(existing.userId, userId)) {
             return existing;
         }
@@ -439,7 +445,7 @@ public class IntentRouterService {
             purgeSession(key, existing.userId);
         }
         evictIfFull();
-        return new Session(draft.getId(), draft.getUpdatedAt(), factory.build(draft, userId), userId);
+        return new Session(cfg.getId(), cfg.contentHash(), factory.build(cfg, userId), userId);
     }
 
     private void evictIfFull() {
@@ -460,15 +466,25 @@ public class IntentRouterService {
         }
     }
 
-    private void ensureSession(String key, AgentAsset draft, String firstMessage, String userId) {
+    private void ensureSession(
+            String key, ResolvedAgentConfig cfg, ResolvedRuntime runtime, String firstMessage, String userId) {
         if (dialogue.sessionExists(key)) return;
         var title = (firstMessage == null || firstMessage.isBlank())
-                ? draft.getName()
+                ? cfg.getName()
                 : (firstMessage.length() <= 50 ? firstMessage : firstMessage.substring(0, 50) + "...");
-        dialogue.ensureSession(key, draft.getId(), userId, title);
+        dialogue.ensureSession(key, cfg.getId(), runtime.releaseId(), runtime.versionNo(), userId, title);
     }
 
-    private void recordTurn(String key, String role, String content, String model, Integer latencyMs, String traceId) {
+    private void recordTurn(
+            String key,
+            String role,
+            String content,
+            String model,
+            Integer latencyMs,
+            String traceId,
+            ResolvedRuntime runtime) {
+        // Release/version is attributed at session level (it is constant for a session and a new
+        // release rebuilds the session via contentHash), so turns do not duplicate it here.
         dialogue.recordMessage(key, role, content, model, latencyMs, traceId);
     }
 
@@ -488,14 +504,14 @@ public class IntentRouterService {
 
     private static final class Session {
         private final UUID agentId;
-        private final Instant configChangedAt;
+        private final String configKey;
         private final HarnessAgent agent;
         private final String userId;
         private final Instant lastTouched = Instant.now();
 
-        private Session(UUID agentId, Instant configChangedAt, HarnessAgent agent, String userId) {
+        private Session(UUID agentId, String configKey, HarnessAgent agent, String userId) {
             this.agentId = agentId;
-            this.configChangedAt = configChangedAt;
+            this.configKey = configKey;
             this.agent = agent;
             this.userId = userId;
         }

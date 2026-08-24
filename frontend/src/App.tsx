@@ -18,6 +18,7 @@ import { KnowledgeSourcesPage } from "./modules/knowledge";
 import { ProductPage } from "./modules/product";
 import { IntentPage } from "./modules/intent";
 import { ChannelPage } from "./modules/channel";
+import { ReleasePage } from "./modules/release";
 import { CustomerChatPage } from "./modules/chat/CustomerChatPage";
 import { Button, PageHeader } from "./modules/shared";
 import "./agent.css";
@@ -59,7 +60,7 @@ type NavigationGroup = {
 const navItems: NavItem[] = [
   { id: "agents", icon: "◈", name: "配置调试", kicker: "AGENT CONFIG" },
   { id: "custchat", icon: "▣", name: "客服对话", kicker: "CUSTOMER CHAT" },
-  { id: "release", icon: "↗", name: "发布管理", kicker: "RELEASE", wip: true },
+  { id: "release", icon: "↗", name: "发布管理", kicker: "RELEASE" },
   { id: "observe", icon: "◌", name: "运行观测", kicker: "OBSERVE" },
   { id: "models", icon: "◌", name: "模型", kicker: "MODEL" },
   { id: "skills", icon: "✦", name: "技能", kicker: "SKILL" },
@@ -200,90 +201,6 @@ function SystemPage() {
           </div>
         ))}
       </section>
-    </>
-  );
-}
-
-function ReleasePage() {
-  const [step, setStep] = useState(2);
-  return (
-    <>
-      <PageHeader
-        kicker="RELEASE SNAPSHOT / DEPLOYMENT"
-        title="发布与环境"
-        description="将所有资产引用解析、冻结并签名为 ReleaseSnapshot；运行态只读取快照而不读取 Draft。"
-        action={<Button>创建发布</Button>}
-      />
-      <div className="release-workspace">
-        <section className="release-timeline">
-          {[
-            ["01", "Draft revision", "18"],
-            ["02", "Validation", "passed"],
-            ["03", "Release snapshot", "8f1a09c"],
-            ["04", "Deployment", "prod-cn-sh"],
-          ].map((x, index) => (
-            <button
-              onClick={() => setStep(index)}
-              className={index <= step ? "release-step done" : "release-step"}
-              key={x[0]}
-            >
-              <b>{x[0]}</b>
-              <span>
-                {x[1]}
-                <small>{x[2]}</small>
-              </span>
-              {index === step && <i>●</i>}
-            </button>
-          ))}
-        </section>
-        <section className="snapshot-panel">
-          <div className="form-title">
-            <div>
-              <p className="kicker">SNAPSHOT / 8F1A09C</p>
-              <h2>生产发布包</h2>
-            </div>
-            <span className="tag green">READY</span>
-          </div>
-          <div className="manifest-list">
-            {[
-              ["agentRevision", "customer-service@18"],
-              ["modelPolicy", "qwen-production@3"],
-              ["skillBindings", "product-faq@11, ticket-writing@3"],
-              ["mcpBindings", "crm@7"],
-              ["memoryPolicy", "user-profile@4"],
-              ["environment", "prod-cn-sh@2"],
-            ].map(([key, value]) => (
-              <p key={key}>
-                <b>{key}</b>
-                <code>{value}</code>
-                <span>✓ locked</span>
-              </p>
-            ))}
-          </div>
-          <div className="deploy-bar">
-            <p>
-              <span>DEPLOYMENT TRAFFIC</span>
-              <b>100% / prod</b>
-            </p>
-            <div>
-              <i />
-              <i />
-              <i />
-              <i />
-              <i />
-              <i />
-              <i />
-              <i />
-              <i />
-              <i />
-            </div>
-          </div>
-          <div className="sticky-actions">
-            <Button quiet>查看差异</Button>
-            <Button>部署到生产 →</Button>
-          </div>
-        </section>
-      </div>
     </>
   );
 }

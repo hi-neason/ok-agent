@@ -68,8 +68,9 @@ public class AgentDebugServiceImpl implements AgentDebugService {
 
         var userId = request.userId();
         var sessionId = resolveSessionId(request.sessionId());
+        var debugConfig = factory.draftConfig(draft);
         var session =
-                sessions.compute(sessionId, (key, existing) -> resolveSession(sessionId, existing, draft, userId));
+                sessions.compute(sessionId, (key, existing) -> resolveSession(sessionId, existing, draft, debugConfig, userId));
         if (session == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Debug session not found or invalid");
         }
@@ -192,10 +193,12 @@ public class AgentDebugServiceImpl implements AgentDebugService {
     }
 
     /** Rebuilds the HarnessAgent when missing, bound to another agent, or when config changed. */
-    private Session resolveSession(String sessionId, Session existing, AgentAsset draft, String userId) {
+    private Session resolveSession(
+            String sessionId, Session existing, AgentAsset draft, DraftAgentConfig config, String userId) {
+        String configKey = config.contentHash();
         if (existing != null
                 && existing.agentId.equals(draft.getId())
-                && existing.configChangedAt.equals(draft.getUpdatedAt())
+                && existing.configKey.equals(configKey)
                 && java.util.Objects.equals(existing.userId, userId)) {
             return existing;
         }
@@ -206,7 +209,7 @@ public class AgentDebugServiceImpl implements AgentDebugService {
             purgeSession(sessionId, existing.userId);
         }
         evictIfFull();
-        return new Session(draft.getId(), draft.getUpdatedAt(), factory.build(draft, userId), userId);
+        return new Session(draft.getId(), configKey, factory.build(config, userId), userId);
     }
 
     private void evictIfFull() {
@@ -271,14 +274,14 @@ public class AgentDebugServiceImpl implements AgentDebugService {
 
     private static final class Session {
         private final UUID agentId;
-        private final Instant configChangedAt;
+        private final String configKey;
         private final HarnessAgent agent;
         private final String userId;
         private final Instant lastTouched = Instant.now();
 
-        private Session(UUID agentId, Instant configChangedAt, HarnessAgent agent, String userId) {
+        private Session(UUID agentId, String configKey, HarnessAgent agent, String userId) {
             this.agentId = agentId;
-            this.configChangedAt = configChangedAt;
+            this.configKey = configKey;
             this.agent = agent;
             this.userId = userId;
         }

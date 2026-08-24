@@ -35,6 +35,14 @@ public class ChannelAsset {
     @Column(name = "bound_agent_id")
     private UUID boundAgentId;
 
+    /** The release currently serving production traffic for this channel. */
+    @Column(name = "current_release_id")
+    private UUID currentReleaseId;
+
+    /** The release previously serving traffic, retained for one-click rollback. */
+    @Column(name = "previous_release_id")
+    private UUID previousReleaseId;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "dm_scope", nullable = false, length = 32)
     private ChannelDmScope dmScope;
@@ -131,6 +139,30 @@ public class ChannelAsset {
         this.updatedAt = Instant.now();
     }
 
+    /** Points the channel at a new current release, remembering the previous one for rollback. */
+    public void promoteRelease(UUID newReleaseId) {
+        this.previousReleaseId = this.currentReleaseId;
+        this.currentReleaseId = newReleaseId;
+        this.updatedAt = Instant.now();
+    }
+
+    /**
+     * Points the channel at {@code restoredId} as current while remembering {@code rolledBackFromId}
+     * as the previous target, so a subsequent rollback can move back to it.
+     */
+    public void setReleasePointers(UUID restoredId, UUID rolledBackFromId) {
+        this.currentReleaseId = restoredId;
+        this.previousReleaseId = rolledBackFromId;
+        this.updatedAt = Instant.now();
+    }
+
+    /** Restores the previous release as current and clears the back-pointer. */
+    public void restorePreviousRelease() {
+        this.currentReleaseId = this.previousReleaseId;
+        this.previousReleaseId = null;
+        this.updatedAt = Instant.now();
+    }
+
     /** Updates the runtime lifecycle status and last error observed by the channel runtime manager. */
     public void reportRuntime(ChannelRuntimeStatus status, String error) {
         this.runtimeStatus = status;
@@ -156,6 +188,14 @@ public class ChannelAsset {
 
     public UUID getBoundAgentId() {
         return boundAgentId;
+    }
+
+    public UUID getCurrentReleaseId() {
+        return currentReleaseId;
+    }
+
+    public UUID getPreviousReleaseId() {
+        return previousReleaseId;
     }
 
     public ChannelDmScope getDmScope() {

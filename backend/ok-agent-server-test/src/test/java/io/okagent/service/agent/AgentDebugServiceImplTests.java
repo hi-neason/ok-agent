@@ -20,6 +20,7 @@ import io.okagent.repository.agent.AgentAssetRepository;
 import io.okagent.service.dialogue.DialogueService;
 import io.okagent.service.persona.PersonaExtractionService;
 import io.okagent.web.agent.AgentChatRequest;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -40,7 +41,9 @@ class AgentDebugServiceImplTests {
         var stateStore = mock(JdbcAgentStateStore.class);
         var personaExtraction = mock(PersonaExtractionService.class);
         when(agents.findById(agentId)).thenReturn(Optional.of(asset));
-        when(factory.build(asset, "debug")).thenReturn(harnessAgent);
+        var debugConfig = new DraftAgentConfig(asset, List.of());
+        when(factory.draftConfig(asset)).thenReturn(debugConfig);
+        when(factory.build(debugConfig, "debug")).thenReturn(harnessAgent);
         when(dialogue.nextSeq(any(String.class))).thenReturn(1);
         when(harnessAgent.streamEvents(any(String.class), any(RuntimeContext.class)))
                 .thenReturn(Flux.just(new AgentResultEvent(new AssistantMessage("Current time returned by tool"))));
@@ -70,7 +73,9 @@ class AgentDebugServiceImplTests {
         var dialogue = mock(DialogueService.class);
         var personaExtraction = mock(PersonaExtractionService.class);
         when(agents.findById(agentId)).thenReturn(Optional.of(asset));
-        when(factory.build(asset, "debug")).thenReturn(harnessAgent);
+        var debugConfig = new DraftAgentConfig(asset, List.of());
+        when(factory.draftConfig(asset)).thenReturn(debugConfig);
+        when(factory.build(debugConfig, "debug")).thenReturn(harnessAgent);
         when(dialogue.sessionExists("dlg-session")).thenReturn(false);
         when(dialogue.nextSeq("dlg-session")).thenReturn(2);
         when(harnessAgent.streamEvents(any(String.class), any(RuntimeContext.class)))

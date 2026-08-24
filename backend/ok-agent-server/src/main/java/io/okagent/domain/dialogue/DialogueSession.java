@@ -24,6 +24,14 @@ public class DialogueSession {
     @Column(name = "agent_id", nullable = false)
     private UUID agentId;
 
+    /** The release serving the session (production only; null for debug sessions). */
+    @Column(name = "release_id")
+    private UUID releaseId;
+
+    /** The agent version (vN) serving the session (production only). */
+    @Column(name = "version_no")
+    private Integer versionNo;
+
     @Column(nullable = false, length = 255)
     private String title;
 
@@ -53,6 +61,19 @@ public class DialogueSession {
 
     public UUID getAgentId() {
         return agentId;
+    }
+
+    public UUID getReleaseId() {
+        return releaseId;
+    }
+
+    public Integer getVersionNo() {
+        return versionNo;
+    }
+
+    public void setReleaseInfo(UUID releaseId, Integer versionNo) {
+        this.releaseId = releaseId;
+        this.versionNo = versionNo;
     }
 
     public String getTitle() {

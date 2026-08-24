@@ -51,6 +51,18 @@ public class DialogueServiceImpl implements DialogueService {
     }
 
     @Override
+    public DialogueSession ensureSession(
+            String sessionId, UUID agentId, UUID releaseId, Integer versionNo, String userId, String title) {
+        Optional<DialogueSession> existing = sessions.findById(sessionId);
+        if (existing.isPresent()) {
+            return existing.get();
+        }
+        DialogueSession created = new DialogueSession(sessionId, agentId, title, userId, Instant.now());
+        created.setReleaseInfo(releaseId, versionNo);
+        return sessions.save(created);
+    }
+
+    @Override
     public DialogueTurn recordMessage(String sessionId, String role, String content, String model, Integer latencyMs) {
         return recordMessage(sessionId, role, content, model, latencyMs, null);
     }

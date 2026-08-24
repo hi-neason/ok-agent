@@ -21,6 +21,16 @@ public interface DialogueService {
     /** Creates the session if absent, otherwise returns the existing one. */
     DialogueSession ensureSession(String sessionId, UUID agentId, String userId, String title);
 
+    /**
+     * Creates a production session attributed to a specific release/version. Default implementation
+     * ignores release info; production callers use the implementation that persists it for
+     * per-version observability.
+     */
+    default DialogueSession ensureSession(
+            String sessionId, UUID agentId, UUID releaseId, Integer versionNo, String userId, String title) {
+        return ensureSession(sessionId, agentId, userId, title);
+    }
+
     /** Appends one exchange to a session, assigning the next sequence number. */
     DialogueTurn recordMessage(String sessionId, String role, String content, String model, Integer latencyMs);
 

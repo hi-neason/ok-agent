@@ -16,6 +16,14 @@ export OK_AGENT_JWT_SECRET="replace-with-at-least-32-random-characters"
 mvn -pl ok-agent-server spring-boot:run
 ```
 
+The bootstrap password initializes `OK_AGENT_BOOTSTRAP_ADMIN_USERNAME` (default `admin`) only when
+that account has no credentials; later restarts never overwrite its password. Access tokens expire
+after 30 minutes by default (`OK_AGENT_JWT_TTL`). The MVP roles are:
+
+- `ADMIN`: account, channel, release, and all configuration operations.
+- `EDITOR`: read access plus ordinary configuration and debug operations.
+- `VIEWER`: read-only API access.
+
 Run all tests with `mvn test`. Production code lives in `ok-agent-server/`; all test code and test-only dependencies live in `ok-agent-server-test/`.
 
 Execution traces are retained for 30 days by default. Override this with

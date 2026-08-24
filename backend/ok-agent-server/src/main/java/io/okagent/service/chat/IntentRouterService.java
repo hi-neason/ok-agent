@@ -39,9 +39,12 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -129,7 +132,8 @@ public class IntentRouterService {
         }
 
         var userId = req.userId();
-        var sessionKey = deriveSessionKey(req.channelId(), req.sessionId());
+        var sessionAddress = deriveSessionAddress(req.channelId(), req.sessionId());
+        var sessionKey = sessionAddress.storageKey();
         dialogue.assertSessionOwner(sessionKey, cfg.getId(), userId);
         var session = sessions.compute(sessionKey, (k, ex) -> resolveSession(k, ex, cfg, userId));
         if (session == null) {
@@ -205,7 +209,7 @@ public class IntentRouterService {
             touchSession(sessionKey);
             personaExtraction.extractAsync(cfg.getId(), userId, sessionKey);
             return new ProductionChatResponse(
-                    sessionKey,
+                    sessionAddress.sessionId(),
                     reply,
                     classification.intentKey(),
                     classification.intentName(),
@@ -428,11 +432,27 @@ public class IntentRouterService {
         return out;
     }
 
-    private String deriveSessionKey(String channelId, String sessionId) {
+    static SessionAddress deriveSessionAddress(String channelId, String sessionId) {
         String sid = (sessionId == null || sessionId.isBlank()) ? "ps-" + UUID.randomUUID() : sessionId.trim();
         String ch = (channelId == null || channelId.isBlank()) ? "default" : channelId.trim();
-        return ch + "::" + sid;
+        String combined = ch + "::" + sid;
+        String storageKey = combined.length() <= 64 && !ch.contains("::") && !sid.contains("::")
+                ? combined
+                : "ps-" + base64Sha256(ch + "\0" + sid);
+        return new SessionAddress(sid, storageKey);
     }
+
+    private static String base64Sha256(String value) {
+        try {
+            byte[] digest = MessageDigest.getInstance("SHA-256")
+                    .digest(value.getBytes(StandardCharsets.UTF_8));
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(digest);
+        } catch (java.security.NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 is unavailable", exception);
+        }
+    }
+
+    record SessionAddress(String sessionId, String storageKey) {}
 
     private Session resolveSession(String key, Session existing, ResolvedAgentConfig cfg, String userId) {
         if (existing != null

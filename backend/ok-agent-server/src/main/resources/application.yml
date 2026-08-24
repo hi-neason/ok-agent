@@ -28,6 +28,8 @@ management:
       probes:
         enabled: true
 ok-agent:
+  security:
+    api-key-encryption-key: ${OK_AGENT_API_KEY_ENCRYPTION_KEY}
   runtime:
     agentscope-version: ${AGENTSCOPE_VERSION:2.0.2}
   storage:

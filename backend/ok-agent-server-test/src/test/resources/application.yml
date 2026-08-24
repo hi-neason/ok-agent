@@ -8,3 +8,6 @@ spring:
       ddl-auto: create-drop
   flyway:
     enabled: false
+ok-agent:
+  security:
+    api-key-encryption-key: test-only-encryption-key

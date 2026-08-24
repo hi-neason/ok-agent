@@ -20,7 +20,7 @@ public class ApiKeyCipher {
 
     private final SecretKeySpec key;
 
-    public ApiKeyCipher(@Value("${ok-agent.security.api-key-encryption-key:local-development-key}") String masterKey) {
+    public ApiKeyCipher(@Value("${ok-agent.security.api-key-encryption-key}") String masterKey) {
         try {
             key = new SecretKeySpec(
                     MessageDigest.getInstance("SHA-256").digest(masterKey.getBytes(StandardCharsets.UTF_8)), "AES");

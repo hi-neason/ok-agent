@@ -6,7 +6,13 @@ Control-plane and runtime-plane backend for ok-agent.
 - Runtime integration: `io.agentscope:agentscope-harness:2.0.2`
 - Persistence target: MySQL; repositories and migrations are added with the control-plane domain modules.
 
-Run locally with `mvn -pl ok-agent-server spring-boot:run`.
+Set a private encryption key before starting the service. Keep this value stable: changing it makes
+previously stored model, channel, MCP, knowledge, workflow and product credentials unreadable.
+
+```bash
+export OK_AGENT_API_KEY_ENCRYPTION_KEY="replace-with-a-long-random-secret"
+mvn -pl ok-agent-server spring-boot:run
+```
 
 Run all tests with `mvn test`. Production code lives in `ok-agent-server/`; all test code and test-only dependencies live in `ok-agent-server-test/`.
 

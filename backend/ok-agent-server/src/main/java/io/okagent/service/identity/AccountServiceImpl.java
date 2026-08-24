@@ -22,10 +22,13 @@ import org.springframework.web.server.ResponseStatusException;
 public class AccountServiceImpl implements AccountService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final SecurityAuditService auditService;
 
-    public AccountServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public AccountServiceImpl(
+            UserRepository userRepository, PasswordEncoder passwordEncoder, SecurityAuditService auditService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.auditService = auditService;
     }
 
     @Override
@@ -40,7 +43,7 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     @Transactional
-    public AccountResponse create(AccountCreateRequest request) {
+    public AccountResponse create(AuthenticatedActor actor, AccountCreateRequest request) {
         String username = request.username().trim();
         if (userRepository.existsByUsername(username)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "USERNAME_CONFLICT");
@@ -55,16 +58,25 @@ public class AccountServiceImpl implements AccountService {
                 null,
                 request.enabled());
         user.initializeCredentials(passwordEncoder.encode(request.password()), request.role());
-        return AccountResponse.from(userRepository.save(user));
+        User saved = userRepository.save(user);
+        auditService.record(
+                actor,
+                "ACCOUNT_CREATED",
+                "ACCOUNT",
+                saved.getId().toString(),
+                "role=" + saved.getRole() + ";enabled=" + saved.isEnabled());
+        return AccountResponse.from(saved);
     }
 
     @Override
     @Transactional
-    public AccountResponse update(UUID id, UUID actorId, AccountUpdateRequest request) {
+    public AccountResponse update(UUID id, AuthenticatedActor actor, AccountUpdateRequest request) {
         User user = findInteractiveAccount(id);
+        AccountRole previousRole = user.getRole();
+        boolean previouslyEnabled = user.isEnabled();
         boolean removesAdmin = user.getRole() == AccountRole.ADMIN
                 && (request.role() != AccountRole.ADMIN || !request.enabled());
-        if (removesAdmin && id.equals(actorId)) {
+        if (removesAdmin && id.equals(actor.accountId())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "CANNOT_CHANGE_OWN_ADMIN_ACCESS");
         }
         if (removesAdmin
@@ -72,15 +84,24 @@ public class AccountServiceImpl implements AccountService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "LAST_ADMIN_REQUIRED");
         }
         user.updateAccountAccess(request.displayName().trim(), request.role(), request.enabled());
-        return AccountResponse.from(userRepository.save(user));
+        User saved = userRepository.save(user);
+        auditService.record(
+                actor,
+                "ACCOUNT_ACCESS_UPDATED",
+                "ACCOUNT",
+                saved.getId().toString(),
+                "role=" + previousRole + "->" + saved.getRole() + ";enabled=" + previouslyEnabled + "->"
+                        + saved.isEnabled());
+        return AccountResponse.from(saved);
     }
 
     @Override
     @Transactional
-    public void changePassword(UUID id, AccountPasswordRequest request) {
+    public void changePassword(UUID id, AuthenticatedActor actor, AccountPasswordRequest request) {
         User user = findInteractiveAccount(id);
         user.changePassword(passwordEncoder.encode(request.password()));
         userRepository.save(user);
+        auditService.record(actor, "ACCOUNT_PASSWORD_RESET", "ACCOUNT", user.getId().toString(), "");
     }
 
     private User findInteractiveAccount(UUID id) {

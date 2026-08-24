@@ -43,6 +43,10 @@ class ApiAuthorizationTests {
                 .andExpect(status().isForbidden());
         mvc.perform(get("/api/v1/accounts").with(jwtRole("ADMIN")))
                 .andExpect(status().isOk());
+        mvc.perform(get("/api/v1/security-audit").with(jwtRole("VIEWER")))
+                .andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/security-audit").with(jwtRole("ADMIN")))
+                .andExpect(status().isOk());
         mvc.perform(delete("/api/v1/users/{id}", UUID.randomUUID()).with(jwtRole("EDITOR")))
                 .andExpect(status().isForbidden());
         mvc.perform(delete("/api/v1/users/{id}", UUID.randomUUID()).with(jwtRole("ADMIN")))

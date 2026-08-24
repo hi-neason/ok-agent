@@ -12,11 +12,11 @@ public interface AccountService {
     Page<AccountResponse> list(int page, int size);
 
     /** Creates an interactive console account with an encoded password and assigned role. */
-    AccountResponse create(AccountCreateRequest request);
+    AccountResponse create(AuthenticatedActor actor, AccountCreateRequest request);
 
     /** Updates an account role and enabled state while preserving the last administrator. */
-    AccountResponse update(UUID id, UUID actorId, AccountUpdateRequest request);
+    AccountResponse update(UUID id, AuthenticatedActor actor, AccountUpdateRequest request);
 
     /** Replaces an interactive account password with a newly encoded value. */
-    void changePassword(UUID id, AccountPasswordRequest request);
+    void changePassword(UUID id, AuthenticatedActor actor, AccountPasswordRequest request);
 }

@@ -21,12 +21,14 @@ import org.springframework.web.server.ResponseStatusException;
 
 class AccountServiceImplTests {
     private UserRepository repository;
+    private SecurityAuditService auditService;
     private AccountServiceImpl service;
 
     @BeforeEach
     void setUp() {
         repository = mock(UserRepository.class);
-        service = new AccountServiceImpl(repository, new BCryptPasswordEncoder(4));
+        auditService = mock(SecurityAuditService.class);
+        service = new AccountServiceImpl(repository, new BCryptPasswordEncoder(4), auditService);
     }
 
     @Test
@@ -36,11 +38,19 @@ class AccountServiceImplTests {
         when(repository.save(org.mockito.ArgumentMatchers.any(User.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        var result = service.create(request);
+        AuthenticatedActor actor = actor();
+        var result = service.create(actor, request);
 
         assertThat(result.username()).isEqualTo("editor");
         assertThat(result.role()).isEqualTo(AccountRole.EDITOR);
         verify(repository).save(org.mockito.ArgumentMatchers.argThat(User::hasCredentials));
+        verify(auditService)
+                .record(
+                        org.mockito.ArgumentMatchers.eq(actor),
+                        org.mockito.ArgumentMatchers.eq("ACCOUNT_CREATED"),
+                        org.mockito.ArgumentMatchers.eq("ACCOUNT"),
+                        org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.notNull());
     }
 
     @Test
@@ -49,7 +59,9 @@ class AccountServiceImplTests {
         when(repository.findById(admin.getId())).thenReturn(Optional.of(admin));
 
         assertConflict(() -> service.update(
-                admin.getId(), admin.getId(), new AccountUpdateRequest("Admin", AccountRole.VIEWER, true)));
+                admin.getId(),
+                new AuthenticatedActor(admin.getId(), "admin"),
+                new AccountUpdateRequest("Admin", AccountRole.VIEWER, true)));
     }
 
     @Test
@@ -60,7 +72,7 @@ class AccountServiceImplTests {
                 .thenReturn(1L);
 
         assertConflict(() -> service.update(
-                admin.getId(), UUID.randomUUID(), new AccountUpdateRequest("Admin", AccountRole.ADMIN, false)));
+                admin.getId(), actor(), new AccountUpdateRequest("Admin", AccountRole.ADMIN, false)));
     }
 
     private static void assertConflict(Runnable action) {
@@ -81,5 +93,9 @@ class AccountServiceImplTests {
                 enabled);
         user.initializeCredentials("bcrypt-hash", role);
         return user;
+    }
+
+    private static AuthenticatedActor actor() {
+        return new AuthenticatedActor(UUID.randomUUID(), "operator");
     }
 }

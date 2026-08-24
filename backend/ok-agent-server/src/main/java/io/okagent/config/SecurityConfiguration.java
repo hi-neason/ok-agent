@@ -40,7 +40,7 @@ public class SecurityConfiguration {
                         .permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**")
                         .permitAll()
-                        .requestMatchers("/api/v1/accounts/**")
+                        .requestMatchers("/api/v1/accounts/**", "/api/v1/security-audit/**")
                         .hasRole("ADMIN")
                         .requestMatchers(
                                 HttpMethod.POST,

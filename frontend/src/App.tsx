@@ -6,6 +6,7 @@ import {
   observeTraceIdFromPath,
 } from "./modules/observe/routes";
 import { Button, PageHeader } from "./modules/shared";
+import { useAuth } from "./modules/auth";
 import "./agent.css";
 
 const AgentRegistryPage = lazy(() =>
@@ -241,6 +242,7 @@ function SystemPage() {
 
 export default function App() {
   const { t, i18n } = useTranslation();
+  const { user, logout } = useAuth();
   const [navCollapsed, setNavCollapsed] = useState(
     () => window.localStorage.getItem("ok-agent.nav-collapsed") === "true",
   );
@@ -433,7 +435,15 @@ intents: <IntentPage />,
               {i18n.resolvedLanguage === "zh-CN" ? "EN" : "中"}
             </button>
             <button className="icon-button">◐</button>
-            <span className="avatar">N</span>
+            <span className="auth-user-name">{user.displayName}</span>
+            <button
+              className="avatar auth-avatar"
+              onClick={logout}
+              title={t("auth.signOut")}
+              type="button"
+            >
+              {(user.displayName || user.username).slice(0, 1).toUpperCase()}
+            </button>
           </div>
         </header>
         <section className="page-content" key={page}>

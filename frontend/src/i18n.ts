@@ -28,6 +28,16 @@ const resources = {
         confirm: "确定",
         cancel: "取消",
       },
+      auth: {
+        title: "登录控制台",
+        description: "使用平台管理员分配的内置账号访问管理控制面。",
+        username: "用户名",
+        password: "密码",
+        signIn: "登录",
+        signingIn: "正在登录…",
+        signOut: "退出登录",
+        invalidCredentials: "用户名或密码错误，或账号已被停用。",
+      },
       pagination: {
         total: "共 {{total}} 条",
         prev: "上一页",
@@ -420,6 +430,16 @@ const resources = {
         collapseNavigation: "Collapse or expand navigation",
         confirm: "Confirm",
         cancel: "Cancel",
+      },
+      auth: {
+        title: "Sign in to Console",
+        description: "Use the built-in account assigned by your platform administrator.",
+        username: "Username",
+        password: "Password",
+        signIn: "Sign in",
+        signingIn: "Signing in…",
+        signOut: "Sign out",
+        invalidCredentials: "Invalid credentials or the account is disabled.",
       },
       pagination: {
         total: "{{total}} total",

@@ -26,6 +26,13 @@ public class User {
     @Column(name = "username", nullable = false, unique = true, length = 128)
     private String username;
 
+    @Column(name = "password_hash", length = 100)
+    private String passwordHash;
+
+    @Column(nullable = false, length = 16)
+    @Enumerated(EnumType.STRING)
+    private AccountRole role = AccountRole.VIEWER;
+
     @Column(name = "display_name", nullable = false, length = 128)
     private String displayName;
 
@@ -43,6 +50,9 @@ public class User {
 
     @Column(nullable = false)
     private boolean enabled = true;
+
+    @Column(name = "last_login_at")
+    private Instant lastLoginAt;
 
     @Version
     private long version;
@@ -133,6 +143,14 @@ public class User {
         return username;
     }
 
+    public String getPasswordHash() {
+        return passwordHash;
+    }
+
+    public AccountRole getRole() {
+        return role;
+    }
+
     public String getDisplayName() {
         return displayName;
     }
@@ -155,6 +173,10 @@ public class User {
 
     public boolean isEnabled() {
         return enabled;
+    }
+
+    public Instant getLastLoginAt() {
+        return lastLoginAt;
     }
 
     public long getVersion() {

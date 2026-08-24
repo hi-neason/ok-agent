@@ -1,5 +1,6 @@
 package io.okagent.web.user;
 
+import io.okagent.domain.user.AccountRole;
 import io.okagent.domain.user.User;
 import io.okagent.domain.user.UserSource;
 import java.time.Instant;
@@ -9,6 +10,7 @@ public record UserResponse(
         UUID id,
         String userId,
         String username,
+        AccountRole role,
         String displayName,
         UserSource source,
         String avatarUrl,
@@ -28,6 +30,7 @@ public record UserResponse(
                 user.getId(),
                 user.getUserId(),
                 user.getUsername(),
+                user.getRole(),
                 user.getDisplayName(),
                 user.getSource(),
                 user.getAvatarUrl(),

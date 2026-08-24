@@ -16,6 +16,15 @@ async function jsonOrThrow(res: Response): Promise<unknown> {
   return res.status === 204 ? undefined : res.json();
 }
 
+// List endpoints may return either a bare array or a paginated { content: [...] } envelope.
+function unwrapList(data: unknown): Array<Record<string, unknown>> {
+  if (Array.isArray(data)) return data as Array<Record<string, unknown>>;
+  if (data && typeof data === "object" && Array.isArray((data as { content?: unknown }).content)) {
+    return (data as { content: Array<Record<string, unknown>> }).content;
+  }
+  return [];
+}
+
 export async function loadAgent(agentId: string): Promise<AgentItem> {
   const res = await fetch(`/api/v1/agents/${agentId}`);
   if (!res.ok) throw new Error("agent not found");
@@ -23,9 +32,9 @@ export async function loadAgent(agentId: string): Promise<AgentItem> {
 }
 
 export async function loadModels(): Promise<Option[]> {
-  const res = await fetch("/api/v1/models");
+  const res = await fetch("/api/v1/models?page=0&size=1000");
   if (!res.ok) return [];
-  const list = (await res.json()) as Array<Record<string, unknown>>;
+  const list = unwrapList(await res.json());
   return list
     .filter((m) => m.enabled !== false)
     .map((m) => ({
@@ -66,9 +75,9 @@ export async function loadAgents(): Promise<AgentOption[]> {
 }
 
 export async function loadMcpServers(): Promise<Option[]> {
-  const res = await fetch("/api/v1/mcp-servers");
+  const res = await fetch("/api/v1/mcp-servers?page=0&size=1000");
   if (!res.ok) return [];
-  const list = (await res.json()) as Array<Record<string, unknown>>;
+  const list = unwrapList(await res.json());
   return list
     .filter((m) => m.enabled !== false)
     .map((m) => ({
@@ -94,9 +103,9 @@ export async function loadMcpTools(
 }
 
 export async function loadSkills(): Promise<Option[]> {
-  const res = await fetch("/api/v1/skills");
+  const res = await fetch("/api/v1/skills?page=0&size=1000");
   if (!res.ok) return [];
-  const list = (await res.json()) as Array<Record<string, unknown>>;
+  const list = unwrapList(await res.json());
   return list
     .filter((s) => s.enabled !== false)
     .map((s) => ({
@@ -109,9 +118,9 @@ export async function loadSkills(): Promise<Option[]> {
 export type DebugUser = { userId: string; username: string; displayName: string };
 
 export async function loadUsers(): Promise<DebugUser[]> {
-  const res = await fetch("/api/v1/users");
+  const res = await fetch("/api/v1/users?page=0&size=1000");
   if (!res.ok) return [];
-  const list = (await res.json()) as Array<Record<string, unknown>>;
+  const list = unwrapList(await res.json());
   return list
     .filter((u) => u.enabled !== false)
     .map((u) => ({

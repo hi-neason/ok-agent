@@ -36,3 +36,7 @@ target/
 .agentscope/
 **/.agentscope/
 .mcp.json
+
+# WorkBuddy local workspace data (memory, skills, automations)
+.workbuddy/
+**/.workbuddy/

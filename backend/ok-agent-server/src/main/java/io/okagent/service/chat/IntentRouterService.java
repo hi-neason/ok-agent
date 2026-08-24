@@ -51,6 +51,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -139,11 +140,13 @@ public class IntentRouterService {
         if (session == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Session not found or invalid");
         }
-
-        var classification = classify(req.message(), cfg);
-        var turnMessage = buildRoutedMessage(req.message(), classification);
+        if (!session.executionLock.tryLock()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Session is already processing a request");
+        }
 
         try {
+            var classification = classify(req.message(), cfg);
+            var turnMessage = buildRoutedMessage(req.message(), classification);
             String traceId = UUID.randomUUID().toString().replace("-", "");
             int turnSeq = dialogue.nextSeq(sessionKey);
             var ctx = RuntimeContext.builder()
@@ -220,6 +223,8 @@ public class IntentRouterService {
             var unwrapped = Exceptions.unwrap(e);
             log.warn("Production chat failed: {}", unwrapped.getMessage(), unwrapped);
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, unwrapped.getMessage());
+        } finally {
+            session.executionLock.unlock();
         }
     }
 
@@ -529,6 +534,7 @@ public class IntentRouterService {
         private final HarnessAgent agent;
         private final String userId;
         private final Instant lastTouched = Instant.now();
+        private final ReentrantLock executionLock = new ReentrantLock();
 
         private Session(UUID agentId, String configKey, HarnessAgent agent, String userId) {
             this.agentId = agentId;

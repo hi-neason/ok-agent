@@ -27,6 +27,9 @@ import io.okagent.web.agent.AgentChatRequest;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
@@ -127,5 +130,54 @@ class AgentDebugServiceImplTests {
 
         verify(dialogue, never()).purge("private-session");
         verifyNoInteractions(stateStore);
+    }
+
+    @Test
+    void shouldRejectConcurrentCallsForTheSameSession() throws Exception {
+        var agentId = UUID.randomUUID();
+        var asset = new AgentAsset(agentId, "agent", "Agent", "", "testing");
+        asset.updateConfiguration("", "", UUID.randomUUID(), 0.7, null, null, 2048, "[]", "[]");
+        var agents = mock(AgentAssetRepository.class);
+        var factory = mock(HarnessAgentFactory.class);
+        var harnessAgent = mock(HarnessAgent.class);
+        var dialogue = mock(DialogueService.class);
+        var config = new DraftAgentConfig(asset, List.of());
+        when(agents.findById(agentId)).thenReturn(Optional.of(asset));
+        when(factory.draftConfig(asset)).thenReturn(config);
+        when(factory.build(config, "user")).thenReturn(harnessAgent);
+        when(dialogue.nextSeq("session")).thenReturn(1);
+        var entered = new CountDownLatch(1);
+        var release = new CountDownLatch(1);
+        when(harnessAgent.streamEvents(any(String.class), any(RuntimeContext.class)))
+                .thenReturn(Flux.create(sink -> {
+                    entered.countDown();
+                    try {
+                        release.await();
+                        sink.next(new AgentResultEvent(new AssistantMessage("done")));
+                        sink.complete();
+                    } catch (InterruptedException exception) {
+                        Thread.currentThread().interrupt();
+                        sink.error(exception);
+                    }
+                }));
+        var service = new AgentDebugServiceImpl(
+                agents,
+                factory,
+                dialogue,
+                mock(JdbcAgentStateStore.class),
+                mock(PersonaExtractionService.class));
+        var request = new AgentChatRequest("message", "session", "user");
+
+        var first = CompletableFuture.supplyAsync(() -> service.chat(agentId, request));
+        assertThat(entered.await(2, TimeUnit.SECONDS)).isTrue();
+        try {
+            assertThatThrownBy(() -> service.chat(agentId, request))
+                    .isInstanceOfSatisfying(ResponseStatusException.class,
+                            exception -> assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
+        } finally {
+            release.countDown();
+        }
+
+        assertThat(first.get(2, TimeUnit.SECONDS).reply()).isEqualTo("done");
     }
 }

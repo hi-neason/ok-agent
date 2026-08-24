@@ -24,6 +24,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -74,6 +75,9 @@ public class AgentDebugServiceImpl implements AgentDebugService {
                 sessions.compute(sessionId, (key, existing) -> resolveSession(sessionId, existing, draft, debugConfig, userId));
         if (session == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Debug session not found or invalid");
+        }
+        if (!session.executionLock.tryLock()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Debug session is already processing a request");
         }
 
         try {
@@ -168,6 +172,8 @@ public class AgentDebugServiceImpl implements AgentDebugService {
             return new AgentChatResponse(sessionId, reply);
         } catch (Exception e) {
             throw toUserFacingError(e);
+        } finally {
+            session.executionLock.unlock();
         }
     }
 
@@ -290,6 +296,7 @@ public class AgentDebugServiceImpl implements AgentDebugService {
         private final HarnessAgent agent;
         private final String userId;
         private final Instant lastTouched = Instant.now();
+        private final ReentrantLock executionLock = new ReentrantLock();
 
         private Session(UUID agentId, String configKey, HarnessAgent agent, String userId) {
             this.agentId = agentId;

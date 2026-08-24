@@ -235,6 +235,14 @@ public class AgentSnapshotService {
                 ObjectNode r = json.createObjectNode();
                 r.put("id", s.getId().toString());
                 r.put("name", s.getName());
+                r.put("serverKey", s.getServerKey());
+                r.put("transport", s.getTransport().name());
+                putNullable(r, "serverUrl", s.getServerUrl());
+                putNullable(r, "command", s.getCommand());
+                r.set("arguments", parseArray(s.getArgumentsJson()));
+                r.set("queryParameters", parseObject(s.getQueryParametersJson()));
+                r.put("requestTimeoutSeconds", s.getRequestTimeoutSeconds());
+                r.put("initializationTimeoutSeconds", s.getInitializationTimeoutSeconds());
                 r.put("updatedAt", s.getUpdatedAt() == null ? "" : s.getUpdatedAt().toString());
                 mcpArr.add(r);
             });
@@ -246,6 +254,9 @@ public class AgentSnapshotService {
                 ObjectNode r = json.createObjectNode();
                 r.put("id", s.getId().toString());
                 r.put("name", s.getName());
+                r.put("skillKey", s.getSkillKey());
+                r.put("description", s.getDescription());
+                r.put("content", s.getContent());
                 r.put("archiveSha256", s.getArchiveSha256() == null ? "" : s.getArchiveSha256());
                 skillArr.add(r);
             });
@@ -325,6 +336,11 @@ public class AgentSnapshotService {
 
     private static void putInt(ObjectNode n, String field, Integer v) {
         if (v != null) n.put(field, v);
+    }
+
+    private static void putNullable(ObjectNode n, String field, String value) {
+        if (value == null) n.putNull(field);
+        else n.put(field, value);
     }
 
     private static ResponseStatusException bad(String msg) {

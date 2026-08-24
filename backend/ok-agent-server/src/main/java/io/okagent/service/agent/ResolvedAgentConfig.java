@@ -19,8 +19,9 @@ import java.util.UUID;
  *       currently edited.
  * </ul>
  *
- * <p>Global reusable assets (model, skills, MCP servers) are still referenced by id and loaded at
- * build time; their content hashes are available for drift detection.
+ * <p>Release implementations expose frozen model, MCP and Skill configurations. Draft
+ * implementations return the defaults below so the debug runtime can continue resolving current
+ * editable assets by id.
  */
 public interface ResolvedAgentConfig {
 
@@ -69,6 +70,21 @@ public interface ResolvedAgentConfig {
     String getMcpServerIdsJson();
 
     String getSkillIdsJson();
+
+    /** Returns the frozen model configuration for a release, or {@code null} for a draft. */
+    default ResolvedModelAsset getResolvedModelAsset() {
+        return null;
+    }
+
+    /** Returns frozen MCP configurations for a release, or an empty list for a draft. */
+    default List<ResolvedMcpServer> getResolvedMcpServers() {
+        return List.of();
+    }
+
+    /** Returns frozen Skill contents for a release, or an empty list for a draft. */
+    default List<ResolvedSkillAsset> getResolvedSkillAssets() {
+        return List.of();
+    }
 
     String getMcpToolFiltersJson();
 

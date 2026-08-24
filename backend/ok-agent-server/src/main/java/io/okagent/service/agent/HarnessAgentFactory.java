@@ -317,6 +317,9 @@ public class HarnessAgentFactory {
     }
 
     private ToolsConfig toolsConfig(ResolvedAgentConfig cfg) {
+        if (!cfg.getResolvedMcpServers().isEmpty()) {
+            return releasedToolsConfig(cfg);
+        }
         var ids = readUuidList(cfg.getMcpServerIdsJson());
         if (ids.isEmpty()) {
             var empty = new ToolsConfig();
@@ -332,6 +335,20 @@ public class HarnessAgentFactory {
                 serverConfig.setEnableTools(allowlist);
             }
             servers.put(server.getServerKey(), serverConfig);
+        }
+        var config = new ToolsConfig();
+        config.setMcpServers(servers);
+        return config;
+    }
+
+    private ToolsConfig releasedToolsConfig(ResolvedAgentConfig cfg) {
+        Map<String, McpServerConfig> servers = new LinkedHashMap<>();
+        var toolFilters = readToolFilters(cfg.getMcpToolFiltersJson());
+        for (ResolvedMcpServer server : cfg.getResolvedMcpServers()) {
+            var serverConfig = toMcpServerConfig(server);
+            var allowlist = toolFilters.getOrDefault(server.assetId().toString(), List.of());
+            if (!allowlist.isEmpty()) serverConfig.setEnableTools(allowlist);
+            servers.put(server.serverKey(), serverConfig);
         }
         var config = new ToolsConfig();
         config.setMcpServers(servers);
@@ -435,6 +452,41 @@ public class HarnessAgentFactory {
         return cfg;
     }
 
+    private McpServerConfig toMcpServerConfig(ResolvedMcpServer server) {
+        var cfg = new McpServerConfig();
+        var secretAsset = mcpServers.findById(server.assetId())
+                .orElseThrow(() -> new IllegalStateException("MCP secret reference not found: " + server.assetId()));
+        var secrets = readSecrets(secretAsset);
+        switch (server.transport()) {
+            case STDIO -> {
+                cfg.setTransport("stdio");
+                cfg.setCommand(server.command());
+                cfg.setArgs(server.arguments());
+                @SuppressWarnings("unchecked")
+                var env = (Map<String, String>) secrets.getOrDefault("environment", Map.of());
+                if (!env.isEmpty()) cfg.setEnv(env);
+            }
+            case SSE -> {
+                cfg.setTransport("sse");
+                cfg.setUrl(server.serverUrl());
+                @SuppressWarnings("unchecked")
+                var headers = (Map<String, String>) secrets.getOrDefault("headers", Map.of());
+                if (!headers.isEmpty()) cfg.setHeaders(headers);
+            }
+            case STREAMABLE_HTTP -> {
+                cfg.setTransport("http");
+                cfg.setUrl(server.serverUrl());
+                @SuppressWarnings("unchecked")
+                var headers = (Map<String, String>) secrets.getOrDefault("headers", Map.of());
+                if (!headers.isEmpty()) cfg.setHeaders(headers);
+            }
+        }
+        if (!server.queryParameters().isEmpty()) cfg.setQueryParams(server.queryParameters());
+        cfg.setTimeout(Duration.ofSeconds(server.requestTimeoutSeconds()));
+        cfg.setInitializationTimeout(Duration.ofSeconds(server.initializationTimeoutSeconds()));
+        return cfg;
+    }
+
     private String systemPrompt(ResolvedAgentConfig cfg, String userId) {
         var prompt = cfg.getSystemPrompt() == null ? "" : cfg.getSystemPrompt().trim();
         var base = prompt.isEmpty() ? "You are a helpful assistant." : prompt;
@@ -458,25 +510,34 @@ public class HarnessAgentFactory {
         if (cfg.getModelAssetId() == null) {
             return java.util.Optional.empty();
         }
+        if (cfg.getResolvedModelAsset() != null) {
+            ResolvedModelAsset model = cfg.getResolvedModelAsset();
+            var secretAsset = models.findById(model.assetId())
+                    .orElseThrow(() -> new IllegalStateException("Model secret reference not found: " + model.assetId()));
+            return java.util.Optional.of(buildModel(cfg, model.modelId(), model.endpoint(), secretAsset));
+        }
         return models.findById(cfg.getModelAssetId())
                 .filter(ModelAsset::isEnabled)
-                .map(model -> {
-                    var options = GenerateOptions.builder()
-                            .temperature(cfg.getTemperature())
-                            .topP(cfg.getTopP())
-                            .topK(cfg.getTopK())
-                            .maxTokens(cfg.getMaxTokens())
-                            .parallelToolCalls(cfg.isParallelToolCalls())
-                            .build();
-                    return OpenAIChatModel.builder()
-                            .apiKey(cipher.decrypt(model.getApiKeyCiphertext()))
-                            .baseUrl(model.getEndpoint())
-                            .modelName(model.getModelId())
-                            .httpTransport(httpTransport)
-                            .stream(false)
-                            .generateOptions(options)
-                            .build();
-                });
+                .map(model -> buildModel(cfg, model.getModelId(), model.getEndpoint(), model));
+    }
+
+    private OpenAIChatModel buildModel(
+            ResolvedAgentConfig cfg, String modelId, String endpoint, ModelAsset secretAsset) {
+        var options = GenerateOptions.builder()
+                .temperature(cfg.getTemperature())
+                .topP(cfg.getTopP())
+                .topK(cfg.getTopK())
+                .maxTokens(cfg.getMaxTokens())
+                .parallelToolCalls(cfg.isParallelToolCalls())
+                .build();
+        return OpenAIChatModel.builder()
+                .apiKey(cipher.decrypt(secretAsset.getApiKeyCiphertext()))
+                .baseUrl(endpoint)
+                .modelName(modelId)
+                .httpTransport(httpTransport)
+                .stream(false)
+                .generateOptions(options)
+                .build();
     }
 
     private ExecutionConfig modelExecutionConfig(ResolvedAgentConfig cfg) {
@@ -498,6 +559,18 @@ public class HarnessAgentFactory {
     }
 
     private AgentSkillRepository skillRepository(ResolvedAgentConfig cfg) {
+        if (!cfg.getResolvedSkillAssets().isEmpty()) {
+            List<AgentSkill> bound = cfg.getResolvedSkillAssets().stream()
+                    .filter(skill -> skill.content() != null && !skill.content().isBlank())
+                    .map(skill -> new AgentSkill(
+                            Map.of("name", skill.skillKey(), "description", skill.description()),
+                            skill.content(),
+                            Map.of(),
+                            "ok-agent-release",
+                            null))
+                    .toList();
+            return bound.isEmpty() ? null : new InMemoryAgentSkillRepository(bound);
+        }
         var ids = readUuidList(cfg.getSkillIdsJson());
         if (ids.isEmpty()) {
             return null;

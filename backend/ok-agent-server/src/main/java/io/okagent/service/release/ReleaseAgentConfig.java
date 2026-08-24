@@ -6,7 +6,11 @@ import io.okagent.domain.agent.AgentMemoryFlushMode;
 import io.okagent.domain.agent.AgentPermissionMode;
 import io.okagent.domain.agent.AgentWorkspaceMode;
 import io.okagent.domain.agent.PersonaInjectionMode;
+import io.okagent.domain.mcp.McpTransport;
 import io.okagent.service.agent.ResolvedAgentConfig;
+import io.okagent.service.agent.ResolvedMcpServer;
+import io.okagent.service.agent.ResolvedModelAsset;
+import io.okagent.service.agent.ResolvedSkillAsset;
 import io.okagent.service.agent.ResolvedSubagent;
 import java.util.ArrayList;
 import java.util.List;
@@ -179,6 +183,63 @@ public final class ReleaseAgentConfig implements ResolvedAgentConfig {
     }
 
     @Override
+    public ResolvedModelAsset getResolvedModelAsset() {
+        JsonNode model = node.path("refs").path("model");
+        if (!model.isObject() || model.path("id").asText("").isBlank()) return null;
+        return new ResolvedModelAsset(
+                UUID.fromString(model.path("id").asText()),
+                model.path("modelId").asText(),
+                model.path("endpoint").asText());
+    }
+
+    @Override
+    public List<ResolvedMcpServer> getResolvedMcpServers() {
+        JsonNode servers = node.path("refs").path("mcpServers");
+        if (!servers.isArray()) return List.of();
+        List<ResolvedMcpServer> out = new ArrayList<>();
+        for (JsonNode server : servers) {
+            if (server.path("serverKey").asText("").isBlank()
+                    || server.path("transport").asText("").isBlank()) {
+                continue;
+            }
+            List<String> arguments = new ArrayList<>();
+            server.path("arguments").forEach(value -> arguments.add(value.asText()));
+            java.util.Map<String, String> queryParameters = new java.util.LinkedHashMap<>();
+            server.path("queryParameters")
+                    .fields()
+                    .forEachRemaining(entry -> queryParameters.put(entry.getKey(), entry.getValue().asText()));
+            out.add(new ResolvedMcpServer(
+                    UUID.fromString(server.path("id").asText()),
+                    server.path("serverKey").asText(),
+                    McpTransport.valueOf(server.path("transport").asText()),
+                    nullableText(server, "serverUrl"),
+                    nullableText(server, "command"),
+                    List.copyOf(arguments),
+                    java.util.Map.copyOf(queryParameters),
+                    server.path("requestTimeoutSeconds").asInt(15),
+                    server.path("initializationTimeoutSeconds").asInt(10)));
+        }
+        return List.copyOf(out);
+    }
+
+    @Override
+    public List<ResolvedSkillAsset> getResolvedSkillAssets() {
+        JsonNode skills = node.path("refs").path("skills");
+        if (!skills.isArray()) return List.of();
+        List<ResolvedSkillAsset> out = new ArrayList<>();
+        for (JsonNode skill : skills) {
+            if (skill.path("skillKey").asText("").isBlank() || !skill.has("content")) {
+                continue;
+            }
+            out.add(new ResolvedSkillAsset(
+                    skill.path("skillKey").asText(),
+                    skill.path("description").asText(),
+                    skill.path("content").asText()));
+        }
+        return List.copyOf(out);
+    }
+
+    @Override
     public String getMcpToolFiltersJson() {
         JsonNode f = node.get("mcpToolFilters");
         if (f == null || f.isNull()) return "{}";
@@ -310,5 +371,10 @@ public final class ReleaseAgentConfig implements ResolvedAgentConfig {
         JsonNode v = node.get(field);
         if (v == null || v.isNull()) return dflt;
         return v.asText();
+    }
+
+    private static String nullableText(JsonNode node, String field) {
+        JsonNode value = node.get(field);
+        return value == null || value.isNull() ? null : value.asText();
     }
 }

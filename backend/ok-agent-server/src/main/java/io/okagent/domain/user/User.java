@@ -127,6 +127,23 @@ public class User {
         this.updatedAt = Instant.now();
     }
 
+    /** Initializes credentials for a console account exactly once. */
+    public void initializeCredentials(String passwordHash, AccountRole role) {
+        if (source != UserSource.CONSOLE) {
+            throw new IllegalStateException("CHANNEL_USER_CANNOT_SIGN_IN");
+        }
+        if (this.passwordHash != null) {
+            throw new IllegalStateException("ACCOUNT_CREDENTIALS_ALREADY_INITIALIZED");
+        }
+        this.passwordHash = passwordHash;
+        this.role = role;
+        this.updatedAt = Instant.now();
+    }
+
+    public boolean hasCredentials() {
+        return passwordHash != null;
+    }
+
     public UUID getId() {
         return id;
     }

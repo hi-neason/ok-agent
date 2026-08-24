@@ -6,6 +6,7 @@ spring:
     username: ${OK_AGENT_DB_USERNAME:root}
     password: ${OK_AGENT_DB_PASSWORD:root123456}
   jpa:
+    open-in-view: false
     hibernate:
       ddl-auto: validate
   flyway:

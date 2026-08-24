@@ -150,6 +150,28 @@ public class User {
         this.updatedAt = this.lastLoginAt;
     }
 
+    /** Updates the interactive account profile and role without changing its password. */
+    public void updateAccountAccess(String displayName, AccountRole role, boolean enabled) {
+        requireInteractiveAccount();
+        this.displayName = displayName;
+        this.role = role;
+        this.enabled = enabled;
+        this.updatedAt = Instant.now();
+    }
+
+    /** Replaces the encoded password for an initialized interactive account. */
+    public void changePassword(String passwordHash) {
+        requireInteractiveAccount();
+        this.passwordHash = passwordHash;
+        this.updatedAt = Instant.now();
+    }
+
+    private void requireInteractiveAccount() {
+        if (source != UserSource.CONSOLE || passwordHash == null) {
+            throw new IllegalStateException("INTERACTIVE_ACCOUNT_REQUIRED");
+        }
+    }
+
     public UUID getId() {
         return id;
     }

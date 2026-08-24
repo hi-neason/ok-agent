@@ -40,6 +40,8 @@ public class SecurityConfiguration {
                         .permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**")
                         .permitAll()
+                        .requestMatchers("/api/v1/accounts/**")
+                        .hasRole("ADMIN")
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/api/v1/users/**",

@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
@@ -20,7 +21,9 @@ import org.springframework.stereotype.Component;
 public class ZipSkillArchiveParser implements SkillArchiveParser {
     private static final long MAX_ARCHIVE_SIZE = 20L * 1024 * 1024;
     private static final long MAX_EXPANDED_SIZE = 80L * 1024 * 1024;
+    private static final long MAX_FILE_SIZE = 16L * 1024 * 1024;
     private static final int MAX_FILES = 500;
+    private static final int MAX_ENTRIES = 1_000;
 
     @Override
     public ParsedSkillArchive parse(String archiveName, byte[] archive) {
@@ -69,27 +72,50 @@ public class ZipSkillArchiveParser implements SkillArchiveParser {
 
     private List<ArchivedSkillFile> readEntries(String archiveName, byte[] archive) {
         var files = new ArrayList<ArchivedSkillFile>();
+        var paths = new HashSet<String>();
         long expandedSize = 0;
+        int entries = 0;
         try (var input = new ZipInputStream(new ByteArrayInputStream(archive))) {
             ZipEntry entry;
             while ((entry = input.getNextEntry()) != null) {
-                var path = normalizePath(entry.getName());
+                entries++;
+                if (entries > MAX_ENTRIES) reject("Skill archive contains too many entries");
+                var path = normalizePath(entry.getName(), entry.isDirectory());
                 if (entry.isDirectory()) continue;
                 if (isPackagingNoise(path, archiveName)) continue;
                 if (files.size() >= MAX_FILES) {
-                    reject("Skill archive expands beyond the allowed limits");
+                    reject("Skill archive contains too many files");
                 }
-                var output = new ByteArrayOutputStream();
-                input.transferTo(output);
-                var content = output.toByteArray();
+                if (!paths.add(path)) reject("Skill archive contains duplicate file paths");
+                long declaredSize = entry.getSize();
+                if (declaredSize > MAX_FILE_SIZE) reject("Skill archive contains a file larger than 16 MB");
+                if (declaredSize >= 0 && expandedSize + declaredSize > MAX_EXPANDED_SIZE) {
+                    reject("Skill archive is too large after extraction");
+                }
+                var content = readEntry(input, expandedSize);
                 expandedSize += content.length;
-                if (expandedSize > MAX_EXPANDED_SIZE) reject("Skill archive is too large after extraction");
                 files.add(new ArchivedSkillFile(path, mediaType(path), content));
             }
         } catch (IOException exception) {
             throw new SkillArchiveValidationException("INVALID_SKILL_ARCHIVE", "Invalid ZIP archive");
         }
         return files;
+    }
+
+    private byte[] readEntry(ZipInputStream input, long expandedSize) throws IOException {
+        var output = new ByteArrayOutputStream();
+        byte[] buffer = new byte[8192];
+        long fileSize = 0;
+        int read;
+        while ((read = input.read(buffer)) != -1) {
+            fileSize += read;
+            if (fileSize > MAX_FILE_SIZE) reject("Skill archive contains a file larger than 16 MB");
+            if (expandedSize + fileSize > MAX_EXPANDED_SIZE) {
+                reject("Skill archive is too large after extraction");
+            }
+            output.write(buffer, 0, read);
+        }
+        return output.toByteArray();
     }
 
     private boolean isPackagingNoise(String path, String archiveName) {
@@ -106,10 +132,19 @@ public class ZipSkillArchiveParser implements SkillArchiveParser {
         return lower.endsWith(".pyc") || path.equals(archiveName);
     }
 
-    private String normalizePath(String rawPath) {
+    private String normalizePath(String rawPath, boolean directory) {
         var path = rawPath.replace('\\', '/');
-        if (path.startsWith("/") || path.contains("../") || path.equals("..")) {
-            reject("Archive contains an unsafe file path");
+        while (directory && path.endsWith("/")) {
+            path = path.substring(0, path.length() - 1);
+        }
+        if (path.isBlank()
+                || path.indexOf('\0') >= 0
+                || path.startsWith("/")
+                || path.matches("(?i)^[a-z]:/.*")) reject("Archive contains an unsafe file path");
+        for (String component : path.split("/", -1)) {
+            if (component.isBlank() || component.equals(".") || component.equals("..")) {
+                reject("Archive contains an unsafe file path");
+            }
         }
         if (path.length() > 700) reject("Archive contains a file path longer than 700 characters");
         return path;

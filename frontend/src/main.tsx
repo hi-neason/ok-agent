@@ -11,6 +11,7 @@ import "./mcp.css";
 import "./observe.css";
 import "./confirm-dialog.css";
 import "./auth.css";
+import "./account.css";
 
 installAuthenticatedFetch();
 

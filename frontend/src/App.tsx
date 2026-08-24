@@ -5,7 +5,6 @@ import {
   observeSessionPath,
   observeTraceIdFromPath,
 } from "./modules/observe/routes";
-import { Button, PageHeader } from "./modules/shared";
 import { useAuth } from "./modules/auth";
 import "./agent.css";
 
@@ -57,6 +56,9 @@ const ReleasePage = lazy(() =>
 const CustomerChatPage = lazy(() =>
   import("./modules/chat/CustomerChatPage").then((module) => ({ default: module.CustomerChatPage })),
 );
+const AccountManagementPage = lazy(() =>
+  import("./modules/auth/AccountManagementPage").then((module) => ({ default: module.AccountManagementPage })),
+);
 
 type Page =
   | "agents"
@@ -107,7 +109,7 @@ const navItems: NavItem[] = [
   { id: "channels", icon: "⇄", name: "渠道管理", kicker: "CHANNEL" },
   { id: "intents", icon: "⌥", name: "意图管理", kicker: "INTENT" },
   { id: "insight", icon: "◍", name: "对话洞察", kicker: "INSIGHT", wip: true },
-  { id: "system", icon: "◎", name: "账号权限", kicker: "ACCESS", wip: true },
+  { id: "system", icon: "◎", name: "账号权限", kicker: "ACCESS" },
   { id: "sysconfig", icon: "⚙", name: "系统配置", kicker: "SETTINGS", wip: true },
   { id: "usermgmt", icon: "👤", name: "用户管理", kicker: "USER MGMT" },
 ];
@@ -179,66 +181,6 @@ const pageForPath = (path: string): Page =>
 const isKnownPath = (path: string): boolean =>
   Boolean(pathPages[path]) ||
   nestedPathPrefixes.some(([prefix]) => path.startsWith(prefix));
-
-function SystemPage() {
-  return (
-    <>
-      <PageHeader
-        kicker="SYSTEM GOVERNANCE / RBAC"
-        title="账号与权限"
-        description="管理租户、项目成员、角色与敏感配置访问，确保发布与运行操作均可审计。"
-        action={<Button>＋ 邀请成员</Button>}
-      />
-      <div className="observe-summary">
-        <article>
-          <span>18</span>
-          <small>ACTIVE MEMBERS</small>
-        </article>
-        <article>
-          <span>4</span>
-          <small>ROLES</small>
-        </article>
-        <article>
-          <span>6</span>
-          <small>SECRET SCOPES</small>
-        </article>
-        <article>
-          <span>100%</span>
-          <small>AUDIT COVERAGE</small>
-        </article>
-      </div>
-      <section className="run-table">
-        <div className="table-tools">
-          <div className="search-mini">◎ 当前项目：ok-agent / prod-cn-sh</div>
-          <button className="filter-chip">角色与权限⌄</button>
-        </div>
-        <div className="table-head">
-          <span>角色</span>
-          <span>适用范围</span>
-          <span>组件管理</span>
-          <span>Agent 配置</span>
-          <span>发布</span>
-          <span>观测</span>
-        </div>
-        {[
-          ["平台管理员", "全局", "管理", "管理", "审批", "全部"],
-          ["Agent 开发者", "项目", "引用", "管理", "申请", "项目"],
-          ["发布负责人", "环境", "只读", "只读", "执行", "全部"],
-          ["观察者", "项目", "只读", "只读", "—", "项目"],
-        ].map((row) => (
-          <div className="table-row" key={row[0]}>
-            <b>{row[0]}</b>
-            <span>{row[1]}</span>
-            <span>{row[2]}</span>
-            <span>{row[3]}</span>
-            <span>{row[4]}</span>
-            <span>{row[5]}</span>
-          </div>
-        ))}
-      </section>
-    </>
-  );
-}
 
 export default function App() {
   const { t, i18n } = useTranslation();
@@ -338,7 +280,7 @@ export default function App() {
         onBack={backToObserveList}
       />
     ),
-    system: <SystemPage />,
+    system: <AccountManagementPage />,
 persona: <PersonaPage />,
 channels: <ChannelPage />,
 intents: <IntentPage />,

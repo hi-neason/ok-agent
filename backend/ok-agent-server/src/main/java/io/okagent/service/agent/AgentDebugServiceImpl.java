@@ -165,6 +165,7 @@ public class AgentDebugServiceImpl implements AgentDebugService {
             } else {
                 recordTurn(sessionId, "assistant", reply, null, latencyMs, traceId);
             }
+            session.touch();
             touchSession(sessionId);
             // Best-effort: asynchronously extract/update the user's persona from this conversation.
             // Fire-and-forget; never affects the chat response.
@@ -237,8 +238,9 @@ public class AgentDebugServiceImpl implements AgentDebugService {
         sessions.entrySet().stream()
                 .min(Map.Entry.comparingByValue((a, b) -> a.lastTouched.compareTo(b.lastTouched)))
                 .ifPresent(entry -> {
-                    sessions.remove(entry.getKey());
-                    closeQuietly(entry.getValue().agent);
+                    if (sessions.remove(entry.getKey(), entry.getValue())) {
+                        closeQuietly(entry.getValue().agent);
+                    }
                 });
     }
 
@@ -295,7 +297,7 @@ public class AgentDebugServiceImpl implements AgentDebugService {
         private final String configKey;
         private final HarnessAgent agent;
         private final String userId;
-        private final Instant lastTouched = Instant.now();
+        private volatile Instant lastTouched = Instant.now();
         private final ReentrantLock executionLock = new ReentrantLock();
 
         private Session(UUID agentId, String configKey, HarnessAgent agent, String userId) {
@@ -303,6 +305,10 @@ public class AgentDebugServiceImpl implements AgentDebugService {
             this.configKey = configKey;
             this.agent = agent;
             this.userId = userId;
+        }
+
+        private void touch() {
+            lastTouched = Instant.now();
         }
     }
 }

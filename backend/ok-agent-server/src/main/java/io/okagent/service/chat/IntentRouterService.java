@@ -209,6 +209,7 @@ public class IntentRouterService {
             } else {
                 recordTurn(sessionKey, "assistant", reply, null, latencyMs, traceId, runtime);
             }
+            session.touch();
             touchSession(sessionKey);
             personaExtraction.extractAsync(cfg.getId(), userId, sessionKey);
             return new ProductionChatResponse(
@@ -479,8 +480,9 @@ public class IntentRouterService {
         sessions.entrySet().stream()
                 .min(Map.Entry.comparingByValue((a, b) -> a.lastTouched.compareTo(b.lastTouched)))
                 .ifPresent(e -> {
-                    sessions.remove(e.getKey());
-                    closeQuietly(e.getValue().agent);
+                    if (sessions.remove(e.getKey(), e.getValue())) {
+                        closeQuietly(e.getValue().agent);
+                    }
                 });
     }
 
@@ -533,7 +535,7 @@ public class IntentRouterService {
         private final String configKey;
         private final HarnessAgent agent;
         private final String userId;
-        private final Instant lastTouched = Instant.now();
+        private volatile Instant lastTouched = Instant.now();
         private final ReentrantLock executionLock = new ReentrantLock();
 
         private Session(UUID agentId, String configKey, HarnessAgent agent, String userId) {
@@ -541,6 +543,10 @@ public class IntentRouterService {
             this.configKey = configKey;
             this.agent = agent;
             this.userId = userId;
+        }
+
+        private void touch() {
+            lastTouched = Instant.now();
         }
     }
 }

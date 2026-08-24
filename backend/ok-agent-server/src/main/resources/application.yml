@@ -34,6 +34,9 @@ ok-agent:
     bootstrap-admin:
       username: ${OK_AGENT_BOOTSTRAP_ADMIN_USERNAME:admin}
       password: ${OK_AGENT_BOOTSTRAP_ADMIN_PASSWORD:}
+    jwt:
+      secret: ${OK_AGENT_JWT_SECRET}
+      ttl: ${OK_AGENT_JWT_TTL:8h}
   observe:
     trace-retention-days: ${OK_AGENT_TRACE_RETENTION_DAYS:30}
     trace-cleanup-cron: "${OK_AGENT_TRACE_CLEANUP_CRON:0 17 3 * * *}"

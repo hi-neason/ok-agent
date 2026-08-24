@@ -144,6 +144,12 @@ public class User {
         return passwordHash != null;
     }
 
+    /** Records successful interactive authentication without exposing credential state. */
+    public void recordSuccessfulLogin() {
+        this.lastLoginAt = Instant.now();
+        this.updatedAt = this.lastLoginAt;
+    }
+
     public UUID getId() {
         return id;
     }

@@ -12,3 +12,6 @@ spring:
 ok-agent:
   security:
     api-key-encryption-key: test-only-encryption-key
+    jwt:
+      secret: test-only-jwt-signing-secret-32-bytes-minimum
+      ttl: 8h

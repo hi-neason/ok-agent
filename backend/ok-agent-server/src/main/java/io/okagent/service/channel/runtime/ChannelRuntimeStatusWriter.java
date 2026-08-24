@@ -2,6 +2,7 @@ package io.okagent.service.channel.runtime;
 
 import io.okagent.domain.channel.ChannelRuntimeStatus;
 import io.okagent.repository.channel.ChannelAssetRepository;
+import java.time.Instant;
 import java.util.UUID;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
@@ -25,7 +26,7 @@ public class ChannelRuntimeStatusWriter {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void write(UUID channelId, ChannelRuntimeStatus status, String error) {
         try {
-            repository.updateRuntimeStatus(channelId, status, truncate(error));
+            repository.updateRuntimeStatus(channelId, status, truncate(error), Instant.now());
         } catch (DataIntegrityViolationException e) {
             // Can race with deletion; ignore.
         }

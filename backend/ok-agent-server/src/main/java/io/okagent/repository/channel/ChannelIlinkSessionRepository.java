@@ -3,6 +3,7 @@ package io.okagent.repository.channel;
 import io.okagent.domain.channel.ChannelIlinkSession;
 import io.okagent.domain.channel.IlinkLoginStatus;
 import jakarta.persistence.LockModeType;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -40,15 +41,19 @@ public interface ChannelIlinkSessionRepository extends JpaRepository<ChannelIlin
 
     /** Persists the advanced long-polling cursor without touching unrelated columns. */
     @Modifying
-    @Query("update ChannelIlinkSession s set s.pollCursor = :cursor, s.updatedAt = CURRENT_TIMESTAMP "
+    @Query("update ChannelIlinkSession s set s.pollCursor = :cursor, s.updatedAt = :now "
             + "where s.channelId = :channelId")
-    int updateCursor(@Param("channelId") UUID channelId, @Param("cursor") String cursor);
+    int updateCursor(
+            @Param("channelId") UUID channelId,
+            @Param("cursor") String cursor,
+            @Param("now") Instant now);
 
     @Modifying
     @Query("update ChannelIlinkSession s set s.loginStatus = :status, s.lastError = :error, "
-            + "s.updatedAt = CURRENT_TIMESTAMP where s.channelId = :channelId")
+            + "s.updatedAt = :now where s.channelId = :channelId")
     int updateLoginStatus(
             @Param("channelId") UUID channelId,
             @Param("status") IlinkLoginStatus status,
-            @Param("error") String error);
+            @Param("error") String error,
+            @Param("now") Instant now);
 }

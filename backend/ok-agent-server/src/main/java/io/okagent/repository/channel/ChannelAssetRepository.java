@@ -2,6 +2,7 @@ package io.okagent.repository.channel;
 
 import io.okagent.domain.channel.ChannelAsset;
 import io.okagent.domain.channel.ChannelRuntimeStatus;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -21,9 +22,12 @@ public interface ChannelAssetRepository extends JpaRepository<ChannelAsset, UUID
      */
     @Modifying
     @Query("update ChannelAsset c set c.runtimeStatus = :status, c.lastError = :error, "
-            + "c.updatedAt = CURRENT_TIMESTAMP where c.id = :id")
+            + "c.updatedAt = :now where c.id = :id")
     int updateRuntimeStatus(
-            @Param("id") UUID id, @Param("status") ChannelRuntimeStatus status, @Param("error") String error);
+            @Param("id") UUID id,
+            @Param("status") ChannelRuntimeStatus status,
+            @Param("error") String error,
+            @Param("now") Instant now);
 
     /**
      * Deletes a channel by id without an optimistic-lock version predicate. Returns the number of

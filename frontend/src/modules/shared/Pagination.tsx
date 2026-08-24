@@ -29,7 +29,10 @@ export function Pagination({
 }: PaginationProps) {
   const { t } = useTranslation();
 
-  if (totalPages <= 1 && totalElements <= size) {
+  if (totalElements === 0) {
+    return null;
+  }
+  if (!onSizeChange && totalPages <= 1 && totalElements <= size) {
     return null;
   }
 

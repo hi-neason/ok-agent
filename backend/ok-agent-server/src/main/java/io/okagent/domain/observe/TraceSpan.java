@@ -16,8 +16,8 @@ import java.util.UUID;
  * tools are regular tools, so they appear as TOOL spans without special handling.
  *
  * <p>{@code attributes} holds structured, small-cardinality metadata (model name, token usage, tool
- * call id, MCP server). {@code input} / {@code output} hold verbatim payloads (tool arguments, tool
- * result text; for model spans the request/response summaries) for full replay.
+ * call id, MCP server). {@code input} / {@code output} hold bounded payload previews (tool
+ * arguments, tool result text; for model spans the request/response summaries).
  */
 @Entity
 @Table(name = "trace_span")

@@ -1,0 +1,47 @@
+package io.okagent.service.observe;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.okagent.domain.observe.SpanStatus;
+import io.okagent.domain.observe.SpanType;
+import java.util.Map;
+import java.util.UUID;
+import org.junit.jupiter.api.Test;
+
+class TurnTracePayloadLimitsTests {
+
+    @Test
+    void boundsToolInputAndStreamingOutput() {
+        TurnTrace trace = TurnTrace.start("trace", "session", UUID.randomUUID(), "user", 1, "agent");
+        String oversized = "x".repeat(TurnTrace.MAX_PAYLOAD_CHARS * 2);
+        TurnTrace.MutableSpan tool =
+                trace.startTool(SpanType.TOOL, "call", "tool", Map.of("secret", oversized));
+        tool.appendOutput(oversized);
+        tool.appendOutput(oversized);
+        tool.finish(SpanStatus.OK, null, TurnTrace.microsNow());
+
+        var persisted = trace.finish(SpanStatus.OK, null).stream()
+                .filter(span -> span.getSpanType().equals(SpanType.TOOL.name()))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(persisted.getInput())
+                .hasSizeLessThanOrEqualTo(TurnTrace.MAX_PAYLOAD_CHARS)
+                .endsWith("...[trace payload truncated]");
+        assertThat(persisted.getOutput())
+                .hasSizeLessThanOrEqualTo(TurnTrace.MAX_PAYLOAD_CHARS)
+                .endsWith("...[trace payload truncated]");
+    }
+
+    @Test
+    void doesNotSplitUnicodeSurrogatePairsAtTheLimit() {
+        String marker = "\n...[trace payload truncated]";
+        int retainedChars = TurnTrace.MAX_PAYLOAD_CHARS - marker.length();
+        String prefix = "x".repeat(retainedChars - 1);
+
+        String limited = TurnTrace.limitPayload(prefix + "😀" + "sensitive-tail".repeat(10));
+
+        assertThat(limited).endsWith(marker);
+        assertThat(Character.isSurrogate(limited.charAt(limited.length() - marker.length() - 1))).isFalse();
+    }
+}

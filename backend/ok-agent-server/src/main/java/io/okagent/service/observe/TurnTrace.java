@@ -25,6 +25,9 @@ import java.util.concurrent.ConcurrentHashMap;
 final class TurnTrace {
 
     static final String CONTEXT_KEY = "okagent.trace";
+    static final int MAX_PAYLOAD_CHARS = 64 * 1024;
+    static final int MAX_ERROR_CHARS = 4 * 1024;
+    private static final String TRUNCATED = "\n...[trace payload truncated]";
 
     private final String traceId;
     private final String rootSpanId;
@@ -77,7 +80,7 @@ final class TurnTrace {
         return rootSpanId;
     }
 
-    /** Opens a child MODEL span under the root, capturing the full request payload. */
+    /** Opens a child MODEL span under the root, capturing a bounded request payload preview. */
     MutableSpan startModel(String modelName, List<Msg> messages, List<ToolSchema> tools, GenerateOptions options) {
         MutableSpan span =
                 new MutableSpan(randomSpanId(), rootSpanId, SpanType.MODEL, "chat " + modelName, microsNow());
@@ -92,7 +95,7 @@ final class TurnTrace {
                 span.attribute("gen_ai.request.max_tokens", options.getMaxTokens());
             }
         }
-        // Full-fidelity request: verbatim messages sent to the model (per "store everything first").
+        // Capture enough request context for diagnostics without allowing an unbounded trace row.
         Map<String, Object> requestPayload = new LinkedHashMap<>();
         requestPayload.put("model", modelName);
         requestPayload.put("messages", messages);
@@ -102,7 +105,7 @@ final class TurnTrace {
         if (options != null) {
             requestPayload.put("options", options);
         }
-        span.input = codec().toJson(requestPayload);
+        span.input = limitPayload(codec().toJson(requestPayload));
         register(span);
         return span;
     }
@@ -121,7 +124,7 @@ final class TurnTrace {
         if (callId != null) {
             span.attribute("gen_ai.tool.call.id", callId);
         }
-        span.input = toJson(inputArgs);
+        span.input = limitPayload(toJson(inputArgs));
         register(span);
         return span;
     }
@@ -202,6 +205,25 @@ final class TurnTrace {
         }
     }
 
+    static String limitPayload(String value) {
+        return limit(value, MAX_PAYLOAD_CHARS, TRUNCATED);
+    }
+
+    private static String limitError(String value) {
+        return limit(value, MAX_ERROR_CHARS, "...[truncated]");
+    }
+
+    private static String limit(String value, int maxChars, String marker) {
+        if (value == null || value.length() <= maxChars) {
+            return value;
+        }
+        int end = maxChars - marker.length();
+        if (end > 0 && Character.isHighSurrogate(value.charAt(end - 1))) {
+            end--;
+        }
+        return value.substring(0, end) + marker;
+    }
+
     private static io.agentscope.core.util.JsonCodec codec() {
         return JsonUtils.getJsonCodec();
     }
@@ -216,6 +238,8 @@ final class TurnTrace {
         final Map<String, Object> attributes = new LinkedHashMap<>();
         final StringBuilder outputBuffer = new StringBuilder();
         final StringBuilder thinkingBuffer = new StringBuilder();
+        boolean outputTruncated;
+        boolean thinkingTruncated;
         long endUs;
         SpanStatus status = SpanStatus.OK;
         String input;
@@ -237,15 +261,11 @@ final class TurnTrace {
         }
 
         void appendOutput(String chunk) {
-            if (chunk != null) {
-                outputBuffer.append(chunk);
-            }
+            outputTruncated |= appendLimited(outputBuffer, chunk);
         }
 
         void appendThinking(String chunk) {
-            if (chunk != null) {
-                thinkingBuffer.append(chunk);
-            }
+            thinkingTruncated |= appendLimited(thinkingBuffer, chunk);
         }
 
         void recordUsage(int inputTokens, int outputTokens, int cachedTokens, double latency) {
@@ -262,7 +282,7 @@ final class TurnTrace {
 
         void fail(String message) {
             this.status = SpanStatus.ERROR;
-            this.errorMessage = message;
+            this.errorMessage = limitError(message);
         }
 
         /**
@@ -291,7 +311,7 @@ final class TurnTrace {
                     || trimmed.startsWith("Workflow failed")
                     || trimmed.startsWith("Failed to ")) {
                 this.status = SpanStatus.ERROR;
-                this.errorMessage = trimmed.lines().findFirst().orElse("Tool returned an error");
+                this.errorMessage = limitError(trimmed.lines().findFirst().orElse("Tool returned an error"));
                 attribute("error.message", this.errorMessage);
             }
         }
@@ -305,8 +325,8 @@ final class TurnTrace {
                 this.status = status;
             }
             if (errorMessage != null) {
-                this.errorMessage = errorMessage;
-                attribute("error.message", errorMessage);
+                this.errorMessage = limitError(errorMessage);
+                attribute("error.message", this.errorMessage);
             }
             if (output == null) {
                 // For model spans, combine any reasoning/thinking text and the visible reply so the
@@ -314,12 +334,14 @@ final class TurnTrace {
                 StringBuilder combined = new StringBuilder();
                 if (thinkingBuffer.length() > 0) {
                     combined.append("<thinking>\n").append(thinkingBuffer).append("\n</thinking>\n\n");
+                    if (thinkingTruncated) combined.append(TRUNCATED).append("\n\n");
                 }
                 if (outputBuffer.length() > 0) {
                     combined.append(outputBuffer);
+                    if (outputTruncated) combined.append(TRUNCATED);
                 }
                 if (combined.length() > 0) {
-                    this.output = combined.toString();
+                    this.output = limitPayload(combined.toString());
                 }
             }
         }
@@ -328,7 +350,27 @@ final class TurnTrace {
             if (attributes.isEmpty()) {
                 return null;
             }
-            return toJson(attributes);
+            return limitPayload(toJson(attributes));
+        }
+
+        private static boolean appendLimited(StringBuilder target, String chunk) {
+            if (chunk == null || chunk.isEmpty()) {
+                return false;
+            }
+            int remaining = MAX_PAYLOAD_CHARS - target.length();
+            if (remaining <= 0) {
+                return true;
+            }
+            if (chunk.length() <= remaining) {
+                target.append(chunk);
+                return false;
+            }
+            int end = remaining;
+            if (end > 0 && Character.isHighSurrogate(chunk.charAt(end - 1))) {
+                end--;
+            }
+            target.append(chunk, 0, end);
+            return true;
         }
     }
 }

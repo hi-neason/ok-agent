@@ -1,27 +1,61 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { AgentRegistryPage, AgentConfigPage } from "./modules/agent";
-import { ModelRegistryPage } from "./modules/model";
-import { SkillRegistryPage } from "./modules/skill";
-import { McpPage } from "./modules/mcp";
 import {
-  ObservePage,
   observeSessionIdFromPath,
   observeSessionPath,
   observeTraceIdFromPath,
-} from "./modules/observe";
-import { UserManagementPage } from "./modules/usermgmt";
-import { UserDetailPage } from "./modules/usermgmt/UserDetailPage";
-import { PersonaPage } from "./modules/persona";
-import { WorkflowSourcesPage } from "./modules/workflow";
-import { KnowledgeSourcesPage } from "./modules/knowledge";
-import { ProductPage } from "./modules/product";
-import { IntentPage } from "./modules/intent";
-import { ChannelPage } from "./modules/channel";
-import { ReleasePage } from "./modules/release";
-import { CustomerChatPage } from "./modules/chat/CustomerChatPage";
+} from "./modules/observe/routes";
 import { Button, PageHeader } from "./modules/shared";
 import "./agent.css";
+
+const AgentRegistryPage = lazy(() =>
+  import("./modules/agent/AgentRegistryPage").then((module) => ({ default: module.AgentRegistryPage })),
+);
+const AgentConfigPage = lazy(() =>
+  import("./modules/agent/AgentConfigPage").then((module) => ({ default: module.AgentConfigPage })),
+);
+const ModelRegistryPage = lazy(() =>
+  import("./modules/model/ModelRegistryPage").then((module) => ({ default: module.ModelRegistryPage })),
+);
+const SkillRegistryPage = lazy(() =>
+  import("./modules/skill/SkillRegistryPage").then((module) => ({ default: module.SkillRegistryPage })),
+);
+const McpPage = lazy(() =>
+  import("./modules/mcp/McpPage").then((module) => ({ default: module.McpPage })),
+);
+const ObservePage = lazy(() =>
+  import("./modules/observe/ObservePage").then((module) => ({ default: module.ObservePage })),
+);
+const UserManagementPage = lazy(() =>
+  import("./modules/usermgmt/UserManagementPage").then((module) => ({ default: module.UserManagementPage })),
+);
+const UserDetailPage = lazy(() =>
+  import("./modules/usermgmt/UserDetailPage").then((module) => ({ default: module.UserDetailPage })),
+);
+const PersonaPage = lazy(() =>
+  import("./modules/persona/PersonaPage").then((module) => ({ default: module.PersonaPage })),
+);
+const WorkflowSourcesPage = lazy(() =>
+  import("./modules/workflow/WorkflowSourcesPage").then((module) => ({ default: module.WorkflowSourcesPage })),
+);
+const KnowledgeSourcesPage = lazy(() =>
+  import("./modules/knowledge/KnowledgeSourcesPage").then((module) => ({ default: module.KnowledgeSourcesPage })),
+);
+const ProductPage = lazy(() =>
+  import("./modules/product/ProductPage").then((module) => ({ default: module.ProductPage })),
+);
+const IntentPage = lazy(() =>
+  import("./modules/intent/IntentPage").then((module) => ({ default: module.IntentPage })),
+);
+const ChannelPage = lazy(() =>
+  import("./modules/channel/ChannelPage").then((module) => ({ default: module.ChannelPage })),
+);
+const ReleasePage = lazy(() =>
+  import("./modules/release/ReleasePage").then((module) => ({ default: module.ReleasePage })),
+);
+const CustomerChatPage = lazy(() =>
+  import("./modules/chat/CustomerChatPage").then((module) => ({ default: module.CustomerChatPage })),
+);
 
 type Page =
   | "agents"
@@ -403,7 +437,9 @@ intents: <IntentPage />,
           </div>
         </header>
         <section className="page-content" key={page}>
-          {content}
+          <Suspense fallback={<div className="empty-state">正在加载模块…</div>}>
+            {content}
+          </Suspense>
         </section>
       </section>
     </main>

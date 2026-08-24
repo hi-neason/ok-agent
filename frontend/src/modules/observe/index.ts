@@ -1,11 +1,11 @@
+export { ObservePage } from "./ObservePage";
 export {
-  ObservePage,
   OBSERVE_BASE_PATH,
   observeSessionPath,
   observeSessionIdFromPath,
   observeTraceIdFromPath,
   observeTracePath,
-} from "./ObservePage";
+} from "./routes";
 export { ObserveSessionsPage } from "./ObserveSessionsPage";
 export { ObserveSessionDetailPage } from "./ObserveSessionDetailPage";
 export type {

@@ -36,6 +36,7 @@ final class TurnTrace {
     private final String userId;
     private final int turnSeq;
     private final String agentName;
+    private final TracePayloadSanitizer sanitizer;
     private final long startUs;
 
     private final Map<String, MutableSpan> spansById = new ConcurrentHashMap<>();
@@ -48,6 +49,7 @@ final class TurnTrace {
             String userId,
             int turnSeq,
             String agentName,
+            TracePayloadSanitizer sanitizer,
             long startUs) {
         this.traceId = traceId;
         this.rootSpanId = randomSpanId();
@@ -56,6 +58,7 @@ final class TurnTrace {
         this.userId = userId;
         this.turnSeq = turnSeq;
         this.agentName = agentName;
+        this.sanitizer = sanitizer;
         this.startUs = startUs;
     }
 
@@ -64,10 +67,17 @@ final class TurnTrace {
      * the runtime so the same middleware works for the debug runtime and future runtime instances.
      */
     static TurnTrace start(
-            String traceId, String sessionId, UUID agentId, String userId, int turnSeq, String agentName) {
+            String traceId,
+            String sessionId,
+            UUID agentId,
+            String userId,
+            int turnSeq,
+            String agentName,
+            TracePayloadSanitizer sanitizer) {
         long now = microsNow();
-        TurnTrace trace = new TurnTrace(traceId, sessionId, agentId, userId, turnSeq, agentName, now);
-        MutableSpan root = new MutableSpan(trace.rootSpanId, null, SpanType.AGENT, "invoke_agent " + agentName, now);
+        TurnTrace trace = new TurnTrace(traceId, sessionId, agentId, userId, turnSeq, agentName, sanitizer, now);
+        MutableSpan root = new MutableSpan(
+                trace.rootSpanId, null, SpanType.AGENT, "invoke_agent " + agentName, now, sanitizer);
         trace.register(root);
         return trace;
     }
@@ -82,8 +92,8 @@ final class TurnTrace {
 
     /** Opens a child MODEL span under the root, capturing a bounded request payload preview. */
     MutableSpan startModel(String modelName, List<Msg> messages, List<ToolSchema> tools, GenerateOptions options) {
-        MutableSpan span =
-                new MutableSpan(randomSpanId(), rootSpanId, SpanType.MODEL, "chat " + modelName, microsNow());
+        MutableSpan span = new MutableSpan(
+                randomSpanId(), rootSpanId, SpanType.MODEL, "chat " + modelName, microsNow(), sanitizer);
         span.attribute("gen_ai.request.model", modelName);
         span.attribute("gen_ai.request.messages.count", messages == null ? 0 : messages.size());
         span.attribute("gen_ai.request.tools.count", tools == null ? 0 : tools.size());
@@ -105,7 +115,7 @@ final class TurnTrace {
         if (options != null) {
             requestPayload.put("options", options);
         }
-        span.input = limitPayload(codec().toJson(requestPayload));
+        span.input = limitPayload(sanitizer.sanitize(codec().toJson(requestPayload)));
         register(span);
         return span;
     }
@@ -118,13 +128,14 @@ final class TurnTrace {
                 rootSpanId,
                 type,
                 "execute_tool " + toolName,
-                microsNow());
+                microsNow(),
+                sanitizer);
         span.attribute("gen_ai.tool.name", toolName);
         span.attribute("gen_ai.tool.type", type.name());
         if (callId != null) {
             span.attribute("gen_ai.tool.call.id", callId);
         }
-        span.input = limitPayload(toJson(inputArgs));
+        span.input = limitPayload(sanitizer.sanitize(toJson(inputArgs)));
         register(span);
         return span;
     }
@@ -235,6 +246,7 @@ final class TurnTrace {
         final SpanType type;
         final String name;
         final long startUs;
+        final TracePayloadSanitizer sanitizer;
         final Map<String, Object> attributes = new LinkedHashMap<>();
         final StringBuilder outputBuffer = new StringBuilder();
         final StringBuilder thinkingBuffer = new StringBuilder();
@@ -246,12 +258,19 @@ final class TurnTrace {
         String output;
         private String errorMessage;
 
-        MutableSpan(String spanId, String parentSpanId, SpanType type, String name, long startUs) {
+        MutableSpan(
+                String spanId,
+                String parentSpanId,
+                SpanType type,
+                String name,
+                long startUs,
+                TracePayloadSanitizer sanitizer) {
             this.spanId = spanId;
             this.parentSpanId = parentSpanId;
             this.type = type;
             this.name = name;
             this.startUs = startUs;
+            this.sanitizer = sanitizer;
         }
 
         void attribute(String key, Object value) {
@@ -282,7 +301,7 @@ final class TurnTrace {
 
         void fail(String message) {
             this.status = SpanStatus.ERROR;
-            this.errorMessage = limitError(message);
+            this.errorMessage = limitError(sanitizer.sanitize(message));
         }
 
         /**
@@ -311,7 +330,8 @@ final class TurnTrace {
                     || trimmed.startsWith("Workflow failed")
                     || trimmed.startsWith("Failed to ")) {
                 this.status = SpanStatus.ERROR;
-                this.errorMessage = limitError(trimmed.lines().findFirst().orElse("Tool returned an error"));
+                this.errorMessage = limitError(
+                        sanitizer.sanitize(trimmed.lines().findFirst().orElse("Tool returned an error")));
                 attribute("error.message", this.errorMessage);
             }
         }
@@ -325,7 +345,7 @@ final class TurnTrace {
                 this.status = status;
             }
             if (errorMessage != null) {
-                this.errorMessage = limitError(errorMessage);
+                this.errorMessage = limitError(sanitizer.sanitize(errorMessage));
                 attribute("error.message", this.errorMessage);
             }
             if (output == null) {
@@ -341,7 +361,7 @@ final class TurnTrace {
                     if (outputTruncated) combined.append(TRUNCATED);
                 }
                 if (combined.length() > 0) {
-                    this.output = limitPayload(combined.toString());
+                    this.output = limitPayload(sanitizer.sanitize(combined.toString()));
                 }
             }
         }
@@ -350,7 +370,7 @@ final class TurnTrace {
             if (attributes.isEmpty()) {
                 return null;
             }
-            return limitPayload(toJson(attributes));
+            return limitPayload(sanitizer.sanitize(toJson(attributes)));
         }
 
         private static boolean appendLimited(StringBuilder target, String chunk) {

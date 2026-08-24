@@ -58,9 +58,11 @@ public class TraceCollectingMiddleware implements MiddlewareBase {
     public static final String CTX_AGENT_ID = "okagent.trace.agentId";
 
     private final TraceSink sink;
+    private final TracePayloadSanitizer sanitizer;
 
-    public TraceCollectingMiddleware(TraceSink sink) {
+    public TraceCollectingMiddleware(TraceSink sink, TracePayloadSanitizer sanitizer) {
         this.sink = sink;
+        this.sanitizer = sanitizer;
     }
 
     @Override
@@ -78,8 +80,8 @@ public class TraceCollectingMiddleware implements MiddlewareBase {
         }
         UUID agentId = parseAgentId(ctx.get(CTX_AGENT_ID));
         int turnSeq = parseInt(ctx.get(CTX_TURN_SEQ), 0);
-        TurnTrace trace =
-                TurnTrace.start(traceId, ctx.getSessionId(), agentId, ctx.getUserId(), turnSeq, agent.getName());
+        TurnTrace trace = TurnTrace.start(
+                traceId, ctx.getSessionId(), agentId, ctx.getUserId(), turnSeq, agent.getName(), sanitizer);
 
         AtomicReference<SpanStatus> rootStatus = new AtomicReference<>(SpanStatus.OK);
         AtomicReference<String> rootError = new AtomicReference<>();

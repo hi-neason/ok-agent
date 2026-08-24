@@ -12,9 +12,7 @@ import io.agentscope.harness.agent.gateway.channel.DmScope;
 import io.okagent.domain.channel.ChannelAsset;
 import io.okagent.domain.channel.ChannelDmScope;
 import io.okagent.domain.channel.ChannelIlinkSession;
-import io.okagent.domain.channel.ChannelType;
 import io.okagent.domain.channel.IlinkLoginStatus;
-import io.okagent.repository.agent.AgentAssetRepository;
 import io.okagent.repository.channel.ChannelIlinkSessionRepository;
 import io.okagent.service.agent.HarnessAgentFactory;
 import io.okagent.service.channel.ChannelIdentityResolver;
@@ -24,9 +22,10 @@ import io.okagent.service.channel.runtime.wechat.IlinkClient;
 import io.okagent.service.channel.runtime.wechat.WeChatIlinkChannel;
 import io.okagent.service.dialogue.DialogueService;
 import io.okagent.service.model.ApiKeyCipher;
+import io.okagent.service.release.ReleasedChannelAgent;
+import io.okagent.service.release.ReleasedChannelAgentResolver;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -44,7 +43,7 @@ public class ChannelGatewayFactory {
     private static final ObjectMapper JSON = new ObjectMapper();
 
     private final HarnessAgentFactory agentFactory;
-    private final AgentAssetRepository agentRepository;
+    private final ReleasedChannelAgentResolver releasedAgents;
     private final ApiKeyCipher cipher;
     private final ChannelIdentityResolver identityResolver;
     private final DialogueService dialogue;
@@ -53,14 +52,14 @@ public class ChannelGatewayFactory {
 
     public ChannelGatewayFactory(
             HarnessAgentFactory agentFactory,
-            AgentAssetRepository agentRepository,
+            ReleasedChannelAgentResolver releasedAgents,
             ApiKeyCipher cipher,
             ChannelIdentityResolver identityResolver,
             DialogueService dialogue,
             ChannelIlinkSessionRepository ilinkSessions,
             TransactionTemplate tx) {
         this.agentFactory = agentFactory;
-        this.agentRepository = agentRepository;
+        this.releasedAgents = releasedAgents;
         this.cipher = cipher;
         this.identityResolver = identityResolver;
         this.dialogue = dialogue;
@@ -76,22 +75,14 @@ public class ChannelGatewayFactory {
             case FEISHU -> buildFeishu(asset);
             case WECHAT -> buildWechatIlink(asset);
             case DINGTALK -> buildDingTalk(asset);
-            case WECOM -> throw new IllegalArgumentException(
-                    "Channel type not yet wired: " + asset.getType());
+            case WECOM -> throw new IllegalArgumentException("Channel type not yet wired: " + asset.getType());
         };
     }
 
     private GatewayBootstrap buildFeishu(ChannelAsset asset) {
-        UUID agentId = asset.getBoundAgentId();
-        if (agentId == null) {
-            throw new IllegalStateException("Channel '" + asset.getChannelKey() + "' has no bound agent");
-        }
-        var agentAsset = agentRepository
-                .findById(agentId)
-                .orElseThrow(() -> new IllegalStateException(
-                        "Bound agent " + agentId + " for channel '" + asset.getChannelKey() + "' was not found"));
-        HarnessAgent agent = agentFactory.build(agentAsset);
-        String agentKey = agentAsset.getAgentKey();
+        ReleasedChannelAgent released = releasedAgents.resolve(asset);
+        HarnessAgent agent = agentFactory.build(released.config(), null);
+        String agentKey = released.agentKey();
 
         Map<String, Object> properties = feishuProperties(asset);
         String appId = asString(properties, "appId");
@@ -119,8 +110,8 @@ public class ChannelGatewayFactory {
                 larkClient,
                 dialogue,
                 identityResolver,
-                agentAsset.getId(),
-                agentAsset.getName(),
+                released.agentId(),
+                released.agentName(),
                 asset.getType().name());
 
         log.info(
@@ -136,18 +127,12 @@ public class ChannelGatewayFactory {
     }
 
     private GatewayBootstrap buildWechatIlink(ChannelAsset asset) {
-        UUID agentId = asset.getBoundAgentId();
-        if (agentId == null) {
-            throw new IllegalStateException("Channel '" + asset.getChannelKey() + "' has no bound agent");
-        }
-        var agentAsset = agentRepository
-                .findById(agentId)
-                .orElseThrow(() -> new IllegalStateException(
-                        "Bound agent " + agentId + " for channel '" + asset.getChannelKey() + "' was not found"));
-        HarnessAgent agent = agentFactory.build(agentAsset);
-        String agentKey = agentAsset.getAgentKey();
+        ReleasedChannelAgent released = releasedAgents.resolve(asset);
+        HarnessAgent agent = agentFactory.build(released.config(), null);
+        String agentKey = released.agentKey();
 
-        ChannelIlinkSession session = ilinkSessions.findByChannelId(asset.getId()).orElse(null);
+        ChannelIlinkSession session =
+                ilinkSessions.findByChannelId(asset.getId()).orElse(null);
         if (session == null
                 || session.getLoginStatus() != IlinkLoginStatus.LOGGED_IN
                 || session.getBotTokenCiphertext() == null
@@ -174,8 +159,8 @@ public class ChannelGatewayFactory {
                 tx,
                 dialogue,
                 identityResolver,
-                agentAsset.getId(),
-                agentAsset.getName());
+                released.agentId(),
+                released.agentName());
 
         log.info(
                 "Building WeChat iLink channel '{}' bound to agent '{}' (botId={})",
@@ -190,16 +175,9 @@ public class ChannelGatewayFactory {
     }
 
     private GatewayBootstrap buildDingTalk(ChannelAsset asset) {
-        UUID agentId = asset.getBoundAgentId();
-        if (agentId == null) {
-            throw new IllegalStateException("Channel '" + asset.getChannelKey() + "' has no bound agent");
-        }
-        var agentAsset = agentRepository
-                .findById(agentId)
-                .orElseThrow(() -> new IllegalStateException(
-                        "Bound agent " + agentId + " for channel '" + asset.getChannelKey() + "' was not found"));
-        HarnessAgent agent = agentFactory.build(agentAsset);
-        String agentKey = agentAsset.getAgentKey();
+        ReleasedChannelAgent released = releasedAgents.resolve(asset);
+        HarnessAgent agent = agentFactory.build(released.config(), null);
+        String agentKey = released.agentKey();
 
         Map<String, Object> props = new LinkedHashMap<>(readMap(asset.getConfigJson()));
         Map<String, String> secrets = readSecrets(asset.getSecretsCiphertext());
@@ -216,8 +194,8 @@ public class ChannelGatewayFactory {
                 properties,
                 dialogue,
                 identityResolver,
-                agentAsset.getId(),
-                agentAsset.getName(),
+                released.agentId(),
+                released.agentName(),
                 asset.getType().name());
 
         log.info(

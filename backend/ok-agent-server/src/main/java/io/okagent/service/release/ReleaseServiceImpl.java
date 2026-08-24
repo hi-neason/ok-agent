@@ -10,8 +10,10 @@ import io.okagent.repository.agent.AgentAssetRepository;
 import io.okagent.repository.channel.ChannelAssetRepository;
 import io.okagent.repository.release.AgentReleaseRepository;
 import io.okagent.repository.release.AgentVersionRepository;
+import io.okagent.service.channel.runtime.ChannelRuntimeEvent;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,18 +33,21 @@ public class ReleaseServiceImpl implements ReleaseService {
     private final AgentReleaseRepository releases;
     private final ChannelAssetRepository channels;
     private final AgentSnapshotService snapshots;
+    private final ApplicationEventPublisher events;
 
     public ReleaseServiceImpl(
             AgentAssetRepository agents,
             AgentVersionRepository versions,
             AgentReleaseRepository releases,
             ChannelAssetRepository channels,
-            AgentSnapshotService snapshots) {
+            AgentSnapshotService snapshots,
+            ApplicationEventPublisher events) {
         this.agents = agents;
         this.versions = versions;
         this.releases = releases;
         this.channels = channels;
         this.snapshots = snapshots;
+        this.events = events;
     }
 
     @Override
@@ -93,15 +98,13 @@ public class ReleaseServiceImpl implements ReleaseService {
         ChannelAsset channel = channels.findById(channelId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Channel not found"));
         if (!agentId.equals(channel.getBoundAgentId())) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST, "该渠道绑定的是另一个 Agent，不能发布此 Agent 的版本");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "该渠道绑定的是另一个 Agent，不能发布此 Agent 的版本");
         }
         AgentVersion version = versions.findByAgentIdAndVersionNo(agentId, versionNo)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "指定版本不存在"));
 
         // Supersede the currently promoted release on this channel, if any.
-        releases.findByTargetTypeAndTargetIdAndStatus(
-                        ReleaseTargetType.CHANNEL, channelId, ReleaseStatus.PROMOTED)
+        releases.findByTargetTypeAndTargetIdAndStatus(ReleaseTargetType.CHANNEL, channelId, ReleaseStatus.PROMOTED)
                 .ifPresent(current -> {
                     current.markSuperseded();
                     releases.save(current);
@@ -121,6 +124,7 @@ public class ReleaseServiceImpl implements ReleaseService {
         // Atomically move the channel pointer; previousReleaseId is retained for rollback.
         channel.promoteRelease(release.getId());
         channels.save(channel);
+        events.publishEvent(new ChannelRuntimeEvent(channelId, false));
         return release;
     }
 
@@ -137,8 +141,8 @@ public class ReleaseServiceImpl implements ReleaseService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "上一个版本记录不存在"));
 
         // Mark the currently promoted release as rolled back.
-        AgentRelease current = releases
-                .findByTargetTypeAndTargetIdAndStatus(ReleaseTargetType.CHANNEL, channelId, ReleaseStatus.PROMOTED)
+        AgentRelease current = releases.findByTargetTypeAndTargetIdAndStatus(
+                        ReleaseTargetType.CHANNEL, channelId, ReleaseStatus.PROMOTED)
                 .orElse(null);
         UUID rolledBackFromId = current != null ? current.getId() : null;
         if (current != null) {
@@ -162,14 +166,15 @@ public class ReleaseServiceImpl implements ReleaseService {
         // current is restored; remember what we rolled back from so a second rollback can toggle back.
         channel.setReleasePointers(restored.getId(), rolledBackFromId);
         channels.save(channel);
+        events.publishEvent(new ChannelRuntimeEvent(channelId, false));
         return restored;
     }
 
     @Override
     @Transactional(readOnly = true)
     public AgentRelease getCurrentRelease(UUID channelId) {
-        return releases
-                .findByTargetTypeAndTargetIdAndStatus(ReleaseTargetType.CHANNEL, channelId, ReleaseStatus.PROMOTED)
+        return releases.findByTargetTypeAndTargetIdAndStatus(
+                        ReleaseTargetType.CHANNEL, channelId, ReleaseStatus.PROMOTED)
                 .orElse(null);
     }
 

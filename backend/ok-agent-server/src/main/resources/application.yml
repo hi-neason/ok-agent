@@ -30,6 +30,9 @@ management:
 ok-agent:
   security:
     api-key-encryption-key: ${OK_AGENT_API_KEY_ENCRYPTION_KEY}
+  observe:
+    trace-retention-days: ${OK_AGENT_TRACE_RETENTION_DAYS:30}
+    trace-cleanup-cron: "${OK_AGENT_TRACE_CLEANUP_CRON:0 17 3 * * *}"
   runtime:
     agentscope-version: ${AGENTSCOPE_VERSION:2.0.2}
   storage:

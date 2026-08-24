@@ -16,6 +16,9 @@ mvn -pl ok-agent-server spring-boot:run
 
 Run all tests with `mvn test`. Production code lives in `ok-agent-server/`; all test code and test-only dependencies live in `ok-agent-server-test/`.
 
+Execution traces are retained for 30 days by default. Override this with
+`OK_AGENT_TRACE_RETENTION_DAYS` (1–3650); cleanup runs daily at 03:17 UTC.
+
 - Health: `GET /actuator/health`
 - Platform: `GET /api/v1/platform`
 

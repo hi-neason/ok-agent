@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button, PageHeader } from "../shared";
+import { Button, PageHeader, Pagination } from "../shared";
 import { searchSessions } from "./api";
 import type { DialogueSummary, SessionPage } from "./types";
 
-const PAGE_SIZE = 20;
+const DEFAULT_PAGE_SIZE = 20;
 
 type Filters = {
   sessionId: string;
@@ -37,12 +37,13 @@ export function ObserveSessionsPage({
   const [filters, setFilters] = useState<Filters>(emptyFilters);
   const [applied, setApplied] = useState<Filters>(emptyFilters);
   const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [result, setResult] = useState<SessionPage | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const load = useCallback(
-    async (target: Filters, targetPage: number) => {
+    async (target: Filters, targetPage: number, targetSize: number) => {
       setLoading(true);
       setError("");
       try {
@@ -53,7 +54,7 @@ export function ObserveSessionsPage({
             from: dayBoundary(target.from, 0),
             to: dayBoundary(target.to, 1),
             page: targetPage,
-            size: PAGE_SIZE,
+            size: targetSize,
           }),
         );
       } catch {
@@ -66,8 +67,8 @@ export function ObserveSessionsPage({
   );
 
   useEffect(() => {
-    void load(applied, page);
-  }, [load, applied, page]);
+    void load(applied, page, pageSize);
+  }, [load, applied, page, pageSize]);
 
   const runSearch = () => {
     setApplied(filters);
@@ -91,7 +92,7 @@ export function ObserveSessionsPage({
         title={t("observe.title")}
         description={t("observe.description")}
         action={
-          <Button quiet onClick={() => void load(applied, page)} disabled={loading}>
+          <Button quiet onClick={() => void load(applied, page, pageSize)} disabled={loading}>
             ↻ {t("observe.refresh")}
           </Button>
         }
@@ -185,30 +186,18 @@ export function ObserveSessionsPage({
             </button>
           ))
         )}
-        {total > 0 && (
-          <div className="dialogue-pager">
-            <span>{t("observe.total", { count: total })}</span>
-            <div>
-              <button
-                className="filter-chip"
-                disabled={page === 0 || loading}
-                onClick={() => setPage((current) => Math.max(0, current - 1))}
-              >
-                ‹ {t("observe.prev")}
-              </button>
-              <b>
-                {page + 1} / {Math.max(1, totalPages)}
-              </b>
-              <button
-                className="filter-chip"
-                disabled={page + 1 >= totalPages || loading}
-                onClick={() => setPage((current) => current + 1)}
-              >
-                {t("observe.next")} ›
-              </button>
-            </div>
-          </div>
-        )}
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          totalElements={total}
+          size={pageSize}
+          loading={loading}
+          onPageChange={setPage}
+          onSizeChange={(size) => {
+            setPageSize(size);
+            setPage(0);
+          }}
+        />
       </section>
     </>
   );

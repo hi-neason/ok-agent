@@ -44,6 +44,9 @@ public class DialogueSession {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    @Column(name = "next_turn_seq", nullable = false)
+    private int nextTurnSeq = 1;
+
     public DialogueSession() {}
 
     public DialogueSession(String sessionId, UUID agentId, String title, String userId, Instant createdAt) {
@@ -98,5 +101,16 @@ public class DialogueSession {
 
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public int getNextTurnSeq() {
+        return nextTurnSeq;
+    }
+
+    public int allocateNextTurnSeq() {
+        if (nextTurnSeq == Integer.MAX_VALUE) {
+            throw new IllegalStateException("Dialogue session sequence is exhausted");
+        }
+        return nextTurnSeq++;
     }
 }

@@ -77,13 +77,18 @@ public class DialogueServiceImpl implements DialogueService {
 
     @Override
     public int nextSeq(String sessionId) {
-        return (int) turns.countBySessionId(sessionId) + 1;
+        return sessions.findById(sessionId)
+                .map(DialogueSession::getNextTurnSeq)
+                .orElse(1);
     }
 
     @Override
+    @Transactional
     public DialogueTurn recordMessage(
             String sessionId, String role, String content, String model, Integer latencyMs, String traceId) {
-        int seq = (int) turns.countBySessionId(sessionId) + 1;
+        DialogueSession session = sessions.findForTurnAllocation(sessionId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dialogue session not found"));
+        int seq = session.allocateNextTurnSeq();
         DialogueTurn turn = new DialogueTurn(sessionId, seq, role, content, model, latencyMs, traceId, Instant.now());
         return turns.save(turn);
     }

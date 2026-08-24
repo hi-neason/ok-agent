@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
 
 /**
@@ -14,7 +15,10 @@ import java.time.Instant;
  * store works for any producer, not only the debug runtime.
  */
 @Entity
-@Table(name = "dialogue_turn")
+@Table(
+        name = "dialogue_turn",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_dialogue_turn_session_seq", columnNames = {"session_id", "seq"}))
 public class DialogueTurn {
 
     @Id

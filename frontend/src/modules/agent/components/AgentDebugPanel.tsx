@@ -34,7 +34,7 @@ export function AgentDebugPanel({
   sending: boolean;
   onInputChange: (value: string) => void;
   onSend: () => void;
-  onNewSession: () => void;
+  onNewSession: () => Promise<void>;
   users: { userId: string; username: string; displayName: string }[];
   selectedUserId: string | null;
   onSelectUser: (userId: string) => void;
@@ -56,7 +56,11 @@ export function AgentDebugPanel({
     <>
       <header>
         <b>{t("agents.debugChat")}</b>
-        <button className="link-button" onClick={onNewSession} style={{ fontSize: 11 }}>
+        <button
+          className="link-button"
+          onClick={() => void onNewSession()}
+          style={{ fontSize: 11 }}
+        >
           ↻ {t("agents.newSession")}
         </button>
       </header>

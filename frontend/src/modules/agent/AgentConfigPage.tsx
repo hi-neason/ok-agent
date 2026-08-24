@@ -346,13 +346,21 @@ export function AgentConfigPage({
     }
   };
 
-  const newSession = () => {
+  const newSession = async () => {
     if (!selectedUserId) {
       setNotice({ ok: false, text: "请先选择调试用户" });
       return;
     }
     if (sessionIdRef.current) {
-      void deleteSession(sessionIdRef.current, selectedUserId);
+      try {
+        await deleteSession(sessionIdRef.current, selectedUserId);
+      } catch (error) {
+        setNotice({
+          ok: false,
+          text: error instanceof Error ? error.message : "删除当前会话失败",
+        });
+        return;
+      }
       sessionIdRef.current = "";
     }
     setSelectedSessionId(null);

@@ -10,8 +10,11 @@ import type {
 
 async function jsonOrThrow(res: Response): Promise<unknown> {
   if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(text || `HTTP ${res.status}`);
+    const body = (await res.json().catch(() => null)) as
+      | { message?: unknown; detail?: unknown }
+      | null;
+    const message = body?.message ?? body?.detail;
+    throw new Error(typeof message === "string" ? message : `HTTP ${res.status}`);
   }
   return res.status === 204 ? undefined : res.json();
 }
@@ -164,10 +167,11 @@ export async function sendChat(
 }
 
 export async function deleteSession(sessionId: string, userId: string): Promise<void> {
-  await fetch(
+  const response = await fetch(
     `/api/v1/agents/sessions/${sessionId}?userId=${encodeURIComponent(userId)}`,
     { method: "DELETE" },
-  ).catch(() => undefined);
+  );
+  await jsonOrThrow(response);
 }
 
 export async function validateAgentConfig(

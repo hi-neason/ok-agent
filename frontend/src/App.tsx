@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   observeSessionIdFromPath,
@@ -7,6 +7,7 @@ import {
 } from "./modules/observe/routes";
 import { useAuth } from "./modules/auth";
 import "./agent.css";
+import "./profile.css";
 
 const AgentRegistryPage = lazy(() =>
   import("./modules/agent/AgentRegistryPage").then((module) => ({ default: module.AgentRegistryPage })),
@@ -184,6 +185,8 @@ const isKnownPath = (path: string): boolean =>
 export default function App() {
   const { t, i18n } = useTranslation();
   const { user, logout } = useAuth();
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
   const [navCollapsed, setNavCollapsed] = useState(
     () => window.localStorage.getItem("ok-agent.nav-collapsed") === "true",
   );
@@ -219,6 +222,23 @@ export default function App() {
     window.addEventListener("popstate", syncPage);
     return () => window.removeEventListener("popstate", syncPage);
   }, []);
+  useEffect(() => {
+    if (!profileOpen) return;
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      if (!profileMenuRef.current?.contains(event.target as Node)) {
+        setProfileOpen(false);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setProfileOpen(false);
+    };
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [profileOpen]);
   const selected = modules.find((x) => x.id === page)!;
   const moduleName = (module: { id: Page }) =>
     t(`navigation.${module.id}`);
@@ -378,15 +398,50 @@ intents: <IntentPage />,
               {i18n.resolvedLanguage === "zh-CN" ? t("common.switchToEnglish") : t("common.switchToChinese")}
             </button>
             <button className="icon-button">◐</button>
-            <span className="auth-user-name">{user.displayName}</span>
-            <button
-              className="avatar auth-avatar"
-              onClick={logout}
-              title={t("auth.signOut")}
-              type="button"
-            >
-              {(user.displayName || user.username).slice(0, 1).toUpperCase()}
-            </button>
+            <div className="profile-menu" ref={profileMenuRef}>
+              <button
+                className="profile-trigger"
+                onClick={() => setProfileOpen((open) => !open)}
+                title={t("auth.profile")}
+                type="button"
+                aria-haspopup="menu"
+                aria-expanded={profileOpen}
+              >
+                <span className="auth-user-name">{user.displayName}</span>
+                <span className="avatar auth-avatar" aria-hidden="true">
+                  {(user.displayName || user.username).slice(0, 1).toUpperCase()}
+                </span>
+              </button>
+              {profileOpen && (
+                <div className="profile-dropdown" role="menu">
+                  <div className="profile-summary">
+                    <span className="avatar profile-avatar" aria-hidden="true">
+                      {(user.displayName || user.username).slice(0, 1).toUpperCase()}
+                    </span>
+                    <span>
+                      <b>{user.displayName}</b>
+                      <small>@{user.username}</small>
+                    </span>
+                  </div>
+                  <div className="profile-role">
+                    <span>{t("auth.role")}</span>
+                    <b>{t(`accounts.roles.${user.role}`)}</b>
+                  </div>
+                  <button
+                    className="profile-signout"
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setProfileOpen(false);
+                      logout();
+                    }}
+                  >
+                    <span aria-hidden="true">↪</span>
+                    {t("auth.signOut")}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </header>
         <section className="page-content" key={page}>

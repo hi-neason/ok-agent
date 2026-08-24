@@ -574,6 +574,8 @@ const resources = {
         modes: { GLOBAL: "全局注入（跨智能体合并）", SELF_ONLY: "仅注入本智能体画像", NONE: "不注入" },
       },
       auth: {
+        profile: "个人信息",
+        role: "平台角色",
         title: "登录控制台",
         description: "使用平台管理员分配的内置账号访问管理控制面。",
         username: "用户名",
@@ -1595,6 +1597,8 @@ const resources = {
         modes: { GLOBAL: "Global injection (merged across agents)", SELF_ONLY: "This agent’s persona only", NONE: "Do not inject" },
       },
       auth: {
+        profile: "Profile",
+        role: "Platform role",
         title: "Sign in to Console",
         description: "Use the built-in account assigned by your platform administrator.",
         username: "Username",

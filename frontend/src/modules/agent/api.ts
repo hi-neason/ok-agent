@@ -163,10 +163,11 @@ export async function sendChat(
   return { reply: data.reply ?? "", sessionId: data.sessionId };
 }
 
-export async function deleteSession(sessionId: string): Promise<void> {
-  await fetch(`/api/v1/agents/sessions/${sessionId}`, { method: "DELETE" }).catch(
-    () => undefined,
-  );
+export async function deleteSession(sessionId: string, userId: string): Promise<void> {
+  await fetch(
+    `/api/v1/agents/sessions/${sessionId}?userId=${encodeURIComponent(userId)}`,
+    { method: "DELETE" },
+  ).catch(() => undefined);
 }
 
 export async function validateAgentConfig(

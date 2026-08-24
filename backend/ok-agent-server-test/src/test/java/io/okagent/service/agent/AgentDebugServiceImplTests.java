@@ -1,11 +1,14 @@
 package io.okagent.service.agent;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.agentscope.core.agent.RuntimeContext;
@@ -15,6 +18,7 @@ import io.agentscope.core.permission.PermissionMode;
 import io.agentscope.harness.agent.HarnessAgent;
 import io.okagent.domain.agent.AgentAsset;
 import io.okagent.domain.agent.AgentPermissionMode;
+import io.okagent.domain.dialogue.DialogueSession;
 import io.okagent.infrastructure.store.JdbcAgentStateStore;
 import io.okagent.repository.agent.AgentAssetRepository;
 import io.okagent.service.dialogue.DialogueService;
@@ -24,6 +28,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 
 class AgentDebugServiceImplTests {
@@ -99,5 +105,27 @@ class AgentDebugServiceImplTests {
                         any(Integer.class),
                         any(String.class));
         verify(dialogue).touchSession("dlg-session");
+    }
+
+    @Test
+    void shouldNotResetAnotherUsersSession() {
+        var dialogue = mock(DialogueService.class);
+        var stateStore = mock(JdbcAgentStateStore.class);
+        var existing = new DialogueSession(
+                "private-session", UUID.randomUUID(), "Private", "owner", java.time.Instant.now());
+        when(dialogue.findById("private-session")).thenReturn(Optional.of(existing));
+        var service = new AgentDebugServiceImpl(
+                mock(AgentAssetRepository.class),
+                mock(HarnessAgentFactory.class),
+                dialogue,
+                stateStore,
+                mock(PersonaExtractionService.class));
+
+        assertThatThrownBy(() -> service.resetSession("private-session", "attacker"))
+                .isInstanceOfSatisfying(ResponseStatusException.class,
+                        exception -> assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
+
+        verify(dialogue, never()).purge("private-session");
+        verifyNoInteractions(stateStore);
     }
 }

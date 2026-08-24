@@ -13,5 +13,5 @@ public interface AgentDebugService {
     AgentChatResponse chat(UUID agentId, AgentChatRequest request);
 
     /** Closes and discards a debug session, freeing the underlying HarnessAgent and all stored data. */
-    void resetSession(String sessionId);
+    void resetSession(String sessionId, String userId);
 }

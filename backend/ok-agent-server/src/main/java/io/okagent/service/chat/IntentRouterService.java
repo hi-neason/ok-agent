@@ -130,6 +130,7 @@ public class IntentRouterService {
 
         var userId = req.userId();
         var sessionKey = deriveSessionKey(req.channelId(), req.sessionId());
+        dialogue.assertSessionOwner(sessionKey, cfg.getId(), userId);
         var session = sessions.compute(sessionKey, (k, ex) -> resolveSession(k, ex, cfg, userId));
         if (session == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Session not found or invalid");

@@ -352,7 +352,7 @@ export function AgentConfigPage({
       return;
     }
     if (sessionIdRef.current) {
-      void deleteSession(sessionIdRef.current);
+      void deleteSession(sessionIdRef.current, selectedUserId);
       sessionIdRef.current = "";
     }
     setSelectedSessionId(null);

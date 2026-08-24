@@ -68,6 +68,7 @@ public class AgentDebugServiceImpl implements AgentDebugService {
 
         var userId = request.userId();
         var sessionId = resolveSessionId(request.sessionId());
+        dialogue.assertSessionOwner(sessionId, draft.getId(), userId);
         var debugConfig = factory.draftConfig(draft);
         var session =
                 sessions.compute(sessionId, (key, existing) -> resolveSession(sessionId, existing, draft, debugConfig, userId));
@@ -171,9 +172,20 @@ public class AgentDebugServiceImpl implements AgentDebugService {
     }
 
     @Override
-    public void resetSession(String sessionId) {
-        var removed = sessions.remove(sessionId);
-        String userId = (removed != null) ? removed.userId : null;
+    public void resetSession(String sessionId, String userId) {
+        if (userId == null || userId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "userId is required");
+        }
+        var active = sessions.get(sessionId);
+        if (active != null && !java.util.Objects.equals(active.userId, userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Session belongs to another user");
+        }
+        dialogue.findById(sessionId).ifPresent(existing -> {
+            if (!java.util.Objects.equals(existing.getUserId(), userId)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Session belongs to another user");
+            }
+        });
+        var removed = active == null ? null : (sessions.remove(sessionId, active) ? active : null);
         if (removed != null) {
             closeQuietly(removed.agent);
         }

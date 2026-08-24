@@ -18,6 +18,9 @@ public interface DialogueService {
     /** True when a session with the given id already exists. */
     boolean sessionExists(String sessionId);
 
+    /** Rejects access when an existing session belongs to another agent or user. */
+    void assertSessionOwner(String sessionId, UUID agentId, String userId);
+
     /** Creates the session if absent, otherwise returns the existing one. */
     DialogueSession ensureSession(String sessionId, UUID agentId, String userId, String title);
 

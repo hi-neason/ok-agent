@@ -11,6 +11,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -18,8 +19,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class DialogueServiceImpl implements DialogueService {
@@ -41,10 +44,15 @@ public class DialogueServiceImpl implements DialogueService {
     }
 
     @Override
+    public void assertSessionOwner(String sessionId, UUID agentId, String userId) {
+        sessions.findById(sessionId).ifPresent(existing -> requireOwner(existing, agentId, userId));
+    }
+
+    @Override
     public DialogueSession ensureSession(String sessionId, UUID agentId, String userId, String title) {
         Optional<DialogueSession> existing = sessions.findById(sessionId);
         if (existing.isPresent()) {
-            return existing.get();
+            return requireOwner(existing.get(), agentId, userId);
         }
         DialogueSession created = new DialogueSession(sessionId, agentId, title, userId, Instant.now());
         return sessions.save(created);
@@ -55,7 +63,7 @@ public class DialogueServiceImpl implements DialogueService {
             String sessionId, UUID agentId, UUID releaseId, Integer versionNo, String userId, String title) {
         Optional<DialogueSession> existing = sessions.findById(sessionId);
         if (existing.isPresent()) {
-            return existing.get();
+            return requireOwner(existing.get(), agentId, userId);
         }
         DialogueSession created = new DialogueSession(sessionId, agentId, title, userId, Instant.now());
         created.setReleaseInfo(releaseId, versionNo);
@@ -156,6 +164,13 @@ public class DialogueServiceImpl implements DialogueService {
                 session.getCreatedAt(),
                 session.getUpdatedAt(),
                 turnCount);
+    }
+
+    private DialogueSession requireOwner(DialogueSession session, UUID agentId, String userId) {
+        if (!Objects.equals(session.getAgentId(), agentId) || !Objects.equals(session.getUserId(), userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Session belongs to another agent or user");
+        }
+        return session;
     }
 
     private record Parsed(Instant instant, boolean dateOnly) {}

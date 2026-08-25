@@ -1,8 +1,26 @@
+.inbox-app-content {
+  display: grid;
+  grid-template-rows: 60px minmax(0, 1fr);
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.inbox-page-content {
+  min-height: 0;
+  padding-bottom: 24px;
+  overflow: hidden;
+}
+
 .inbox-page {
   --inbox-ink: #15395f;
   --inbox-muted: #7996b4;
   --inbox-line: #d9e8f7;
   --inbox-panel: rgba(255, 255, 255, 0.9);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
 }
 
 .inbox-queue-tabs {
@@ -84,8 +102,9 @@
 .inbox-workbench {
   display: grid;
   grid-template-columns: minmax(260px, 0.82fr) minmax(440px, 1.65fr) minmax(245px, 0.78fr);
-  min-height: 650px;
-  height: calc(100vh - 245px);
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
   overflow: hidden;
   border: 1px solid var(--inbox-line);
   border-radius: 12px;
@@ -216,6 +235,15 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
+  scrollbar-color: #9fc2e6 rgba(224, 237, 250, 0.72);
+  scrollbar-width: thin;
+}
+.inbox-thread::-webkit-scrollbar { width: 9px; }
+.inbox-thread::-webkit-scrollbar-track { background: rgba(224, 237, 250, 0.72); }
+.inbox-thread::-webkit-scrollbar-thumb {
+  border: 2px solid rgba(224, 237, 250, 0.72);
+  border-radius: 999px;
+  background: #9fc2e6;
 }
 .inbox-message { display: grid; width: min(78%, 680px); margin: 0 0 18px; gap: 5px; }
 .inbox-message.user { margin-left: auto; }

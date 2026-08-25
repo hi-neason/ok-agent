@@ -265,7 +265,7 @@ export default function App() {
           <small>AGENTSCOPE JAVA 2.0</small>
         </div>
       </aside>
-      <section className="app-content">
+      <section className={page === "inbox" ? "app-content inbox-app-content" : "app-content"}>
         <header className="app-topbar">
           <div className="topbar-context">
             <div className="product-switcher" aria-label={t("productAreas.switcher")}>
@@ -344,7 +344,10 @@ export default function App() {
             </div>
           </div>
         </header>
-        <section className="page-content" key={page}>
+        <section
+          className={page === "inbox" ? "page-content inbox-page-content" : "page-content"}
+          key={page}
+        >
           <Suspense fallback={<div className="empty-state">{t("common.moduleLoading")}</div>}>
             {content}
           </Suspense>

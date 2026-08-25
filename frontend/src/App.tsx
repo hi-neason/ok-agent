@@ -6,6 +6,17 @@ import {
   observeTraceIdFromPath,
 } from "./modules/observe/routes";
 import { useAuth } from "./modules/auth";
+import {
+  areaForPage,
+  groupsForArea,
+  isKnownPath,
+  navItemById,
+  pageForPath,
+  pagePaths,
+  productAreas,
+  type Page,
+  type ProductArea,
+} from "./app/navigation";
 import "./agent.css";
 import "./profile.css";
 
@@ -64,130 +75,6 @@ const AccountManagementPage = lazy(() =>
   import("./modules/auth/AccountManagementPage").then((module) => ({ default: module.AccountManagementPage })),
 );
 
-type Page =
-  | "agents"
-  | "models"
-  | "skills"
-  | "mcp"
-  | "knowledge"
-  | "products"
-  | "workflows"
-  | "release"
-  | "observe"
-  | "system"
-  | "persona"
-  | "insight"
-  | "sysconfig"
-  | "usermgmt"
-  | "intents"
-  | "channels"
-  | "custchat"
-  | "inbox";
-
-type NavItem = {
-  id: Page;
-  icon: string;
-  kicker: string;
-  wip?: boolean;
-};
-
-type NavigationGroup = {
-  key: "agent" | "component" | "business" | "system";
-  items: NavItem[];
-};
-
-// Full catalog of top-level modules. `wip` marks modules still under construction;
-// a few are intentionally hidden from the primary navigation (see `hiddenNavIds`).
-const navItems: NavItem[] = [
-  { id: "agents", icon: "◈", kicker: "AGENT CONFIG" },
-  { id: "custchat", icon: "▣", kicker: "CUSTOMER CHAT" },
-  { id: "inbox", icon: "▤", kicker: "SERVICE INBOX" },
-  { id: "release", icon: "↗", kicker: "RELEASE" },
-  { id: "observe", icon: "◌", kicker: "OBSERVE" },
-  { id: "models", icon: "◌", kicker: "MODEL" },
-  { id: "skills", icon: "✦", kicker: "SKILL" },
-  { id: "mcp", icon: "⌘", kicker: "MCP" },
-  { id: "knowledge", icon: "◫", kicker: "KNOWLEDGE" },
-  { id: "products", icon: "◈", kicker: "PRODUCT" },
-  { id: "workflows", icon: "⌁", kicker: "WORKFLOW" },
-  { id: "persona", icon: "◑", kicker: "PERSONA" },
-  { id: "channels", icon: "⇄", kicker: "CHANNEL" },
-  { id: "intents", icon: "⌥", kicker: "INTENT" },
-  { id: "insight", icon: "◍", kicker: "INSIGHT", wip: true },
-  { id: "system", icon: "◎", kicker: "ACCESS" },
-  { id: "sysconfig", icon: "⚙", kicker: "SETTINGS", wip: true },
-  { id: "usermgmt", icon: "👤", kicker: "USER MGMT" },
-];
-
-const navItemById = Object.fromEntries(
-  navItems.map((n) => [n.id, n]),
-) as Record<Page, NavItem>;
-
-const navigationGroups: NavigationGroup[] = [
-  {
-    key: "agent",
-    items: (["agents", "release", "inbox", "observe", "custchat"] as Page[]).map((id) => navItemById[id]),
-  },
-  {
-    key: "component",
-    items: (["models", "skills", "mcp", "knowledge", "workflows"] as Page[]).map(
-      (id) => navItemById[id],
-    ),
-  },
-  {
-    key: "business",
-    items: (["usermgmt", "persona", "products", "channels", "intents", "insight"] as Page[]).map((id) => navItemById[id]),
-  },
-  {
-    key: "system",
-    items: (["system", "sysconfig"] as Page[]).map((id) => navItemById[id]),
-  },
-];
-
-const modules = navItems;
-const pagePaths: Record<Page, string> = {
-  agents: "/agents",
-  models: "/models",
-  skills: "/skills",
-  mcp: "/mcp",
-  knowledge: "/knowledge",
-  products: "/products",
-  workflows: "/workflows",
-  release: "/releases",
-  observe: "/observability",
-  system: "/system",
-  persona: "/persona",
-  channels: "/channels",
-  intents: "/intents",
-  custchat: "/custchat",
-  inbox: "/inbox",
-  insight: "/insight",
-  sysconfig: "/sysconfig",
-  usermgmt: "/usermgmt",
-};
-const pathPages = Object.fromEntries(
-  Object.entries(pagePaths).map(([page, path]) => [path, page]),
-) as Record<string, Page>;
-
-// Modules that own nested routes below their base path, e.g. /mcp/<id>/debug,
-// /agents/<id>/config and /observability/<sessionId>. Such a path keeps its module selected
-// in the sidebar instead of falling back to the default page.
-const nestedPathPrefixes: [string, Page][] = [
-  ["/mcp/", "mcp"],
-  ["/agents/", "agents"],
-  ["/observability/", "observe"],
-  ["/usermgmt/", "usermgmt"],
-];
-
-const pageForPath = (path: string): Page =>
-  nestedPathPrefixes.find(([prefix]) => path.startsWith(prefix))?.[1] ??
-  pathPages[path] ??
-  "agents";
-
-const isKnownPath = (path: string): boolean =>
-  Boolean(pathPages[path]) ||
-  nestedPathPrefixes.some(([prefix]) => path.startsWith(prefix));
-
 export default function App() {
   const { t, i18n } = useTranslation();
   const { user, logout } = useAuth();
@@ -197,9 +84,9 @@ export default function App() {
     () => window.localStorage.getItem("ok-agent.nav-collapsed") === "true",
   );
   const agentConfigMatch = () =>
-    window.location.pathname.match(/^\/agents\/([^/]+)\/config(?:\/([a-z]+))?$/);
+    window.location.pathname.match(/^\/(?:agent\/)?agents\/([^/]+)\/config(?:\/([a-z]+))?$/);
   const userDetailMatch = () =>
-    window.location.pathname.match(/^\/usermgmt\/([^/]+)$/);
+    window.location.pathname.match(/^\/(?:workbench\/customers|usermgmt)\/([^/]+)$/);
   const [page, setPage] = useState<Page>(() =>
     pageForPath(window.location.pathname),
   );
@@ -245,11 +132,11 @@ export default function App() {
       document.removeEventListener("keydown", closeOnEscape);
     };
   }, [profileOpen]);
-  const selected = modules.find((x) => x.id === page)!;
+  const selected = navItemById[page];
+  const area = areaForPage(page);
+  const navigationGroups = groupsForArea(area);
   const moduleName = (module: { id: Page }) =>
     t(`navigation.${module.id}`);
-  const groupTitleOf = (p: Page | undefined) =>
-    p ? navigationGroups.find((g) => g.items.some((it) => it.id === p))?.key : undefined;
   const navigate = (next: Page) => {
     window.history.pushState({}, "", pagePaths[next]);
     setPage(next);
@@ -258,14 +145,18 @@ export default function App() {
     setObserveSessionId(null);
     setObserveTraceId(null);
   };
+  const switchArea = (nextArea: ProductArea) => {
+    const target = productAreas.find((candidate) => candidate.id === nextArea);
+    if (target) navigate(target.defaultPage);
+  };
   const openUserDetail = (id: string) => {
-    window.history.pushState({}, "", `/usermgmt/${id}`);
+    window.history.pushState({}, "", `${pagePaths.usermgmt}/${id}`);
     setPage("usermgmt");
     setUserDetailId(id);
   };
   const backToUsers = () => navigate("usermgmt");
   const openAgentConfig = (id: string) => {
-    window.history.pushState({}, "", `/agents/${id}/config`);
+    window.history.pushState({}, "", `${pagePaths.agents}/${id}/config`);
     setPage("agents");
     setAgentConfigId(id);
   };
@@ -306,11 +197,15 @@ export default function App() {
       />
     ),
     system: <AccountManagementPage />,
-persona: <PersonaPage />,
-channels: <ChannelPage />,
-intents: <IntentPage />,
+    persona: <PersonaPage />,
+    channels: <ChannelPage />,
+    intents: <IntentPage />,
     custchat: <CustomerChatPage />,
     inbox: <InboxPage />,
+    leads: <WipPlaceholder name={moduleName(navItemById.leads)} kicker="LEAD" />,
+    tickets: <WipPlaceholder name={moduleName(navItemById.tickets)} kicker="TICKET" />,
+    followups: <WipPlaceholder name={moduleName(navItemById.followups)} kicker="FOLLOW UPS" />,
+    performance: <WipPlaceholder name={moduleName(navItemById.performance)} kicker="PERFORMANCE" />,
     insight: <WipPlaceholder name={moduleName(navItemById.insight)} kicker="INSIGHT" />,
     sysconfig: <WipPlaceholder name={moduleName(navItemById.sysconfig)} kicker="SETTINGS" />,
     usermgmt: userDetailId ? (
@@ -338,7 +233,7 @@ intents: <IntentPage />,
         >
           {navCollapsed ? "›" : "‹"}
         </button>
-        <p className="nav-caption">HARNESS CONTROL PLANE</p>
+        <p className="nav-caption">{t(`productAreas.${area}.caption`)}</p>
         <nav>
           {navigationGroups.map((group) => (
             <section key={group.key} style={{ marginBottom: 12 }}>
@@ -376,18 +271,25 @@ intents: <IntentPage />,
       </aside>
       <section className="app-content">
         <header className="app-topbar">
-          <div>
-            <span className="crumb">{t("common.controlPlane")}</span>
-            <i>/</i>
-            {groupTitleOf(selected.id) && (
-              <>
-                <span className="crumb-sub">
-                  {t(`navigationGroups.${groupTitleOf(selected.id)}`)}
-                </span>
-                <i>/</i>
-              </>
-            )}
-            <b>{moduleName(selected)}</b>
+          <div className="topbar-context">
+            <div className="product-switcher" aria-label={t("productAreas.switcher")}>
+              {productAreas.map((productArea) => (
+                <button
+                  key={productArea.id}
+                  className={area === productArea.id ? "active" : ""}
+                  onClick={() => switchArea(productArea.id)}
+                  aria-pressed={area === productArea.id}
+                >
+                  <i>{productArea.icon}</i>
+                  <span>{t(`productAreas.${productArea.id}.name`)}</span>
+                </button>
+              ))}
+            </div>
+            <div className="topbar-crumbs">
+              <span className="crumb">{t(`productAreas.${area}.name`)}</span>
+              <i>/</i>
+              <b>{moduleName(selected)}</b>
+            </div>
           </div>
           <div>
             <button className="top-search">

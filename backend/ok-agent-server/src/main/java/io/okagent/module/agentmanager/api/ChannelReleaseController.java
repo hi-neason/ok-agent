@@ -1,6 +1,6 @@
-package io.okagent.web.release;
+package io.okagent.module.agentmanager.api;
 
-import io.okagent.service.release.ReleaseService;
+import io.okagent.module.agentmanager.application.ReleaseService;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;

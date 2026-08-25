@@ -1,7 +1,7 @@
-package io.okagent.web.release;
+package io.okagent.module.agentmanager.api;
 
 import io.okagent.domain.release.AgentRelease;
-import io.okagent.service.release.ReleaseService;
+import io.okagent.module.agentmanager.application.ReleaseService;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;

@@ -1,4 +1,4 @@
-package io.okagent.web.release;
+package io.okagent.module.agentmanager.api;
 
 import jakarta.validation.constraints.Size;
 

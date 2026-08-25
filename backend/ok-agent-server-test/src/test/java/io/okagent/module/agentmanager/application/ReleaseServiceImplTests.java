@@ -1,4 +1,4 @@
-package io.okagent.service.release;
+package io.okagent.module.agentmanager.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -19,6 +19,7 @@ import io.okagent.repository.agent.AgentAssetRepository;
 import io.okagent.repository.channel.ChannelAssetRepository;
 import io.okagent.repository.release.AgentReleaseRepository;
 import io.okagent.repository.release.AgentVersionRepository;
+import io.okagent.service.release.AgentSnapshotService;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;

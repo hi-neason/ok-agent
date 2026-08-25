@@ -1,4 +1,4 @@
-package io.okagent.service.release;
+package io.okagent.module.agentmanager.application;
 
 import io.okagent.domain.agent.AgentAsset;
 import io.okagent.domain.channel.ChannelAsset;
@@ -11,6 +11,7 @@ import io.okagent.repository.channel.ChannelAssetRepository;
 import io.okagent.repository.release.AgentReleaseRepository;
 import io.okagent.repository.release.AgentVersionRepository;
 import io.okagent.service.channel.runtime.ChannelRuntimeEvent;
+import io.okagent.service.release.AgentSnapshotService;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.context.ApplicationEventPublisher;

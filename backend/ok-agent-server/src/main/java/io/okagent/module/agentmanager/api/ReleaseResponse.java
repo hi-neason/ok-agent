@@ -1,4 +1,4 @@
-package io.okagent.web.release;
+package io.okagent.module.agentmanager.api;
 
 import io.okagent.domain.release.AgentRelease;
 import io.okagent.domain.release.ReleaseStatus;

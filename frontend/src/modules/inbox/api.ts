@@ -28,11 +28,11 @@ export async function listWorkItems(
 ): Promise<ConversationWorkItemPage> {
   const params = new URLSearchParams({ page: "0", size: "100" });
   if (status) params.set("status", status);
-  return jsonOrThrow(await fetch(`/api/v1/inbox/sessions?${params}`));
+  return jsonOrThrow(await fetch(`/api/v1/workbench/sessions?${params}`));
 }
 
 export async function listOperators(): Promise<InboxOperator[]> {
-  return jsonOrThrow(await fetch("/api/v1/inbox/sessions/operators"));
+  return jsonOrThrow(await fetch("/api/v1/workbench/sessions/operators"));
 }
 
 export async function getTurns(sessionId: string): Promise<DialogueTurn[]> {
@@ -43,7 +43,7 @@ export async function getTurns(sessionId: string): Promise<DialogueTurn[]> {
 
 export async function getOutcome(sessionId: string): Promise<ConversationOutcome> {
   return jsonOrThrow(
-    await fetch(`/api/v1/inbox/sessions/${encodeURIComponent(sessionId)}/outcome`),
+    await fetch(`/api/v1/workbench/sessions/${encodeURIComponent(sessionId)}/outcome`),
   );
 }
 
@@ -52,7 +52,7 @@ export async function saveOutcome(
   draft: ConversationOutcomeDraft,
 ): Promise<ConversationOutcome> {
   return jsonOrThrow(
-    await fetch(`/api/v1/inbox/sessions/${encodeURIComponent(sessionId)}/outcome`, {
+    await fetch(`/api/v1/workbench/sessions/${encodeURIComponent(sessionId)}/outcome`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(draft),
@@ -62,7 +62,7 @@ export async function saveOutcome(
 
 export async function listCustomerCases(sessionId: string): Promise<CustomerCase[]> {
   return jsonOrThrow(
-    await fetch(`/api/v1/inbox/sessions/${encodeURIComponent(sessionId)}/cases`),
+    await fetch(`/api/v1/workbench/sessions/${encodeURIComponent(sessionId)}/cases`),
   );
 }
 
@@ -71,7 +71,7 @@ export async function createCustomerCase(
   type: CustomerCaseType,
 ): Promise<CustomerCase> {
   return jsonOrThrow(
-    await fetch(`/api/v1/inbox/sessions/${encodeURIComponent(sessionId)}/cases`, {
+    await fetch(`/api/v1/workbench/sessions/${encodeURIComponent(sessionId)}/cases`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type }),
@@ -81,7 +81,7 @@ export async function createCustomerCase(
 
 export async function getSatisfaction(sessionId: string): Promise<DialogueSatisfaction> {
   return jsonOrThrow(
-    await fetch(`/api/v1/inbox/sessions/${encodeURIComponent(sessionId)}/satisfaction`),
+    await fetch(`/api/v1/workbench/sessions/${encodeURIComponent(sessionId)}/satisfaction`),
   );
 }
 
@@ -91,7 +91,7 @@ export async function saveSatisfaction(
   feedback: string | null,
 ): Promise<DialogueSatisfaction> {
   return jsonOrThrow(
-    await fetch(`/api/v1/inbox/sessions/${encodeURIComponent(sessionId)}/satisfaction`, {
+    await fetch(`/api/v1/workbench/sessions/${encodeURIComponent(sessionId)}/satisfaction`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ rating, feedback }),
@@ -100,12 +100,12 @@ export async function saveSatisfaction(
 }
 
 export async function getServiceMetrics(): Promise<ServiceOperationsMetrics> {
-  return jsonOrThrow(await fetch("/api/v1/inbox/metrics"));
+  return jsonOrThrow(await fetch("/api/v1/workbench/metrics"));
 }
 
 export async function claimWorkItem(sessionId: string): Promise<ConversationWorkItem> {
   return jsonOrThrow(
-    await fetch(`/api/v1/inbox/sessions/${encodeURIComponent(sessionId)}/claim`, {
+    await fetch(`/api/v1/workbench/sessions/${encodeURIComponent(sessionId)}/claim`, {
       method: "POST",
     }),
   );
@@ -116,7 +116,7 @@ export async function assignWorkItem(
   assigneeAccountId: string | null,
 ): Promise<ConversationWorkItem> {
   return jsonOrThrow(
-    await fetch(`/api/v1/inbox/sessions/${encodeURIComponent(sessionId)}/assignment`, {
+    await fetch(`/api/v1/workbench/sessions/${encodeURIComponent(sessionId)}/assignment`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ assigneeAccountId }),
@@ -129,7 +129,7 @@ export async function changeWorkStatus(
   status: WorkStatus,
 ): Promise<ConversationWorkItem> {
   return jsonOrThrow(
-    await fetch(`/api/v1/inbox/sessions/${encodeURIComponent(sessionId)}/status`, {
+    await fetch(`/api/v1/workbench/sessions/${encodeURIComponent(sessionId)}/status`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
@@ -142,7 +142,7 @@ export async function changeWorkPriority(
   priority: WorkPriority,
 ): Promise<ConversationWorkItem> {
   return jsonOrThrow(
-    await fetch(`/api/v1/inbox/sessions/${encodeURIComponent(sessionId)}/priority`, {
+    await fetch(`/api/v1/workbench/sessions/${encodeURIComponent(sessionId)}/priority`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ priority }),

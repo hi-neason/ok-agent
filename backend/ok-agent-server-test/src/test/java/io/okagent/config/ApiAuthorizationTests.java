@@ -27,6 +27,9 @@ class ApiAuthorizationTests {
         mvc.perform(get("/api/v1/models"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.message").value("AUTHENTICATION_REQUIRED"));
+        mvc.perform(get("/api/v1/workbench/sessions"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("AUTHENTICATION_REQUIRED"));
     }
 
     @Test

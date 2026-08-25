@@ -779,12 +779,6 @@ select.cfg-select,
   padding: 2px 5px;
 }
 
-/* Topbar breadcrumb: secondary (group) level */
-.crumb-sub {
-  color: #92a0b5;
-  font-weight: 500;
-}
-
 /* WIP placeholder page shown for modules under construction */
 .wip-placeholder {
   max-width: 520px;

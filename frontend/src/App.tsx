@@ -99,7 +99,6 @@ export default function App() {
       document.removeEventListener("keydown", closeOnEscape);
     };
   }, [profileOpen]);
-  const selected = navItemById[page];
   const area = areaForPage(page);
   const navigationGroups = groupsForArea(area);
   const moduleName = (module: { id: Page }) =>
@@ -251,11 +250,6 @@ export default function App() {
                   <span>{t(`productAreas.${productArea.id}.name`)}</span>
                 </button>
               ))}
-            </div>
-            <div className="topbar-crumbs">
-              <span className="crumb">{t(`productAreas.${area}.name`)}</span>
-              <i>/</i>
-              <b>{moduleName(selected)}</b>
             </div>
           </div>
           <div>

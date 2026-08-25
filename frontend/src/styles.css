@@ -13,8 +13,5 @@
 .product-switcher button:hover{color:#176fd7;background:rgba(255,255,255,.65)}
 .product-switcher button.active{background:#fff;color:#176dd8;box-shadow:0 5px 14px rgba(44,106,174,.12)}
 .product-switcher button.active i{color:#176dd8}
-.topbar-crumbs{display:flex;align-items:center;gap:8px;min-width:0}
-.topbar-crumbs i{margin:0}
-.topbar-crumbs b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 .pagination-bar{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-top:1px solid #e1ecf7;font:11px 'DM Mono',monospace;color:#55779f}.pagination-bar .pagination-total{color:#7a9abc}.pagination-bar .pagination-controls{display:flex;align-items:center;gap:10px}.pagination-bar .pagination-current{min-width:80px;text-align:center;color:#315a84}.pagination-bar .filter-chip:disabled{cursor:not-allowed;opacity:.5}.pagination-bar .pagination-size{padding:5px 8px}

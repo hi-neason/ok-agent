@@ -64,7 +64,7 @@ export function ObserveSessionDetailPage({
     <>
       <header className="page-header dialogue-detail-header">
         <div>
-          <p className="kicker">RUNTIME OBSERVE / SESSION REPLAY</p>
+          <p className="kicker">{t("observe.replayKicker")}</p>
           <h1>{summary?.title || t("observe.untitled")}</h1>
           <code className="dialogue-detail-id">{sessionId}</code>
         </div>

@@ -88,7 +88,7 @@ export function ObserveSessionsPage({
   return (
     <>
       <PageHeader
-        kicker="RUNTIME OBSERVE / DIALOGUE HISTORY"
+        kicker={t("observe.historyKicker")}
         title={t("observe.title")}
         description={t("observe.description")}
         action={

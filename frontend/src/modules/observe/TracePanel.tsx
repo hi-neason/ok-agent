@@ -67,6 +67,13 @@ function statusClass(status: string): string {
   return "ok";
 }
 
+function statusLabel(status: string, t: (k: string) => string): string {
+  if (status === "OK") return t("observe.traceStatusOk");
+  if (status === "ERROR") return t("observe.traceStatusError");
+  if (status === "CANCELLED") return t("observe.traceStatusCancelled");
+  return status;
+}
+
 function buildTree(spans: TraceSpan[]): {
   roots: TraceSpan[];
   children: Map<string, TraceSpan[]>;
@@ -132,7 +139,9 @@ function SpanDetail({ span, t }: { span: TraceSpan; t: (k: string) => string }) 
         <span className="trace-detail-name" title={span.name}>
           {span.name}
         </span>
-        <span className={`trace-status ${statusClass(span.status)}`}>{span.status}</span>
+        <span className={`trace-status ${statusClass(span.status)}`}>
+          {statusLabel(span.status, t)}
+        </span>
         <span className="trace-detail-duration">{formatDuration(span.durationUs)}</span>
       </div>
       <div className="trace-detail-times">
@@ -275,12 +284,16 @@ function TraceDrawer({
               {span.name}
             </span>
             <span className="trace-tree-meta">
-              {tokens !== null && <span className="trace-tokens">{tokens} tok</span>}
+              {tokens !== null && (
+                <span className="trace-tokens">
+                  {t("observe.traceTokenShort", { count: tokens })}
+                </span>
+              )}
               <span className="trace-tree-clock" title={formatTimestamp(span.startUs)}>
                 +{formatDuration(span.startUs - traceStart)}
               </span>
               <span className={`trace-status ${statusClass(span.status)}`}>
-                {span.status}
+                {statusLabel(span.status, t)}
               </span>
               <span className="trace-duration">{formatDuration(span.durationUs)}</span>
             </span>
@@ -345,7 +358,7 @@ function TraceDrawer({
           <div className="trace-drawer-title">
             <span className="trace-drawer-kicker">{t("observe.executionTrace")}</span>
             <code className="trace-drawer-id" title={traceId}>
-              Trace ID {traceId}
+              {t("observe.traceId")} {traceId}
             </code>
             {spans && spans.length > 0 && (
               <span className="trace-drawer-time">

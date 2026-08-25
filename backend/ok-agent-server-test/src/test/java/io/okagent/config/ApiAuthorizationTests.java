@@ -30,6 +30,11 @@ class ApiAuthorizationTests {
         mvc.perform(get("/api/v1/workbench/sessions"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.message").value("AUTHENTICATION_REQUIRED"));
+        mvc.perform(post("/api/v1/customer-chat/messages")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("AUTHENTICATION_REQUIRED"));
     }
 
     @Test

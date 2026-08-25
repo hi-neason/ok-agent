@@ -72,7 +72,7 @@ export function CustomerChatPage() {
     setMessages((m) => [...m, { role: "user", content: text }]);
     setSending(true);
     try {
-      const res = await fetch("/api/v1/chat", {
+      const res = await fetch("/api/v1/customer-chat/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ agentId, userId, channelId, sessionId, message: text }),

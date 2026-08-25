@@ -13,7 +13,7 @@ import java.util.UUID;
  * (parent_id) and carry purely semantic information (key, name, description, examples). The
  * binding between an intent and the sub-agent that handles it lives on the router agent's
  * {@code subagents_json} (each sub-agent declares which {@code intentKeys} it owns), not here.
- * The routing layer (IntentRouterService) flattens this tree and lets an LLM classifier pick
+ * The released-agent chat runtime flattens this tree and lets an LLM classifier pick
  * the best-matching node for an incoming query.
  */
 @Entity

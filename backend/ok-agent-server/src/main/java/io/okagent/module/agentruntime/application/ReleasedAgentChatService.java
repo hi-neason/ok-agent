@@ -1,4 +1,4 @@
-package io.okagent.service.chat;
+package io.okagent.module.agentruntime.application;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,6 +16,9 @@ import io.okagent.domain.dialogue.DialogueSession;
 import io.okagent.domain.release.AgentRelease;
 import io.okagent.domain.release.AgentVersion;
 import io.okagent.infrastructure.store.JdbcAgentStateStore;
+import io.okagent.module.customerchat.application.CustomerChatCommand;
+import io.okagent.module.customerchat.application.CustomerChatResult;
+import io.okagent.module.customerchat.application.CustomerChatService;
 import io.okagent.repository.agent.AgentAssetRepository;
 import io.okagent.repository.channel.ChannelAssetRepository;
 import io.okagent.repository.model.ModelAssetRepository;
@@ -33,8 +36,6 @@ import io.okagent.service.model.ApiKeyCipher;
 import io.okagent.service.observe.TraceCollectingMiddleware;
 import io.okagent.service.persona.PersonaExtractionService;
 import io.okagent.service.release.ReleaseAgentConfig;
-import io.okagent.web.chat.ProductionChatRequest;
-import io.okagent.web.chat.ProductionChatResponse;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -69,8 +70,8 @@ import reactor.core.Exceptions;
  * testing), logging a warning so the gap is visible.
  */
 @Service
-public class IntentRouterService {
-    private static final Logger log = LoggerFactory.getLogger(IntentRouterService.class);
+public class ReleasedAgentChatService implements CustomerChatService {
+    private static final Logger log = LoggerFactory.getLogger(ReleasedAgentChatService.class);
     private static final Duration CALL_TIMEOUT = Duration.ofSeconds(300);
     private static final double CONFIDENCE_FALLBACK = 0.6;
     private static final int MAX_SESSIONS = 200;
@@ -91,7 +92,7 @@ public class IntentRouterService {
             HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build();
     private final Map<String, Session> sessions = new ConcurrentHashMap<>();
 
-    public IntentRouterService(
+    public ReleasedAgentChatService(
             IntentService intents,
             AgentAssetRepository agents,
             ChannelAssetRepository channels,
@@ -116,7 +117,8 @@ public class IntentRouterService {
         this.personaExtraction = personaExtraction;
     }
 
-    public ProductionChatResponse chat(ProductionChatRequest req) {
+    @Override
+    public CustomerChatResult chat(CustomerChatCommand req) {
         if (req.message() == null || req.message().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "message is required");
         }
@@ -212,7 +214,7 @@ public class IntentRouterService {
             session.touch();
             touchSession(sessionKey);
             personaExtraction.extractAsync(cfg.getId(), userId, sessionKey);
-            return new ProductionChatResponse(
+            return new CustomerChatResult(
                     sessionAddress.sessionId(),
                     reply,
                     classification.intentKey(),
@@ -230,7 +232,7 @@ public class IntentRouterService {
     }
 
     /** Resolves the runtime config and its release attribution for a production request. */
-    private ResolvedRuntime resolveRuntime(ProductionChatRequest req, AgentAsset draft) {
+    private ResolvedRuntime resolveRuntime(CustomerChatCommand req, AgentAsset draft) {
         if (req.channelId() != null && !req.channelId().isBlank()) {
             try {
                 UUID channelId = UUID.fromString(req.channelId().trim());

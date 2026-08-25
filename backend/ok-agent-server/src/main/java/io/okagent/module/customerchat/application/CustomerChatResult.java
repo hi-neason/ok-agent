@@ -1,7 +1,7 @@
-package io.okagent.web.chat;
+package io.okagent.module.customerchat.application;
 
-/** Production chat reply plus the routing decision that produced it (for UI observability). */
-public record ProductionChatResponse(
+/** Customer-facing reply together with the routing decision used for observability. */
+public record CustomerChatResult(
         String sessionId,
         String reply,
         String intentKey,

@@ -1,14 +1,14 @@
-package io.okagent.service.chat;
+package io.okagent.module.agentruntime.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 
-class ProductionSessionAddressTests {
+class ReleasedAgentSessionAddressTests {
 
     @Test
     void keepsCompatibleShortKeysAndReturnsTheClientSessionId() {
-        var address = IntentRouterService.deriveSessionAddress("web", "session-1");
+        var address = ReleasedAgentChatService.deriveSessionAddress("web", "session-1");
 
         assertThat(address.sessionId()).isEqualTo("session-1");
         assertThat(address.storageKey()).isEqualTo("web::session-1");
@@ -18,8 +18,8 @@ class ProductionSessionAddressTests {
     void hashesLongOrAmbiguousStorageKeysDeterministically() {
         String sessionId = "s".repeat(128);
 
-        var first = IntentRouterService.deriveSessionAddress("channel::nested", sessionId);
-        var second = IntentRouterService.deriveSessionAddress("channel::nested", sessionId);
+        var first = ReleasedAgentChatService.deriveSessionAddress("channel::nested", sessionId);
+        var second = ReleasedAgentChatService.deriveSessionAddress("channel::nested", sessionId);
 
         assertThat(first.sessionId()).isEqualTo(sessionId);
         assertThat(first.storageKey())

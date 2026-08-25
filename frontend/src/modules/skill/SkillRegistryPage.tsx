@@ -246,7 +246,7 @@ export function SkillRegistryPage() {
     <>
       <Dialog />
       <PageHeader
-        kicker="SKILL ASSETS / REPOSITORY"
+        kicker={t("kickers.skillRegistry")}
         title={t("skills.title")}
         description={t("skills.description")}
         action={

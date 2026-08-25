@@ -102,6 +102,11 @@ const resources = {
         mcpInspector: "MCP 检查器 / {{mode}}",
         mcpJsonEditor: "单个 MCP Server / JSON",
         toolSchema: "工具 Schema",
+        skillRegistry: "技能资产 / 仓库",
+        mcpRegistry: "MCP Server / 注册中心",
+        systemRbac: "系统治理 / 角色权限",
+        personaDetail: "用户画像 / {{title}}",
+        wip: "{{name}} / 建设中",
       },
       release: {
         kicker: "发布管理 / 版本控制",
@@ -886,7 +891,7 @@ const resources = {
         },
       },
       mcp: {
-        title: "MCP工具",
+        title: "MCP 工具",
         description:
           "集中管理可复用的 MCP Server 连接，并完成连接诊断、工具发现与输入 Schema 检查。",
         register: "注册 MCP Server",
@@ -938,6 +943,7 @@ const resources = {
         savedButConnectionFailed:
           "MCP Server 已保存，但连接测试失败，请检查配置后重新测试",
         toolCount: "{{count}} 个工具",
+        serverTotal: "共 {{count}} 个 MCP Server",
         testStatus: {
           untested: "未测试",
           success: "连接正常",
@@ -1204,6 +1210,11 @@ const resources = {
         mcpInspector: "MCP INSPECTOR / {{mode}}",
         mcpJsonEditor: "SINGLE MCP SERVER / JSON",
         toolSchema: "TOOL SCHEMA",
+        skillRegistry: "SKILL ASSETS / REPOSITORY",
+        mcpRegistry: "MCP SERVER / REGISTRY",
+        systemRbac: "SYSTEM GOVERNANCE / RBAC",
+        personaDetail: "PERSONA / {{title}}",
+        wip: "{{name}} / IN DEVELOPMENT",
       },
       release: {
         kicker: "RELEASE MANAGEMENT / VERSIONING",
@@ -2045,6 +2056,7 @@ const resources = {
         savedButConnectionFailed:
           "MCP Server was saved, but its connection test failed. Check the configuration and retry.",
         toolCount: "{{count}} tools",
+        serverTotal: "{{count}} MCP Servers",
         testStatus: {
           untested: "Untested",
           success: "Connected",

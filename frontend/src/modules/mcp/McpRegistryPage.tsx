@@ -296,7 +296,7 @@ export function McpRegistryPage() {
     <>
       <Dialog />
       <PageHeader
-        kicker="MCP SERVER / REGISTRY"
+        kicker={t("kickers.mcpRegistry")}
         title={t("mcp.title")}
         description={t("mcp.description")}
         action={<Button onClick={() => open()}>＋ {t("mcp.register")}</Button>}
@@ -307,7 +307,7 @@ export function McpRegistryPage() {
           onChange={(e) => setSearch(e.target.value)}
           placeholder={t("mcp.search")}
         />
-        <span>{page?.totalElements ?? 0} MCP Servers</span>
+        <span>{t("mcp.serverTotal", { count: page?.totalElements ?? 0 })}</span>
       </div>
       <div className="mcp-table">
         <div className="mcp-row head">

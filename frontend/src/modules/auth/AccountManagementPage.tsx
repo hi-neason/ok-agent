@@ -136,7 +136,7 @@ export function AccountManagementPage() {
   return (
     <>
       <PageHeader
-        kicker="SYSTEM GOVERNANCE / RBAC"
+        kicker={t("kickers.systemRbac")}
         title={t("accounts.title")}
         description={t("accounts.description")}
         action={<Button onClick={() => setShowCreate((shown) => !shown)}>{t("accounts.create")}</Button>}

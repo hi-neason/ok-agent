@@ -168,12 +168,42 @@ export default function App() {
     intents: <IntentPage />,
     custchat: <CustomerChatPage />,
     inbox: <InboxPage />,
-    leads: <WipPlaceholder name={moduleName(navItemById.leads)} kicker="LEAD" />,
-    tickets: <WipPlaceholder name={moduleName(navItemById.tickets)} kicker="TICKET" />,
-    followups: <WipPlaceholder name={moduleName(navItemById.followups)} kicker="FOLLOW UPS" />,
-    performance: <WipPlaceholder name={moduleName(navItemById.performance)} kicker="PERFORMANCE" />,
-    insight: <WipPlaceholder name={moduleName(navItemById.insight)} kicker="INSIGHT" />,
-    sysconfig: <WipPlaceholder name={moduleName(navItemById.sysconfig)} kicker="SETTINGS" />,
+    leads: (
+      <WipPlaceholder
+        name={moduleName(navItemById.leads)}
+        kicker={t("kickers.wip", { name: moduleName(navItemById.leads) })}
+      />
+    ),
+    tickets: (
+      <WipPlaceholder
+        name={moduleName(navItemById.tickets)}
+        kicker={t("kickers.wip", { name: moduleName(navItemById.tickets) })}
+      />
+    ),
+    followups: (
+      <WipPlaceholder
+        name={moduleName(navItemById.followups)}
+        kicker={t("kickers.wip", { name: moduleName(navItemById.followups) })}
+      />
+    ),
+    performance: (
+      <WipPlaceholder
+        name={moduleName(navItemById.performance)}
+        kicker={t("kickers.wip", { name: moduleName(navItemById.performance) })}
+      />
+    ),
+    insight: (
+      <WipPlaceholder
+        name={moduleName(navItemById.insight)}
+        kicker={t("kickers.wip", { name: moduleName(navItemById.insight) })}
+      />
+    ),
+    sysconfig: (
+      <WipPlaceholder
+        name={moduleName(navItemById.sysconfig)}
+        kicker={t("kickers.wip", { name: moduleName(navItemById.sysconfig) })}
+      />
+    ),
     usermgmt: userDetailId ? (
       <UserDetailPage id={userDetailId} onBack={backToUsers} />
     ) : (

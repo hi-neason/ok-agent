@@ -347,7 +347,7 @@ function PersonaDetail({
   return (
     <div className="persona-page">
       <PageHeader
-        kicker={`PERSONA / ${t("persona.title")}`}
+        kicker={t("kickers.personaDetail", { title: t("persona.title") })}
         title={user.displayName || user.username}
         description={user.userId}
         action={

@@ -8,6 +8,8 @@ import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface CustomerCaseRepository extends JpaRepository<CustomerCase, UUID> {
+    long countByType(CustomerCaseType type);
+
     List<CustomerCase> findBySourceSessionIdOrderByCreatedAtAsc(String sourceSessionId);
 
     Optional<CustomerCase> findBySourceSessionIdAndType(String sourceSessionId, CustomerCaseType type);

@@ -245,6 +245,8 @@ const resources = {
           created: { LEAD: "销售线索已创建", TICKET: "客服工单已创建" },
           description: { LEAD: "保留客户意向和产品需求", TICKET: "保留问题摘要和处理上下文" },
         },
+        satisfaction: { title: "客户满意度", hint: "记录客户反馈，形成服务质量指标。", rating: "满意度评分", placeholder: "客户反馈（可选）", save: "保存满意度", saving: "保存中…", saveFailed: "满意度保存失败" },
+        metrics: { title: "运营指标", totalConversations: "总会话", waitingHuman: "待人工", inProgress: "处理中", resolved: "已解决", leads: "销售线索", tickets: "客服工单", satisfaction: "平均满意度" },
       },
       intents: {
         kicker: "业务管理 / 意图树",
@@ -1296,6 +1298,8 @@ const resources = {
           created: { LEAD: "Sales lead created", TICKET: "Support ticket created" },
           description: { LEAD: "Keep customer intent and product needs", TICKET: "Keep the issue summary and handling context" },
         },
+        satisfaction: { title: "Customer satisfaction", hint: "Capture feedback and measure service quality.", rating: "Satisfaction rating", placeholder: "Customer feedback (optional)", save: "Save satisfaction", saving: "Saving…", saveFailed: "Failed to save satisfaction" },
+        metrics: { title: "Operations metrics", totalConversations: "Conversations", waitingHuman: "Waiting for human", inProgress: "In progress", resolved: "Resolved", leads: "Sales leads", tickets: "Support tickets", satisfaction: "Average satisfaction" },
       },
       intents: {
         kicker: "BUSINESS / INTENT TREE",

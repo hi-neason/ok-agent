@@ -15,6 +15,15 @@
   border-radius: 9px;
   background: rgba(242, 248, 255, 0.76);
 }
+.inbox-metrics {
+  display: grid; grid-template-columns: repeat(7, minmax(90px, 1fr)); gap: 7px; margin-bottom: 10px;
+}
+.inbox-metrics > div {
+  display: grid; gap: 3px; padding: 10px 12px; border: 1px solid var(--inbox-line); border-radius: 8px;
+  background: rgba(255, 255, 255, 0.82); box-shadow: 0 5px 16px rgba(44, 106, 174, 0.05);
+}
+.inbox-metrics b { color: #1d5f9f; font: 600 16px "DM Mono", monospace; }
+.inbox-metrics small { color: #819bb5; font-size: 9px; }
 
 .inbox-queue-tabs button {
   display: flex;
@@ -271,6 +280,15 @@
 .inbox-conversion-actions button.created { border-color: #bfe3d3; background: #f4fbf8; }
 .inbox-conversion-actions button.created > i { background: #dff5ea; color: #18845c; }
 .inbox-conversion-actions button:disabled { cursor: default; opacity: 0.75; }
+.inbox-rating { display: flex; gap: 4px; }
+.inbox-rating button { padding: 0; border: 0; background: transparent; color: #cad8e5; cursor: pointer; font-size: 18px; }
+.inbox-rating button.active { color: #f1ad2f; }
+.inbox-satisfaction textarea {
+  width: 100%; padding: 7px 8px; border: 1px solid #cee1f4; border-radius: 6px;
+  background: #fff; color: #315d88; font: 10px/1.5 inherit; resize: vertical; box-sizing: border-box;
+}
+.inbox-save-feedback { padding: 8px; border: 1px solid #94cdb4; border-radius: 6px; background: #effaf5; color: #18845c; cursor: pointer; font-size: 10px; }
+.inbox-save-feedback:disabled { cursor: default; opacity: 0.5; }
 .inbox-claim-button {
   padding: 8px; border: 1px solid #1b76e9; border-radius: 6px; background: #1b76e9; color: #fff; cursor: pointer; font-size: 10px;
 }
@@ -305,4 +323,5 @@
 
 @media (max-width: 1280px) {
   .inbox-workbench { grid-template-columns: 260px minmax(400px, 1fr) 235px; }
+  .inbox-metrics { grid-template-columns: repeat(4, 1fr); }
 }

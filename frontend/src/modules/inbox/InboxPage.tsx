@@ -9,21 +9,26 @@ import {
   claimWorkItem,
   createCustomerCase,
   getOutcome,
+  getSatisfaction,
+  getServiceMetrics,
   getTurns,
   listOperators,
   listCustomerCases,
   listWorkItems,
   saveOutcome,
+  saveSatisfaction,
 } from "./api";
 import type {
   ConversationOutcomeDraft,
   ConversationWorkItem,
   CustomerCase,
   CustomerCaseType,
+  DialogueSatisfaction,
   CustomerSentiment,
   InboxOperator,
   WorkPriority,
   WorkStatus,
+  ServiceOperationsMetrics,
 } from "./types";
 import "./inbox.css";
 
@@ -75,12 +80,15 @@ export function InboxPage() {
   const [turns, setTurns] = useState<Awaited<ReturnType<typeof getTurns>>>([]);
   const [outcome, setOutcome] = useState<ConversationOutcomeDraft>(EMPTY_OUTCOME);
   const [customerCases, setCustomerCases] = useState<CustomerCase[]>([]);
+  const [satisfaction, setSatisfaction] = useState<DialogueSatisfaction | null>(null);
+  const [metrics, setMetrics] = useState<ServiceOperationsMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
   const [mutating, setMutating] = useState(false);
   const [savingOutcome, setSavingOutcome] = useState(false);
   const [outcomeSaved, setOutcomeSaved] = useState(false);
   const [converting, setConverting] = useState<CustomerCaseType | null>(null);
+  const [savingSatisfaction, setSavingSatisfaction] = useState(false);
   const [error, setError] = useState("");
 
   const selected = useMemo(
@@ -92,12 +100,14 @@ export function InboxPage() {
     setLoading(true);
     setError("");
     try {
-      const [page, availableOperators] = await Promise.all([
+      const [page, availableOperators, nextMetrics] = await Promise.all([
         listWorkItems(queue === "ALL" ? undefined : queue),
         listOperators(),
+        getServiceMetrics(),
       ]);
       setItems(page.content);
       setOperators(availableOperators);
+      setMetrics(nextMetrics);
       setSelectedId((current) =>
         current && page.content.some((item) => item.sessionId === current)
           ? current
@@ -119,16 +129,18 @@ export function InboxPage() {
       setTurns([]);
       setOutcome(EMPTY_OUTCOME);
       setCustomerCases([]);
+      setSatisfaction(null);
       return;
     }
     let active = true;
     setDetailLoading(true);
-    Promise.all([getTurns(selectedId), getOutcome(selectedId), listCustomerCases(selectedId)])
-      .then(([nextTurns, nextOutcome, nextCases]) => {
+    Promise.all([getTurns(selectedId), getOutcome(selectedId), listCustomerCases(selectedId), getSatisfaction(selectedId)])
+      .then(([nextTurns, nextOutcome, nextCases, nextSatisfaction]) => {
         if (!active) return;
         setTurns(nextTurns);
         setOutcome(nextOutcome);
         setCustomerCases(nextCases);
+        setSatisfaction(nextSatisfaction);
         setOutcomeSaved(false);
       })
       .catch(() => active && setError(t("inbox.turnsFailed")))
@@ -144,6 +156,25 @@ export function InboxPage() {
     );
   };
 
+  const persistSatisfaction = async () => {
+    if (!selected || !satisfaction?.rating) return;
+    setSavingSatisfaction(true);
+    setError("");
+    try {
+      const saved = await saveSatisfaction(
+        selected.sessionId,
+        satisfaction.rating,
+        satisfaction.feedback,
+      );
+      setSatisfaction(saved);
+      setMetrics(await getServiceMetrics());
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : t("inbox.satisfaction.saveFailed"));
+    } finally {
+      setSavingSatisfaction(false);
+    }
+  };
+
   const convertConversation = async (type: CustomerCaseType) => {
     if (!selected) return;
     setConverting(type);
@@ -154,6 +185,7 @@ export function InboxPage() {
         ...current.filter((item) => item.type !== created.type),
         created,
       ]);
+      setMetrics(await getServiceMetrics());
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : t("inbox.conversion.failed"));
     } finally {
@@ -215,6 +247,25 @@ export function InboxPage() {
           </button>
         }
       />
+
+      {metrics && (
+        <section className="inbox-metrics" aria-label={t("inbox.metrics.title")}>
+          {([
+            ["totalConversations", metrics.totalConversations],
+            ["waitingHuman", metrics.waitingHuman],
+            ["inProgress", metrics.inProgress],
+            ["resolved", metrics.resolved],
+            ["leads", metrics.leads],
+            ["tickets", metrics.tickets],
+            ["satisfaction", metrics.averageSatisfaction === null ? "—" : metrics.averageSatisfaction.toFixed(1)],
+          ] as Array<[string, string | number]>).map(([key, value]) => (
+            <div key={key}>
+              <b>{value}{key === "satisfaction" && value !== "—" ? " / 5" : ""}</b>
+              <small>{t(`inbox.metrics.${key}`)}</small>
+            </div>
+          ))}
+        </section>
+      )}
 
       <div className="inbox-queue-tabs" role="tablist" aria-label={t("inbox.queues")}> 
         {QUEUES.map((status) => (
@@ -482,6 +533,47 @@ export function InboxPage() {
                     );
                   })}
                 </div>
+              </section>
+
+              <section className="inbox-control-section inbox-satisfaction">
+                <div className="inbox-section-heading">
+                  <label>{t("inbox.satisfaction.title")}</label>
+                  <small>{t("inbox.satisfaction.hint")}</small>
+                </div>
+                <div className="inbox-rating" role="radiogroup" aria-label={t("inbox.satisfaction.rating")}>
+                  {[1, 2, 3, 4, 5].map((rating) => (
+                    <button
+                      key={rating}
+                      role="radio"
+                      aria-checked={satisfaction?.rating === rating}
+                      className={(satisfaction?.rating ?? 0) >= rating ? "active" : ""}
+                      onClick={() => setSatisfaction((current) => ({
+                        sessionId: selected.sessionId,
+                        rating,
+                        feedback: current?.feedback ?? null,
+                        updatedBy: current?.updatedBy ?? null,
+                        updatedAt: current?.updatedAt ?? null,
+                        version: current?.version ?? 0,
+                      }))}
+                    >★</button>
+                  ))}
+                </div>
+                <textarea
+                  rows={2}
+                  placeholder={t("inbox.satisfaction.placeholder")}
+                  value={satisfaction?.feedback ?? ""}
+                  onChange={(event) => setSatisfaction((current) => ({
+                    sessionId: selected.sessionId,
+                    rating: current?.rating ?? null,
+                    feedback: event.target.value || null,
+                    updatedBy: current?.updatedBy ?? null,
+                    updatedAt: current?.updatedAt ?? null,
+                    version: current?.version ?? 0,
+                  }))}
+                />
+                <button className="inbox-save-feedback" disabled={!satisfaction?.rating || savingSatisfaction} onClick={() => void persistSatisfaction()}>
+                  {savingSatisfaction ? t("inbox.satisfaction.saving") : t("inbox.satisfaction.save")}
+                </button>
               </section>
 
               <section className="inbox-control-section inbox-facts">

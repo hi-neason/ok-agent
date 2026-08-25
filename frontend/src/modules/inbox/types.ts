@@ -85,6 +85,26 @@ export type CustomerCase = {
   createdAt: string;
 };
 
+export type DialogueSatisfaction = {
+  sessionId: string;
+  rating: number | null;
+  feedback: string | null;
+  updatedBy: string | null;
+  updatedAt: string | null;
+  version: number;
+};
+
+export type ServiceOperationsMetrics = {
+  totalConversations: number;
+  waitingHuman: number;
+  inProgress: number;
+  resolved: number;
+  leads: number;
+  tickets: number;
+  satisfactionResponses: number;
+  averageSatisfaction: number | null;
+};
+
 export type InboxDetail = {
   item: ConversationWorkItem;
   turns: DialogueTurn[];

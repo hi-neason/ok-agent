@@ -6,9 +6,11 @@ import type {
   ConversationOutcomeDraft,
   CustomerCase,
   CustomerCaseType,
+  DialogueSatisfaction,
   InboxOperator,
   WorkPriority,
   WorkStatus,
+  ServiceOperationsMetrics,
 } from "./types";
 
 async function jsonOrThrow<T>(response: Response): Promise<T> {
@@ -75,6 +77,30 @@ export async function createCustomerCase(
       body: JSON.stringify({ type }),
     }),
   );
+}
+
+export async function getSatisfaction(sessionId: string): Promise<DialogueSatisfaction> {
+  return jsonOrThrow(
+    await fetch(`/api/v1/inbox/sessions/${encodeURIComponent(sessionId)}/satisfaction`),
+  );
+}
+
+export async function saveSatisfaction(
+  sessionId: string,
+  rating: number,
+  feedback: string | null,
+): Promise<DialogueSatisfaction> {
+  return jsonOrThrow(
+    await fetch(`/api/v1/inbox/sessions/${encodeURIComponent(sessionId)}/satisfaction`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rating, feedback }),
+    }),
+  );
+}
+
+export async function getServiceMetrics(): Promise<ServiceOperationsMetrics> {
+  return jsonOrThrow(await fetch("/api/v1/inbox/metrics"));
 }
 
 export async function claimWorkItem(sessionId: string): Promise<ConversationWorkItem> {

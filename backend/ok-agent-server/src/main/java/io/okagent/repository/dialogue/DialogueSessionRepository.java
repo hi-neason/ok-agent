@@ -1,6 +1,7 @@
 package io.okagent.repository.dialogue;
 
 import io.okagent.domain.dialogue.DialogueSession;
+import io.okagent.domain.dialogue.DialogueWorkStatus;
 import jakarta.persistence.LockModeType;
 import java.util.Optional;
 import java.util.UUID;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface DialogueSessionRepository
         extends JpaRepository<DialogueSession, String>, JpaSpecificationExecutor<DialogueSession> {
+    long countByWorkStatus(DialogueWorkStatus status);
 
     boolean existsBySessionId(String sessionId);
 

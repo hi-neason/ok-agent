@@ -46,6 +46,30 @@ export type InboxOperator = {
   role: "ADMIN" | "EDITOR" | "VIEWER";
 };
 
+export type CustomerSentiment = "UNKNOWN" | "POSITIVE" | "NEUTRAL" | "NEGATIVE" | "MIXED";
+
+export type ConversationOutcome = {
+  sessionId: string;
+  summary: string | null;
+  customerNeed: string | null;
+  intentLabel: string | null;
+  productInterest: string | null;
+  budget: string | null;
+  purchaseTimeline: string | null;
+  sentiment: CustomerSentiment;
+  resolutionCode: string | null;
+  nextAction: string | null;
+  followUpAt: string | null;
+  updatedBy: string | null;
+  updatedAt: string | null;
+  version: number;
+};
+
+export type ConversationOutcomeDraft = Omit<
+  ConversationOutcome,
+  "sessionId" | "updatedBy" | "updatedAt" | "version"
+>;
+
 export type InboxDetail = {
   item: ConversationWorkItem;
   turns: DialogueTurn[];

@@ -7,12 +7,16 @@ import {
   changeWorkPriority,
   changeWorkStatus,
   claimWorkItem,
+  getOutcome,
   getTurns,
   listOperators,
   listWorkItems,
+  saveOutcome,
 } from "./api";
 import type {
+  ConversationOutcomeDraft,
   ConversationWorkItem,
+  CustomerSentiment,
   InboxOperator,
   WorkPriority,
   WorkStatus,
@@ -30,6 +34,20 @@ const QUEUES: Array<WorkStatus | "ALL"> = [
 ];
 
 const PRIORITIES: WorkPriority[] = ["LOW", "NORMAL", "HIGH", "URGENT"];
+const SENTIMENTS: CustomerSentiment[] = ["UNKNOWN", "POSITIVE", "NEUTRAL", "NEGATIVE", "MIXED"];
+
+const EMPTY_OUTCOME: ConversationOutcomeDraft = {
+  summary: null,
+  customerNeed: null,
+  intentLabel: null,
+  productInterest: null,
+  budget: null,
+  purchaseTimeline: null,
+  sentiment: "UNKNOWN",
+  resolutionCode: null,
+  nextAction: null,
+  followUpAt: null,
+};
 
 const NEXT_STATUS: Record<WorkStatus, WorkStatus[]> = {
   OPEN: ["WAITING_HUMAN", "IN_PROGRESS", "RESOLVED", "CLOSED"],
@@ -51,9 +69,12 @@ export function InboxPage() {
   const [operators, setOperators] = useState<InboxOperator[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [turns, setTurns] = useState<Awaited<ReturnType<typeof getTurns>>>([]);
+  const [outcome, setOutcome] = useState<ConversationOutcomeDraft>(EMPTY_OUTCOME);
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
   const [mutating, setMutating] = useState(false);
+  const [savingOutcome, setSavingOutcome] = useState(false);
+  const [outcomeSaved, setOutcomeSaved] = useState(false);
   const [error, setError] = useState("");
 
   const selected = useMemo(
@@ -90,12 +111,18 @@ export function InboxPage() {
   useEffect(() => {
     if (!selectedId) {
       setTurns([]);
+      setOutcome(EMPTY_OUTCOME);
       return;
     }
     let active = true;
     setDetailLoading(true);
-    getTurns(selectedId)
-      .then((next) => active && setTurns(next))
+    Promise.all([getTurns(selectedId), getOutcome(selectedId)])
+      .then(([nextTurns, nextOutcome]) => {
+        if (!active) return;
+        setTurns(nextTurns);
+        setOutcome(nextOutcome);
+        setOutcomeSaved(false);
+      })
       .catch(() => active && setError(t("inbox.turnsFailed")))
       .finally(() => active && setDetailLoading(false));
     return () => {
@@ -107,6 +134,29 @@ export function InboxPage() {
     setItems((current) =>
       current.map((item) => (item.sessionId === next.sessionId ? next : item)),
     );
+  };
+
+  const changeOutcome = <K extends keyof ConversationOutcomeDraft>(
+    field: K,
+    value: ConversationOutcomeDraft[K],
+  ) => {
+    setOutcome((current) => ({ ...current, [field]: value }));
+    setOutcomeSaved(false);
+  };
+
+  const persistOutcome = async () => {
+    if (!selected) return;
+    setSavingOutcome(true);
+    setError("");
+    try {
+      const saved = await saveOutcome(selected.sessionId, outcome);
+      setOutcome(saved);
+      setOutcomeSaved(true);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : t("inbox.outcome.saveFailed"));
+    } finally {
+      setSavingOutcome(false);
+    }
   };
 
   const mutate = async (operation: () => Promise<ConversationWorkItem>) => {
@@ -313,6 +363,74 @@ export function InboxPage() {
                     </button>
                   ))}
                 </div>
+              </section>
+
+              <section className="inbox-control-section inbox-outcome-form">
+                <div className="inbox-section-heading">
+                  <label>{t("inbox.outcome.title")}</label>
+                  <small>{t("inbox.outcome.hint")}</small>
+                </div>
+                <label>
+                  <span>{t("inbox.outcome.summary")}</span>
+                  <textarea
+                    rows={3}
+                    value={outcome.summary ?? ""}
+                    onChange={(event) => changeOutcome("summary", event.target.value || null)}
+                  />
+                </label>
+                <label>
+                  <span>{t("inbox.outcome.customerNeed")}</span>
+                  <textarea
+                    rows={3}
+                    value={outcome.customerNeed ?? ""}
+                    onChange={(event) => changeOutcome("customerNeed", event.target.value || null)}
+                  />
+                </label>
+                <div className="inbox-outcome-pair">
+                  <label>
+                    <span>{t("inbox.outcome.intent")}</span>
+                    <input value={outcome.intentLabel ?? ""} onChange={(event) => changeOutcome("intentLabel", event.target.value || null)} />
+                  </label>
+                  <label>
+                    <span>{t("inbox.outcome.sentiment")}</span>
+                    <select value={outcome.sentiment} onChange={(event) => changeOutcome("sentiment", event.target.value as CustomerSentiment)}>
+                      {SENTIMENTS.map((sentiment) => <option key={sentiment} value={sentiment}>{t(`inbox.outcome.sentimentValue.${sentiment}`)}</option>)}
+                    </select>
+                  </label>
+                </div>
+                <label>
+                  <span>{t("inbox.outcome.productInterest")}</span>
+                  <input value={outcome.productInterest ?? ""} onChange={(event) => changeOutcome("productInterest", event.target.value || null)} />
+                </label>
+                <div className="inbox-outcome-pair">
+                  <label>
+                    <span>{t("inbox.outcome.budget")}</span>
+                    <input value={outcome.budget ?? ""} onChange={(event) => changeOutcome("budget", event.target.value || null)} />
+                  </label>
+                  <label>
+                    <span>{t("inbox.outcome.timeline")}</span>
+                    <input value={outcome.purchaseTimeline ?? ""} onChange={(event) => changeOutcome("purchaseTimeline", event.target.value || null)} />
+                  </label>
+                </div>
+                <label>
+                  <span>{t("inbox.outcome.resolution")}</span>
+                  <input value={outcome.resolutionCode ?? ""} onChange={(event) => changeOutcome("resolutionCode", event.target.value || null)} />
+                </label>
+                <label>
+                  <span>{t("inbox.outcome.nextAction")}</span>
+                  <textarea rows={2} value={outcome.nextAction ?? ""} onChange={(event) => changeOutcome("nextAction", event.target.value || null)} />
+                </label>
+                <label>
+                  <span>{t("inbox.outcome.followUpAt")}</span>
+                  <input
+                    type="datetime-local"
+                    value={outcome.followUpAt ? outcome.followUpAt.slice(0, 16) : ""}
+                    onChange={(event) => changeOutcome("followUpAt", event.target.value ? new Date(event.target.value).toISOString() : null)}
+                  />
+                </label>
+                <button className="inbox-save-outcome" disabled={savingOutcome} onClick={() => void persistOutcome()}>
+                  {savingOutcome ? t("inbox.outcome.saving") : outcomeSaved ? `✓ ${t("inbox.outcome.saved")}` : t("inbox.outcome.save")}
+                </button>
               </section>
 
               <section className="inbox-control-section inbox-facts">

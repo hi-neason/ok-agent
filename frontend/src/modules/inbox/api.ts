@@ -2,6 +2,8 @@ import type { DialogueTurn } from "../observe/types";
 import type {
   ConversationWorkItem,
   ConversationWorkItemPage,
+  ConversationOutcome,
+  ConversationOutcomeDraft,
   InboxOperator,
   WorkPriority,
   WorkStatus,
@@ -32,6 +34,25 @@ export async function listOperators(): Promise<InboxOperator[]> {
 export async function getTurns(sessionId: string): Promise<DialogueTurn[]> {
   return jsonOrThrow(
     await fetch(`/api/v1/observe/sessions/${encodeURIComponent(sessionId)}/turns`),
+  );
+}
+
+export async function getOutcome(sessionId: string): Promise<ConversationOutcome> {
+  return jsonOrThrow(
+    await fetch(`/api/v1/inbox/sessions/${encodeURIComponent(sessionId)}/outcome`),
+  );
+}
+
+export async function saveOutcome(
+  sessionId: string,
+  draft: ConversationOutcomeDraft,
+): Promise<ConversationOutcome> {
+  return jsonOrThrow(
+    await fetch(`/api/v1/inbox/sessions/${encodeURIComponent(sessionId)}/outcome`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(draft),
+    }),
   );
 }
 

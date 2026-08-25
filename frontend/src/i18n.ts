@@ -232,6 +232,13 @@ const resources = {
         priorityValue: { LOW: "低", NORMAL: "普通", HIGH: "高", URGENT: "紧急" },
         action: { WAITING_HUMAN: "转回人工队列", IN_PROGRESS: "开始 / 恢复处理", WAITING_CUSTOMER: "等待客户回复", RESOLVED: "标记为已解决", CLOSED: "关闭会话" },
         role: { user: "客户", assistant: "智能体", operator: "客服", error: "系统错误" },
+        outcome: {
+          title: "结构化会话结果", hint: "沉淀销售线索、服务结论与后续动作。",
+          summary: "会话摘要", customerNeed: "客户需求", intent: "意向标签", sentiment: "客户情绪",
+          productInterest: "关注产品 / 方案", budget: "预算", timeline: "购买时间", resolution: "解决结果",
+          nextAction: "后续动作", followUpAt: "跟进时间", save: "保存会话结果", saving: "保存中…", saved: "已保存", saveFailed: "会话结果保存失败",
+          sentimentValue: { UNKNOWN: "未知", POSITIVE: "积极", NEUTRAL: "中性", NEGATIVE: "消极", MIXED: "复杂" },
+        },
       },
       intents: {
         kicker: "业务管理 / 意图树",
@@ -1270,6 +1277,13 @@ const resources = {
         priorityValue: { LOW: "Low", NORMAL: "Normal", HIGH: "High", URGENT: "Urgent" },
         action: { WAITING_HUMAN: "Return to human queue", IN_PROGRESS: "Start / resume handling", WAITING_CUSTOMER: "Wait for customer", RESOLVED: "Mark resolved", CLOSED: "Close conversation" },
         role: { user: "Customer", assistant: "Agent", operator: "Operator", error: "System error" },
+        outcome: {
+          title: "Structured outcome", hint: "Capture the sales signal, service result, and follow-up action.",
+          summary: "Conversation summary", customerNeed: "Customer need", intent: "Intent label", sentiment: "Sentiment",
+          productInterest: "Product / solution interest", budget: "Budget", timeline: "Purchase timeline", resolution: "Resolution code",
+          nextAction: "Follow-up action", followUpAt: "Follow-up time", save: "Save outcome", saving: "Saving…", saved: "Saved", saveFailed: "Failed to save the conversation outcome",
+          sentimentValue: { UNKNOWN: "Unknown", POSITIVE: "Positive", NEUTRAL: "Neutral", NEGATIVE: "Negative", MIXED: "Mixed" },
+        },
       },
       intents: {
         kicker: "BUSINESS / INTENT TREE",

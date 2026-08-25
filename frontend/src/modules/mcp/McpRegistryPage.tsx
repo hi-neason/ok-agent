@@ -387,7 +387,9 @@ export function McpRegistryPage() {
               <header>
                 <div>
                   <p className="kicker">
-                    MCP INSPECTOR / {editing === "new" ? "REGISTER" : "EDIT"}
+                    {t("kickers.mcpInspector", {
+                      mode: t(editing === "new" ? "common.register" : "common.edit"),
+                    })}
                   </p>
                   <h2>
                     {editing === "new" ? t("mcp.register") : editing.name}
@@ -666,7 +668,7 @@ export function McpRegistryPage() {
                     <div className="mcp-json-config">
                       <div className="mcp-json-head">
                         <div>
-                          <p className="kicker">SINGLE MCP SERVER / JSON</p>
+                          <p className="kicker">{t("kickers.mcpJsonEditor")}</p>
                           <b>{t("mcp.jsonEditorTitle")}</b>
                           <small>{t("mcp.jsonEditorHint")}</small>
                         </div>
@@ -726,7 +728,7 @@ export function McpRegistryPage() {
                     {selectedTool ? (
                       <>
                         <div>
-                          <p className="kicker">TOOL SCHEMA</p>
+                          <p className="kicker">{t("kickers.toolSchema")}</p>
                           <h3>{selectedTool.name}</h3>
                           <p>{selectedTool.description}</p>
                         </div>

@@ -90,7 +90,9 @@ export function UserDetailPage({ id, onBack }: { id: string; onBack: () => void 
         <section className="form-surface ud-card">
           <div className="form-title">
             <div>
-              <p className="kicker">PROFILE / {t("users.detail.profile")}</p>
+              <p className="kicker">
+                {t("kickers.profileSection", { section: t("users.detail.profile") })}
+              </p>
               <h2>{u.displayName}</h2>
             </div>
             <span className={`um-source ${sourceClass}`}>{sourceLabel}</span>
@@ -119,7 +121,9 @@ export function UserDetailPage({ id, onBack }: { id: string; onBack: () => void 
         <section className="form-surface ud-card">
           <div className="form-title">
             <div>
-              <p className="kicker">ACTIVITY / {t("users.detail.activity")}</p>
+              <p className="kicker">
+                {t("kickers.activitySection", { section: t("users.detail.activity") })}
+              </p>
               <h2>{t("users.detail.lifecycle")}</h2>
             </div>
           </div>
@@ -147,7 +151,9 @@ export function UserDetailPage({ id, onBack }: { id: string; onBack: () => void 
       <section className="form-surface ud-card ud-channels">
         <div className="form-title">
           <div>
-            <p className="kicker">CHANNELS / {t("users.detail.channels")}</p>
+            <p className="kicker">
+              {t("kickers.channelsSection", { section: t("users.detail.channels") })}
+            </p>
             <h2>{t("users.detail.boundChannels", { count: detail.channels.length })}</h2>
           </div>
         </div>

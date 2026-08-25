@@ -256,7 +256,9 @@ export function SourcesTab() {
               <header>
                 <div>
                   <p className="kicker">
-                    PRODUCT SOURCE / {editing === "new" ? "REGISTER" : "EDIT"}
+                    {t("kickers.productSourceEditor", {
+                      mode: t(editing === "new" ? "common.register" : "common.edit"),
+                    })}
                   </p>
                   <h2>
                     {editing === "new" ? t("product.sources.add") : (editing as ProductSource).name}

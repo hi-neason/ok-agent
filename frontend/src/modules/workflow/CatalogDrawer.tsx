@@ -87,7 +87,9 @@ export function CatalogDrawer({
       >
         <header>
           <div>
-            <p className="kicker">WORKFLOW CATALOG / {source.sourceKey}</p>
+            <p className="kicker">
+              {t("kickers.workflowCatalog", { key: source.sourceKey })}
+            </p>
             <h2>{t("workflow.catalogTitle", { name: source.name })}</h2>
             <small>{t("workflow.catalogDescription")}</small>
           </div>

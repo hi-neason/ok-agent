@@ -366,7 +366,7 @@ export function SkillRegistryPage() {
             >
               <div className="form-title">
                 <div>
-                  <p className="kicker">SKILL PACKAGE / IMPORT</p>
+                  <p className="kicker">{t("kickers.skillImport")}</p>
                   <h2>{t("skills.importTitle")}</h2>
                 </div>
                 <button
@@ -454,7 +454,7 @@ export function SkillRegistryPage() {
             >
               <header>
                 <div>
-                  <p className="kicker">SKILL PACKAGE / EXPLORER</p>
+                  <p className="kicker">{t("kickers.skillExplorer")}</p>
                   <h2>{viewing.name}</h2>
                   <span className="skill-domain">
                     #{viewing.businessDomain}
@@ -563,7 +563,7 @@ export function SkillRegistryPage() {
             >
               <div className="form-title">
                 <div>
-                  <p className="kicker">SKILL METADATA / EDIT</p>
+                  <p className="kicker">{t("kickers.skillMetadataEdit")}</p>
                   <h2>{editing.name}</h2>
                 </div>
                 <button

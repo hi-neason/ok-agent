@@ -248,7 +248,9 @@ export function ProductsTab() {
               <header>
                 <div>
                   <p className="kicker">
-                    PRODUCT / {editing === "new" ? "CREATE" : "EDIT"}
+                    {t("kickers.productEditor", {
+                      mode: t(editing === "new" ? "common.create" : "common.edit"),
+                    })}
                   </p>
                   <h2>{editing === "new" ? t("product.products.add") : (editing as Product).name}</h2>
                 </div>

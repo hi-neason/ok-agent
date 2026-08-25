@@ -243,7 +243,9 @@ export function SolutionsTab() {
               <header>
                 <div>
                   <p className="kicker">
-                    SOLUTION / {editing === "new" ? "CREATE" : "EDIT"}
+                    {t("kickers.solutionEditor", {
+                      mode: t(editing === "new" ? "common.create" : "common.edit"),
+                    })}
                   </p>
                   <h2>{editing === "new" ? t("product.solutions.add") : (editing as Solution).name}</h2>
                 </div>

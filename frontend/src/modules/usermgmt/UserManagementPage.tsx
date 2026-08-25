@@ -481,7 +481,11 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
             >
               <div className="form-title">
                 <div>
-                  <p className="kicker">USER GROUP / {groupEditing.id ? "EDIT" : "CREATE"}</p>
+                  <p className="kicker">
+                    {t("kickers.userGroupEditor", {
+                      mode: t(groupEditing.id ? "common.edit" : "common.create"),
+                    })}
+                  </p>
                   <h2>{groupEditing.id ? groupEditing.name : t("users.newGroup")}</h2>
                 </div>
                 <button className="link-button" onClick={() => setGroupEditing(null)}>
@@ -556,7 +560,11 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
             >
               <div className="form-title">
                 <div>
-                  <p className="kicker">USER / {userEditing.id ? "EDIT" : "CREATE"}</p>
+                  <p className="kicker">
+                    {t("kickers.userEditor", {
+                      mode: t(userEditing.id ? "common.edit" : "common.create"),
+                    })}
+                  </p>
                   <h2>{userEditing.id ? userEditing.displayName : t("users.newUser")}</h2>
                 </div>
                 <button className="link-button" onClick={() => setUserEditing(null)}>
@@ -659,7 +667,7 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
             >
               <div className="form-title">
                 <div>
-                  <p className="kicker">USER CHANNELS</p>
+                  <p className="kicker">{t("kickers.userChannels")}</p>
                   <h2>{t("users.channelsTitle", { name: channelDrawer.displayName })}</h2>
                 </div>
                 <button className="link-button" onClick={() => setChannelDrawer(null)}>
@@ -713,7 +721,7 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
             >
               <div className="form-title">
                 <div>
-                  <p className="kicker">MERGE USER</p>
+                  <p className="kicker">{t("kickers.mergeUser")}</p>
                   <h2>{t("users.mergeInto", { name: mergeTarget.displayName })}</h2>
                 </div>
                 <button className="link-button" onClick={() => setMergeTarget(null)}>

@@ -82,7 +82,9 @@ export function CatalogDrawer({
       >
         <header>
           <div>
-            <p className="kicker">KNOWLEDGE CATALOG / {source.sourceKey}</p>
+            <p className="kicker">
+              {t("kickers.knowledgeCatalog", { key: source.sourceKey })}
+            </p>
             <h2>{t("knowledge.catalogTitle", { name: source.name })}</h2>
             <small>{t("knowledge.catalogDescription")}</small>
           </div>

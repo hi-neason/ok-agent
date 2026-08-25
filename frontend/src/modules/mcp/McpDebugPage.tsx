@@ -136,7 +136,7 @@ export function McpDebugPage({ serverId }: { serverId: string }) {
           </button>
           <div>
             <div className="mcp-debug-eyebrow">
-              <p className="kicker">MCP DEBUG WORKBENCH</p>
+              <p className="kicker">{t("kickers.mcpDebug")}</p>
               <span>{server?.transport}</span>
             </div>
             <div className="mcp-debug-name-line">
@@ -195,8 +195,8 @@ export function McpDebugPage({ serverId }: { serverId: string }) {
             <>
               <div className="debug-panel-title">
                 <div>
-                  <p className="kicker">TOOL DEFINITION</p>
-                  <span>JSON SCHEMA</span>
+                  <p className="kicker">{t("kickers.toolDefinition")}</p>
+                  <span>{t("kickers.jsonSchema")}</span>
                 </div>
                 <h2>{selected.name}</h2>
                 <p>{selected.description || t("mcp.noDescription")}</p>
@@ -211,7 +211,7 @@ export function McpDebugPage({ serverId }: { serverId: string }) {
         <aside className="mcp-debug-runner">
           <div className="debug-panel-title">
             <div>
-              <p className="kicker">REQUEST LAB</p>
+              <p className="kicker">{t("kickers.requestLab")}</p>
               <span>JSON</span>
             </div>
             <h2>{t("mcp.arguments")}</h2>

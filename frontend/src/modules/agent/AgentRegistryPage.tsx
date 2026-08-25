@@ -18,6 +18,7 @@ function Modal({
   onClose: () => void;
   children: React.ReactNode;
 }) {
+  const { t } = useTranslation();
   return createPortal(
     <div className="model-modal-mask" onMouseDown={onClose}>
       <div
@@ -28,7 +29,7 @@ function Modal({
       >
         <div className="form-title">
           <div>
-            <p className="kicker">AGENT</p>
+            <p className="kicker">{t("kickers.agent")}</p>
             <h2>{title}</h2>
           </div>
           <button className="link-button" onClick={onClose}>
@@ -129,7 +130,7 @@ export function AgentRegistryPage({
       <Dialog />
       <header className="page-header">
         <div>
-          <p className="kicker">HARNESS AGENT / REGISTRY</p>
+          <p className="kicker">{t("kickers.agentRegistry")}</p>
           <h1>{t("agents.title")}</h1>
           <p className="page-description">{t("agents.description")}</p>
         </div>

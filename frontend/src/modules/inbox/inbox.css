@@ -256,6 +256,21 @@
   color: #fff; cursor: pointer; font-size: 10px; box-shadow: 0 5px 14px rgba(27, 118, 233, 0.18);
 }
 .inbox-save-outcome:disabled { cursor: wait; opacity: 0.6; }
+.inbox-conversion-actions { display: grid; gap: 6px; }
+.inbox-conversion-actions button {
+  display: flex; align-items: center; gap: 9px; padding: 9px; border: 1px solid #cfe2f5; border-radius: 7px;
+  background: #fff; color: #315d88; text-align: left; cursor: pointer;
+}
+.inbox-conversion-actions button > i {
+  display: grid; width: 25px; height: 25px; place-items: center; border-radius: 6px;
+  background: #eaf4ff; color: #1b76e9; font-style: normal;
+}
+.inbox-conversion-actions button span { display: grid; gap: 2px; }
+.inbox-conversion-actions button b { font-size: 10px; }
+.inbox-conversion-actions button small { color: #91a7bc; font: 8px "DM Mono", monospace; }
+.inbox-conversion-actions button.created { border-color: #bfe3d3; background: #f4fbf8; }
+.inbox-conversion-actions button.created > i { background: #dff5ea; color: #18845c; }
+.inbox-conversion-actions button:disabled { cursor: default; opacity: 0.75; }
 .inbox-claim-button {
   padding: 8px; border: 1px solid #1b76e9; border-radius: 6px; background: #1b76e9; color: #fff; cursor: pointer; font-size: 10px;
 }

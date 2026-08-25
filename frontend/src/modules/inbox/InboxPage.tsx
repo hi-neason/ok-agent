@@ -7,15 +7,19 @@ import {
   changeWorkPriority,
   changeWorkStatus,
   claimWorkItem,
+  createCustomerCase,
   getOutcome,
   getTurns,
   listOperators,
+  listCustomerCases,
   listWorkItems,
   saveOutcome,
 } from "./api";
 import type {
   ConversationOutcomeDraft,
   ConversationWorkItem,
+  CustomerCase,
+  CustomerCaseType,
   CustomerSentiment,
   InboxOperator,
   WorkPriority,
@@ -70,11 +74,13 @@ export function InboxPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [turns, setTurns] = useState<Awaited<ReturnType<typeof getTurns>>>([]);
   const [outcome, setOutcome] = useState<ConversationOutcomeDraft>(EMPTY_OUTCOME);
+  const [customerCases, setCustomerCases] = useState<CustomerCase[]>([]);
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
   const [mutating, setMutating] = useState(false);
   const [savingOutcome, setSavingOutcome] = useState(false);
   const [outcomeSaved, setOutcomeSaved] = useState(false);
+  const [converting, setConverting] = useState<CustomerCaseType | null>(null);
   const [error, setError] = useState("");
 
   const selected = useMemo(
@@ -112,15 +118,17 @@ export function InboxPage() {
     if (!selectedId) {
       setTurns([]);
       setOutcome(EMPTY_OUTCOME);
+      setCustomerCases([]);
       return;
     }
     let active = true;
     setDetailLoading(true);
-    Promise.all([getTurns(selectedId), getOutcome(selectedId)])
-      .then(([nextTurns, nextOutcome]) => {
+    Promise.all([getTurns(selectedId), getOutcome(selectedId), listCustomerCases(selectedId)])
+      .then(([nextTurns, nextOutcome, nextCases]) => {
         if (!active) return;
         setTurns(nextTurns);
         setOutcome(nextOutcome);
+        setCustomerCases(nextCases);
         setOutcomeSaved(false);
       })
       .catch(() => active && setError(t("inbox.turnsFailed")))
@@ -134,6 +142,23 @@ export function InboxPage() {
     setItems((current) =>
       current.map((item) => (item.sessionId === next.sessionId ? next : item)),
     );
+  };
+
+  const convertConversation = async (type: CustomerCaseType) => {
+    if (!selected) return;
+    setConverting(type);
+    setError("");
+    try {
+      const created = await createCustomerCase(selected.sessionId, type);
+      setCustomerCases((current) => [
+        ...current.filter((item) => item.type !== created.type),
+        created,
+      ]);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : t("inbox.conversion.failed"));
+    } finally {
+      setConverting(null);
+    }
   };
 
   const changeOutcome = <K extends keyof ConversationOutcomeDraft>(
@@ -431,6 +456,32 @@ export function InboxPage() {
                 <button className="inbox-save-outcome" disabled={savingOutcome} onClick={() => void persistOutcome()}>
                   {savingOutcome ? t("inbox.outcome.saving") : outcomeSaved ? `✓ ${t("inbox.outcome.saved")}` : t("inbox.outcome.save")}
                 </button>
+              </section>
+
+              <section className="inbox-control-section inbox-conversion">
+                <div className="inbox-section-heading">
+                  <label>{t("inbox.conversion.title")}</label>
+                  <small>{t("inbox.conversion.hint")}</small>
+                </div>
+                <div className="inbox-conversion-actions">
+                  {(["LEAD", "TICKET"] as CustomerCaseType[]).map((type) => {
+                    const existing = customerCases.find((item) => item.type === type);
+                    return (
+                      <button
+                        key={type}
+                        className={existing ? "created" : ""}
+                        disabled={Boolean(existing) || converting !== null}
+                        onClick={() => void convertConversation(type)}
+                      >
+                        <i>{type === "LEAD" ? "↗" : "◇"}</i>
+                        <span>
+                          <b>{existing ? t(`inbox.conversion.created.${type}`) : t(`inbox.conversion.create.${type}`)}</b>
+                          <small>{existing ? `${existing.status} · ${existing.id.slice(0, 8)}` : t(`inbox.conversion.description.${type}`)}</small>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               </section>
 
               <section className="inbox-control-section inbox-facts">

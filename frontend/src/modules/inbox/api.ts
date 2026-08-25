@@ -4,6 +4,8 @@ import type {
   ConversationWorkItemPage,
   ConversationOutcome,
   ConversationOutcomeDraft,
+  CustomerCase,
+  CustomerCaseType,
   InboxOperator,
   WorkPriority,
   WorkStatus,
@@ -52,6 +54,25 @@ export async function saveOutcome(
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(draft),
+    }),
+  );
+}
+
+export async function listCustomerCases(sessionId: string): Promise<CustomerCase[]> {
+  return jsonOrThrow(
+    await fetch(`/api/v1/inbox/sessions/${encodeURIComponent(sessionId)}/cases`),
+  );
+}
+
+export async function createCustomerCase(
+  sessionId: string,
+  type: CustomerCaseType,
+): Promise<CustomerCase> {
+  return jsonOrThrow(
+    await fetch(`/api/v1/inbox/sessions/${encodeURIComponent(sessionId)}/cases`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type }),
     }),
   );
 }

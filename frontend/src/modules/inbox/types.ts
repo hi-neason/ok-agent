@@ -70,6 +70,21 @@ export type ConversationOutcomeDraft = Omit<
   "sessionId" | "updatedBy" | "updatedAt" | "version"
 >;
 
+export type CustomerCaseType = "LEAD" | "TICKET";
+
+export type CustomerCase = {
+  id: string;
+  type: CustomerCaseType;
+  status: "NEW" | "OPEN";
+  title: string;
+  customerUserId: string | null;
+  sourceSessionId: string;
+  description: string | null;
+  priority: WorkPriority;
+  ownerAccountId: string | null;
+  createdAt: string;
+};
+
 export type InboxDetail = {
   item: ConversationWorkItem;
   turns: DialogueTurn[];

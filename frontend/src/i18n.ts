@@ -239,6 +239,12 @@ const resources = {
           nextAction: "后续动作", followUpAt: "跟进时间", save: "保存会话结果", saving: "保存中…", saved: "已保存", saveFailed: "会话结果保存失败",
           sentimentValue: { UNKNOWN: "未知", POSITIVE: "积极", NEUTRAL: "中性", NEGATIVE: "消极", MIXED: "复杂" },
         },
+        conversion: {
+          title: "业务转化", hint: "基于会话结果生成可追踪的业务记录。", failed: "业务记录创建失败",
+          create: { LEAD: "转为销售线索", TICKET: "转为客服工单" },
+          created: { LEAD: "销售线索已创建", TICKET: "客服工单已创建" },
+          description: { LEAD: "保留客户意向和产品需求", TICKET: "保留问题摘要和处理上下文" },
+        },
       },
       intents: {
         kicker: "业务管理 / 意图树",
@@ -1283,6 +1289,12 @@ const resources = {
           productInterest: "Product / solution interest", budget: "Budget", timeline: "Purchase timeline", resolution: "Resolution code",
           nextAction: "Follow-up action", followUpAt: "Follow-up time", save: "Save outcome", saving: "Saving…", saved: "Saved", saveFailed: "Failed to save the conversation outcome",
           sentimentValue: { UNKNOWN: "Unknown", POSITIVE: "Positive", NEUTRAL: "Neutral", NEGATIVE: "Negative", MIXED: "Mixed" },
+        },
+        conversion: {
+          title: "Business conversion", hint: "Create a traceable business record from this conversation.", failed: "Failed to create the business record",
+          create: { LEAD: "Convert to sales lead", TICKET: "Convert to support ticket" },
+          created: { LEAD: "Sales lead created", TICKET: "Support ticket created" },
+          description: { LEAD: "Keep customer intent and product needs", TICKET: "Keep the issue summary and handling context" },
         },
       },
       intents: {

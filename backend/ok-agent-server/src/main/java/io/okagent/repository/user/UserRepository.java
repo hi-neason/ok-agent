@@ -27,5 +27,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     Page<User> findBySourceAndPasswordHashIsNotNull(UserSource source, Pageable pageable);
 
+    List<User> findBySourceAndPasswordHashIsNotNullAndEnabledTrueOrderByDisplayNameAsc(UserSource source);
+
     long countBySourceAndRoleAndEnabledTrue(UserSource source, AccountRole role);
 }

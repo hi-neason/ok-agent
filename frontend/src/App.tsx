@@ -57,6 +57,9 @@ const ReleasePage = lazy(() =>
 const CustomerChatPage = lazy(() =>
   import("./modules/chat/CustomerChatPage").then((module) => ({ default: module.CustomerChatPage })),
 );
+const InboxPage = lazy(() =>
+  import("./modules/inbox/InboxPage").then((module) => ({ default: module.InboxPage })),
+);
 const AccountManagementPage = lazy(() =>
   import("./modules/auth/AccountManagementPage").then((module) => ({ default: module.AccountManagementPage })),
 );
@@ -78,7 +81,8 @@ type Page =
   | "usermgmt"
   | "intents"
   | "channels"
-  | "custchat";
+  | "custchat"
+  | "inbox";
 
 type NavItem = {
   id: Page;
@@ -97,6 +101,7 @@ type NavigationGroup = {
 const navItems: NavItem[] = [
   { id: "agents", icon: "◈", kicker: "AGENT CONFIG" },
   { id: "custchat", icon: "▣", kicker: "CUSTOMER CHAT" },
+  { id: "inbox", icon: "▤", kicker: "SERVICE INBOX" },
   { id: "release", icon: "↗", kicker: "RELEASE" },
   { id: "observe", icon: "◌", kicker: "OBSERVE" },
   { id: "models", icon: "◌", kicker: "MODEL" },
@@ -121,7 +126,7 @@ const navItemById = Object.fromEntries(
 const navigationGroups: NavigationGroup[] = [
   {
     key: "agent",
-    items: (["agents", "release", "observe", "custchat"] as Page[]).map((id) => navItemById[id]),
+    items: (["agents", "release", "inbox", "observe", "custchat"] as Page[]).map((id) => navItemById[id]),
   },
   {
     key: "component",
@@ -155,6 +160,7 @@ const pagePaths: Record<Page, string> = {
   channels: "/channels",
   intents: "/intents",
   custchat: "/custchat",
+  inbox: "/inbox",
   insight: "/insight",
   sysconfig: "/sysconfig",
   usermgmt: "/usermgmt",
@@ -304,6 +310,7 @@ persona: <PersonaPage />,
 channels: <ChannelPage />,
 intents: <IntentPage />,
     custchat: <CustomerChatPage />,
+    inbox: <InboxPage />,
     insight: <WipPlaceholder name={moduleName(navItemById.insight)} kicker="INSIGHT" />,
     sysconfig: <WipPlaceholder name={moduleName(navItemById.sysconfig)} kicker="SETTINGS" />,
     usermgmt: userDetailId ? (

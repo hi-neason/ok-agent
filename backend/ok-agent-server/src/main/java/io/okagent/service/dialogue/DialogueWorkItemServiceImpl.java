@@ -5,12 +5,14 @@ import io.okagent.domain.dialogue.DialogueSession;
 import io.okagent.domain.dialogue.DialogueWorkStatus;
 import io.okagent.domain.user.User;
 import io.okagent.domain.user.UserSource;
+import io.okagent.domain.user.AccountRole;
 import io.okagent.repository.agent.AgentAssetRepository;
 import io.okagent.repository.dialogue.DialogueSessionRepository;
 import io.okagent.repository.dialogue.DialogueTurnRepository;
 import io.okagent.repository.user.UserRepository;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -37,6 +39,17 @@ public class DialogueWorkItemServiceImpl implements DialogueWorkItemService {
         this.turns = turns;
         this.agents = agents;
         this.users = users;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<DialogueOperatorView> listOperators() {
+        return users.findBySourceAndPasswordHashIsNotNullAndEnabledTrueOrderByDisplayNameAsc(UserSource.CONSOLE)
+                .stream()
+                .filter(user -> user.getRole() != AccountRole.VIEWER)
+                .map(user -> new DialogueOperatorView(
+                        user.getId(), user.getUsername(), user.getDisplayName(), user.getRole()))
+                .toList();
     }
 
     @Override
@@ -134,8 +147,12 @@ public class DialogueWorkItemServiceImpl implements DialogueWorkItemService {
     private User requireAssignableAccount(UUID accountId) {
         User account = users.findById(accountId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Assignee account not found"));
-        if (account.getSource() != UserSource.CONSOLE || !account.hasCredentials() || !account.isEnabled()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Assignee must be an enabled console account");
+        if (account.getSource() != UserSource.CONSOLE
+                || !account.hasCredentials()
+                || !account.isEnabled()
+                || account.getRole() == AccountRole.VIEWER) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Assignee must be an enabled admin or editor account");
         }
         return account;
     }

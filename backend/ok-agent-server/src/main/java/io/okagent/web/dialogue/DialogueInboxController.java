@@ -3,6 +3,7 @@ package io.okagent.web.dialogue;
 import io.okagent.domain.dialogue.DialoguePriority;
 import io.okagent.domain.dialogue.DialogueWorkStatus;
 import io.okagent.service.dialogue.DialogueWorkItemQuery;
+import io.okagent.service.dialogue.DialogueOperatorView;
 import io.okagent.service.dialogue.DialogueWorkItemService;
 import io.okagent.service.dialogue.DialogueWorkItemView;
 import io.okagent.web.observe.PageResponse;
@@ -10,6 +11,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import java.util.UUID;
+import java.util.List;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.validation.annotation.Validated;
@@ -30,6 +32,12 @@ public class DialogueInboxController {
 
     public DialogueInboxController(DialogueWorkItemService workItems) {
         this.workItems = workItems;
+    }
+
+    /** Lists enabled console operators available for inbox assignment. */
+    @GetMapping("/operators")
+    public List<DialogueOperatorView> operators() {
+        return workItems.listOperators();
     }
 
     /** Lists actionable conversations using queue, owner, customer, and agent filters. */

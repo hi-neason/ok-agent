@@ -3,10 +3,14 @@ package io.okagent.service.dialogue;
 import io.okagent.domain.dialogue.DialoguePriority;
 import io.okagent.domain.dialogue.DialogueWorkStatus;
 import java.util.UUID;
+import java.util.List;
 import org.springframework.data.domain.Page;
 
 /** Application service for operating customer conversations as assignable inbox work items. */
 public interface DialogueWorkItemService {
+
+    /** Lists enabled console operators available for conversation assignment. */
+    List<DialogueOperatorView> listOperators();
 
     /** Lists inbox work items using operational filters and queue ordering. */
     Page<DialogueWorkItemView> list(DialogueWorkItemQuery query, int page, int size);

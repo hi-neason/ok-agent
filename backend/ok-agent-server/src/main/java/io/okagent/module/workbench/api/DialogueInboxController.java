@@ -6,7 +6,7 @@ import io.okagent.module.workbench.application.DialogueWorkItemQuery;
 import io.okagent.module.workbench.application.DialogueOperatorView;
 import io.okagent.module.workbench.application.DialogueWorkItemService;
 import io.okagent.module.workbench.application.DialogueWorkItemView;
-import io.okagent.web.observe.PageResponse;
+import io.okagent.shared.api.PageResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;

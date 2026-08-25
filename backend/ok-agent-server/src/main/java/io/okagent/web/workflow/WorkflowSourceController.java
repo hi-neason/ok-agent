@@ -1,7 +1,7 @@
 package io.okagent.web.workflow;
 
 import io.okagent.service.workflow.WorkflowSourceService;
-import io.okagent.web.observe.PageResponse;
+import io.okagent.shared.api.PageResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;

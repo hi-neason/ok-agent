@@ -1,7 +1,7 @@
 package io.okagent.web.model;
 
 import io.okagent.service.model.ModelAssetService;
-import io.okagent.web.observe.PageResponse;
+import io.okagent.shared.api.PageResponse;
 import jakarta.validation.Valid;
 import java.util.*;
 import org.springframework.http.HttpStatus;

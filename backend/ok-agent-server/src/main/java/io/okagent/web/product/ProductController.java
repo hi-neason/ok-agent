@@ -2,7 +2,7 @@ package io.okagent.web.product;
 
 import io.okagent.domain.product.ProductStatus;
 import io.okagent.service.product.ProductService;
-import io.okagent.web.observe.PageResponse;
+import io.okagent.shared.api.PageResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;

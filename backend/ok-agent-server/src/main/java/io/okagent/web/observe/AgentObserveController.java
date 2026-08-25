@@ -4,6 +4,7 @@ import io.okagent.domain.dialogue.DialogueTurn;
 import io.okagent.service.dialogue.DialogueQuery;
 import io.okagent.service.dialogue.DialogueService;
 import io.okagent.service.dialogue.DialogueSummary;
+import io.okagent.shared.api.PageResponse;
 import io.okagent.service.observe.TraceService;
 import java.util.List;
 import java.util.UUID;

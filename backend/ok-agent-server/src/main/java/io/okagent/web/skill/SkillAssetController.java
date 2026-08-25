@@ -2,7 +2,7 @@ package io.okagent.web.skill;
 
 import io.okagent.service.skill.SkillArchiveValidationException;
 import io.okagent.service.skill.SkillAssetService;
-import io.okagent.web.observe.PageResponse;
+import io.okagent.shared.api.PageResponse;
 import jakarta.validation.Valid;
 import java.io.IOException;
 import java.util.List;

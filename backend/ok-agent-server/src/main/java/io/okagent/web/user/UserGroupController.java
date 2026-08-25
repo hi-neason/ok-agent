@@ -1,7 +1,7 @@
 package io.okagent.web.user;
 
 import io.okagent.service.user.UserGroupService;
-import io.okagent.web.observe.PageResponse;
+import io.okagent.shared.api.PageResponse;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;

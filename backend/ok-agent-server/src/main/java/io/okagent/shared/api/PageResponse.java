@@ -1,4 +1,4 @@
-package io.okagent.web.observe;
+package io.okagent.shared.api;
 
 import java.util.List;
 import org.springframework.data.domain.Page;

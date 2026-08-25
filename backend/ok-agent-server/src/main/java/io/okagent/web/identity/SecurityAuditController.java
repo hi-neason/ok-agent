@@ -1,7 +1,7 @@
 package io.okagent.web.identity;
 
 import io.okagent.service.identity.SecurityAuditService;
-import io.okagent.web.observe.PageResponse;
+import io.okagent.shared.api.PageResponse;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import org.springframework.validation.annotation.Validated;

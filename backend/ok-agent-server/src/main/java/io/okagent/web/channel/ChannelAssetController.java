@@ -5,7 +5,7 @@ import io.okagent.service.channel.WechatIlinkLoginService;
 import io.okagent.service.channel.runtime.FeishuAppRegistrationService;
 import io.okagent.service.channel.runtime.dingtalk.DingTalkRegistrationService;
 import io.okagent.service.channel.runtime.wechat.WechatLoginRegistrationService;
-import io.okagent.web.observe.PageResponse;
+import io.okagent.shared.api.PageResponse;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;

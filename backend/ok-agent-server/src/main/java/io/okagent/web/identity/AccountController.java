@@ -2,7 +2,7 @@ package io.okagent.web.identity;
 
 import io.okagent.service.identity.AccountService;
 import io.okagent.service.identity.AuthenticatedActor;
-import io.okagent.web.observe.PageResponse;
+import io.okagent.shared.api.PageResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;

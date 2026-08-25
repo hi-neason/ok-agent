@@ -3,7 +3,7 @@ package io.okagent.web.user;
 import io.okagent.repository.channel.ChannelUserIdentityRepository;
 import io.okagent.service.user.UserMergeService;
 import io.okagent.service.user.UserService;
-import io.okagent.web.observe.PageResponse;
+import io.okagent.shared.api.PageResponse;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;

@@ -186,7 +186,9 @@
 .inbox-conversation-panel {
   display: grid;
   min-width: 0;
+  min-height: 0;
   grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
   background: linear-gradient(rgba(255, 255, 255, 0.93), rgba(248, 252, 255, 0.93)),
     linear-gradient(90deg, rgba(51, 126, 200, 0.055) 1px, transparent 1px),
     linear-gradient(rgba(51, 126, 200, 0.055) 1px, transparent 1px);
@@ -207,13 +209,21 @@
 .inbox-conversation-head small { color: #91a8bf; font: 9px "DM Mono", monospace; }
 .inbox-status-badge { padding: 5px 8px; border-radius: 12px; background: #eef5fc; font-size: 9px; }
 
-.inbox-thread { padding: 22px; overflow-y: auto; }
+.inbox-thread {
+  min-height: 0;
+  padding: 22px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
 .inbox-message { display: grid; width: min(78%, 680px); margin: 0 0 18px; gap: 5px; }
 .inbox-message.user { margin-left: auto; }
 .inbox-message.error { color: #ad4b45; }
 .inbox-message-meta { display: flex; justify-content: space-between; color: #8ca4bb; font: 9px "DM Mono", monospace; }
 .inbox-message.user .inbox-message-meta { flex-direction: row-reverse; }
 .inbox-message-body {
+  min-width: 0;
   padding: 12px 14px;
   border: 1px solid #d7e7f6;
   border-radius: 4px 14px 14px 14px;
@@ -222,6 +232,7 @@
   color: #34587c;
   font-size: 12px;
   line-height: 1.7;
+  overflow-wrap: anywhere;
   white-space: pre-wrap;
 }
 .inbox-message.user .inbox-message-body {

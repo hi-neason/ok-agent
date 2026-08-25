@@ -6,6 +6,9 @@ import {
   observeTraceIdFromPath,
 } from "./modules/observe/routes";
 import { useAuth } from "./modules/auth";
+import { agentManagementPages } from "./modules/agent-management";
+import { customerChatPages } from "./modules/customer-chat";
+import { operatorWorkbenchPages } from "./modules/operator-workbench";
 import {
   areaForPage,
   groupsForArea,
@@ -20,60 +23,24 @@ import {
 import "./agent.css";
 import "./profile.css";
 
-const AgentRegistryPage = lazy(() =>
-  import("./modules/agent/AgentRegistryPage").then((module) => ({ default: module.AgentRegistryPage })),
-);
-const AgentConfigPage = lazy(() =>
-  import("./modules/agent/AgentConfigPage").then((module) => ({ default: module.AgentConfigPage })),
-);
-const ModelRegistryPage = lazy(() =>
-  import("./modules/model/ModelRegistryPage").then((module) => ({ default: module.ModelRegistryPage })),
-);
-const SkillRegistryPage = lazy(() =>
-  import("./modules/skill/SkillRegistryPage").then((module) => ({ default: module.SkillRegistryPage })),
-);
-const McpPage = lazy(() =>
-  import("./modules/mcp/McpPage").then((module) => ({ default: module.McpPage })),
-);
-const ObservePage = lazy(() =>
-  import("./modules/observe/ObservePage").then((module) => ({ default: module.ObservePage })),
-);
-const UserManagementPage = lazy(() =>
-  import("./modules/usermgmt/UserManagementPage").then((module) => ({ default: module.UserManagementPage })),
-);
-const UserDetailPage = lazy(() =>
-  import("./modules/usermgmt/UserDetailPage").then((module) => ({ default: module.UserDetailPage })),
-);
-const PersonaPage = lazy(() =>
-  import("./modules/persona/PersonaPage").then((module) => ({ default: module.PersonaPage })),
-);
-const WorkflowSourcesPage = lazy(() =>
-  import("./modules/workflow/WorkflowSourcesPage").then((module) => ({ default: module.WorkflowSourcesPage })),
-);
-const KnowledgeSourcesPage = lazy(() =>
-  import("./modules/knowledge/KnowledgeSourcesPage").then((module) => ({ default: module.KnowledgeSourcesPage })),
-);
-const ProductPage = lazy(() =>
-  import("./modules/product/ProductPage").then((module) => ({ default: module.ProductPage })),
-);
-const IntentPage = lazy(() =>
-  import("./modules/intent/IntentPage").then((module) => ({ default: module.IntentPage })),
-);
-const ChannelPage = lazy(() =>
-  import("./modules/channel/ChannelPage").then((module) => ({ default: module.ChannelPage })),
-);
-const ReleasePage = lazy(() =>
-  import("./modules/release/ReleasePage").then((module) => ({ default: module.ReleasePage })),
-);
-const CustomerChatPage = lazy(() =>
-  import("./modules/chat/CustomerChatPage").then((module) => ({ default: module.CustomerChatPage })),
-);
-const InboxPage = lazy(() =>
-  import("./modules/inbox/InboxPage").then((module) => ({ default: module.InboxPage })),
-);
-const AccountManagementPage = lazy(() =>
-  import("./modules/auth/AccountManagementPage").then((module) => ({ default: module.AccountManagementPage })),
-);
+const AgentRegistryPage = lazy(agentManagementPages.agents);
+const AgentConfigPage = lazy(agentManagementPages.agentConfig);
+const ModelRegistryPage = lazy(agentManagementPages.models);
+const SkillRegistryPage = lazy(agentManagementPages.skills);
+const McpPage = lazy(agentManagementPages.tools);
+const KnowledgeSourcesPage = lazy(agentManagementPages.knowledge);
+const ProductPage = lazy(agentManagementPages.products);
+const WorkflowSourcesPage = lazy(agentManagementPages.workflows);
+const ReleasePage = lazy(agentManagementPages.releases);
+const ObservePage = lazy(agentManagementPages.observability);
+const ChannelPage = lazy(agentManagementPages.channels);
+const IntentPage = lazy(agentManagementPages.intents);
+const AccountManagementPage = lazy(agentManagementPages.access);
+const InboxPage = lazy(operatorWorkbenchPages.inbox);
+const UserManagementPage = lazy(operatorWorkbenchPages.customers);
+const UserDetailPage = lazy(operatorWorkbenchPages.customerDetail);
+const PersonaPage = lazy(operatorWorkbenchPages.personas);
+const CustomerChatPage = lazy(customerChatPages.chat);
 
 export default function App() {
   const { t, i18n } = useTranslation();

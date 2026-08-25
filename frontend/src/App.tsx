@@ -211,7 +211,9 @@ export default function App() {
     ),
   }[page];
   return (
-    <main className={`console-shell ${navCollapsed ? "nav-collapsed" : ""}`}>
+    <main
+      className={`console-shell ${navCollapsed ? "nav-collapsed" : ""} ${page === "inbox" ? "inbox-shell" : ""}`}
+    >
       <aside className="main-nav">
         <div className="brand">
           <span className="brand-mark">ok</span>

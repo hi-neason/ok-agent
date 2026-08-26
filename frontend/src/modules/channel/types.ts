@@ -70,6 +70,7 @@ export type ChannelItem = {
   lastError: string | null;
   callbackUrl: string | null;
   userCount: number;
+  operatorNames: string[];
   createdAt: string;
   updatedAt: string;
 };

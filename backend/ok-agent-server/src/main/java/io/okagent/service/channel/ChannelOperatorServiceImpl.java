@@ -63,6 +63,26 @@ public class ChannelOperatorServiceImpl implements ChannelOperatorService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<String> assignedOperatorNames(UUID channelId) {
+        List<UUID> accountIds = assignments.findByChannelIdOrderByCreatedAtAsc(channelId).stream()
+                .map(ChannelOperatorAssignment::getOperatorAccountId)
+                .toList();
+        if (accountIds.isEmpty()) {
+            return List.of();
+        }
+        java.util.Map<UUID, User> usersById = users.findAllById(accountIds).stream()
+                .collect(java.util.stream.Collectors.toMap(User::getId, user -> user));
+        return accountIds.stream()
+                .map(usersById::get)
+                .filter(java.util.Objects::nonNull)
+                .map(user -> user.getDisplayName() == null || user.getDisplayName().isBlank()
+                        ? user.getUsername()
+                        : user.getDisplayName())
+                .toList();
+    }
+
+    @Override
     @Transactional
     public List<ChannelOperatorResponse> replaceAssignments(
             UUID channelId, Set<UUID> operatorAccountIds, AuthenticatedActor actor) {

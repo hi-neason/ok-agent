@@ -1,5 +1,4 @@
-/* Compound selector (0,2,0) overrides the global .table-head/.table-row 6-column
-   grid (single-class, 0,1,0) so the 7-column channel layout actually applies. */
+/* Compound selector overrides the global table grid so the channel-specific columns apply. */
 .table-head.channel-table-row,
 .table-row.channel-table-row {
   display: grid;
@@ -8,6 +7,7 @@
     minmax(72px, 0.7fr)
     minmax(120px, 1.2fr)
     minmax(84px, 0.8fr)
+    minmax(130px, 1fr)
     minmax(104px, 1fr)
     72px
     minmax(180px, 1.2fr);
@@ -95,6 +95,19 @@
   white-space: nowrap;
   color: var(--color-text-danger, #a32d2d);
 }
+
+.channel-operator-summary { display: flex; align-items: center; gap: 5px; min-width: 0; }
+.channel-operator-summary b {
+  max-width: 86px;
+  padding: 3px 7px;
+  border-radius: 6px;
+  background: #eaf3ff;
+  color: #1769b0;
+  font-size: 11px;
+  font-weight: 600;
+}
+.channel-operator-summary em { color: #c17b19; font-size: 12px; font-style: normal; }
+.channel-operator-summary small { margin: 0; color: var(--color-text-tertiary); }
 
 .channel-empty {
   padding: 48px 16px;

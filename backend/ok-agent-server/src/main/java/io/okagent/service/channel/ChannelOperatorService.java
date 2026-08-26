@@ -14,6 +14,9 @@ public interface ChannelOperatorService {
     /** Lists eligible operators and their assignment state for one channel. */
     List<ChannelOperatorResponse> listOperators(UUID channelId);
 
+    /** Returns the display names of operators currently responsible for one channel. */
+    List<String> assignedOperatorNames(UUID channelId);
+
     /** Replaces every operator assignment for one channel and records the administrator action. */
     List<ChannelOperatorResponse> replaceAssignments(
             UUID channelId, Set<UUID> operatorAccountIds, AuthenticatedActor actor);

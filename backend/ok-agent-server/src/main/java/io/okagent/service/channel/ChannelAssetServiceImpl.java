@@ -47,6 +47,7 @@ public class ChannelAssetServiceImpl implements ChannelAssetService {
     private final ApiKeyCipher cipher;
     private final ApplicationEventPublisher events;
     private final ChannelUserService channelUsers;
+    private final ChannelOperatorService channelOperators;
     private final WechatLoginRegistrationService wechatRegistration;
     private final DingTalkRegistrationService dingtalkRegistration;
     private final String publicBaseUrl;
@@ -58,6 +59,7 @@ public class ChannelAssetServiceImpl implements ChannelAssetService {
             ApiKeyCipher cipher,
             ApplicationEventPublisher events,
             ChannelUserService channelUsers,
+            ChannelOperatorService channelOperators,
             WechatLoginRegistrationService wechatRegistration,
             DingTalkRegistrationService dingtalkRegistration,
             @Value("${ok-agent.channels.public-base-url:}") String publicBaseUrl) {
@@ -67,6 +69,7 @@ public class ChannelAssetServiceImpl implements ChannelAssetService {
         this.cipher = cipher;
         this.events = events;
         this.channelUsers = channelUsers;
+        this.channelOperators = channelOperators;
         this.wechatRegistration = wechatRegistration;
         this.dingtalkRegistration = dingtalkRegistration;
         this.publicBaseUrl = publicBaseUrl;
@@ -77,7 +80,11 @@ public class ChannelAssetServiceImpl implements ChannelAssetService {
     public Page<ChannelAssetResponse> list(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "updatedAt"));
         return repository.findAll(pageable)
-                .map(a -> ChannelAssetResponse.from(a, publicBaseUrl, channelUsers.countByChannel(a.getChannelKey())));
+                .map(a -> ChannelAssetResponse.from(
+                        a,
+                        publicBaseUrl,
+                        channelUsers.countByChannel(a.getChannelKey()),
+                        channelOperators.assignedOperatorNames(a.getId())));
     }
 
     @Override

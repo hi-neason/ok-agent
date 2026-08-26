@@ -8,6 +8,7 @@ import io.okagent.domain.channel.ChannelRuntimeStatus;
 import io.okagent.domain.channel.ChannelType;
 import java.time.Instant;
 import java.util.Map;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -29,6 +30,7 @@ public record ChannelAssetResponse(
         String lastError,
         String callbackUrl,
         long userCount,
+        List<String> operatorNames,
         Instant createdAt,
         Instant updatedAt) {
 
@@ -56,6 +58,11 @@ public record ChannelAssetResponse(
             boolean appSecretConfigured) {}
 
     public static ChannelAssetResponse from(ChannelAsset asset, String publicBaseUrl, long userCount) {
+        return from(asset, publicBaseUrl, userCount, List.of());
+    }
+
+    public static ChannelAssetResponse from(
+            ChannelAsset asset, String publicBaseUrl, long userCount, List<String> operatorNames) {
         Map<String, Object> config = readMap(asset.getConfigJson());
         Map<String, Object> secretFlags = readMap(asset.getSecretsConfiguredJson());
 
@@ -112,6 +119,7 @@ public record ChannelAssetResponse(
                 asset.getLastError(),
                 callbackUrl,
                 userCount,
+                List.copyOf(operatorNames),
                 asset.getCreatedAt(),
                 asset.getUpdatedAt());
     }

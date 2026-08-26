@@ -287,6 +287,7 @@ export function ChannelPage() {
               <span>{t("integrations.type")}</span>
               <span>{t("channels.boundAgent")}</span>
               <span>{t("channels.users")}</span>
+              <span>{t("channels.operators")}</span>
               <span>{t("channels.runtimeStatus")}</span>
               <span>{t("common.enabled")}</span>
               <span>{t("common.actions")}</span>
@@ -308,6 +309,16 @@ export function ChannelPage() {
                 <span>{typeLabel(item.type, t)}</span>
                 <span>{agentName(item.boundAgentId)}</span>
                 <span>{t("channels.userCount", { count: item.userCount ?? 0 })}</span>
+                <span className="channel-operator-summary">
+                  {(item.operatorNames ?? []).length === 0 ? (
+                    <em>{t("channels.unassigned")}</em>
+                  ) : (
+                    <>
+                      {(item.operatorNames ?? []).slice(0, 2).map((name) => <b key={name}>{name}</b>)}
+                      {(item.operatorNames ?? []).length > 2 && <small>+{item.operatorNames.length - 2}</small>}
+                    </>
+                  )}
+                </span>
                 <span>
                   <span className={`channel-status channel-status--${statusTone(item.runtimeStatus)}`}>
                     {runtimeLabel(item.runtimeStatus, t)}

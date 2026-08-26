@@ -45,10 +45,19 @@ public class AccountServiceImpl implements AccountService {
     @Transactional
     public AccountResponse create(AuthenticatedActor actor, AccountCreateRequest request) {
         String username = request.username().trim();
-        if (userRepository.existsByUsername(username)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "USERNAME_CONFLICT");
-        }
-        User user = new User(
+        User user = userRepository.findByUsername(username).map(existing -> {
+            if (existing.getSource() != UserSource.CONSOLE || existing.hasCredentials()) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "USERNAME_CONFLICT");
+            }
+            existing.update(
+                    username,
+                    request.displayName().trim(),
+                    existing.getEmail(),
+                    existing.getPhone(),
+                    existing.getGroupId(),
+                    request.enabled());
+            return existing;
+        }).orElseGet(() -> new User(
                 UUID.randomUUID(),
                 UUID.randomUUID().toString(),
                 username,
@@ -56,7 +65,7 @@ public class AccountServiceImpl implements AccountService {
                 null,
                 null,
                 null,
-                request.enabled());
+                request.enabled()));
         user.initializeCredentials(passwordEncoder.encode(request.password()), request.role());
         User saved = userRepository.save(user);
         auditService.record(

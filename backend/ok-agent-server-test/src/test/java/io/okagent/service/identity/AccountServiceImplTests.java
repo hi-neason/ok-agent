@@ -54,6 +54,31 @@ class AccountServiceImplTests {
     }
 
     @Test
+    void activatesExistingConsoleUserWithoutCredentials() {
+        User existing = new User(
+                UUID.randomUUID(),
+                UUID.randomUUID().toString(),
+                "neason",
+                "Neason",
+                "neason@example.com",
+                null,
+                null,
+                true);
+        when(repository.findByUsername("neason")).thenReturn(Optional.of(existing));
+        when(repository.save(existing)).thenReturn(existing);
+
+        var result = service.create(
+                actor(),
+                new AccountCreateRequest(
+                        "neason", "neason-客服", "123456789012", AccountRole.EDITOR, true));
+
+        assertThat(result.id()).isEqualTo(existing.getId());
+        assertThat(result.displayName()).isEqualTo("neason-客服");
+        assertThat(result.role()).isEqualTo(AccountRole.EDITOR);
+        assertThat(existing.hasCredentials()).isTrue();
+    }
+
+    @Test
     void preventsAdministratorFromDemotingItself() {
         User admin = account(AccountRole.ADMIN, true);
         when(repository.findById(admin.getId())).thenReturn(Optional.of(admin));

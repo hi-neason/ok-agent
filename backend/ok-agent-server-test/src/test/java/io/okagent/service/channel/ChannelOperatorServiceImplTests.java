@@ -66,6 +66,7 @@ class ChannelOperatorServiceImplTests {
 
         assertThat(result).singleElement().satisfies(view -> assertThat(view.assigned()).isTrue());
         verify(assignments).deleteByChannelId(channelId);
+        verify(assignments).flush();
         verify(audit).record(actor, "CHANNEL_OPERATORS_REPLACED", "CHANNEL", channelId.toString(), "operatorCount=1");
     }
 

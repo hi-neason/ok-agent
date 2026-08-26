@@ -94,6 +94,9 @@ public class ChannelOperatorServiceImpl implements ChannelOperatorService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CHANNEL_OPERATOR_NOT_ELIGIBLE");
         }
         assignments.deleteByChannelId(channelId);
+        // Flush the deferred delete before inserting the replacement set. Otherwise an operator
+        // retained in the selection can hit the channel/operator unique constraint.
+        assignments.flush();
         requested.forEach(accountId -> assignments.save(
                 new ChannelOperatorAssignment(UUID.randomUUID(), channelId, accountId, actor.accountId())));
         audit.record(

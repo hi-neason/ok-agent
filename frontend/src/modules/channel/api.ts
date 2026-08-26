@@ -1,5 +1,6 @@
 import type { Page } from "../shared";
-import type { ChannelInput, ChannelItem, WechatIlinkStatus } from "./types";
+import i18n from "../../i18n";
+import type { ChannelInput, ChannelItem, ChannelOperator, WechatIlinkStatus } from "./types";
 
 const BASE = "/api/v1/channels";
 
@@ -61,6 +62,23 @@ export async function deleteChannel(id: string): Promise<void> {
   if (!response.ok && response.status !== 204) {
     throw new Error(i18n.t("common.deleteFailed", { status: response.status }));
   }
+}
+
+export async function fetchChannelOperators(id: string): Promise<ChannelOperator[]> {
+  const response = await fetch(`${BASE}/${id}/operators`);
+  return parse<ChannelOperator[]>(response);
+}
+
+export async function replaceChannelOperators(
+  id: string,
+  operatorAccountIds: string[],
+): Promise<ChannelOperator[]> {
+  const response = await fetch(`${BASE}/${id}/operators`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ operatorAccountIds }),
+  });
+  return parse<ChannelOperator[]>(response);
 }
 
 export type FeishuRegisterStatus = {
@@ -161,4 +179,3 @@ export async function wechatLogout(id: string): Promise<WechatIlinkStatus> {
   const response = await fetch(`${BASE}/${id}/wechat/logout`, { method: "POST" });
   return parse<WechatIlinkStatus>(response);
 }
-import i18n from "../../i18n";

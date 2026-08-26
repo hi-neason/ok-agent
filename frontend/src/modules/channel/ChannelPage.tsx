@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { Button, PageHeader, Pagination, Toggle, useConfirm, type Page } from "../shared";
+import { useAuth } from "../auth";
 import { loadAgents, type AgentOption } from "../agent/api";
 import {
   createDraft,
@@ -12,6 +13,8 @@ import {
 import {
   deleteChannel,
   fetchChannels,
+  fetchChannelOperators,
+  replaceChannelOperators,
   saveChannel,
   setChannelEnabled,
   setChannelRuntime,
@@ -20,11 +23,12 @@ import { FeishuQrScan } from "./FeishuQrScan";
 import { WechatQrScan } from "./WechatQrScan";
 import { DingTalkQrScan } from "./DingTalkQrScan";
 import { WechatQrLogin } from "./WechatQrLogin";
-import type { ChannelInput, ChannelItem } from "./types";
+import type { ChannelInput, ChannelItem, ChannelOperator } from "./types";
 import "./channel.css";
 
 export function ChannelPage() {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const { confirm, Dialog } = useConfirm();
   const [page, setPage] = useState<Page<ChannelItem> | null>(null);
   const [pageNumber, setPageNumber] = useState(0);
@@ -35,6 +39,10 @@ export function ChannelPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [assignmentChannel, setAssignmentChannel] = useState<ChannelItem | null>(null);
+  const [operators, setOperators] = useState<ChannelOperator[]>([]);
+  const [assignmentLoading, setAssignmentLoading] = useState(false);
+  const [assignmentError, setAssignmentError] = useState<string | null>(null);
 
   const reload = (targetPage = pageNumber) => {
     void fetchChannels(targetPage, pageSize)
@@ -210,6 +218,52 @@ export function ChannelPage() {
     reload(pageNumber);
   };
 
+  const openAssignments = async (item: ChannelItem) => {
+    setAssignmentChannel(item);
+    setAssignmentLoading(true);
+    setAssignmentError(null);
+    try {
+      setOperators(await fetchChannelOperators(item.id));
+    } catch (caught) {
+      setAssignmentError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setAssignmentLoading(false);
+    }
+  };
+
+  const toggleOperator = (accountId: string) => {
+    setOperators((current) => current.map((operator) =>
+      operator.accountId === accountId ? { ...operator, assigned: !operator.assigned } : operator,
+    ));
+  };
+
+  const saveAssignments = async () => {
+    if (!assignmentChannel) return;
+    const selected = operators.filter((operator) => operator.assigned);
+    const accepted = await confirm({
+      title: t("channels.operatorAssignment.confirmTitle"),
+      message: t("channels.operatorAssignment.confirmMessage", {
+        channel: assignmentChannel.name,
+        count: selected.length,
+      }),
+      confirmText: t("common.save"),
+    });
+    if (!accepted) return;
+    setAssignmentLoading(true);
+    setAssignmentError(null);
+    try {
+      setOperators(await replaceChannelOperators(
+        assignmentChannel.id,
+        selected.map((operator) => operator.accountId),
+      ));
+      setAssignmentChannel(null);
+    } catch (caught) {
+      setAssignmentError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setAssignmentLoading(false);
+    }
+  };
+
   return (
     <>
       <PageHeader
@@ -272,6 +326,11 @@ export function ChannelPage() {
                   />
                 </span>
                 <span className="model-actions">
+                  {user?.role === "ADMIN" && (
+                    <button className="link-button" onClick={() => void openAssignments(item)}>
+                      {t("channels.assignOperators")}
+                    </button>
+                  )}
                   {item.runtimeStatus === "RUNNING" ? (
                     <button
                       className="link-button"
@@ -693,6 +752,59 @@ export function ChannelPage() {
           </div>,
           document.body,
         )}
+
+      {assignmentChannel && createPortal(
+        <div className="model-modal-mask" role="presentation" onMouseDown={() => !assignmentLoading && setAssignmentChannel(null)}>
+          <div
+            className="form-surface channel-operator-editor"
+            role="dialog"
+            aria-modal="true"
+            aria-label={t("channels.operatorAssignment.title")}
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="form-title">
+              <div>
+                <p className="kicker">{t("channels.operatorAssignment.kicker")}</p>
+                <h2>{assignmentChannel.name}</h2>
+                <p className="channel-operator-description">{t("channels.operatorAssignment.description")}</p>
+              </div>
+              <button className="link-button" onClick={() => setAssignmentChannel(null)}>
+                {t("common.close")} ×
+              </button>
+            </div>
+            {assignmentLoading && operators.length === 0 ? (
+              <div className="channel-empty">{t("common.loading")}</div>
+            ) : operators.length === 0 ? (
+              <div className="channel-empty">{t("channels.operatorAssignment.empty")}</div>
+            ) : (
+              <div className="channel-operator-list">
+                {operators.map((operator) => (
+                  <label className={`channel-operator-card ${operator.assigned ? "selected" : ""}`} key={operator.accountId}>
+                    <input
+                      type="checkbox"
+                      checked={operator.assigned}
+                      onChange={() => toggleOperator(operator.accountId)}
+                    />
+                    <span className="channel-operator-avatar">{(operator.displayName || operator.username).slice(0, 1).toUpperCase()}</span>
+                    <span>
+                      <b>{operator.displayName || operator.username}</b>
+                      <small>@{operator.username} · {t(`channels.operatorAssignment.roles.${operator.role}`)}</small>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            )}
+            {assignmentError && <div className="channel-form-error">{assignmentError}</div>}
+            <div className="form-actions">
+              <Button quiet onClick={() => setAssignmentChannel(null)}>{t("common.cancel")}</Button>
+              <Button disabled={assignmentLoading} onClick={() => void saveAssignments()}>
+                {assignmentLoading ? t("common.saving") : t("channels.operatorAssignment.save", { count: operators.filter((operator) => operator.assigned).length })}
+              </Button>
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
       <Dialog />
     </>
   );

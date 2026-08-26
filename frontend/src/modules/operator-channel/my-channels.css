@@ -1,0 +1,71 @@
+.operator-channel-commandbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: center;
+  margin: 0 0 22px;
+  padding: 18px 20px;
+  border: 1px solid var(--color-border-tertiary);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 10px 28px rgba(38, 84, 130, 0.06);
+}
+
+.operator-channel-commandbar small { color: var(--color-text-tertiary); }
+.operator-presence-options { display: flex; gap: 8px; margin-top: 8px; }
+.operator-presence-options button {
+  padding: 7px 13px;
+  border: 1px solid var(--color-border-tertiary);
+  border-radius: 999px;
+  background: white;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+.operator-presence-options button.active { border-color: currentColor; box-shadow: inset 0 0 0 1px currentColor; }
+.operator-presence-options i, .operator-channel-runtime i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.operator-presence-options .presence-online { color: #148c67; }
+.operator-presence-options .presence-busy { color: #d47a13; }
+.operator-presence-options .presence-offline { color: #778396; }
+
+.operator-channel-summary { display: flex; gap: 30px; }
+.operator-channel-summary span { min-width: 72px; }
+.operator-channel-summary b, .operator-channel-summary small { display: block; }
+.operator-channel-summary b { font: 700 22px/1.2 var(--font-mono, monospace); color: var(--color-text-primary); }
+.operator-channel-summary small { margin-top: 4px; }
+
+.operator-channel-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.operator-channel-card {
+  position: relative;
+  min-height: 210px;
+  padding: 20px;
+  overflow: hidden;
+  border: 1px solid var(--color-border-tertiary);
+  border-radius: 12px;
+  background: rgba(255,255,255,.88);
+  box-shadow: 0 12px 32px rgba(30, 76, 122, .06);
+}
+.operator-channel-card::after { content: ""; position: absolute; right: -30px; bottom: -55px; width: 130px; height: 130px; border: 20px solid rgba(22,119,255,.04); border-radius: 50%; }
+.operator-channel-card header { display: flex; align-items: center; justify-content: space-between; }
+.operator-channel-provider { padding: 5px 9px; border-radius: 6px; background: #edf4fc; color: #225f9e; font-size: 12px; font-weight: 700; }
+.operator-channel-runtime { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #778396; }
+.operator-channel-runtime.runtime-running { color: #148c67; }
+.operator-channel-runtime.runtime-error { color: #c44343; }
+.operator-channel-runtime.runtime-starting { color: #d47a13; }
+.operator-channel-card h2 { margin: 24px 0 5px; color: var(--color-text-primary); font-size: 20px; }
+.operator-channel-card > p { margin: 0; color: var(--color-text-secondary); }
+.operator-channel-card dl { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 24px 0 0; }
+.operator-channel-card dl div { border-left: 2px solid #d9e9fa; padding-left: 10px; }
+.operator-channel-card dt { color: var(--color-text-tertiary); font-size: 11px; }
+.operator-channel-card dd { margin: 5px 0 0; font: 650 15px/1.2 var(--font-mono, monospace); color: var(--color-text-primary); }
+.operator-channel-card footer { margin-top: 16px; color: #c44343; font-size: 12px; }
+.operator-channel-empty, .operator-channel-state { padding: 72px 24px; text-align: center; color: var(--color-text-secondary); }
+.operator-channel-empty > span { display: inline-grid; width: 54px; height: 54px; place-items: center; border-radius: 14px; background: #e8f2ff; color: #1677ff; font-size: 24px; }
+.operator-channel-empty h2 { margin: 18px 0 6px; color: var(--color-text-primary); }
+.operator-channel-empty p { margin: 0; }
+.operator-channel-error { margin-bottom: 16px; padding: 12px 16px; border: 1px solid rgba(196,67,67,.25); border-radius: 9px; background: rgba(196,67,67,.07); color: #a32d2d; }
+
+@media (max-width: 760px) {
+  .operator-channel-commandbar { align-items: stretch; flex-direction: column; }
+  .operator-channel-summary { justify-content: space-between; }
+  .operator-channel-grid { grid-template-columns: 1fr; }
+}

@@ -74,6 +74,14 @@ export type ChannelItem = {
   updatedAt: string;
 };
 
+export type ChannelOperator = {
+  accountId: string;
+  username: string;
+  displayName: string;
+  role: "ADMIN" | "EDITOR" | "VIEWER";
+  assigned: boolean;
+};
+
 export type FeishuChannelInput = {
   appId: string;
   appSecret?: string;

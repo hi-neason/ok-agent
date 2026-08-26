@@ -19,6 +19,7 @@ export type Page =
   | "channels"
   | "custchat"
   | "inbox"
+  | "mychannels"
   | "leads"
   | "tickets"
   | "followups"
@@ -55,6 +56,7 @@ export const navItems: NavItem[] = [
   { id: "sysconfig", area: "agent", group: "system", icon: "⚙", kicker: "SETTINGS", wip: true },
 
   { id: "inbox", area: "workbench", group: "workspace", icon: "▤", kicker: "SERVICE INBOX" },
+  { id: "mychannels", area: "workbench", group: "workspace", icon: "⇄", kicker: "MY CHANNELS" },
   { id: "followups", area: "workbench", group: "workspace", icon: "↻", kicker: "FOLLOW UPS", wip: true },
   { id: "usermgmt", area: "workbench", group: "customer", icon: "●", kicker: "CUSTOMER" },
   { id: "persona", area: "workbench", group: "customer", icon: "◑", kicker: "PERSONA" },
@@ -83,6 +85,7 @@ export const pagePaths: Record<Page, string> = {
   intents: "/agent/intents",
   sysconfig: "/agent/settings",
   inbox: "/workbench/inbox",
+  mychannels: "/workbench/channels",
   followups: "/workbench/follow-ups",
   usermgmt: "/workbench/customers",
   persona: "/workbench/personas",
@@ -99,6 +102,7 @@ const legacyPaths: Partial<Record<string, Page>> = {
   "/releases": "release", "/observability": "observe", "/system": "system",
   "/persona": "persona", "/channels": "channels", "/intents": "intents",
   "/custchat": "custchat", "/inbox": "inbox", "/insight": "insight",
+  "/mychannels": "mychannels",
   "/sysconfig": "sysconfig", "/usermgmt": "usermgmt",
 };
 

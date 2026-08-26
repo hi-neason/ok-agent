@@ -37,6 +37,7 @@ const ChannelPage = lazy(agentManagementPages.channels);
 const IntentPage = lazy(agentManagementPages.intents);
 const AccountManagementPage = lazy(agentManagementPages.access);
 const InboxPage = lazy(operatorWorkbenchPages.inbox);
+const MyChannelsPage = lazy(operatorWorkbenchPages.myChannels);
 const UserManagementPage = lazy(operatorWorkbenchPages.customers);
 const UserDetailPage = lazy(operatorWorkbenchPages.customerDetail);
 const PersonaPage = lazy(operatorWorkbenchPages.personas);
@@ -168,6 +169,7 @@ export default function App() {
     intents: <IntentPage />,
     custchat: <CustomerChatPage />,
     inbox: <InboxPage />,
+    mychannels: <MyChannelsPage />,
     leads: (
       <WipPlaceholder
         name={moduleName(navItemById.leads)}

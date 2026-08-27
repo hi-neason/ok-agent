@@ -1,4 +1,6 @@
 spring:
+  config:
+    import: optional:file:../config/application-local.yml
   application:
     name: ok-agent-server
   datasource:
@@ -30,12 +32,10 @@ management:
         enabled: true
 ok-agent:
   security:
-    api-key-encryption-key: ${OK_AGENT_API_KEY_ENCRYPTION_KEY}
     bootstrap-admin:
       username: ${OK_AGENT_BOOTSTRAP_ADMIN_USERNAME:admin}
       password: ${OK_AGENT_BOOTSTRAP_ADMIN_PASSWORD:}
     jwt:
-      secret: ${OK_AGENT_JWT_SECRET}
       ttl: ${OK_AGENT_JWT_TTL:30m}
   observe:
     trace-retention-days: ${OK_AGENT_TRACE_RETENTION_DAYS:30}

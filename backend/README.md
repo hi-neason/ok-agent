@@ -10,9 +10,9 @@ Set a private encryption key before starting the service. Keep this value stable
 previously stored model, channel, MCP, knowledge, workflow and product credentials unreadable.
 
 ```bash
-export OK_AGENT_API_KEY_ENCRYPTION_KEY="replace-with-a-long-random-secret"
+cp config/application-local.example.yml config/application-local.yml
+# Edit config/application-local.yml and provide stable random encryption/JWT secrets.
 export OK_AGENT_BOOTSTRAP_ADMIN_PASSWORD="replace-with-at-least-12-characters"
-export OK_AGENT_JWT_SECRET="replace-with-at-least-32-random-characters"
 mvn -pl ok-agent-server spring-boot:run
 ```
 

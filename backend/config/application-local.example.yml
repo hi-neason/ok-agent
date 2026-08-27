@@ -1,0 +1,7 @@
+# Copy this file to application-local.yml. The destination is ignored by Git.
+# Use long, random, stable values and never commit the real file.
+ok-agent:
+  security:
+    api-key-encryption-key: replace-with-a-stable-private-key
+    jwt:
+      secret: replace-with-at-least-32-random-characters

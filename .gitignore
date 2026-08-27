@@ -37,6 +37,9 @@ target/
 **/.agentscope/
 .mcp.json
 
+# Developer-only backend secrets. Copy from application-local.example.yml.
+backend/config/application-local.yml
+
 # WorkBuddy local workspace data (memory, skills, automations)
 .workbuddy/
 **/.workbuddy/

@@ -24,12 +24,12 @@
 
 ## 本地启动
 
-后端要求 Java 17+、Maven 和 MySQL；前端要求 Node.js。后端安全密钥必须保持稳定，否则已保存的加密凭据将无法解密。
+后端要求 Java 17+、Maven 和 MySQL；前端要求 Node.js。首次启动时复制本地安全配置，密钥必须保持稳定，否则已保存的加密凭据将无法解密。
 
 ```bash
 cd backend
-export OK_AGENT_API_KEY_ENCRYPTION_KEY="replace-with-a-stable-private-key"
-export OK_AGENT_JWT_SECRET="replace-with-at-least-32-random-characters"
+cp config/application-local.example.yml config/application-local.yml
+# 编辑 config/application-local.yml，设置两个足够长的随机密钥
 mvn -pl ok-agent-server spring-boot:run
 ```
 

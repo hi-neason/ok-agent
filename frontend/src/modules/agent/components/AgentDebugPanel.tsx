@@ -1,7 +1,7 @@
 import { useEffect, useRef, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import type { ChatMessage } from "../types";
-import { Markdown, CollapsibleMarkdown } from "../../shared";
+import { RichChatMessage } from "../../shared";
 
 const selectStyle: CSSProperties = {
   fontSize: 12,
@@ -33,7 +33,7 @@ export function AgentDebugPanel({
   input: string;
   sending: boolean;
   onInputChange: (value: string) => void;
-  onSend: () => void;
+  onSend: (actionValue?: string) => void;
   onNewSession: () => Promise<void>;
   users: { userId: string; username: string; displayName: string }[];
   selectedUserId: string | null;
@@ -124,7 +124,7 @@ export function AgentDebugPanel({
         {messages.map((m, i) => (
           <div key={i} className={`chat-bubble ${m.error ? "error" : m.role}`}>
             {m.role === "assistant" && !m.error ? (
-              <CollapsibleMarkdown source={m.content} />
+              <RichChatMessage source={m.content} onAction={onSend} />
             ) : (
               m.content
             )}
@@ -139,7 +139,7 @@ export function AgentDebugPanel({
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
-              onSend();
+                onSend();
             }
           }}
           placeholder={userHasNoSelection ? t("agents.selectDebugUser") : t("agents.typeMessage")}
@@ -147,7 +147,7 @@ export function AgentDebugPanel({
         />
         <button
           className="ui-button send"
-          onClick={onSend}
+          onClick={() => onSend()}
           disabled={sending || !input.trim() || userHasNoSelection}
         >
           {t("agents.send")}

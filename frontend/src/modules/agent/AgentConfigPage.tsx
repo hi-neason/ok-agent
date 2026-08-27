@@ -325,8 +325,8 @@ export function AgentConfigPage({
     }
   };
 
-  const send = async () => {
-    const text = input.trim();
+  const send = async (actionValue?: string) => {
+    const text = (actionValue ?? input).trim();
     if (!text || sending || !form || !selectedUserId) return;
     setInput("");
     const history = [...messages, { role: "user" as const, content: text }];

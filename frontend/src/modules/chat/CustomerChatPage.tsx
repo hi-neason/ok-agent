@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { PageHeader } from "../shared";
+import { PageHeader, RichChatMessage } from "../shared";
 import { loadUsers, type DebugUser } from "../agent/api";
 import "./chat.css";
 
@@ -56,8 +56,8 @@ export function CustomerChatPage() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const send = async () => {
-    const text = input.trim();
+  const send = async (actionValue?: string) => {
+    const text = (actionValue ?? input).trim();
     if (!text || sending) return;
     if (!agentId) {
       setNotice(t("chat.selectAgentFirst"));
@@ -168,7 +168,9 @@ export function CustomerChatPage() {
               <span className="cs-role">
                 {m.role === "user" ? t("chat.user") : t("chat.assistant")}
               </span>
-              <p>{m.content}</p>
+              {m.role === "assistant" && !m.error
+                ? <RichChatMessage source={m.content} onAction={(value) => void send(value)} />
+                : <p>{m.content}</p>}
             </div>
           ))}
           <div ref={bottomRef} />
@@ -186,7 +188,7 @@ export function CustomerChatPage() {
               }
             }}
           />
-          <button className="ui-button" onClick={send} disabled={sending}>
+          <button className="ui-button" onClick={() => void send()} disabled={sending}>
             {sending ? t("chat.replying") : t("chat.send")}
           </button>
         </div>

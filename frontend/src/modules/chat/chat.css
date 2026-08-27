@@ -109,6 +109,11 @@
   background: #eef2f7;
   color: #1c3b5e;
 }
+.cs-msg.assistant:has(.rich-card) {
+  max-width: min(92%, 560px);
+  padding: 0;
+  background: transparent;
+}
 .cs-msg.assistant.error {
   background: #fff1f1;
   color: #b3261e;

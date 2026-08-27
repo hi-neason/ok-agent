@@ -526,6 +526,11 @@
   color: #2a3140;
   border-bottom-left-radius: 4px;
 }
+.chat-bubble.assistant:has(.rich-card) {
+  max-width: 96%;
+  padding: 0;
+  background: transparent;
+}
 
 .chat-bubble.assistant > :first-child {
   margin-top: 0;

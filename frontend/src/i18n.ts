@@ -266,6 +266,8 @@ const resources = {
         placeholder: "输入用户问题…",
         replying: "回复中…",
         send: "发送",
+        cardActions: "卡片操作",
+        cardSelected: "已选择并发送",
       },
       inbox: {
         kicker: "服务运营 / 统一收件箱",
@@ -1400,6 +1402,8 @@ const resources = {
         placeholder: "Enter a customer question…",
         replying: "Replying…",
         send: "Send",
+        cardActions: "Card actions",
+        cardSelected: "Selection sent",
       },
       inbox: {
         kicker: "SERVICE OPERATIONS / UNIFIED INBOX",

@@ -161,7 +161,7 @@ export async function sendChat(
     | { reply?: string; sessionId?: string; detail?: string; message?: string }
     | null;
   if (!res.ok || !data) {
-    throw new Error(data?.detail || data?.message || "chat failed");
+    throw new Error(data?.message || data?.detail || "chat failed");
   }
   return { reply: data.reply ?? "", sessionId: data.sessionId };
 }

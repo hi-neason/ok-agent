@@ -86,10 +86,11 @@ export function CustomerChatPage() {
             targetSubagentKey?: string | null;
             fallback?: boolean;
             detail?: string;
+            message?: string;
           }
         | null;
       if (!res.ok || !data) {
-        throw new Error(data?.detail || t("chat.requestFailed"));
+        throw new Error(data?.message || data?.detail || t("chat.requestFailed"));
       }
       setMessages((m) => [...m, { role: "assistant", content: data.reply ?? "" }]);
       setRouting({

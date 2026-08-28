@@ -268,6 +268,8 @@ const resources = {
         send: "发送",
         cardActions: "卡片操作",
         cardSelected: "已选择并发送",
+        cardSending: "正在发送…",
+        cardRetry: "发送失败，请重试",
       },
       inbox: {
         kicker: "服务运营 / 统一收件箱",
@@ -1404,6 +1406,8 @@ const resources = {
         send: "Send",
         cardActions: "Card actions",
         cardSelected: "Selection sent",
+        cardSending: "Sending…",
+        cardRetry: "Failed to send. Try again.",
       },
       inbox: {
         kicker: "SERVICE OPERATIONS / UNIFIED INBOX",

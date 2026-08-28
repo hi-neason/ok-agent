@@ -184,6 +184,7 @@
 .rich-card-action:disabled { cursor: default; opacity: .48; }
 .rich-card-action:disabled:has(span:first-child:not(:empty)) { opacity: 1; }
 .rich-card-selected { color: #6c8296; font-size: 10.5px; }
+.rich-card-failed { color: #b42318; font-size: 10.5px; }
 
 @media (min-width: 760px) {
   .product-card { flex-direction: row; }

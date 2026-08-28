@@ -33,7 +33,7 @@ export function AgentDebugPanel({
   input: string;
   sending: boolean;
   onInputChange: (value: string) => void;
-  onSend: (actionValue?: string) => void;
+  onSend: (actionValue?: string) => Promise<boolean>;
   onNewSession: () => Promise<void>;
   users: { userId: string; username: string; displayName: string }[];
   selectedUserId: string | null;

@@ -48,14 +48,14 @@ export function CustomerChatPage() {
 
   const send = async (actionValue?: string) => {
     const text = (actionValue ?? input).trim();
-    if (!text || sending) return;
+    if (!text || sending) return false;
     if (!agentId) {
       setNotice(t("chat.selectAgentFirst"));
-      return;
+      return false;
     }
     if (!userId) {
       setNotice(t("chat.selectUserFirst"));
-      return;
+      return false;
     }
     setInput("");
     setNotice(null);
@@ -90,9 +90,11 @@ export function CustomerChatPage() {
         targetSubagentKey: data.targetSubagentKey ?? null,
         fallback: data.fallback ?? false,
       });
+      return true;
     } catch (e) {
       const msg = e instanceof Error ? e.message : t("chat.requestFailed");
       setMessages((m) => [...m, { role: "assistant", content: msg, error: true }]);
+      return false;
     } finally {
       setSending(false);
     }
@@ -160,7 +162,7 @@ export function CustomerChatPage() {
                 {m.role === "user" ? t("chat.user") : t("chat.assistant")}
               </span>
               {m.role === "assistant" && !m.error
-                ? <RichChatMessage source={m.content} onAction={(value) => void send(value)} />
+                ? <RichChatMessage source={m.content} onAction={send} />
                 : <p>{m.content}</p>}
             </div>
           ))}

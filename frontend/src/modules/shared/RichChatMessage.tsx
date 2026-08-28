@@ -120,9 +120,11 @@ export function parseRichMessage(source: string): MessagePart[] {
   return parts.length ? parts : [{ kind: "text", value: source }];
 }
 
-function ActionButtons({ actions, onAction }: { actions: ChatCardAction[]; onAction?: (value: string) => void }) {
+function ActionButtons({ actions, onAction }: { actions: ChatCardAction[]; onAction?: (value: string) => Promise<boolean> }) {
   const { t } = useTranslation();
   const [selected, setSelected] = useState<string | null>(null);
+  const [pending, setPending] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
 
   return (
     <div className="rich-card-actions" aria-label={t("chat.cardActions")}>
@@ -131,26 +133,33 @@ function ActionButtons({ actions, onAction }: { actions: ChatCardAction[]; onAct
           type="button"
           className={`rich-card-action ${action.style ?? "secondary"}`}
           key={`${action.label}-${action.value}`}
-          disabled={Boolean(selected) && !action.url}
-          onClick={() => {
+          disabled={(Boolean(selected) || Boolean(pending)) && !action.url}
+          onClick={async () => {
             if (action.url) {
               window.open(action.url, "_blank", "noopener,noreferrer");
               return;
             }
-            setSelected(action.value);
-            onAction?.(action.value);
+            if (!onAction) return;
+            setPending(action.value);
+            setFailed(false);
+            const sent = await onAction(action.value);
+            setPending(null);
+            if (sent) setSelected(action.value);
+            else setFailed(true);
           }}
         >
-          <span>{selected === action.value ? "✓" : action.style === "primary" ? "→" : ""}</span>
+          <span>{selected === action.value ? "✓" : pending === action.value ? "···" : action.style === "primary" ? "→" : ""}</span>
           {action.label}
         </button>
       ))}
       {selected && <small className="rich-card-selected">{t("chat.cardSelected")}</small>}
+      {pending && <small className="rich-card-selected">{t("chat.cardSending")}</small>}
+      {failed && <small className="rich-card-failed">{t("chat.cardRetry")}</small>}
     </div>
   );
 }
 
-function Card({ card, onAction }: { card: ChatCard; onAction?: (value: string) => void }) {
+function Card({ card, onAction }: { card: ChatCard; onAction?: (value: string) => Promise<boolean> }) {
   if (card.type === "choice") {
     return (
       <section className="rich-card choice-card">
@@ -182,7 +191,7 @@ function Card({ card, onAction }: { card: ChatCard; onAction?: (value: string) =
   );
 }
 
-export function RichChatMessage({ source, onAction }: { source: string; onAction?: (value: string) => void }) {
+export function RichChatMessage({ source, onAction }: { source: string; onAction?: (value: string) => Promise<boolean> }) {
   const parts = useMemo(() => parseRichMessage(source), [source]);
   return <div className="rich-message">{parts.map((part, index) => part.kind === "text"
     ? <Markdown source={part.value} key={`text-${index}`} />

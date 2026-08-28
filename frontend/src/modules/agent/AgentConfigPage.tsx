@@ -327,7 +327,7 @@ export function AgentConfigPage({
 
   const send = async (actionValue?: string) => {
     const text = (actionValue ?? input).trim();
-    if (!text || sending || !form || !selectedUserId) return;
+    if (!text || sending || !form || !selectedUserId) return false;
     setInput("");
     const history = [...messages, { role: "user" as const, content: text }];
     setMessages(history);
@@ -338,9 +338,11 @@ export function AgentConfigPage({
       setMessages([...history, { role: "assistant", content: data.reply }]);
       const page = await searchSessions({ agentId, userId: selectedUserId, size: 50 });
       setSessions(page.content);
+      return true;
     } catch (err) {
       const message = err instanceof Error ? err.message : t("agents.chatFailed");
       setMessages([...history, { role: "assistant", content: message, error: true }]);
+      return false;
     } finally {
       setSending(false);
     }

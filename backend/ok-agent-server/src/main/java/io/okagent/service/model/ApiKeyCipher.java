@@ -76,7 +76,7 @@ public class ApiKeyCipher {
         }
     }
 
-    private static IllegalStateException unableToProcess(Exception exception) {
-        return new IllegalStateException("Unable to process API key", exception);
+    private static ApiKeyProcessingException unableToProcess(Exception exception) {
+        return new ApiKeyProcessingException(exception);
     }
 }

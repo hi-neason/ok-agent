@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import io.okagent.service.model.ApiKeyProcessingException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -21,6 +22,16 @@ import org.springframework.web.server.ResponseStatusException;
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    /** Returns an actionable response when persisted credentials were encrypted with another key. */
+    @ExceptionHandler(ApiKeyProcessingException.class)
+    public ResponseEntity<Map<String, Object>> handleApiKeyProcessing(
+            ApiKeyProcessingException ex, HttpServletRequest request) {
+        return ResponseEntity.unprocessableEntity().body(baseBody(
+                HttpStatus.UNPROCESSABLE_ENTITY,
+                "模型 API Key 无法解密，请到模型管理中重新填写并保存 API Key",
+                request));
+    }
 
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<Map<String, Object>> handleResponseStatus(

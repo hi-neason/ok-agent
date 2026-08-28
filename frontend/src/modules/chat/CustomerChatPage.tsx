@@ -46,6 +46,19 @@ export function CustomerChatPage() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const resetConversationView = () => {
+    setMessages([]);
+    setRouting(null);
+    setNotice(null);
+    setInput("");
+  };
+
+  const changeContext = (apply: () => void) => {
+    if (sending) return;
+    apply();
+    resetConversationView();
+  };
+
   const send = async (actionValue?: string) => {
     const text = (actionValue ?? input).trim();
     if (!text || sending) return false;
@@ -111,7 +124,11 @@ export function CustomerChatPage() {
       <div className="cs-controls">
         <label>
           <span>{t("chat.routingAgent")}</span>
-          <select value={agentId} onChange={(e) => setAgentId(e.target.value)}>
+          <select
+            value={agentId}
+            disabled={sending}
+            onChange={(e) => changeContext(() => setAgentId(e.target.value))}
+          >
             {agents.map((a) => (
               <option key={a.id} value={a.id}>
                 {a.name}（{a.agentKey}）
@@ -121,7 +138,11 @@ export function CustomerChatPage() {
         </label>
         <label>
           <span>{t("chat.user")}</span>
-          <select value={userId} onChange={(e) => setUserId(e.target.value)}>
+          <select
+            value={userId}
+            disabled={sending}
+            onChange={(e) => changeContext(() => setUserId(e.target.value))}
+          >
             {users.map((u) => (
               <option key={u.userId} value={u.userId}>
                 {u.displayName || u.username}
@@ -131,11 +152,19 @@ export function CustomerChatPage() {
         </label>
         <label>
           <span>{t("chat.channelId")}</span>
-          <input value={channelId} onChange={(e) => setChannelId(e.target.value)} />
+          <input
+            value={channelId}
+            disabled={sending}
+            onChange={(e) => changeContext(() => setChannelId(e.target.value))}
+          />
         </label>
         <label>
           <span>{t("chat.sessionId")}</span>
-          <input value={sessionId} onChange={(e) => setSessionId(e.target.value)} />
+          <input
+            value={sessionId}
+            disabled={sending}
+            onChange={(e) => changeContext(() => setSessionId(e.target.value))}
+          />
         </label>
       </div>
 

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHeader, RichChatMessage } from "../shared";
-import { loadUsers, type DebugUser } from "../agent/api";
+import { loadAgents, loadUsers, type AgentOption, type DebugUser } from "../agent/api";
 import "./chat.css";
 
 type ChatMessage = { role: "user" | "assistant"; content: string; error?: boolean };
@@ -12,8 +12,6 @@ type RoutingInfo = {
   targetSubagentKey: string | null;
   fallback: boolean;
 };
-
-type AgentOption = { id: string; name: string; agentKey: string };
 
 export function CustomerChatPage() {
   const { t } = useTranslation();
@@ -33,15 +31,7 @@ export function CustomerChatPage() {
   useEffect(() => {
     void (async () => {
       try {
-        const [aRes, uRes] = await Promise.all([
-          fetch("/api/v1/agents").then((r) => (r.ok ? r.json() : [])),
-          loadUsers(),
-        ]);
-        const list = (aRes as Array<Record<string, unknown>>).map((a) => ({
-          id: String(a.id),
-          name: String(a.name),
-          agentKey: String(a.agentKey),
-        }));
+        const [list, uRes] = await Promise.all([loadAgents(), loadUsers()]);
         setAgents(list);
         setUsers(uRes);
         if (list.length > 0) setAgentId(list[0].id);

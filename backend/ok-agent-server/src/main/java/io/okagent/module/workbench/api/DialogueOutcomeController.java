@@ -1,10 +1,10 @@
 package io.okagent.module.workbench.api;
 
 import io.okagent.module.workbench.application.*;
-
 import io.okagent.module.workbench.application.DialogueOutcomeDraft;
 import io.okagent.module.workbench.application.DialogueOutcomeService;
 import io.okagent.module.workbench.application.DialogueOutcomeView;
+import io.okagent.shared.api.ApiResponse;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -17,10 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping({
-    "/api/v1/workbench/sessions/{sessionId}/outcome",
-    "/api/v1/inbox/sessions/{sessionId}/outcome"
-})
+@RequestMapping({"/api/v1/workbench/sessions/{sessionId}/outcome", "/api/v1/inbox/sessions/{sessionId}/outcome"})
 public class DialogueOutcomeController {
     private final DialogueOutcomeService outcomes;
 
@@ -30,17 +27,17 @@ public class DialogueOutcomeController {
 
     /** Returns the structured business result for a conversation, including an empty draft. */
     @GetMapping
-    public DialogueOutcomeView get(@PathVariable String sessionId) {
-        return outcomes.get(sessionId);
+    public ApiResponse<DialogueOutcomeView> get(@PathVariable String sessionId) {
+        return ApiResponse.success(outcomes.get(sessionId));
     }
 
     /** Creates or replaces the structured business result and records the responsible operator. */
     @PutMapping
-    public DialogueOutcomeView save(
+    public ApiResponse<DialogueOutcomeView> save(
             @PathVariable String sessionId,
             @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody DialogueOutcomeRequest request) {
-        return outcomes.save(
+        return ApiResponse.success(outcomes.save(
                 sessionId,
                 new DialogueOutcomeDraft(
                         request.summary(),
@@ -53,6 +50,6 @@ public class DialogueOutcomeController {
                         request.resolutionCode(),
                         request.nextAction(),
                         request.followUpAt()),
-                UUID.fromString(jwt.getClaimAsString("accountId")));
+                UUID.fromString(jwt.getClaimAsString("accountId"))));
     }
 }

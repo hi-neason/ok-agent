@@ -1,8 +1,8 @@
 package io.okagent.module.knowledge.api;
 
 import io.okagent.module.knowledge.application.*;
-
 import io.okagent.module.knowledge.application.AgentKnowledgeBindingService;
+import io.okagent.shared.api.ApiResponse;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.web.bind.annotation.*;
@@ -18,14 +18,14 @@ public class AgentKnowledgeController {
 
     /** Returns the external knowledge bases bound to an agent. */
     @GetMapping
-    public List<AgentKnowledgeBindingResponse> list(@PathVariable UUID agentId) {
-        return service.list(agentId);
+    public ApiResponse<List<AgentKnowledgeBindingResponse>> list(@PathVariable UUID agentId) {
+        return ApiResponse.success(service.list(agentId));
     }
 
     /** Replaces the set of knowledge bases bound to an agent. */
     @PutMapping
-    public List<AgentKnowledgeBindingResponse> replace(
+    public ApiResponse<List<AgentKnowledgeBindingResponse>> replace(
             @PathVariable UUID agentId, @RequestBody List<AgentKnowledgeBindingRequest> bindings) {
-        return service.replace(agentId, bindings);
+        return ApiResponse.success(service.replace(agentId, bindings));
     }
 }

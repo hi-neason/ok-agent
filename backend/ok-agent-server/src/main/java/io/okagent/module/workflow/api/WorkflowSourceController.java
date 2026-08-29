@@ -1,8 +1,8 @@
 package io.okagent.module.workflow.api;
 
 import io.okagent.module.workflow.application.*;
-
 import io.okagent.module.workflow.application.WorkflowSourceService;
+import io.okagent.shared.api.ApiResponse;
 import io.okagent.shared.api.PageResponse;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -21,72 +21,73 @@ public class WorkflowSourceController {
 
     /** Lists external workflow sources, newest first, paged. */
     @GetMapping
-    public PageResponse<WorkflowSourceResponse> list(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        return PageResponse.of(service.list(page, size));
+    public ApiResponse<PageResponse<WorkflowSourceResponse>> list(
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+        return ApiResponse.success(PageResponse.of(service.list(page, size)));
     }
 
     /** Returns one workflow source by id. */
     @GetMapping("/{id}")
-    public WorkflowSourceResponse get(@PathVariable UUID id) {
-        return service.get(id);
+    public ApiResponse<WorkflowSourceResponse> get(@PathVariable UUID id) {
+        return ApiResponse.success(service.get(id));
     }
 
     /** Registers a new external workflow source. */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public WorkflowSourceResponse create(@Valid @RequestBody WorkflowSourceRequest request) {
-        return service.create(request);
+    public ApiResponse<WorkflowSourceResponse> create(@Valid @RequestBody WorkflowSourceRequest request) {
+        return ApiResponse.success(service.create(request));
     }
 
     /** Updates an existing workflow source; API key changes only when a non-blank value is sent. */
     @PutMapping("/{id}")
-    public WorkflowSourceResponse update(@PathVariable UUID id, @Valid @RequestBody WorkflowSourceRequest request) {
-        return service.update(id, request);
+    public ApiResponse<WorkflowSourceResponse> update(
+            @PathVariable UUID id, @Valid @RequestBody WorkflowSourceRequest request) {
+        return ApiResponse.success(service.update(id, request));
     }
 
     /** Enables or disables a workflow source. */
     @PatchMapping("/{id}/enabled")
-    public WorkflowSourceResponse setEnabled(@PathVariable UUID id, @RequestParam boolean value) {
-        return service.setEnabled(id, value);
+    public ApiResponse<WorkflowSourceResponse> setEnabled(@PathVariable UUID id, @RequestParam boolean value) {
+        return ApiResponse.success(service.setEnabled(id, value));
     }
 
     /** Deletes a workflow source and its catalog items. */
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable UUID id) {
+    public ApiResponse<Void> delete(@PathVariable UUID id) {
         service.delete(id);
+        return ApiResponse.success(null);
     }
 
     /** Tests a saved source connection and records the result. */
     @PostMapping("/{id}/test")
-    public WorkflowSourceResponse test(@PathVariable UUID id) {
-        return service.test(id);
+    public ApiResponse<WorkflowSourceResponse> test(@PathVariable UUID id) {
+        return ApiResponse.success(service.test(id));
     }
 
     /** Tests an unsaved source draft without persisting it. */
     @PostMapping("/test")
-    public WorkflowSourceResponse testDraft(@Valid @RequestBody WorkflowSourceRequest request) {
-        return service.testDraft(request);
+    public ApiResponse<WorkflowSourceResponse> testDraft(@Valid @RequestBody WorkflowSourceRequest request) {
+        return ApiResponse.success(service.testDraft(request));
     }
 
     /** Synchronizes the source's remote workflows into the local catalog. */
     @PostMapping("/{id}/sync")
-    public List<WorkflowCatalogItemResponse> sync(@PathVariable UUID id) {
-        return service.sync(id);
+    public ApiResponse<List<WorkflowCatalogItemResponse>> sync(@PathVariable UUID id) {
+        return ApiResponse.success(service.sync(id));
     }
 
     /** Returns the catalog items discovered for a source. */
     @GetMapping("/{id}/catalog")
-    public List<WorkflowCatalogItemResponse> catalog(@PathVariable UUID id) {
-        return service.catalogItems(id);
+    public ApiResponse<List<WorkflowCatalogItemResponse>> catalog(@PathVariable UUID id) {
+        return ApiResponse.success(service.catalogItems(id));
     }
 
     /** Updates the owner-curated description for a catalog item. */
     @PutMapping("/catalog/{itemId}/description")
-    public WorkflowCatalogItemResponse updateDescription(
+    public ApiResponse<WorkflowCatalogItemResponse> updateDescription(
             @PathVariable UUID itemId, @RequestBody WorkflowDescriptionUpdateRequest request) {
-        return service.updateCatalogDescription(itemId, request.description());
+        return ApiResponse.success(service.updateCatalogDescription(itemId, request.description()));
     }
 }

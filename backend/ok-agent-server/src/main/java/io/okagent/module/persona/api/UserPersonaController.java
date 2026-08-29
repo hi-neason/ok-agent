@@ -1,11 +1,11 @@
 package io.okagent.module.persona.api;
 
-import io.okagent.module.persona.application.*;
-
 import io.okagent.module.agent.domain.AgentAsset;
 import io.okagent.module.agent.infrastructure.persistence.AgentAssetRepository;
-import io.okagent.module.persona.infrastructure.persistence.UserPersonaRepository;
+import io.okagent.module.persona.application.*;
 import io.okagent.module.persona.application.UserPersonaService;
+import io.okagent.module.persona.infrastructure.persistence.UserPersonaRepository;
+import io.okagent.shared.api.ApiResponse;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,18 +39,19 @@ public class UserPersonaController {
 
     /** Coverage map: userId -> list of agentIds that hold a persona for that user. */
     @GetMapping("/coverage")
-    public Map<String, List<UUID>> coverage() {
-        return personas.findCoverage().stream()
+    public ApiResponse<Map<String, List<UUID>>> coverage() {
+        return ApiResponse.success(personas.findCoverage().stream()
                 .collect(Collectors.groupingBy(
                         UserPersonaRepository.PersonaCoverageRow::getUserId,
                         LinkedHashMap::new,
-                        Collectors.mapping(UserPersonaRepository.PersonaCoverageRow::getAgentId, Collectors.toList())));
+                        Collectors.mapping(
+                                UserPersonaRepository.PersonaCoverageRow::getAgentId, Collectors.toList()))));
     }
 
     /** Lists every per-agent persona stored for a user. */
     @GetMapping("/users/{userId}")
-    public List<UserPersonaResponse> listForUser(@PathVariable String userId) {
-        return service.listForUser(userId);
+    public ApiResponse<List<UserPersonaResponse>> listForUser(@PathVariable String userId) {
+        return ApiResponse.success(service.listForUser(userId));
     }
 
     /**
@@ -60,41 +61,41 @@ public class UserPersonaController {
      * preview and as the single source of truth for injection behavior.
      */
     @GetMapping("/users/{userId}/agents/{agentId}/injection-preview")
-    public Map<String, String> injectionPreview(@PathVariable String userId, @PathVariable UUID agentId) {
+    public ApiResponse<Map<String, String>> injectionPreview(@PathVariable String userId, @PathVariable UUID agentId) {
         AgentAsset agent = agents.findById(agentId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "agent not found"));
         String mode = agent.getPersonaInjectionMode() == null
                 ? "NONE"
                 : agent.getPersonaInjectionMode().name();
         String block = service.getProfileBlock(userId, agentId, mode, agent.getPersonaPromptTemplate());
-        return Map.of("mode", mode, "block", block == null ? "" : block.strip());
+        return ApiResponse.success(Map.of("mode", mode, "block", block == null ? "" : block.strip()));
     }
 
     /** Returns the persona a specific agent holds for a user (empty shell if none). */
     @GetMapping("/users/{userId}/agents/{agentId}")
-    public UserPersonaResponse get(@PathVariable String userId, @PathVariable UUID agentId) {
-        return service.getOrInit(userId, agentId);
+    public ApiResponse<UserPersonaResponse> get(@PathVariable String userId, @PathVariable UUID agentId) {
+        return ApiResponse.success(service.getOrInit(userId, agentId));
     }
 
     /** Updates the structured persona fields for a (user, agent). */
     @PutMapping("/users/{userId}/agents/{agentId}")
-    public UserPersonaResponse upsert(
+    public ApiResponse<UserPersonaResponse> upsert(
             @PathVariable String userId, @PathVariable UUID agentId, @RequestBody UpsertPersonaRequest request) {
-        return service.upsert(userId, agentId, request);
+        return ApiResponse.success(service.upsert(userId, agentId, request));
     }
 
     /** Returns the long-term memory a specific agent holds for a user. */
     @GetMapping("/users/{userId}/agents/{agentId}/memory")
-    public Map<String, String> getMemory(@PathVariable String userId, @PathVariable UUID agentId) {
-        return Map.of("memory", service.readMemory(userId, agentId));
+    public ApiResponse<Map<String, String>> getMemory(@PathVariable String userId, @PathVariable UUID agentId) {
+        return ApiResponse.success(Map.of("memory", service.readMemory(userId, agentId)));
     }
 
     /** Appends a delta to a (user, agent) long-term memory. */
     @PostMapping("/users/{userId}/agents/{agentId}/memory")
     @ResponseStatus(HttpStatus.CREATED)
-    public Map<String, String> appendMemory(
+    public ApiResponse<Map<String, String>> appendMemory(
             @PathVariable String userId, @PathVariable UUID agentId, @RequestBody AppendMemoryRequest request) {
         service.appendMemory(userId, agentId, request.delta());
-        return Map.of("memory", service.readMemory(userId, agentId));
+        return ApiResponse.success(Map.of("memory", service.readMemory(userId, agentId)));
     }
 }

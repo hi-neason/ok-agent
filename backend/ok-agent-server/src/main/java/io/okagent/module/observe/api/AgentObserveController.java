@@ -1,13 +1,13 @@
 package io.okagent.module.observe.api;
 
-import io.okagent.module.observe.application.*;
-
-import io.okagent.module.conversation.domain.DialogueTurn;
 import io.okagent.module.conversation.application.DialogueQuery;
 import io.okagent.module.conversation.application.DialogueService;
 import io.okagent.module.conversation.application.DialogueSummary;
-import io.okagent.shared.api.PageResponse;
+import io.okagent.module.conversation.domain.DialogueTurn;
+import io.okagent.module.observe.application.*;
 import io.okagent.module.observe.application.TraceService;
+import io.okagent.shared.api.ApiResponse;
+import io.okagent.shared.api.PageResponse;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -40,7 +40,7 @@ public class AgentObserveController {
      * agent id, and a created-at time range. Used by the "运行观测" history list.
      */
     @GetMapping("/sessions")
-    public PageResponse<DialogueSummary> listSessions(
+    public ApiResponse<PageResponse<DialogueSummary>> listSessions(
             @RequestParam(required = false) String sessionId,
             @RequestParam(required = false) String userId,
             @RequestParam(required = false) UUID agentId,
@@ -48,13 +48,14 @@ public class AgentObserveController {
             @RequestParam(required = false) String to,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return PageResponse.of(dialogue.search(new DialogueQuery(sessionId, userId, agentId, from, to), page, size));
+        return ApiResponse.success(
+                PageResponse.of(dialogue.search(new DialogueQuery(sessionId, userId, agentId, from, to), page, size)));
     }
 
     /** Returns the full, ordered conversation of a session for the detail / replay view. */
     @GetMapping("/sessions/{sessionId}/turns")
-    public List<DialogueTurn> getTurns(@PathVariable String sessionId) {
-        return dialogue.getMessages(sessionId);
+    public ApiResponse<List<DialogueTurn>> getTurns(@PathVariable String sessionId) {
+        return ApiResponse.success(dialogue.getMessages(sessionId));
     }
 
     /**
@@ -63,9 +64,9 @@ public class AgentObserveController {
      * tool executions, token usage, timings and full inputs/outputs.
      */
     @GetMapping("/traces/{traceId}")
-    public List<TraceSpanResponse> getTrace(@PathVariable String traceId) {
-        return traces.findTrace(traceId)
+    public ApiResponse<List<TraceSpanResponse>> getTrace(@PathVariable String traceId) {
+        return ApiResponse.success(traces.findTrace(traceId)
                 .map(spans -> spans.stream().map(TraceSpanResponse::from).toList())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Trace not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Trace not found")));
     }
 }

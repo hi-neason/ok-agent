@@ -1,8 +1,8 @@
 package io.okagent.module.agent.api;
 
 import io.okagent.module.agent.application.*;
-
 import io.okagent.module.agent.application.AgentAssetService;
+import io.okagent.shared.api.ApiResponse;
 import io.okagent.shared.api.PageResponse;
 import jakarta.validation.Valid;
 import java.util.UUID;
@@ -30,54 +30,56 @@ public class AgentAssetController {
 
     /** Returns editable agent drafts in the current management scope. */
     @GetMapping
-    public PageResponse<AgentAssetResponse> list(
+    public ApiResponse<PageResponse<AgentAssetResponse>> list(
             @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
-        return PageResponse.of(service.list(page, size));
+        return ApiResponse.success(PageResponse.of(service.list(page, size)));
     }
 
     /** Returns one editable agent draft by id. */
     @GetMapping("/{id}")
-    public AgentAssetResponse get(@PathVariable UUID id) {
-        return service.get(id);
+    public ApiResponse<AgentAssetResponse> get(@PathVariable UUID id) {
+        return ApiResponse.success(service.get(id));
     }
 
     /** Creates a new agent draft from basic metadata. */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public AgentAssetResponse create(@Valid @RequestBody AgentCreateRequest request) {
-        return service.create(request);
+    public ApiResponse<AgentAssetResponse> create(@Valid @RequestBody AgentCreateRequest request) {
+        return ApiResponse.success(service.create(request));
     }
 
     /** Updates the basic metadata (name, description, business domain) of an agent draft. */
     @PutMapping("/{id}")
-    public AgentAssetResponse update(@PathVariable UUID id, @Valid @RequestBody AgentUpdateRequest request) {
-        return service.update(id, request);
+    public ApiResponse<AgentAssetResponse> update(
+            @PathVariable UUID id, @Valid @RequestBody AgentUpdateRequest request) {
+        return ApiResponse.success(service.update(id, request));
     }
 
     /** Updates the HarnessAgent configuration (prompt, model, parameters, MCP/skill bindings). */
     @PutMapping("/{id}/configuration")
-    public AgentAssetResponse updateConfiguration(
+    public ApiResponse<AgentAssetResponse> updateConfiguration(
             @PathVariable UUID id, @Valid @RequestBody AgentConfigRequest request) {
-        return service.updateConfiguration(id, request);
+        return ApiResponse.success(service.updateConfiguration(id, request));
     }
 
     /** Validates an agent configuration and returns field-level errors, warnings, and checks. */
     @PostMapping("/{id}/configuration/validate")
-    public AgentConfigValidationResponse validateConfiguration(
+    public ApiResponse<AgentConfigValidationResponse> validateConfiguration(
             @PathVariable UUID id, @RequestBody AgentConfigRequest request) {
-        return service.validateConfiguration(id, request);
+        return ApiResponse.success(service.validateConfiguration(id, request));
     }
 
     /** Enables or disables an agent draft. */
     @PatchMapping("/{id}/enabled")
-    public AgentAssetResponse enabled(@PathVariable UUID id, @RequestParam boolean value) {
-        return service.setEnabled(id, value);
+    public ApiResponse<AgentAssetResponse> enabled(@PathVariable UUID id, @RequestParam boolean value) {
+        return ApiResponse.success(service.setEnabled(id, value));
     }
 
     /** Deletes an agent draft. */
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable UUID id) {
+    public ApiResponse<Void> delete(@PathVariable UUID id) {
         service.delete(id);
+        return ApiResponse.success(null);
     }
 }

@@ -1,8 +1,8 @@
 package io.okagent.module.workbench.api;
 
-import io.okagent.module.workbench.application.*;
-
 import io.okagent.module.channel.application.ChannelOperatorService;
+import io.okagent.module.workbench.application.*;
+import io.okagent.shared.api.ApiResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -25,21 +25,21 @@ public class OperatorChannelController {
 
     /** Lists channel accounts assigned to the authenticated human operator. */
     @GetMapping("/channels")
-    public List<MyChannelResponse> myChannels(@AuthenticationPrincipal Jwt jwt) {
-        return service.listMyChannels(actorId(jwt));
+    public ApiResponse<List<MyChannelResponse>> myChannels(@AuthenticationPrincipal Jwt jwt) {
+        return ApiResponse.success(service.listMyChannels(actorId(jwt)));
     }
 
     /** Returns the authenticated human operator's current availability. */
     @GetMapping("/presence")
-    public OperatorPresenceResponse presence(@AuthenticationPrincipal Jwt jwt) {
-        return service.getPresence(actorId(jwt));
+    public ApiResponse<OperatorPresenceResponse> presence(@AuthenticationPrincipal Jwt jwt) {
+        return ApiResponse.success(service.getPresence(actorId(jwt)));
     }
 
     /** Changes the authenticated human operator's availability for handoff routing. */
     @PutMapping("/presence")
-    public OperatorPresenceResponse setPresence(
+    public ApiResponse<OperatorPresenceResponse> setPresence(
             @AuthenticationPrincipal Jwt jwt, @Valid @RequestBody OperatorPresenceRequest request) {
-        return service.setPresence(actorId(jwt), request.status());
+        return ApiResponse.success(service.setPresence(actorId(jwt), request.status()));
     }
 
     private static UUID actorId(Jwt jwt) {

@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 
 /** Lightweight source-level guardrails for the modular-monolith boundaries. */
@@ -121,6 +122,27 @@ class ModuleBoundaryTests {
             }
         }
         assertThat(violations).as("application classes depending on HTTP adapters").isEmpty();
+    }
+
+    @Test
+    void controllerEndpointsDeclareTheApiResponseEnvelope() throws IOException {
+        Pattern endpoint = Pattern.compile(
+                "@(Get|Post|Put|Patch|Delete)Mapping\\b.*?\\bpublic\\s+([^\\s]+)",
+                Pattern.DOTALL);
+        List<String> violations = new ArrayList<>();
+        try (var sources = Files.walk(MODULES)) {
+            for (Path source : sources
+                    .filter(file -> file.getFileName().toString().endsWith("Controller.java"))
+                    .toList()) {
+                var matcher = endpoint.matcher(Files.readString(source));
+                while (matcher.find()) {
+                    if (!matcher.group(2).startsWith("ApiResponse<")) {
+                        violations.add(MODULES.relativize(source) + " -> " + matcher.group(2));
+                    }
+                }
+            }
+        }
+        assertThat(violations).as("controller endpoints returning an unwrapped response").isEmpty();
     }
 
     private static void assertNoReferences(String module, List<String> forbidden) throws IOException {

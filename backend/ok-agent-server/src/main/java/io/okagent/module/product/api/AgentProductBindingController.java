@@ -1,8 +1,8 @@
 package io.okagent.module.product.api;
 
 import io.okagent.module.product.application.*;
-
 import io.okagent.module.product.application.AgentProductBindingService;
+import io.okagent.shared.api.ApiResponse;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -19,21 +19,22 @@ public class AgentProductBindingController {
 
     /** Returns an agent's product visibility/capability binding, or null when none exists. */
     @GetMapping
-    public AgentProductBindingResponse get(@PathVariable UUID agentId) {
-        return service.get(agentId);
+    public ApiResponse<AgentProductBindingResponse> get(@PathVariable UUID agentId) {
+        return ApiResponse.success(service.get(agentId));
     }
 
     /** Creates or replaces the agent's product binding (scope + capabilities). */
     @PutMapping
-    public AgentProductBindingResponse upsert(
+    public ApiResponse<AgentProductBindingResponse> upsert(
             @PathVariable UUID agentId, @Valid @RequestBody AgentProductBindingRequest request) {
-        return service.upsert(agentId, request);
+        return ApiResponse.success(service.upsert(agentId, request));
     }
 
     /** Removes the agent's product binding, disabling all product tools. */
     @DeleteMapping
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable UUID agentId) {
+    public ApiResponse<Void> delete(@PathVariable UUID agentId) {
         service.delete(agentId);
+        return ApiResponse.success(null);
     }
 }

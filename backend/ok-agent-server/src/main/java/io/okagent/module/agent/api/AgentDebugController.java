@@ -1,8 +1,8 @@
 package io.okagent.module.agent.api;
 
 import io.okagent.module.agent.application.*;
-
 import io.okagent.module.agent.application.AgentDebugService;
+import io.okagent.shared.api.ApiResponse;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -26,14 +26,15 @@ public class AgentDebugController {
 
     /** Sends one message to a debug session and returns the HarnessAgent reply. */
     @PostMapping("/{id}/chat")
-    public AgentChatResponse chat(@PathVariable UUID id, @Valid @RequestBody AgentChatRequest request) {
-        return service.chat(id, request);
+    public ApiResponse<AgentChatResponse> chat(@PathVariable UUID id, @Valid @RequestBody AgentChatRequest request) {
+        return ApiResponse.success(service.chat(id, request));
     }
 
     /** Closes and discards a debug session so the next chat starts a fresh conversation. */
     @DeleteMapping("/sessions/{sessionId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void resetSession(@PathVariable String sessionId, @RequestParam String userId) {
+    public ApiResponse<Void> resetSession(@PathVariable String sessionId, @RequestParam String userId) {
         service.resetSession(sessionId, userId);
+        return ApiResponse.success(null);
     }
 }

@@ -20,7 +20,6 @@ public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
         SecurityErrorWriter.write(
                 response,
                 HttpStatus.UNAUTHORIZED.value(),
-                HttpStatus.UNAUTHORIZED.getReasonPhrase(),
                 "AUTHENTICATION_REQUIRED",
                 request.getRequestURI());
     }

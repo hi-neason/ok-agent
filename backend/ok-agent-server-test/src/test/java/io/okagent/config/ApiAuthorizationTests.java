@@ -26,6 +26,8 @@ class ApiAuthorizationTests {
     void rejectsAnonymousApiRequestsWithStableJson() throws Exception {
         mvc.perform(get("/api/v1/models"))
                 .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value("AUTHENTICATION_REQUIRED"))
                 .andExpect(jsonPath("$.message").value("AUTHENTICATION_REQUIRED"));
         mvc.perform(get("/api/v1/workbench/sessions"))
                 .andExpect(status().isUnauthorized())
@@ -39,7 +41,11 @@ class ApiAuthorizationTests {
 
     @Test
     void allowsViewerToReadButNotMutate() throws Exception {
-        mvc.perform(get("/api/v1/models").with(jwtRole("VIEWER"))).andExpect(status().isOk());
+        mvc.perform(get("/api/v1/models").with(jwtRole("VIEWER")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.code").value("OK"))
+                .andExpect(jsonPath("$.data.content").isArray());
         mvc.perform(delete("/api/v1/agents/{id}", UUID.randomUUID()).with(jwtRole("VIEWER")))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.message").value("INSUFFICIENT_PERMISSIONS"));

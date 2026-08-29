@@ -1,9 +1,8 @@
 package io.okagent.module.skill.api;
 
 import io.okagent.module.skill.application.*;
-
-import io.okagent.module.skill.application.SkillArchiveValidationException;
-import io.okagent.module.skill.application.SkillAssetService;
+import io.okagent.shared.api.ApiResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import io.okagent.shared.api.PageResponse;
 import jakarta.validation.Valid;
 import java.io.IOException;
@@ -97,8 +96,10 @@ public class SkillAssetController {
 
     /** Returns a safe, actionable validation response for a rejected Skill archive. */
     @ExceptionHandler(SkillArchiveValidationException.class)
-    public ResponseEntity<SkillImportErrorResponse> handleArchiveValidation(SkillArchiveValidationException exception) {
+    public ResponseEntity<ApiResponse<Void>> handleArchiveValidation(
+            SkillArchiveValidationException exception, HttpServletRequest request) {
         return ResponseEntity.badRequest()
-                .body(new SkillImportErrorResponse(exception.getCode(), exception.getMessage()));
+                .body(ApiResponse.error(
+                        exception.getCode(), exception.getMessage(), request.getRequestURI()));
     }
 }

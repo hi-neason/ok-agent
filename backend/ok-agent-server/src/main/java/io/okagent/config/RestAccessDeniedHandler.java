@@ -20,7 +20,6 @@ public class RestAccessDeniedHandler implements AccessDeniedHandler {
         SecurityErrorWriter.write(
                 response,
                 HttpStatus.FORBIDDEN.value(),
-                HttpStatus.FORBIDDEN.getReasonPhrase(),
                 "INSUFFICIENT_PERMISSIONS",
                 request.getRequestURI());
     }

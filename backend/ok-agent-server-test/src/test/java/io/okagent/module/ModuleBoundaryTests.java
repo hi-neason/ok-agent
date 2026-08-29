@@ -37,6 +37,12 @@ class ModuleBoundaryTests {
                 "io.okagent.module.workbench.",
                 "io.okagent.module.agentruntime.",
                 "io.okagent.module.customerchat."));
+        assertNoReferences("identity", List.of(
+                "io.okagent.module.agentmanager.",
+                "io.okagent.module.agentruntime.",
+                "io.okagent.module.conversation.",
+                "io.okagent.module.customerchat.",
+                "io.okagent.module.workbench."));
     }
 
     @Test
@@ -59,6 +65,7 @@ class ModuleBoundaryTests {
                 "io.okagent.repository.",
                 "io.okagent.domain.");
         assertFilesDoNotReference(MODULES.resolve("conversation/domain"), forbidden);
+        assertFilesDoNotReference(MODULES.resolve("identity/domain"), forbidden);
         assertFilesDoNotReference(MODULES.resolve("workbench/domain"), forbidden);
     }
 

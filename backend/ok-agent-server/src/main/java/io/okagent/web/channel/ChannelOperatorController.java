@@ -1,7 +1,7 @@
 package io.okagent.web.channel;
 
 import io.okagent.service.channel.ChannelOperatorService;
-import io.okagent.service.identity.AuthenticatedActor;
+import io.okagent.module.identity.application.AuthenticatedActor;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;

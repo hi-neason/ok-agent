@@ -1,9 +1,9 @@
 package io.okagent.service.channel;
 
 import io.okagent.domain.channel.ChannelUserIdentity;
-import io.okagent.domain.user.User;
+import io.okagent.module.identity.domain.User;
 import io.okagent.repository.channel.ChannelUserIdentityRepository;
-import io.okagent.repository.user.UserRepository;
+import io.okagent.module.identity.infrastructure.persistence.UserRepository;
 import java.nio.charset.StandardCharsets;
 import java.util.HexFormat;
 import java.util.UUID;

@@ -1,0 +1,33 @@
+package io.okagent.module.identity.infrastructure.persistence;
+
+import io.okagent.module.identity.domain.AccountRole;
+import io.okagent.module.identity.domain.User;
+import io.okagent.module.identity.domain.UserSource;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface UserRepository extends JpaRepository<User, UUID> {
+    Optional<User> findByUsername(String username);
+
+    Optional<User> findByUserId(String userId);
+
+    boolean existsByUsername(String username);
+
+    boolean existsByUsernameAndIdNot(String username, UUID id);
+
+    long countByGroupId(UUID groupId);
+
+    List<User> findByGroupId(UUID groupId);
+
+    Page<User> findByGroupId(UUID groupId, Pageable pageable);
+
+    Page<User> findBySourceAndPasswordHashIsNotNull(UserSource source, Pageable pageable);
+
+    List<User> findBySourceAndPasswordHashIsNotNullAndEnabledTrueOrderByDisplayNameAsc(UserSource source);
+
+    long countBySourceAndRoleAndEnabledTrue(UserSource source, AccountRole role);
+}

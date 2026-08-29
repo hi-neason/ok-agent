@@ -3,7 +3,7 @@ package io.okagent.service.channel;
 import io.okagent.domain.channel.OperatorPresenceStatus;
 import io.okagent.module.workbench.api.MyChannelResponse;
 import io.okagent.module.workbench.api.OperatorPresenceResponse;
-import io.okagent.service.identity.AuthenticatedActor;
+import io.okagent.module.identity.application.AuthenticatedActor;
 import io.okagent.web.channel.ChannelOperatorResponse;
 import java.util.List;
 import java.util.Set;

@@ -1,10 +1,9 @@
 package io.okagent.module.workbench.api;
 
-import io.okagent.module.workbench.application.*;
 import io.okagent.module.workbench.application.DialogueOutcomeDraft;
 import io.okagent.module.workbench.application.DialogueOutcomeService;
 import io.okagent.module.workbench.application.DialogueOutcomeView;
-import io.okagent.shared.api.ApiResponse;
+import io.okagent.shared.api.Response;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -27,17 +26,17 @@ public class DialogueOutcomeController {
 
     /** Returns the structured business result for a conversation, including an empty draft. */
     @GetMapping
-    public ApiResponse<DialogueOutcomeView> get(@PathVariable String sessionId) {
-        return ApiResponse.success(outcomes.get(sessionId));
+    public Response<DialogueOutcomeView> get(@PathVariable String sessionId) {
+        return Response.success(outcomes.get(sessionId));
     }
 
     /** Creates or replaces the structured business result and records the responsible operator. */
     @PutMapping
-    public ApiResponse<DialogueOutcomeView> save(
+    public Response<DialogueOutcomeView> save(
             @PathVariable String sessionId,
             @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody DialogueOutcomeRequest request) {
-        return ApiResponse.success(outcomes.save(
+        return Response.success(outcomes.save(
                 sessionId,
                 new DialogueOutcomeDraft(
                         request.summary(),

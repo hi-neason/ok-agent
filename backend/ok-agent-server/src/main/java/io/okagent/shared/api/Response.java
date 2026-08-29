@@ -7,21 +7,21 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 /** Stable envelope returned by every JSON API endpoint. */
 @JsonInclude(JsonInclude.Include.ALWAYS)
-public record ApiResponse<T>(boolean success, String code, String message, T data, String timestamp, String path) {
+public record Response<T>(boolean success, String code, String message, T data, String timestamp, String path) {
 
     /** Creates a successful API response. */
-    public static <T> ApiResponse<T> success(T data) {
+    public static <T> Response<T> success(T data) {
         return success(data, currentRequestPath());
     }
 
     /** Creates a successful API response for an explicitly supplied request path. */
-    public static <T> ApiResponse<T> success(T data, String path) {
-        return new ApiResponse<>(true, "OK", "success", data, Instant.now().toString(), path);
+    public static <T> Response<T> success(T data, String path) {
+        return new Response<>(true, "OK", "success", data, Instant.now().toString(), path);
     }
 
     /** Creates a failed API response with a stable machine-readable code. */
-    public static ApiResponse<Void> error(String code, String message, String path) {
-        return new ApiResponse<>(false, code, message, null, Instant.now().toString(), path);
+    public static Response<Void> error(String code, String message, String path) {
+        return new Response<>(false, code, message, null, Instant.now().toString(), path);
     }
 
     private static String currentRequestPath() {

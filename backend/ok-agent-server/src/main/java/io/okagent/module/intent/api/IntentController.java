@@ -1,12 +1,11 @@
 package io.okagent.module.intent.api;
 
-import io.okagent.module.intent.application.*;
 import io.okagent.module.intent.application.CreateIntentRequest;
 import io.okagent.module.intent.application.IntentDto;
 import io.okagent.module.intent.application.IntentNode;
 import io.okagent.module.intent.application.IntentService;
 import io.okagent.module.intent.application.UpdateIntentRequest;
-import io.okagent.shared.api.ApiResponse;
+import io.okagent.shared.api.Response;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -32,34 +31,34 @@ public class IntentController {
 
     /** Returns the intent tree (roots with nested children). */
     @GetMapping("/tree")
-    public ApiResponse<List<IntentNode>> tree() {
-        return ApiResponse.success(service.getTree());
+    public Response<List<IntentNode>> tree() {
+        return Response.success(service.getTree());
     }
 
     /** Returns a single intent by id. */
     @GetMapping("/{id}")
-    public ApiResponse<IntentDto> get(@PathVariable UUID id) {
-        return ApiResponse.success(service.get(id));
+    public Response<IntentDto> get(@PathVariable UUID id) {
+        return Response.success(service.get(id));
     }
 
     /** Creates a new intent node. */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ApiResponse<IntentDto> create(@Valid @RequestBody CreateIntentRequest request) {
-        return ApiResponse.success(service.create(request));
+    public Response<IntentDto> create(@Valid @RequestBody CreateIntentRequest request) {
+        return Response.success(service.create(request));
     }
 
     /** Updates an intent's definition. */
     @PutMapping("/{id}")
-    public ApiResponse<IntentDto> update(@PathVariable UUID id, @Valid @RequestBody UpdateIntentRequest request) {
-        return ApiResponse.success(service.update(id, request));
+    public Response<IntentDto> update(@PathVariable UUID id, @Valid @RequestBody UpdateIntentRequest request) {
+        return Response.success(service.update(id, request));
     }
 
     /** Deletes an intent. Rejected if it still has children. */
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public ApiResponse<Void> delete(@PathVariable UUID id) {
+    public Response<Void> delete(@PathVariable UUID id) {
         service.delete(id);
-        return ApiResponse.success(null);
+        return Response.success(null);
     }
 }

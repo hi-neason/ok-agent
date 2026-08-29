@@ -1,8 +1,7 @@
 package io.okagent.module.customerchat.api;
 
-import io.okagent.module.customerchat.application.*;
 import io.okagent.module.customerchat.application.CustomerChatService;
-import io.okagent.shared.api.ApiResponse;
+import io.okagent.shared.api.Response;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -20,7 +19,7 @@ public class CustomerChatController {
 
     /** Production customer-service chat: intent-routed, channel+session scoped, no manual agent pick. */
     @PostMapping
-    public ApiResponse<CustomerChatResponse> chat(@Valid @RequestBody CustomerChatRequest request) {
-        return ApiResponse.success(CustomerChatResponse.from(service.chat(request.toCommand())));
+    public Response<CustomerChatResponse> chat(@Valid @RequestBody CustomerChatRequest request) {
+        return Response.success(CustomerChatResponse.from(service.chat(request.toCommand())));
     }
 }

@@ -1,7 +1,7 @@
 package io.okagent.module.skill.api;
 
 import io.okagent.module.skill.application.*;
-import io.okagent.shared.api.ApiResponse;
+import io.okagent.shared.api.Response;
 import io.okagent.shared.api.PageResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -35,70 +35,70 @@ public class SkillAssetController {
 
     /** Returns reusable skill assets paginated by most-recently-updated. */
     @GetMapping
-    public ApiResponse<PageResponse<SkillAssetResponse>> list(
+    public Response<PageResponse<SkillAssetResponse>> list(
             @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
-        return ApiResponse.success(PageResponse.of(service.list(page, size)));
+        return Response.success(PageResponse.of(service.list(page, size)));
     }
 
     /** Imports one complete Skill ZIP archive and parses metadata from its root SKILL.md. */
     @PostMapping(path = "/import", consumes = "multipart/form-data")
     @ResponseStatus(HttpStatus.CREATED)
-    public ApiResponse<SkillAssetResponse> importArchive(
+    public Response<SkillAssetResponse> importArchive(
             @RequestPart("file") MultipartFile file,
             @RequestParam(defaultValue = "") String name,
             @RequestParam(defaultValue = "") String description,
             @RequestParam String businessDomain,
             @RequestParam(defaultValue = "false") boolean overwrite)
             throws IOException {
-        return ApiResponse.success(service.importArchive(
+        return Response.success(service.importArchive(
                 file.getOriginalFilename(), file.getBytes(), name, description, businessDomain, overwrite));
     }
 
     /** Updates only the editable name, description, and business domain of an imported Skill. */
     @PutMapping("/{id}/metadata")
-    public ApiResponse<SkillAssetResponse> updateMetadata(
+    public Response<SkillAssetResponse> updateMetadata(
             @PathVariable UUID id, @Valid @RequestBody SkillMetadataRequest request) {
-        return ApiResponse.success(service.updateMetadata(id, request));
+        return Response.success(service.updateMetadata(id, request));
     }
 
     /** Lists the complete file manifest of an imported Skill for directory-tree rendering. */
     @GetMapping("/{id}/files")
-    public ApiResponse<List<SkillFileResponse>> listFiles(@PathVariable UUID id) {
-        return ApiResponse.success(service.listFiles(id));
+    public Response<List<SkillFileResponse>> listFiles(@PathVariable UUID id) {
+        return Response.success(service.listFiles(id));
     }
 
     /** Returns one Skill file for text preview without exposing unrelated archive content. */
     @GetMapping("/{id}/file")
-    public ApiResponse<SkillFileContentResponse> getFile(@PathVariable UUID id, @RequestParam String path) {
-        return ApiResponse.success(service.getFile(id, path));
+    public Response<SkillFileContentResponse> getFile(@PathVariable UUID id, @RequestParam String path) {
+        return Response.success(service.getFile(id, path));
     }
 
     /** Saves one UTF-8 Skill text file and synchronizes SKILL.md metadata when applicable. */
     @PutMapping("/{id}/file")
-    public ApiResponse<SkillFileContentResponse> updateFile(
+    public Response<SkillFileContentResponse> updateFile(
             @PathVariable UUID id, @Valid @RequestBody SkillFileUpdateRequest request) {
-        return ApiResponse.success(service.updateFile(id, request));
+        return Response.success(service.updateFile(id, request));
     }
 
     /** Enables or disables a skill asset for new Agent configuration references. */
     @PatchMapping("/{id}/enabled")
-    public ApiResponse<SkillAssetResponse> enabled(@PathVariable UUID id, @RequestParam boolean value) {
-        return ApiResponse.success(service.enabled(id, value));
+    public Response<SkillAssetResponse> enabled(@PathVariable UUID id, @RequestParam boolean value) {
+        return Response.success(service.enabled(id, value));
     }
 
     /** Deletes a skill asset that is no longer managed by the platform. */
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public ApiResponse<Void> delete(@PathVariable UUID id) {
+    public Response<Void> delete(@PathVariable UUID id) {
         service.delete(id);
-        return ApiResponse.success(null);
+        return Response.success(null);
     }
 
     /** Returns a safe, actionable validation response for a rejected Skill archive. */
     @ExceptionHandler(SkillArchiveValidationException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ApiResponse<Void> handleArchiveValidation(
+    public Response<Void> handleArchiveValidation(
             SkillArchiveValidationException exception, HttpServletRequest request) {
-        return ApiResponse.error(exception.getCode(), exception.getMessage(), request.getRequestURI());
+        return Response.error(exception.getCode(), exception.getMessage(), request.getRequestURI());
     }
 }

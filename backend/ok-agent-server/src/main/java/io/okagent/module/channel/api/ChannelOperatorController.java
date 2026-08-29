@@ -3,7 +3,7 @@ package io.okagent.module.channel.api;
 import io.okagent.module.channel.application.*;
 import io.okagent.module.channel.application.ChannelOperatorService;
 import io.okagent.module.identity.application.AuthenticatedActor;
-import io.okagent.shared.api.ApiResponse;
+import io.okagent.shared.api.Response;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -27,17 +27,17 @@ public class ChannelOperatorController {
 
     /** Lists all eligible human operators and their assignment state for a channel. */
     @GetMapping
-    public ApiResponse<List<ChannelOperatorResponse>> list(@PathVariable UUID channelId) {
-        return ApiResponse.success(service.listOperators(channelId));
+    public Response<List<ChannelOperatorResponse>> list(@PathVariable UUID channelId) {
+        return Response.success(service.listOperators(channelId));
     }
 
     /** Replaces the channel's complete human operator assignment set. */
     @PutMapping
-    public ApiResponse<List<ChannelOperatorResponse>> replace(
+    public Response<List<ChannelOperatorResponse>> replace(
             @PathVariable UUID channelId,
             @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody ChannelOperatorAssignmentRequest request) {
-        return ApiResponse.success(service.replaceAssignments(channelId, request.operatorAccountIds(), actor(jwt)));
+        return Response.success(service.replaceAssignments(channelId, request.operatorAccountIds(), actor(jwt)));
     }
 
     private static AuthenticatedActor actor(Jwt jwt) {

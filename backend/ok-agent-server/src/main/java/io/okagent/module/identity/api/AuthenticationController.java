@@ -1,8 +1,7 @@
 package io.okagent.module.identity.api;
 
-import io.okagent.module.identity.application.*;
 import io.okagent.module.identity.application.AuthenticationService;
-import io.okagent.shared.api.ApiResponse;
+import io.okagent.shared.api.Response;
 import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -23,14 +22,14 @@ public class AuthenticationController {
 
     /** Authenticates an enabled console account and returns a signed bearer token. */
     @PostMapping("/login")
-    public ApiResponse<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
-        return ApiResponse.success(
+    public Response<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+        return Response.success(
                 LoginResponse.from(authenticationService.login(request.username(), request.password())));
     }
 
     /** Returns the account identity represented by the current bearer token. */
     @GetMapping("/me")
-    public ApiResponse<AuthUserResponse> me(@AuthenticationPrincipal Jwt jwt) {
-        return ApiResponse.success(AuthUserResponse.from(jwt));
+    public Response<AuthUserResponse> me(@AuthenticationPrincipal Jwt jwt) {
+        return Response.success(AuthUserResponse.from(jwt));
     }
 }

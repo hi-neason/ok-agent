@@ -1,9 +1,8 @@
 package io.okagent.module.workbench.api;
 
-import io.okagent.module.workbench.application.*;
 import io.okagent.module.workbench.application.DialogueSatisfactionService;
 import io.okagent.module.workbench.application.DialogueSatisfactionView;
-import io.okagent.shared.api.ApiResponse;
+import io.okagent.shared.api.Response;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -29,17 +28,17 @@ public class DialogueSatisfactionController {
 
     /** Returns customer satisfaction for a conversation, including an unrated draft. */
     @GetMapping
-    public ApiResponse<DialogueSatisfactionView> get(@PathVariable String sessionId) {
-        return ApiResponse.success(satisfaction.get(sessionId));
+    public Response<DialogueSatisfactionView> get(@PathVariable String sessionId) {
+        return Response.success(satisfaction.get(sessionId));
     }
 
     /** Records a validated five-point satisfaction score and optional feedback. */
     @PutMapping
-    public ApiResponse<DialogueSatisfactionView> save(
+    public Response<DialogueSatisfactionView> save(
             @PathVariable String sessionId,
             @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody DialogueSatisfactionRequest request) {
-        return ApiResponse.success(satisfaction.save(
+        return Response.success(satisfaction.save(
                 sessionId, request.rating(), request.feedback(), UUID.fromString(jwt.getClaimAsString("accountId"))));
     }
 }

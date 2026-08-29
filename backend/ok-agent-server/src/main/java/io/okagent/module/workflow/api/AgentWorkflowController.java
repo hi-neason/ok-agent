@@ -2,7 +2,7 @@ package io.okagent.module.workflow.api;
 
 import io.okagent.module.workflow.application.*;
 import io.okagent.module.workflow.application.AgentWorkflowBindingService;
-import io.okagent.shared.api.ApiResponse;
+import io.okagent.shared.api.Response;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.web.bind.annotation.*;
@@ -18,14 +18,14 @@ public class AgentWorkflowController {
 
     /** Returns the external workflows bound to an agent. */
     @GetMapping
-    public ApiResponse<List<AgentWorkflowBindingResponse>> list(@PathVariable UUID agentId) {
-        return ApiResponse.success(service.list(agentId));
+    public Response<List<AgentWorkflowBindingResponse>> list(@PathVariable UUID agentId) {
+        return Response.success(service.list(agentId));
     }
 
     /** Replaces the set of workflows bound to an agent. */
     @PutMapping
-    public ApiResponse<List<AgentWorkflowBindingResponse>> replace(
+    public Response<List<AgentWorkflowBindingResponse>> replace(
             @PathVariable UUID agentId, @RequestBody List<AgentWorkflowBindingRequest> bindings) {
-        return ApiResponse.success(service.replace(agentId, bindings));
+        return Response.success(service.replace(agentId, bindings));
     }
 }

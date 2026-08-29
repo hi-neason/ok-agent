@@ -2,7 +2,7 @@ package io.okagent.module.identity.api;
 
 import io.okagent.module.identity.application.*;
 import io.okagent.module.identity.application.UserGroupService;
-import io.okagent.shared.api.ApiResponse;
+import io.okagent.shared.api.Response;
 import io.okagent.shared.api.PageResponse;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -28,35 +28,35 @@ public class UserGroupController {
 
     /** Returns user groups with their current member counts, newest first, paged. */
     @GetMapping
-    public ApiResponse<PageResponse<UserGroupResponse>> list(
+    public Response<PageResponse<UserGroupResponse>> list(
             @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
-        return ApiResponse.success(PageResponse.of(service.list(page, size)));
+        return Response.success(PageResponse.of(service.list(page, size)));
     }
 
     /** Creates a new user group. */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ApiResponse<UserGroupResponse> create(@RequestBody CreateUserGroupRequest request) {
-        return ApiResponse.success(service.create(request));
+    public Response<UserGroupResponse> create(@RequestBody CreateUserGroupRequest request) {
+        return Response.success(service.create(request));
     }
 
     /** Returns one user group by id. */
     @GetMapping("/{id}")
-    public ApiResponse<UserGroupResponse> get(@PathVariable UUID id) {
-        return ApiResponse.success(service.get(id));
+    public Response<UserGroupResponse> get(@PathVariable UUID id) {
+        return Response.success(service.get(id));
     }
 
     /** Updates an existing user group. */
     @PutMapping("/{id}")
-    public ApiResponse<UserGroupResponse> update(@PathVariable UUID id, @RequestBody UpdateUserGroupRequest request) {
-        return ApiResponse.success(service.update(id, request));
+    public Response<UserGroupResponse> update(@PathVariable UUID id, @RequestBody UpdateUserGroupRequest request) {
+        return Response.success(service.update(id, request));
     }
 
     /** Deletes a user group that no longer contains any members. */
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public ApiResponse<Void> delete(@PathVariable UUID id) {
+    public Response<Void> delete(@PathVariable UUID id) {
         service.delete(id);
-        return ApiResponse.success(null);
+        return Response.success(null);
     }
 }

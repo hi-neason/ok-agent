@@ -4,7 +4,7 @@ import io.okagent.module.channel.infrastructure.persistence.ChannelUserIdentityR
 import io.okagent.module.identity.application.*;
 import io.okagent.module.identity.application.UserMergeService;
 import io.okagent.module.identity.application.UserService;
-import io.okagent.shared.api.ApiResponse;
+import io.okagent.shared.api.Response;
 import io.okagent.shared.api.PageResponse;
 import java.util.List;
 import java.util.UUID;
@@ -36,50 +36,50 @@ public class UserController {
 
     /** Returns users, optionally filtered by group, newest first, paged. */
     @GetMapping
-    public ApiResponse<PageResponse<UserResponse>> list(
+    public Response<PageResponse<UserResponse>> list(
             @RequestParam(required = false) UUID groupId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return ApiResponse.success(PageResponse.of(service.list(groupId, page, size)));
+        return Response.success(PageResponse.of(service.list(groupId, page, size)));
     }
 
     /** Creates a new user. */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ApiResponse<UserResponse> create(@RequestBody CreateUserRequest request) {
-        return ApiResponse.success(service.create(request));
+    public Response<UserResponse> create(@RequestBody CreateUserRequest request) {
+        return Response.success(service.create(request));
     }
 
     /** Returns one user by id. */
     @GetMapping("/{id}")
-    public ApiResponse<UserResponse> get(@PathVariable UUID id) {
-        return ApiResponse.success(service.get(id));
+    public Response<UserResponse> get(@PathVariable UUID id) {
+        return Response.success(service.get(id));
     }
 
     /** Returns the aggregated detail view (profile + channels + life-cycle counts) for a user. */
     @GetMapping("/{id}/detail")
-    public ApiResponse<UserDetailResponse> detail(@PathVariable UUID id) {
-        return ApiResponse.success(service.detail(id));
+    public Response<UserDetailResponse> detail(@PathVariable UUID id) {
+        return Response.success(service.detail(id));
     }
 
     /** Updates an existing user. */
     @PutMapping("/{id}")
-    public ApiResponse<UserResponse> update(@PathVariable UUID id, @RequestBody UpdateUserRequest request) {
-        return ApiResponse.success(service.update(id, request));
+    public Response<UserResponse> update(@PathVariable UUID id, @RequestBody UpdateUserRequest request) {
+        return Response.success(service.update(id, request));
     }
 
     /** Deletes a user. */
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public ApiResponse<Void> delete(@PathVariable UUID id) {
+    public Response<Void> delete(@PathVariable UUID id) {
         service.delete(id);
-        return ApiResponse.success(null);
+        return Response.success(null);
     }
 
     /** Lists the provider identities (Feishu open_id, etc.) bound to a user. */
     @GetMapping("/{id}/channels")
-    public ApiResponse<List<ChannelIdentityView>> channels(@PathVariable UUID id) {
-        return ApiResponse.success(identityRepository.findByLinkedUserId(id).stream()
+    public Response<List<ChannelIdentityView>> channels(@PathVariable UUID id) {
+        return Response.success(identityRepository.findByLinkedUserId(id).stream()
                 .map(ChannelIdentityView::from)
                 .toList());
     }
@@ -87,16 +87,16 @@ public class UserController {
     /** Merges another user (secondary) into this user (primary). */
     @PostMapping("/{id}/merge")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public ApiResponse<Void> merge(@PathVariable UUID id, @RequestBody MergeRequest body) {
+    public Response<Void> merge(@PathVariable UUID id, @RequestBody MergeRequest body) {
         mergeService.merge(id, body.secondaryId());
-        return ApiResponse.success(null);
+        return Response.success(null);
     }
 
     /** Preview of what a merge would reassign. */
     @GetMapping("/{id}/merge-preview")
-    public ApiResponse<UserMergeService.MergePreview> mergePreview(
+    public Response<UserMergeService.MergePreview> mergePreview(
             @PathVariable UUID id, @RequestParam UUID secondaryId) {
-        return ApiResponse.success(mergeService.preview(id, secondaryId));
+        return Response.success(mergeService.preview(id, secondaryId));
     }
 
     record MergeRequest(UUID secondaryId) {}

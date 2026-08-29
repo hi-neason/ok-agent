@@ -6,7 +6,7 @@ import io.okagent.module.channel.application.WechatIlinkLoginService;
 import io.okagent.module.channel.application.runtime.FeishuAppRegistrationService;
 import io.okagent.module.channel.application.runtime.dingtalk.DingTalkRegistrationService;
 import io.okagent.module.channel.application.runtime.wechat.WechatLoginRegistrationService;
-import io.okagent.shared.api.ApiResponse;
+import io.okagent.shared.api.Response;
 import io.okagent.shared.api.PageResponse;
 import jakarta.validation.Valid;
 import java.util.UUID;
@@ -38,64 +38,64 @@ public class ChannelAssetController {
 
     @GetMapping
     /** Returns channel instances configured in the management scope. */
-    public ApiResponse<PageResponse<ChannelAssetResponse>> list(
+    public Response<PageResponse<ChannelAssetResponse>> list(
             @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
-        return ApiResponse.success(PageResponse.of(service.list(page, size)));
+        return Response.success(PageResponse.of(service.list(page, size)));
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     /** Creates a new channel instance and provisions its framework channel key. */
-    public ApiResponse<ChannelAssetResponse> create(@Valid @RequestBody ChannelAssetRequest request) {
-        return ApiResponse.success(service.create(request));
+    public Response<ChannelAssetResponse> create(@Valid @RequestBody ChannelAssetRequest request) {
+        return Response.success(service.create(request));
     }
 
     @PutMapping("/{id}")
     /** Replaces the editable configuration of an existing channel instance. */
-    public ApiResponse<ChannelAssetResponse> update(
+    public Response<ChannelAssetResponse> update(
             @PathVariable UUID id, @Valid @RequestBody ChannelAssetRequest request) {
-        return ApiResponse.success(service.update(id, request));
+        return Response.success(service.update(id, request));
     }
 
     @PatchMapping("/{id}/enabled")
     /** Enables or disables a channel for runtime activation. */
-    public ApiResponse<ChannelAssetResponse> setEnabled(@PathVariable UUID id, @RequestParam boolean value) {
-        return ApiResponse.success(service.setEnabled(id, value));
+    public Response<ChannelAssetResponse> setEnabled(@PathVariable UUID id, @RequestParam boolean value) {
+        return Response.success(service.setEnabled(id, value));
     }
 
     @PostMapping("/{id}/start")
     /** Starts the framework runtime channel for this configuration. */
-    public ApiResponse<ChannelAssetResponse> start(@PathVariable UUID id) {
-        return ApiResponse.success(service.start(id));
+    public Response<ChannelAssetResponse> start(@PathVariable UUID id) {
+        return Response.success(service.start(id));
     }
 
     @PostMapping("/{id}/stop")
     /** Stops the framework runtime channel for this configuration. */
-    public ApiResponse<ChannelAssetResponse> stop(@PathVariable UUID id) {
-        return ApiResponse.success(service.stop(id));
+    public Response<ChannelAssetResponse> stop(@PathVariable UUID id) {
+        return Response.success(service.stop(id));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     /** Deletes a channel instance and stops its runtime if active. */
-    public ApiResponse<Void> delete(@PathVariable UUID id) {
+    public Response<Void> delete(@PathVariable UUID id) {
         service.delete(id);
-        return ApiResponse.success(null);
+        return Response.success(null);
     }
 
     // ---------- Feishu one-click app creation (scan QR) ----------
 
     @PostMapping("/feishu/register/start")
     /** Starts a Feishu "create app in one click" device-auth flow; returns a session to poll. */
-    public ApiResponse<FeishuAppRegistrationService.StartedSession> startFeishuRegistration() {
-        return ApiResponse.success(feishuRegistration.start());
+    public Response<FeishuAppRegistrationService.StartedSession> startFeishuRegistration() {
+        return Response.success(feishuRegistration.start());
     }
 
     @GetMapping("/feishu/register/{sessionId}")
     /** Polls a Feishu registration flow; on SUCCESS carries the created app's id/secret. */
-    public ApiResponse<FeishuAppRegistrationService.SessionStatus> feishuRegistrationStatus(
+    public Response<FeishuAppRegistrationService.SessionStatus> feishuRegistrationStatus(
             @PathVariable String sessionId) {
-        return ApiResponse.success(feishuRegistration.status(sessionId));
+        return Response.success(feishuRegistration.status(sessionId));
     }
 
     // ---------- WeChat iLink (ClawBot) independent QR registration (before channel exists) ----------
@@ -105,17 +105,17 @@ public class ChannelAssetController {
      * Starts a WeChat iLink QR-login flow independent of any channel (mirrors the Feishu flow).
      * Returns a loginId to poll; the (encrypted) bot_token is claimed when the channel is saved.
      */
-    public ApiResponse<WechatLoginRegistrationService.StartedSession> startWechatRegistration(
+    public Response<WechatLoginRegistrationService.StartedSession> startWechatRegistration(
             @RequestBody(required = false) WechatLoginRegistrationService.StartRequest request) {
-        return ApiResponse.success(wechatRegistration.start(
+        return Response.success(wechatRegistration.start(
                 request != null ? request : new WechatLoginRegistrationService.StartRequest(null, null)));
     }
 
     @GetMapping("/wechat/register/{loginId}")
     /** Polls a WeChat registration flow; on SUCCESS carries the scanned bot's id/userId (no token). */
-    public ApiResponse<WechatLoginRegistrationService.SessionStatus> wechatRegistrationStatus(
+    public Response<WechatLoginRegistrationService.SessionStatus> wechatRegistrationStatus(
             @PathVariable String loginId) {
-        return ApiResponse.success(wechatRegistration.status(loginId));
+        return Response.success(wechatRegistration.status(loginId));
     }
 
     // ---------- DingTalk scan-QR to create/bind a robot (before channel exists) ----------
@@ -126,23 +126,23 @@ public class ChannelAssetController {
      * response carries the verification URL (rendered as a QR code) and a loginId to poll. On
      * confirmation the AppKey/AppSecret are claimed when the channel is saved.
      */
-    public ApiResponse<DingTalkRegistrationService.StartedSession> startDingTalkRegistration() {
-        return ApiResponse.success(dingtalkRegistration.start());
+    public Response<DingTalkRegistrationService.StartedSession> startDingTalkRegistration() {
+        return Response.success(dingtalkRegistration.start());
     }
 
     @GetMapping("/dingtalk/register/{loginId}")
     /** Polls a DingTalk registration flow; on SUCCESS carries the scanned AppKey (secret is held server-side). */
-    public ApiResponse<DingTalkRegistrationService.SessionStatus> dingTalkRegistrationStatus(
+    public Response<DingTalkRegistrationService.SessionStatus> dingTalkRegistrationStatus(
             @PathVariable String loginId) {
-        return ApiResponse.success(dingtalkRegistration.status(loginId));
+        return Response.success(dingtalkRegistration.status(loginId));
     }
 
     // ---------- WeChat iLink (ClawBot) QR login (per existing channel) ----------
 
     @PostMapping("/{id}/wechat/login/start")
     /** Issues a WeChat iLink login QR code; the response carries the qrcodeUrl to render. */
-    public ApiResponse<WechatIlinkStatusResponse> startWechatLogin(@PathVariable UUID id) {
-        return ApiResponse.success(wechatLogin.startLogin(id));
+    public Response<WechatIlinkStatusResponse> startWechatLogin(@PathVariable UUID id) {
+        return Response.success(wechatLogin.startLogin(id));
     }
 
     @PostMapping("/{id}/wechat/login/poll")
@@ -150,19 +150,19 @@ public class ChannelAssetController {
      * Polls the pending QR scan status. On confirmation it stores the bot_token and (re)starts the
      * runtime channel.
      */
-    public ApiResponse<WechatIlinkStatusResponse> pollWechatLogin(@PathVariable UUID id) {
-        return ApiResponse.success(wechatLogin.pollStatus(id));
+    public Response<WechatIlinkStatusResponse> pollWechatLogin(@PathVariable UUID id) {
+        return Response.success(wechatLogin.pollStatus(id));
     }
 
     @GetMapping("/{id}/wechat/login")
     /** Returns the current WeChat iLink login status without contacting iLink. */
-    public ApiResponse<WechatIlinkStatusResponse> wechatLoginStatus(@PathVariable UUID id) {
-        return ApiResponse.success(wechatLogin.getStatus(id));
+    public Response<WechatIlinkStatusResponse> wechatLoginStatus(@PathVariable UUID id) {
+        return Response.success(wechatLogin.getStatus(id));
     }
 
     @PostMapping("/{id}/wechat/logout")
     /** Clears the stored iLink bot_token and stops the channel runtime. */
-    public ApiResponse<WechatIlinkStatusResponse> wechatLogout(@PathVariable UUID id) {
-        return ApiResponse.success(wechatLogin.logout(id));
+    public Response<WechatIlinkStatusResponse> wechatLogout(@PathVariable UUID id) {
+        return Response.success(wechatLogin.logout(id));
     }
 }

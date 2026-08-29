@@ -1,9 +1,8 @@
 package io.okagent.module.workbench.api;
 
-import io.okagent.module.workbench.application.*;
 import io.okagent.module.workbench.application.CustomerCaseService;
 import io.okagent.module.workbench.application.CustomerCaseView;
-import io.okagent.shared.api.ApiResponse;
+import io.okagent.shared.api.Response;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -27,17 +26,17 @@ public class CustomerCaseController {
 
     /** Lists leads and support tickets created from the source conversation. */
     @GetMapping
-    public ApiResponse<List<CustomerCaseView>> list(@PathVariable String sessionId) {
-        return ApiResponse.success(cases.listForSession(sessionId));
+    public Response<List<CustomerCaseView>> list(@PathVariable String sessionId) {
+        return Response.success(cases.listForSession(sessionId));
     }
 
     /** Idempotently converts a conversation into a lead or support ticket. */
     @PostMapping
-    public ApiResponse<CustomerCaseView> create(
+    public Response<CustomerCaseView> create(
             @PathVariable String sessionId,
             @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody CreateCustomerCaseRequest request) {
-        return ApiResponse.success(
+        return Response.success(
                 cases.createFromSession(sessionId, request.type(), UUID.fromString(jwt.getClaimAsString("accountId"))));
     }
 }

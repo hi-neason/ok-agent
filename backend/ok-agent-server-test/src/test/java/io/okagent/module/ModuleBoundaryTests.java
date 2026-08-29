@@ -125,7 +125,7 @@ class ModuleBoundaryTests {
     }
 
     @Test
-    void controllerEndpointsDeclareTheApiResponseEnvelope() throws IOException {
+    void controllerEndpointsDeclareTheResponseEnvelope() throws IOException {
         Pattern endpoint = Pattern.compile(
                 "@(Get|Post|Put|Patch|Delete)Mapping\\b.*?\\bpublic\\s+([^\\s]+)",
                 Pattern.DOTALL);
@@ -136,7 +136,7 @@ class ModuleBoundaryTests {
                     .toList()) {
                 var matcher = endpoint.matcher(Files.readString(source));
                 while (matcher.find()) {
-                    if (!matcher.group(2).startsWith("ApiResponse<")) {
+                    if (!matcher.group(2).startsWith("Response<")) {
                         violations.add(MODULES.relativize(source) + " -> " + matcher.group(2));
                     }
                 }

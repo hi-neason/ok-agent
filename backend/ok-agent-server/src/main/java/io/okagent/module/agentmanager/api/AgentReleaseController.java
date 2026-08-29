@@ -1,9 +1,8 @@
 package io.okagent.module.agentmanager.api;
 
-import io.okagent.module.agentmanager.application.*;
 import io.okagent.module.agentmanager.application.ReleaseService;
 import io.okagent.module.release.domain.AgentRelease;
-import io.okagent.shared.api.ApiResponse;
+import io.okagent.shared.api.Response;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -33,8 +32,8 @@ public class AgentReleaseController {
 
     /** Lists all versions of the agent, newest first (without snapshot payloads). */
     @GetMapping("/versions")
-    public ApiResponse<List<VersionResponse>> listVersions(@PathVariable UUID agentId) {
-        return ApiResponse.success(releases.listVersions(agentId).stream()
+    public Response<List<VersionResponse>> listVersions(@PathVariable UUID agentId) {
+        return Response.success(releases.listVersions(agentId).stream()
                 .map(VersionResponse::from)
                 .toList());
     }
@@ -42,35 +41,35 @@ public class AgentReleaseController {
     /** Creates a new immutable version from the agent's current draft. */
     @PostMapping("/versions")
     @ResponseStatus(HttpStatus.CREATED)
-    public ApiResponse<VersionDetailResponse> createVersion(
+    public Response<VersionDetailResponse> createVersion(
             @PathVariable UUID agentId,
             @Valid @RequestBody CreateVersionRequest request,
             @RequestHeader(value = "X-Actor", required = false) String actor) {
         var version = releases.createVersion(agentId, request.label(), request.changelog(), actor);
-        return ApiResponse.success(VersionDetailResponse.from(version));
+        return Response.success(VersionDetailResponse.from(version));
     }
 
     /** Returns a single version including its full snapshot JSON. */
     @GetMapping("/versions/{versionId}")
-    public ApiResponse<VersionDetailResponse> getVersion(@PathVariable UUID agentId, @PathVariable UUID versionId) {
-        return ApiResponse.success(VersionDetailResponse.from(releases.getVersion(versionId)));
+    public Response<VersionDetailResponse> getVersion(@PathVariable UUID agentId, @PathVariable UUID versionId) {
+        return Response.success(VersionDetailResponse.from(releases.getVersion(versionId)));
     }
 
     /** Publishes a version of the agent onto a channel, superseding the channel's current release. */
     @PostMapping("/releases")
     @ResponseStatus(HttpStatus.CREATED)
-    public ApiResponse<ReleaseResponse> publish(
+    public Response<ReleaseResponse> publish(
             @PathVariable UUID agentId,
             @Valid @RequestBody PublishReleaseRequest request,
             @RequestHeader(value = "X-Actor", required = false) String actor) {
         AgentRelease release = releases.publishToChannel(agentId, request.versionNo(), request.channelId(), actor);
-        return ApiResponse.success(ReleaseResponse.from(release));
+        return Response.success(ReleaseResponse.from(release));
     }
 
     /** Returns the release history for this agent across all channels, newest first. */
     @GetMapping("/releases")
-    public ApiResponse<List<ReleaseResponse>> listReleases(@PathVariable UUID agentId) {
-        return ApiResponse.success(releases.listAgentReleases(agentId).stream()
+    public Response<List<ReleaseResponse>> listReleases(@PathVariable UUID agentId) {
+        return Response.success(releases.listAgentReleases(agentId).stream()
                 .map(ReleaseResponse::from)
                 .toList());
     }

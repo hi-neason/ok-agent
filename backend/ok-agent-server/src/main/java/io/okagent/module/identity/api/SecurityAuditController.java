@@ -2,7 +2,7 @@ package io.okagent.module.identity.api;
 
 import io.okagent.module.identity.application.*;
 import io.okagent.module.identity.application.SecurityAuditService;
-import io.okagent.shared.api.ApiResponse;
+import io.okagent.shared.api.Response;
 import io.okagent.shared.api.PageResponse;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -24,9 +24,9 @@ public class SecurityAuditController {
 
     /** Lists append-only security-administration events for administrator review. */
     @GetMapping
-    public ApiResponse<PageResponse<SecurityAuditResponse>> list(
+    public Response<PageResponse<SecurityAuditResponse>> list(
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
-        return ApiResponse.success(PageResponse.of(auditService.list(page, size)));
+        return Response.success(PageResponse.of(auditService.list(page, size)));
     }
 }

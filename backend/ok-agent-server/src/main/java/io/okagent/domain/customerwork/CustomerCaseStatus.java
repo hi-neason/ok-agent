@@ -1,7 +1,0 @@
-package io.okagent.domain.customerwork;
-
-/** Shared lifecycle states used by the MVP lead and support-ticket pipeline. */
-public enum CustomerCaseStatus {
-    NEW,
-    OPEN
-}

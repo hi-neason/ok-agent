@@ -20,7 +20,7 @@ import io.okagent.service.channel.runtime.dingtalk.DingTalkStreamChannel;
 import io.okagent.service.channel.runtime.feishu.FeishuWsChannel;
 import io.okagent.service.channel.runtime.wechat.IlinkClient;
 import io.okagent.service.channel.runtime.wechat.WeChatIlinkChannel;
-import io.okagent.service.dialogue.DialogueService;
+import io.okagent.module.conversation.application.DialogueService;
 import io.okagent.service.model.ApiKeyCipher;
 import io.okagent.service.release.ReleasedChannelAgent;
 import io.okagent.service.release.ReleasedChannelAgentResolver;

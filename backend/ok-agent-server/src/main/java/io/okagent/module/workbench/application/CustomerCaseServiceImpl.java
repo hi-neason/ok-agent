@@ -1,12 +1,12 @@
 package io.okagent.module.workbench.application;
 
-import io.okagent.domain.customerwork.CustomerCase;
-import io.okagent.domain.customerwork.CustomerCaseType;
-import io.okagent.domain.dialogue.DialogueOutcome;
-import io.okagent.domain.dialogue.DialogueSession;
-import io.okagent.repository.customerwork.CustomerCaseRepository;
-import io.okagent.repository.dialogue.DialogueOutcomeRepository;
-import io.okagent.repository.dialogue.DialogueSessionRepository;
+import io.okagent.module.workbench.domain.CustomerCase;
+import io.okagent.module.workbench.domain.CustomerCaseType;
+import io.okagent.module.conversation.domain.DialogueOutcome;
+import io.okagent.module.conversation.domain.DialogueSession;
+import io.okagent.module.workbench.infrastructure.persistence.CustomerCaseRepository;
+import io.okagent.module.conversation.infrastructure.persistence.DialogueOutcomeRepository;
+import io.okagent.module.conversation.infrastructure.persistence.DialogueSessionRepository;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;

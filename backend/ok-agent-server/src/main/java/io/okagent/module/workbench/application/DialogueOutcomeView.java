@@ -1,6 +1,6 @@
 package io.okagent.module.workbench.application;
 
-import io.okagent.domain.dialogue.CustomerSentiment;
+import io.okagent.module.conversation.domain.CustomerSentiment;
 import java.time.Instant;
 import java.util.UUID;
 

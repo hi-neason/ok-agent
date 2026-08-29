@@ -1,9 +1,9 @@
 package io.okagent.module.workbench.application;
 
-import io.okagent.domain.dialogue.CustomerSentiment;
-import io.okagent.domain.dialogue.DialogueOutcome;
-import io.okagent.repository.dialogue.DialogueOutcomeRepository;
-import io.okagent.repository.dialogue.DialogueSessionRepository;
+import io.okagent.module.conversation.domain.CustomerSentiment;
+import io.okagent.module.conversation.domain.DialogueOutcome;
+import io.okagent.module.conversation.infrastructure.persistence.DialogueOutcomeRepository;
+import io.okagent.module.conversation.infrastructure.persistence.DialogueSessionRepository;
 import java.time.Instant;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;

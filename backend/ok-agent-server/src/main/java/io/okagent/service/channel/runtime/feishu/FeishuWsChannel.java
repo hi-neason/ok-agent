@@ -17,7 +17,7 @@ import io.agentscope.harness.agent.gateway.channel.ChannelRouter;
 import io.agentscope.harness.agent.gateway.channel.InboundMessage;
 import io.agentscope.harness.agent.gateway.channel.OutboundAddress;
 import io.okagent.service.channel.ChannelIdentityResolver;
-import io.okagent.service.dialogue.DialogueService;
+import io.okagent.module.conversation.application.DialogueService;
 import io.okagent.service.observe.TraceCollectingMiddleware;
 import java.time.Duration;
 import java.time.Instant;

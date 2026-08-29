@@ -1,8 +1,8 @@
 package io.okagent.module.workbench.application;
 
-import io.okagent.domain.customerwork.CustomerCaseStatus;
-import io.okagent.domain.customerwork.CustomerCaseType;
-import io.okagent.domain.dialogue.DialoguePriority;
+import io.okagent.module.workbench.domain.CustomerCaseStatus;
+import io.okagent.module.workbench.domain.CustomerCaseType;
+import io.okagent.module.conversation.domain.DialoguePriority;
 import java.time.Instant;
 import java.util.UUID;
 

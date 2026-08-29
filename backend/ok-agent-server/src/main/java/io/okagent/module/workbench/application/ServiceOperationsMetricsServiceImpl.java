@@ -1,10 +1,10 @@
 package io.okagent.module.workbench.application;
 
-import io.okagent.domain.customerwork.CustomerCaseType;
-import io.okagent.domain.dialogue.DialogueWorkStatus;
-import io.okagent.repository.customerwork.CustomerCaseRepository;
-import io.okagent.repository.dialogue.DialogueSatisfactionRepository;
-import io.okagent.repository.dialogue.DialogueSessionRepository;
+import io.okagent.module.workbench.domain.CustomerCaseType;
+import io.okagent.module.conversation.domain.DialogueWorkStatus;
+import io.okagent.module.workbench.infrastructure.persistence.CustomerCaseRepository;
+import io.okagent.module.conversation.infrastructure.persistence.DialogueSatisfactionRepository;
+import io.okagent.module.conversation.infrastructure.persistence.DialogueSessionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

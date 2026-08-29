@@ -32,6 +32,11 @@ class ModuleBoundaryTests {
                 "io.okagent.module.agentmanager.",
                 "io.okagent.module.workbench.",
                 "io.okagent.module.agentruntime."));
+        assertNoReferences("conversation", List.of(
+                "io.okagent.module.agentmanager.",
+                "io.okagent.module.workbench.",
+                "io.okagent.module.agentruntime.",
+                "io.okagent.module.customerchat."));
     }
 
     @Test
@@ -44,6 +49,17 @@ class ModuleBoundaryTests {
                 "io.okagent.infrastructure.",
                 "io.okagent.web.");
         assertFilesDoNotReference(application, forbidden);
+    }
+
+    @Test
+    void migratedDomainModelsDoNotDependOnLegacyHorizontalLayers() throws IOException {
+        List<String> forbidden = List.of(
+                "io.okagent.web.",
+                "io.okagent.service.",
+                "io.okagent.repository.",
+                "io.okagent.domain.");
+        assertFilesDoNotReference(MODULES.resolve("conversation/domain"), forbidden);
+        assertFilesDoNotReference(MODULES.resolve("workbench/domain"), forbidden);
     }
 
     private static void assertNoReferences(String module, List<String> forbidden) throws IOException {

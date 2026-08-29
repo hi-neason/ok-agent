@@ -1,14 +1,14 @@
 package io.okagent.module.workbench.application;
 
-import io.okagent.domain.dialogue.DialoguePriority;
-import io.okagent.domain.dialogue.DialogueSession;
-import io.okagent.domain.dialogue.DialogueWorkStatus;
+import io.okagent.module.conversation.domain.DialoguePriority;
+import io.okagent.module.conversation.domain.DialogueSession;
+import io.okagent.module.conversation.domain.DialogueWorkStatus;
 import io.okagent.domain.user.User;
 import io.okagent.domain.user.UserSource;
 import io.okagent.domain.user.AccountRole;
 import io.okagent.repository.agent.AgentAssetRepository;
-import io.okagent.repository.dialogue.DialogueSessionRepository;
-import io.okagent.repository.dialogue.DialogueTurnRepository;
+import io.okagent.module.conversation.infrastructure.persistence.DialogueSessionRepository;
+import io.okagent.module.conversation.infrastructure.persistence.DialogueTurnRepository;
 import io.okagent.repository.user.UserRepository;
 import java.time.Instant;
 import java.util.Optional;

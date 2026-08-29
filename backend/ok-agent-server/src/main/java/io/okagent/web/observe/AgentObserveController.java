@@ -1,9 +1,9 @@
 package io.okagent.web.observe;
 
-import io.okagent.domain.dialogue.DialogueTurn;
-import io.okagent.service.dialogue.DialogueQuery;
-import io.okagent.service.dialogue.DialogueService;
-import io.okagent.service.dialogue.DialogueSummary;
+import io.okagent.module.conversation.domain.DialogueTurn;
+import io.okagent.module.conversation.application.DialogueQuery;
+import io.okagent.module.conversation.application.DialogueService;
+import io.okagent.module.conversation.application.DialogueSummary;
 import io.okagent.shared.api.PageResponse;
 import io.okagent.service.observe.TraceService;
 import java.util.List;

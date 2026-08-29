@@ -1,6 +1,6 @@
 package io.okagent.module.workbench.application;
 
-import io.okagent.domain.customerwork.CustomerCaseType;
+import io.okagent.module.workbench.domain.CustomerCaseType;
 import java.util.List;
 import java.util.UUID;
 

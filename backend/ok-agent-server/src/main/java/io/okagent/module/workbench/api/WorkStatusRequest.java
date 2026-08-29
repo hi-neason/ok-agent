@@ -1,6 +1,6 @@
 package io.okagent.module.workbench.api;
 
-import io.okagent.domain.dialogue.DialogueWorkStatus;
+import io.okagent.module.conversation.domain.DialogueWorkStatus;
 import jakarta.validation.constraints.NotNull;
 
 /** Requested operational state transition for a conversation. */

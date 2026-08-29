@@ -1,7 +1,7 @@
 package io.okagent.module.workbench.application;
 
-import io.okagent.domain.dialogue.DialoguePriority;
-import io.okagent.domain.dialogue.DialogueWorkStatus;
+import io.okagent.module.conversation.domain.DialoguePriority;
+import io.okagent.module.conversation.domain.DialogueWorkStatus;
 import java.util.UUID;
 
 /** Optional filters for the operational conversation inbox. */

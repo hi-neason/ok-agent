@@ -1,6 +1,6 @@
 package io.okagent.module.workbench.api;
 
-import io.okagent.domain.dialogue.CustomerSentiment;
+import io.okagent.module.conversation.domain.CustomerSentiment;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
 

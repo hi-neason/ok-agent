@@ -11,7 +11,8 @@ import org.junit.jupiter.api.Test;
 
 /** Lightweight source-level guardrails for the modular-monolith boundaries. */
 class ModuleBoundaryTests {
-    private static final Path MODULES = locateMainSources().resolve("io/okagent/module");
+    private static final Path MAIN_SOURCES = locateMainSources();
+    private static final Path MODULES = MAIN_SOURCES.resolve("io/okagent/module");
 
     @Test
     void productModulesDoNotReachAcrossOwnedBoundaries() throws IOException {
@@ -64,9 +65,62 @@ class ModuleBoundaryTests {
                 "io.okagent.service.",
                 "io.okagent.repository.",
                 "io.okagent.domain.");
-        assertFilesDoNotReference(MODULES.resolve("conversation/domain"), forbidden);
-        assertFilesDoNotReference(MODULES.resolve("identity/domain"), forbidden);
-        assertFilesDoNotReference(MODULES.resolve("workbench/domain"), forbidden);
+        for (String module : List.of(
+                "agent",
+                "channel",
+                "conversation",
+                "identity",
+                "intent",
+                "knowledge",
+                "mcp",
+                "model",
+                "observe",
+                "persona",
+                "product",
+                "release",
+                "skill",
+                "workbench",
+                "workflow")) {
+            assertFilesDoNotReference(MODULES.resolve(module + "/domain"), forbidden);
+        }
+    }
+
+    @Test
+    void businessCodeDoesNotReturnToLegacyHorizontalPackages() throws IOException {
+        List<String> violations = new ArrayList<>();
+        for (String legacy : List.of("domain", "repository", "service", "web")) {
+            Path root = MAIN_SOURCES.resolve("io/okagent").resolve(legacy);
+            if (!Files.isDirectory(root)) {
+                continue;
+            }
+            try (var paths = Files.walk(root)) {
+                paths.filter(file -> file.toString().endsWith(".java"))
+                        .forEach(file -> violations.add(MAIN_SOURCES.relativize(file).toString()));
+            }
+        }
+        assertThat(violations).as("Java files in legacy horizontal packages").isEmpty();
+    }
+
+    @Test
+    void applicationLayersDoNotDependOnHttpAdapters() throws IOException {
+        List<String> violations = new ArrayList<>();
+        try (var modulePaths = Files.list(MODULES)) {
+            for (Path module : modulePaths.filter(Files::isDirectory).toList()) {
+                Path application = module.resolve("application");
+                if (!Files.isDirectory(application)) {
+                    continue;
+                }
+                try (var sources = Files.walk(application)) {
+                    for (Path source : sources.filter(file -> file.toString().endsWith(".java")).toList()) {
+                        String content = Files.readString(source);
+                        if (content.contains(".api.")) {
+                            violations.add(MODULES.relativize(source).toString());
+                        }
+                    }
+                }
+            }
+        }
+        assertThat(violations).as("application classes depending on HTTP adapters").isEmpty();
     }
 
     private static void assertNoReferences(String module, List<String> forbidden) throws IOException {

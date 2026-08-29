@@ -6,7 +6,7 @@ import io.okagent.module.conversation.domain.DialogueWorkStatus;
 import io.okagent.module.identity.domain.User;
 import io.okagent.module.identity.domain.UserSource;
 import io.okagent.module.identity.domain.AccountRole;
-import io.okagent.repository.agent.AgentAssetRepository;
+import io.okagent.module.agent.infrastructure.persistence.AgentAssetRepository;
 import io.okagent.module.conversation.infrastructure.persistence.DialogueSessionRepository;
 import io.okagent.module.conversation.infrastructure.persistence.DialogueTurnRepository;
 import io.okagent.module.identity.infrastructure.persistence.UserRepository;

@@ -1,5 +1,7 @@
 package io.okagent.module.workbench.api;
 
+import io.okagent.module.workbench.application.*;
+
 import io.okagent.module.conversation.domain.DialoguePriority;
 import io.okagent.module.conversation.domain.DialogueWorkStatus;
 import io.okagent.module.workbench.application.DialogueWorkItemQuery;

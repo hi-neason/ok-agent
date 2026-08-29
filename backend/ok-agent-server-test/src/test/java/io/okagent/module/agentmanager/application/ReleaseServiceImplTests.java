@@ -8,18 +8,18 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.okagent.domain.agent.AgentAsset;
-import io.okagent.domain.channel.ChannelAsset;
-import io.okagent.domain.channel.ChannelType;
-import io.okagent.domain.release.AgentRelease;
-import io.okagent.domain.release.AgentVersion;
-import io.okagent.domain.release.ReleaseStatus;
-import io.okagent.domain.release.ReleaseTargetType;
-import io.okagent.repository.agent.AgentAssetRepository;
-import io.okagent.repository.channel.ChannelAssetRepository;
-import io.okagent.repository.release.AgentReleaseRepository;
-import io.okagent.repository.release.AgentVersionRepository;
-import io.okagent.service.release.AgentSnapshotService;
+import io.okagent.module.agent.domain.AgentAsset;
+import io.okagent.module.channel.domain.ChannelAsset;
+import io.okagent.module.channel.domain.ChannelType;
+import io.okagent.module.release.domain.AgentRelease;
+import io.okagent.module.release.domain.AgentVersion;
+import io.okagent.module.release.domain.ReleaseStatus;
+import io.okagent.module.release.domain.ReleaseTargetType;
+import io.okagent.module.agent.infrastructure.persistence.AgentAssetRepository;
+import io.okagent.module.channel.infrastructure.persistence.ChannelAssetRepository;
+import io.okagent.module.release.infrastructure.persistence.AgentReleaseRepository;
+import io.okagent.module.release.infrastructure.persistence.AgentVersionRepository;
+import io.okagent.module.release.application.AgentSnapshotService;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -128,7 +128,7 @@ class ReleaseServiceImplTests {
         assertThat(current.getStatus()).isEqualTo(ReleaseStatus.SUPERSEDED);
         assertThat(ch.getCurrentReleaseId()).isEqualTo(published.getId());
         assertThat(ch.getPreviousReleaseId()).isEqualTo(v1Id);
-        verify(events).publishEvent(new io.okagent.service.channel.runtime.ChannelRuntimeEvent(channelId, false));
+        verify(events).publishEvent(new io.okagent.module.channel.application.runtime.ChannelRuntimeEvent(channelId, false));
     }
 
     @Test
@@ -157,7 +157,7 @@ class ReleaseServiceImplTests {
         assertThat(ch.getCurrentReleaseId()).isEqualTo(restored.getId());
         // remember what we rolled back from, enabling a second rollback to toggle forward
         assertThat(ch.getPreviousReleaseId()).isEqualTo(currentReleaseId);
-        verify(events).publishEvent(new io.okagent.service.channel.runtime.ChannelRuntimeEvent(channelId, false));
+        verify(events).publishEvent(new io.okagent.module.channel.application.runtime.ChannelRuntimeEvent(channelId, false));
     }
 
     @Test

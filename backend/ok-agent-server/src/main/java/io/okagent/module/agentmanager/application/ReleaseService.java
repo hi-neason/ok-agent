@@ -1,7 +1,7 @@
 package io.okagent.module.agentmanager.application;
 
-import io.okagent.domain.release.AgentRelease;
-import io.okagent.domain.release.AgentVersion;
+import io.okagent.module.release.domain.AgentRelease;
+import io.okagent.module.release.domain.AgentVersion;
 import java.util.List;
 import java.util.UUID;
 

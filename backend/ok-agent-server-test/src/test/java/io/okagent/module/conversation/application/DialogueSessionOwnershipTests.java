@@ -5,7 +5,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.okagent.module.conversation.domain.DialogueSession;
-import io.okagent.repository.agent.AgentAssetRepository;
+import io.okagent.module.agent.infrastructure.persistence.AgentAssetRepository;
 import io.okagent.module.conversation.infrastructure.persistence.DialogueSessionRepository;
 import io.okagent.module.conversation.infrastructure.persistence.DialogueTurnRepository;
 import java.time.Instant;

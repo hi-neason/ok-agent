@@ -1,6 +1,6 @@
 package io.okagent.module.identity.application;
 
-import io.okagent.module.identity.api.SecurityAuditResponse;
+import io.okagent.module.identity.application.SecurityAuditResponse;
 import org.springframework.data.domain.Page;
 
 public interface SecurityAuditService {

@@ -1,9 +1,9 @@
 package io.okagent.module.identity.application;
 
-import io.okagent.module.identity.api.CreateUserRequest;
-import io.okagent.module.identity.api.UpdateUserRequest;
-import io.okagent.module.identity.api.UserDetailResponse;
-import io.okagent.module.identity.api.UserResponse;
+import io.okagent.module.identity.application.CreateUserRequest;
+import io.okagent.module.identity.application.UpdateUserRequest;
+import io.okagent.module.identity.application.UserDetailResponse;
+import io.okagent.module.identity.application.UserResponse;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Page;

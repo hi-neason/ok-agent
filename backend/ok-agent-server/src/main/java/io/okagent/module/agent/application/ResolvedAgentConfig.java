@@ -1,0 +1,131 @@
+package io.okagent.module.agent.application;
+
+import io.okagent.module.agent.domain.AgentMemoryFlushMode;
+import io.okagent.module.agent.domain.AgentPermissionMode;
+import io.okagent.module.agent.domain.AgentWorkspaceMode;
+import io.okagent.module.agent.domain.PersonaInjectionMode;
+import java.util.List;
+import java.util.UUID;
+
+/**
+ * A runtime-neutral view of everything {@link HarnessAgentFactory} needs to build a
+ * {@link io.agentscope.harness.agent.HarnessAgent}. Two implementations exist:
+ *
+ * <ul>
+ *   <li><b>Draft</b> — backed by the editable {@code AgentAsset}; used by the debug runtime so
+ *       changes are reflected immediately.
+ *   <li><b>Release</b> — backed by an immutable version snapshot; used by production traffic so
+ *       the runtime never reads a draft and sub-agents run the pinned version, not whatever is
+ *       currently edited.
+ * </ul>
+ *
+ * <p>Release implementations expose frozen model, MCP and Skill configurations. Draft
+ * implementations return the defaults below so the debug runtime can continue resolving current
+ * editable assets by id.
+ */
+public interface ResolvedAgentConfig {
+
+    UUID getId();
+
+    String getAgentKey();
+
+    String getName();
+
+    String getDescription();
+
+    String getSystemPrompt();
+
+    String getWelcomeMessage();
+
+    UUID getModelAssetId();
+
+    Double getTemperature();
+
+    Double getTopP();
+
+    Integer getTopK();
+
+    Integer getMaxTokens();
+
+    int getMaxIters();
+
+    int getModelTimeoutSeconds();
+
+    int getToolTimeoutSeconds();
+
+    int getMaxRetries();
+
+    AgentPermissionMode getPermissionMode();
+
+    boolean isParallelToolCalls();
+
+    boolean isCompactionEnabled();
+
+    int getMaxContextTokens();
+
+    boolean isToolResultEvictionEnabled();
+
+    boolean isTracingEnabled();
+
+    String getMcpServerIdsJson();
+
+    String getSkillIdsJson();
+
+    /** Returns the frozen model configuration for a release, or {@code null} for a draft. */
+    default ResolvedModelAsset getResolvedModelAsset() {
+        return null;
+    }
+
+    /** Returns frozen MCP configurations for a release, or an empty list for a draft. */
+    default List<ResolvedMcpServer> getResolvedMcpServers() {
+        return List.of();
+    }
+
+    /** Returns frozen Skill contents for a release, or an empty list for a draft. */
+    default List<ResolvedSkillAsset> getResolvedSkillAssets() {
+        return List.of();
+    }
+
+    String getMcpToolFiltersJson();
+
+    boolean isMemoryEnabled();
+
+    AgentMemoryFlushMode getMemoryFlushMode();
+
+    int getMemoryFlushIntervalMinutes();
+
+    int getMemoryConsolidationIntervalMinutes();
+
+    int getMemoryDailyRetentionDays();
+
+    int getMemorySessionRetentionDays();
+
+    boolean isPersonaExtractEnabled();
+
+    PersonaInjectionMode getPersonaInjectionMode();
+
+    String getPersonaPromptTemplate();
+
+    AgentWorkspaceMode getWorkspaceMode();
+
+    String getWorkspaceIsolationScope();
+
+    boolean isWorkspaceContextEnabled();
+
+    boolean isShellEnabled();
+
+    String getDockerImage();
+
+    int getSandboxMemoryMb();
+
+    int getSandboxCpuCount();
+
+    /**
+     * The sub-agents this router delegates to, already resolved into their own configs. For a
+     * release these are pinned version snapshots; for a draft they are the current child drafts.
+     */
+    List<ResolvedSubagent> getSubagents();
+
+    /** A content hash covering this config and (recursively) its pinned sub-agent configs. */
+    String contentHash();
+}

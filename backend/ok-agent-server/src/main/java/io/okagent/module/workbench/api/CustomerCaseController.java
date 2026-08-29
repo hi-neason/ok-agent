@@ -1,5 +1,7 @@
 package io.okagent.module.workbench.api;
 
+import io.okagent.module.workbench.application.*;
+
 import io.okagent.module.workbench.application.CustomerCaseService;
 import io.okagent.module.workbench.application.CustomerCaseView;
 import jakarta.validation.Valid;

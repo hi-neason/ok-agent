@@ -1,9 +1,9 @@
 package io.okagent.module.conversation.application;
 
-import io.okagent.domain.agent.AgentAsset;
+import io.okagent.module.agent.domain.AgentAsset;
 import io.okagent.module.conversation.domain.DialogueSession;
 import io.okagent.module.conversation.domain.DialogueTurn;
-import io.okagent.repository.agent.AgentAssetRepository;
+import io.okagent.module.agent.infrastructure.persistence.AgentAssetRepository;
 import io.okagent.module.conversation.infrastructure.persistence.DialogueSessionRepository;
 import io.okagent.module.conversation.infrastructure.persistence.DialogueTurnRepository;
 import java.time.Instant;

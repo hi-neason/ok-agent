@@ -1,7 +1,7 @@
 package io.okagent.module.identity.application;
 
 import io.okagent.module.identity.domain.User;
-import io.okagent.repository.channel.ChannelUserIdentityRepository;
+import io.okagent.module.channel.infrastructure.persistence.ChannelUserIdentityRepository;
 import io.okagent.module.identity.infrastructure.persistence.UserRepository;
 import java.util.List;
 import java.util.UUID;

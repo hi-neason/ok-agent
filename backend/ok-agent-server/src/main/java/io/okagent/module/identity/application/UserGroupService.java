@@ -1,8 +1,8 @@
 package io.okagent.module.identity.application;
 
-import io.okagent.module.identity.api.CreateUserGroupRequest;
-import io.okagent.module.identity.api.UpdateUserGroupRequest;
-import io.okagent.module.identity.api.UserGroupResponse;
+import io.okagent.module.identity.application.CreateUserGroupRequest;
+import io.okagent.module.identity.application.UpdateUserGroupRequest;
+import io.okagent.module.identity.application.UserGroupResponse;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Page;

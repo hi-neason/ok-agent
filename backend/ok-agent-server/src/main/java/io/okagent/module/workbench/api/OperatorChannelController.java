@@ -1,6 +1,8 @@
 package io.okagent.module.workbench.api;
 
-import io.okagent.service.channel.ChannelOperatorService;
+import io.okagent.module.workbench.application.*;
+
+import io.okagent.module.channel.application.ChannelOperatorService;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;

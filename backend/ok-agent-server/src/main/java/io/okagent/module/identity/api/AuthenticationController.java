@@ -1,5 +1,7 @@
 package io.okagent.module.identity.api;
 
+import io.okagent.module.identity.application.*;
+
 import io.okagent.module.identity.application.AuthenticationService;
 import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;

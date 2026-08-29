@@ -1,6 +1,8 @@
 package io.okagent.module.identity.api;
 
-import io.okagent.repository.channel.ChannelUserIdentityRepository;
+import io.okagent.module.identity.application.*;
+
+import io.okagent.module.channel.infrastructure.persistence.ChannelUserIdentityRepository;
 import io.okagent.module.identity.application.UserMergeService;
 import io.okagent.module.identity.application.UserService;
 import io.okagent.shared.api.PageResponse;

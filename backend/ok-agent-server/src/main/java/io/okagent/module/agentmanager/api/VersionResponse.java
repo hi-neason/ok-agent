@@ -1,6 +1,6 @@
 package io.okagent.module.agentmanager.api;
 
-import io.okagent.domain.release.AgentVersion;
+import io.okagent.module.release.domain.AgentVersion;
 import java.time.Instant;
 import java.util.UUID;
 

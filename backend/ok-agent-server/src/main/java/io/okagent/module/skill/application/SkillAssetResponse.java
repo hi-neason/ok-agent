@@ -1,0 +1,40 @@
+package io.okagent.module.skill.application;
+
+import io.okagent.module.skill.domain.SkillAsset;
+import io.okagent.module.skill.domain.SkillSourceType;
+import java.time.Instant;
+import java.util.UUID;
+
+public record SkillAssetResponse(
+        UUID id,
+        String skillKey,
+        String name,
+        String description,
+        String businessDomain,
+        String archiveName,
+        long archiveSize,
+        String assetVersion,
+        SkillSourceType sourceType,
+        String sourceUri,
+        String entryFile,
+        String content,
+        boolean enabled,
+        Instant updatedAt) {
+    public static SkillAssetResponse from(SkillAsset asset) {
+        return new SkillAssetResponse(
+                asset.getId(),
+                asset.getSkillKey(),
+                asset.getName(),
+                asset.getDescription(),
+                asset.getBusinessDomain(),
+                asset.getArchiveName(),
+                asset.getArchiveSize(),
+                asset.getAssetVersion(),
+                asset.getSourceType(),
+                asset.getSourceUri(),
+                asset.getEntryFile(),
+                asset.getContent(),
+                asset.isEnabled(),
+                asset.getUpdatedAt());
+    }
+}

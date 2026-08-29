@@ -1,6 +1,8 @@
 package io.okagent.module.agentmanager.api;
 
-import io.okagent.domain.release.AgentRelease;
+import io.okagent.module.agentmanager.application.*;
+
+import io.okagent.module.release.domain.AgentRelease;
 import io.okagent.module.agentmanager.application.ReleaseService;
 import jakarta.validation.Valid;
 import java.util.List;

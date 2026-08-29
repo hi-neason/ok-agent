@@ -1,0 +1,12 @@
+package io.okagent.module.product.infrastructure.persistence;
+
+import io.okagent.module.product.domain.SolutionItem;
+import java.util.List;
+import java.util.UUID;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface SolutionItemRepository extends JpaRepository<SolutionItem, UUID> {
+    List<SolutionItem> findBySolutionIdOrderBySortOrderAsc(UUID solutionId);
+
+    void deleteBySolutionId(UUID solutionId);
+}

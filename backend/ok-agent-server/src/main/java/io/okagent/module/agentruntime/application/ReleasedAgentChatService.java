@@ -10,32 +10,32 @@ import io.agentscope.core.event.ToolResultEndEvent;
 import io.agentscope.core.message.Msg;
 import io.agentscope.core.permission.PermissionMode;
 import io.agentscope.harness.agent.HarnessAgent;
-import io.okagent.domain.agent.AgentAsset;
-import io.okagent.domain.channel.ChannelAsset;
+import io.okagent.module.agent.domain.AgentAsset;
+import io.okagent.module.channel.domain.ChannelAsset;
 import io.okagent.module.conversation.domain.DialogueSession;
-import io.okagent.domain.release.AgentRelease;
-import io.okagent.domain.release.AgentVersion;
+import io.okagent.module.release.domain.AgentRelease;
+import io.okagent.module.release.domain.AgentVersion;
 import io.okagent.infrastructure.store.JdbcAgentStateStore;
 import io.okagent.module.customerchat.application.CustomerChatCommand;
 import io.okagent.module.customerchat.application.CustomerChatResult;
 import io.okagent.module.customerchat.application.CustomerChatService;
-import io.okagent.repository.agent.AgentAssetRepository;
-import io.okagent.repository.channel.ChannelAssetRepository;
-import io.okagent.repository.model.ModelAssetRepository;
-import io.okagent.repository.release.AgentReleaseRepository;
-import io.okagent.repository.release.AgentVersionRepository;
-import io.okagent.service.agent.HarnessAgentFactory;
-import io.okagent.service.agent.ResolvedAgentConfig;
-import io.okagent.service.agent.ResolvedSubagent;
+import io.okagent.module.agent.infrastructure.persistence.AgentAssetRepository;
+import io.okagent.module.channel.infrastructure.persistence.ChannelAssetRepository;
+import io.okagent.module.model.infrastructure.persistence.ModelAssetRepository;
+import io.okagent.module.release.infrastructure.persistence.AgentReleaseRepository;
+import io.okagent.module.release.infrastructure.persistence.AgentVersionRepository;
+import io.okagent.module.agent.application.HarnessAgentFactory;
+import io.okagent.module.agent.application.ResolvedAgentConfig;
+import io.okagent.module.agent.application.ResolvedSubagent;
 import io.okagent.module.conversation.application.DialogueService;
-import io.okagent.service.intent.IntentClassification;
-import io.okagent.service.intent.IntentDto;
-import io.okagent.service.intent.IntentNode;
-import io.okagent.service.intent.IntentService;
-import io.okagent.service.model.ApiKeyCipher;
-import io.okagent.service.observe.TraceCollectingMiddleware;
-import io.okagent.service.persona.PersonaExtractionService;
-import io.okagent.service.release.ReleaseAgentConfig;
+import io.okagent.module.intent.application.IntentClassification;
+import io.okagent.module.intent.application.IntentDto;
+import io.okagent.module.intent.application.IntentNode;
+import io.okagent.module.intent.application.IntentService;
+import io.okagent.module.model.application.ApiKeyCipher;
+import io.okagent.module.observe.application.TraceCollectingMiddleware;
+import io.okagent.module.persona.application.PersonaExtractionService;
+import io.okagent.module.release.application.ReleaseAgentConfig;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -381,7 +381,7 @@ public class ReleasedAgentChatService implements CustomerChatService {
         return sb.toString();
     }
 
-    private String callLlm(io.okagent.domain.model.ModelAsset model, String prompt) {
+    private String callLlm(io.okagent.module.model.domain.ModelAsset model, String prompt) {
         try {
             Map<String, Object> body = new java.util.LinkedHashMap<>();
             body.put("model", model.getModelId());

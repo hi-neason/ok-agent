@@ -1,5 +1,7 @@
 package io.okagent.module.workbench.api;
 
+import io.okagent.module.workbench.application.*;
+
 import io.okagent.module.workbench.application.DialogueOutcomeDraft;
 import io.okagent.module.workbench.application.DialogueOutcomeService;
 import io.okagent.module.workbench.application.DialogueOutcomeView;

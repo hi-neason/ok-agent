@@ -2,7 +2,7 @@ package io.okagent.module.identity.application;
 
 import io.okagent.module.identity.domain.SecurityAuditEvent;
 import io.okagent.module.identity.infrastructure.persistence.SecurityAuditEventRepository;
-import io.okagent.module.identity.api.SecurityAuditResponse;
+import io.okagent.module.identity.application.SecurityAuditResponse;
 import java.time.Instant;
 import java.util.UUID;
 import org.springframework.data.domain.Page;

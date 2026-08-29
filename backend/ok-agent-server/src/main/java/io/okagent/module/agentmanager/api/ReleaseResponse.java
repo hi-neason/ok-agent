@@ -1,8 +1,8 @@
 package io.okagent.module.agentmanager.api;
 
-import io.okagent.domain.release.AgentRelease;
-import io.okagent.domain.release.ReleaseStatus;
-import io.okagent.domain.release.ReleaseTargetType;
+import io.okagent.module.release.domain.AgentRelease;
+import io.okagent.module.release.domain.ReleaseStatus;
+import io.okagent.module.release.domain.ReleaseTargetType;
 import java.time.Instant;
 import java.util.UUID;
 

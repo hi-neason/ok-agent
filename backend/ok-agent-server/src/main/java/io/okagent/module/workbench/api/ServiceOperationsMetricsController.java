@@ -1,5 +1,7 @@
 package io.okagent.module.workbench.api;
 
+import io.okagent.module.workbench.application.*;
+
 import io.okagent.module.workbench.application.ServiceOperationsMetricsService;
 import io.okagent.module.workbench.application.ServiceOperationsMetricsView;
 import org.springframework.web.bind.annotation.GetMapping;

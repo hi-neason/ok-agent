@@ -1,0 +1,34 @@
+package io.okagent.module.mcp.application;
+
+import io.okagent.module.mcp.application.*;
+import java.util.*;
+import org.springframework.data.domain.Page;
+
+public interface McpServerService {
+    /** Lists reusable MCP server configurations, paginated by most-recently-updated. */
+    Page<McpServerResponse> list(int page, int size);
+
+    /** Creates a reusable MCP server configuration. */
+    McpServerResponse create(McpServerRequest request);
+
+    /** Updates an existing MCP server configuration while preserving omitted secrets. */
+    McpServerResponse update(UUID id, McpServerRequest request);
+
+    /** Enables or disables an MCP server for Agent references. */
+    McpServerResponse setEnabled(UUID id, boolean enabled);
+
+    /** Deletes an MCP server and its discovered tool snapshot. */
+    void delete(UUID id);
+
+    /** Tests a saved connection and refreshes its discovered tool snapshot. */
+    McpInspectionResponse inspect(UUID id);
+
+    /** Tests an unsaved connection without persisting its configuration. */
+    McpInspectionResponse inspect(McpServerRequest request);
+
+    /** Returns the latest discovered tool snapshot for a server. */
+    List<McpToolResponse> tools(UUID id);
+
+    /** Invokes a tool through a saved MCP server configuration for development debugging. */
+    McpToolCallResponse callTool(UUID id, String toolName, McpToolCallRequest request);
+}

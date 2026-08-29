@@ -48,7 +48,7 @@ export const navItems: NavItem[] = [
   { id: "skills", area: "agent", group: "component", icon: "✦", kicker: "SKILL" },
   { id: "mcp", area: "agent", group: "component", icon: "⌘", kicker: "MCP" },
   { id: "knowledge", area: "agent", group: "component", icon: "◫", kicker: "KNOWLEDGE" },
-  { id: "products", area: "agent", group: "component", icon: "◈", kicker: "PRODUCT" },
+  { id: "products", area: "agent", group: "business", icon: "◈", kicker: "PRODUCT" },
   { id: "workflows", area: "agent", group: "component", icon: "⌁", kicker: "WORKFLOW" },
   { id: "channels", area: "agent", group: "business", icon: "⇄", kicker: "CHANNEL" },
   { id: "intents", area: "agent", group: "business", icon: "⌥", kicker: "INTENT" },

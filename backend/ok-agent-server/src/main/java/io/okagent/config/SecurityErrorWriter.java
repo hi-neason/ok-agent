@@ -5,13 +5,17 @@ import io.okagent.shared.api.Response;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import org.springframework.http.MediaType;
+import org.springframework.stereotype.Component;
 
+@Component
 final class SecurityErrorWriter {
-    private static final ObjectMapper JSON = new ObjectMapper();
+    private final ObjectMapper json;
 
-    private SecurityErrorWriter() {}
+    SecurityErrorWriter(ObjectMapper json) {
+        this.json = json;
+    }
 
-    static void write(
+    void write(
             HttpServletResponse response,
             int status,
             String message,
@@ -19,6 +23,6 @@ final class SecurityErrorWriter {
             throws IOException {
         response.setStatus(status);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        JSON.writeValue(response.getOutputStream(), Response.error(message, message, path));
+        json.writeValue(response.getOutputStream(), Response.error(message, message, path));
     }
 }

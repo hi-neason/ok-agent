@@ -11,13 +11,19 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
+    private final SecurityErrorWriter errorWriter;
+
+    public RestAuthenticationEntryPoint(SecurityErrorWriter errorWriter) {
+        this.errorWriter = errorWriter;
+    }
+
     @Override
     public void commence(
             HttpServletRequest request,
             HttpServletResponse response,
             AuthenticationException authenticationException)
             throws IOException, ServletException {
-        SecurityErrorWriter.write(
+        errorWriter.write(
                 response,
                 HttpStatus.UNAUTHORIZED.value(),
                 "AUTHENTICATION_REQUIRED",

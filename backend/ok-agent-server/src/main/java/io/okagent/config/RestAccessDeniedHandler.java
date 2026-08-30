@@ -11,13 +11,19 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class RestAccessDeniedHandler implements AccessDeniedHandler {
+    private final SecurityErrorWriter errorWriter;
+
+    public RestAccessDeniedHandler(SecurityErrorWriter errorWriter) {
+        this.errorWriter = errorWriter;
+    }
+
     @Override
     public void handle(
             HttpServletRequest request,
             HttpServletResponse response,
             AccessDeniedException accessDeniedException)
             throws IOException, ServletException {
-        SecurityErrorWriter.write(
+        errorWriter.write(
                 response,
                 HttpStatus.FORBIDDEN.value(),
                 "INSUFFICIENT_PERMISSIONS",

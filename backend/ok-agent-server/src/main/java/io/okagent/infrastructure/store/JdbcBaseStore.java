@@ -26,10 +26,11 @@ import org.springframework.stereotype.Repository;
 public class JdbcBaseStore implements BaseStore {
 
     private final JdbcTemplate jdbc;
-    private final ObjectMapper json = new ObjectMapper();
+    private final ObjectMapper json;
 
-    public JdbcBaseStore(JdbcTemplate jdbcTemplate) {
+    public JdbcBaseStore(JdbcTemplate jdbcTemplate, ObjectMapper json) {
         this.jdbc = jdbcTemplate;
+        this.json = json;
     }
 
     private static String namespace(List<String> namespace) {
@@ -49,7 +50,7 @@ public class JdbcBaseStore implements BaseStore {
         Map<String, Object> row = rows.get(0);
         String valueJson = (String) row.get("value_json");
         long version = ((Number) row.get("version")).longValue();
-        return new StoreItem(key, parse(valueJson), version);
+        return new StoreItem(key, parse(ns, key, valueJson), version);
     }
 
     @Override
@@ -105,7 +106,7 @@ public class JdbcBaseStore implements BaseStore {
             String k = (String) row.get("item_key");
             String valueJson = (String) row.get("value_json");
             long version = ((Number) row.get("version")).longValue();
-            items.add(new StoreItem(k, parse(valueJson), version));
+            items.add(new StoreItem(k, parse(ns, k, valueJson), version));
         }
         return items;
     }
@@ -116,11 +117,13 @@ public class JdbcBaseStore implements BaseStore {
         jdbc.update("DELETE FROM workspace_kv WHERE namespace = ? AND item_key = ?", ns, key);
     }
 
-    private Map<String, Object> parse(String valueJson) {
+    private Map<String, Object> parse(String namespace, String key, String valueJson) {
         try {
             return json.readValue(valueJson, new TypeReference<Map<String, Object>>() {});
         } catch (Exception e) {
-            return Map.of();
+            throw new IllegalStateException(
+                    "Failed to deserialize BaseStore value namespace=" + namespace + ", key=" + key,
+                    e);
         }
     }
 

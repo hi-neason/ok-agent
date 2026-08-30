@@ -1,6 +1,7 @@
 package io.okagent.shared.api;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
 import io.okagent.module.identity.application.UserConflictException;
 import io.okagent.module.identity.application.UserNotFoundException;
 import io.okagent.module.model.application.ApiKeyProcessingException;
@@ -11,8 +12,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
@@ -77,6 +81,19 @@ public class GlobalExceptionHandler {
                 .orElse("请求参数校验失败");
         return ResponseEntity.badRequest().body(Response.error(
                 "VALIDATION_ERROR", message, request.getRequestURI()));
+    }
+
+    /** Normalizes query/path parameter binding and method-level validation failures. */
+    @ExceptionHandler({
+        ConstraintViolationException.class,
+        HandlerMethodValidationException.class,
+        MethodArgumentTypeMismatchException.class,
+        MissingServletRequestParameterException.class
+    })
+    public ResponseEntity<Response<Void>> handleRequestParameterValidation(
+            Exception ex, HttpServletRequest request) {
+        return ResponseEntity.badRequest().body(Response.error(
+                "VALIDATION_ERROR", "请求参数校验失败", request.getRequestURI()));
     }
 
     /** Returns a stable client error when the JSON request body cannot be decoded. */

@@ -52,6 +52,16 @@ class ApiAuthorizationTests {
     }
 
     @Test
+    void returnsValidationEnvelopeForInvalidQueryParameters() throws Exception {
+        mvc.perform(get("/api/v1/models")
+                        .param("page", "not-a-number")
+                        .with(jwtRole("VIEWER")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+    }
+
+    @Test
     void limitsAccountManagementToAdministrators() throws Exception {
         mvc.perform(get("/api/v1/accounts").with(jwtRole("VIEWER")))
                 .andExpect(status().isForbidden());

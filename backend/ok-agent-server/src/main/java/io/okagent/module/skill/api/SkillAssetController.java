@@ -88,7 +88,6 @@ public class SkillAssetController {
 
     /** Deletes a skill asset that is no longer managed by the platform. */
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
     public Response<Void> delete(@PathVariable UUID id) {
         service.delete(id);
         return Response.success(null);

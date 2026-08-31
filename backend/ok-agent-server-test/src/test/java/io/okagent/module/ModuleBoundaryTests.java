@@ -145,6 +145,21 @@ class ModuleBoundaryTests {
         assertThat(violations).as("controller endpoints returning an unwrapped response").isEmpty();
     }
 
+    @Test
+    void controllerResponsesAreNotDiscardedByNoContentStatus() throws IOException {
+        List<String> violations = new ArrayList<>();
+        try (var sources = Files.walk(MODULES)) {
+            for (Path source : sources
+                    .filter(file -> file.getFileName().toString().endsWith("Controller.java"))
+                    .toList()) {
+                if (Files.readString(source).contains("@ResponseStatus(HttpStatus.NO_CONTENT)")) {
+                    violations.add(MODULES.relativize(source).toString());
+                }
+            }
+        }
+        assertThat(violations).as("controllers discarding the standard response body").isEmpty();
+    }
+
     private static void assertNoReferences(String module, List<String> forbidden) throws IOException {
         assertFilesDoNotReference(MODULES.resolve(module), forbidden);
     }

@@ -53,7 +53,6 @@ public class ProductSourceController {
 
     /** Deletes a product source (its synced products keep source_id via ON DELETE SET NULL). */
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
     public Response<Void> delete(@PathVariable UUID id) {
         service.delete(id);
         return Response.success(null);

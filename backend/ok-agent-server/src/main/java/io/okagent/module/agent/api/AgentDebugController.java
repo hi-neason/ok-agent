@@ -32,7 +32,6 @@ public class AgentDebugController {
 
     /** Closes and discards a debug session so the next chat starts a fresh conversation. */
     @DeleteMapping("/sessions/{sessionId}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
     public Response<Void> resetSession(@PathVariable String sessionId, @RequestParam String userId) {
         service.resetSession(sessionId, userId);
         return Response.success(null);

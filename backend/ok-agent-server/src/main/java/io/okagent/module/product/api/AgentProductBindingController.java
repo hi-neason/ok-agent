@@ -32,7 +32,6 @@ public class AgentProductBindingController {
 
     /** Removes the agent's product binding, disabling all product tools. */
     @DeleteMapping
-    @ResponseStatus(HttpStatus.NO_CONTENT)
     public Response<Void> delete(@PathVariable UUID agentId) {
         service.delete(agentId);
         return Response.success(null);

@@ -54,7 +54,6 @@ public class UserGroupController {
 
     /** Deletes a user group that no longer contains any members. */
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
     public Response<Void> delete(@PathVariable UUID id) {
         service.delete(id);
         return Response.success(null);

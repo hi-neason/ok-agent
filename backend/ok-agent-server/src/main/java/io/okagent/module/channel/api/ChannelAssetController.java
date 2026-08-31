@@ -76,7 +76,6 @@ public class ChannelAssetController {
     }
 
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
     /** Deletes a channel instance and stops its runtime if active. */
     public Response<Void> delete(@PathVariable UUID id) {
         service.delete(id);

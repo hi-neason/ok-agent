@@ -70,7 +70,6 @@ public class UserController {
 
     /** Deletes a user. */
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
     public Response<Void> delete(@PathVariable UUID id) {
         service.delete(id);
         return Response.success(null);
@@ -86,7 +85,6 @@ public class UserController {
 
     /** Merges another user (secondary) into this user (primary). */
     @PostMapping("/{id}/merge")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
     public Response<Void> merge(@PathVariable UUID id, @RequestBody MergeRequest body) {
         mergeService.merge(id, body.secondaryId());
         return Response.success(null);

@@ -46,7 +46,6 @@ public class McpServerController {
 
     /** Deletes an MCP server and its tool snapshots. */
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
     public Response<Void> delete(@PathVariable UUID id) {
         service.delete(id);
         return Response.success(null);

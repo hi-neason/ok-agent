@@ -45,7 +45,6 @@ public class ModelAssetController {
     }
 
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
     /** Deletes a model asset that is no longer managed by the platform. */
     public Response<Void> delete(@PathVariable UUID id) {
         service.delete(id);

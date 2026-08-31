@@ -54,7 +54,6 @@ public class WorkflowSourceController {
 
     /** Deletes a workflow source and its catalog items. */
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
     public Response<Void> delete(@PathVariable UUID id) {
         service.delete(id);
         return Response.success(null);

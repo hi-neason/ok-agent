@@ -56,7 +56,6 @@ public class IntentController {
 
     /** Deletes an intent. Rejected if it still has children. */
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
     public Response<Void> delete(@PathVariable UUID id) {
         service.delete(id);
         return Response.success(null);

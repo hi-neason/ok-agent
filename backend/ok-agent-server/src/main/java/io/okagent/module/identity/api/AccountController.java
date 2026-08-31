@@ -58,7 +58,6 @@ public class AccountController {
 
     /** Replaces an interactive account password without returning credential material. */
     @PutMapping("/{id}/password")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
     public Response<Void> changePassword(
             @PathVariable UUID id,
             @AuthenticationPrincipal Jwt jwt,

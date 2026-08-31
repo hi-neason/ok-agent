@@ -2,6 +2,7 @@ package io.okagent.module.observe.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.okagent.module.observe.domain.SpanStatus;
 import io.okagent.module.observe.domain.SpanType;
 import java.util.Map;
@@ -9,7 +10,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 class TurnTracePayloadLimitsTests {
-    private final TracePayloadSanitizer sanitizer = new TracePayloadSanitizer();
+    private final TracePayloadSanitizer sanitizer = new TracePayloadSanitizer(new ObjectMapper());
 
     @Test
     void boundsToolInputAndStreamingOutput() {

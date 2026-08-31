@@ -2,10 +2,11 @@ package io.okagent.module.observe.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
 class TracePayloadSanitizerTests {
-    private final TracePayloadSanitizer sanitizer = new TracePayloadSanitizer();
+    private final TracePayloadSanitizer sanitizer = new TracePayloadSanitizer(new ObjectMapper());
 
     @Test
     void recursivelyRedactsSensitiveJsonFields() {
@@ -31,5 +32,14 @@ class TracePayloadSanitizerTests {
         assertThat(sanitized)
                 .doesNotContain("abc.def", "query-secret", "sk-abcdefghijk")
                 .contains("Bearer [REDACTED]", "api_key=[REDACTED]");
+    }
+
+    @Test
+    void redactsStructuredSecretsWhenPayloadIsMalformedJson() {
+        String payload = "{\"apiKey\":\"leaked-secret\", broken";
+
+        assertThat(sanitizer.sanitize(payload))
+                .doesNotContain("leaked-secret")
+                .contains("\"apiKey\":\"[REDACTED]\"");
     }
 }

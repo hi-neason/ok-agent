@@ -19,11 +19,17 @@ public class TracePayloadSanitizer {
     private static final Pattern QUERY_SECRET = Pattern.compile(
             "(?i)((?:api[_-]?key|access[_-]?token|refresh[_-]?token|token|password|secret)=)[^&\\s]+"
     );
+    private static final Pattern STRUCTURED_SECRET = Pattern.compile(
+            "(?i)([\\\"']?(?:api[_-]?key|access[_-]?token|refresh[_-]?token|token|password|secret)"
+                    + "[\\\"']?\\s*[:=]\\s*[\\\"']?)[^\\\"'\\s,}&]+"
+    );
     private static final Pattern OPENAI_KEY = Pattern.compile("\\bsk-[a-zA-Z0-9_-]{8,}\\b");
 
-    private final ObjectMapper json = new ObjectMapper();
+    private final ObjectMapper json;
 
-    public TracePayloadSanitizer() {}
+    public TracePayloadSanitizer(ObjectMapper json) {
+        this.json = json;
+    }
 
     public String sanitize(String payload) {
         if (payload == null || payload.isBlank()) {
@@ -74,6 +80,7 @@ public class TracePayloadSanitizer {
     private String sanitizeText(String value) {
         String sanitized = BEARER.matcher(value).replaceAll("$1" + REDACTED);
         sanitized = QUERY_SECRET.matcher(sanitized).replaceAll("$1" + REDACTED);
+        sanitized = STRUCTURED_SECRET.matcher(sanitized).replaceAll("$1" + REDACTED);
         return OPENAI_KEY.matcher(sanitized).replaceAll(REDACTED);
     }
 }

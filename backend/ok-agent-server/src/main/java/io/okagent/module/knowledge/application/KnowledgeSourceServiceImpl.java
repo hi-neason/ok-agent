@@ -33,17 +33,19 @@ public class KnowledgeSourceServiceImpl implements KnowledgeSourceService {
     private final KnowledgeCatalogItemRepository items;
     private final ApiKeyCipher cipher;
     private final List<KnowledgeProvider> providers;
-    private final ObjectMapper json = new ObjectMapper();
+    private final ObjectMapper json;
 
     public KnowledgeSourceServiceImpl(
             KnowledgeSourceRepository sources,
             KnowledgeCatalogItemRepository items,
             ApiKeyCipher cipher,
-            List<KnowledgeProvider> providers) {
+            List<KnowledgeProvider> providers,
+            ObjectMapper json) {
         this.sources = sources;
         this.items = items;
         this.cipher = cipher;
         this.providers = providers;
+        this.json = json;
     }
 
     @Override

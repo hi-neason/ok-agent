@@ -35,17 +35,19 @@ public class WorkflowSourceServiceImpl implements WorkflowSourceService {
     private final WorkflowCatalogItemRepository items;
     private final ApiKeyCipher cipher;
     private final List<WorkflowProvider> providers;
-    private final ObjectMapper json = new ObjectMapper();
+    private final ObjectMapper json;
 
     public WorkflowSourceServiceImpl(
             WorkflowSourceRepository sources,
             WorkflowCatalogItemRepository items,
             ApiKeyCipher cipher,
-            List<WorkflowProvider> providers) {
+            List<WorkflowProvider> providers,
+            ObjectMapper json) {
         this.sources = sources;
         this.items = items;
         this.cipher = cipher;
         this.providers = providers;
+        this.json = json;
     }
 
     @Override

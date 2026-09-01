@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.okagent.module.mcp.domain.McpServer;
 import io.okagent.module.mcp.domain.McpTransport;
 import io.okagent.module.mcp.infrastructure.persistence.McpServerRepository;
@@ -24,7 +25,8 @@ class McpServerServiceImplTests {
         when(servers.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
         when(inspector.inspect(any(), any(), any()))
                 .thenReturn(List.of(new McpToolResponse("search", "Search", "{}", null)));
-        var service = new McpServerServiceImpl(servers, tools, inspector, new ApiKeyCipher("test-encryption-key"));
+        var service = new McpServerServiceImpl(
+                servers, tools, inspector, new ApiKeyCipher("test-encryption-key"), new ObjectMapper());
         var request = new McpServerRequest(
                 "demo",
                 "Demo",
@@ -60,7 +62,12 @@ class McpServerServiceImplTests {
         when(inspector.callTool(any(), any(), any(), eq("add"), any()))
                 .thenReturn(new McpToolInvocationResult(true, "{\"content\":\"3\"}"));
         var service =
-                new McpServerServiceImpl(servers, toolSnapshots, inspector, new ApiKeyCipher("test-encryption-key"));
+                new McpServerServiceImpl(
+                        servers,
+                        toolSnapshots,
+                        inspector,
+                        new ApiKeyCipher("test-encryption-key"),
+                        new ObjectMapper());
 
         var response = service.callTool(id, "add", new McpToolCallRequest(Map.of("a", 1, "b", 2)));
 

@@ -20,17 +20,19 @@ public class McpServerServiceImpl implements McpServerService {
     private final McpToolSnapshotRepository tools;
     private final McpConnectionInspector inspector;
     private final ApiKeyCipher cipher;
-    private final ObjectMapper json = new ObjectMapper();
+    private final ObjectMapper json;
 
     public McpServerServiceImpl(
             McpServerRepository servers,
             McpToolSnapshotRepository tools,
             McpConnectionInspector inspector,
-            ApiKeyCipher cipher) {
+            ApiKeyCipher cipher,
+            ObjectMapper json) {
         this.servers = servers;
         this.tools = tools;
         this.inspector = inspector;
         this.cipher = cipher;
+        this.json = json;
     }
 
     @Override

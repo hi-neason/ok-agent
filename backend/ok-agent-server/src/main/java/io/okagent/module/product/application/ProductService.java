@@ -24,10 +24,11 @@ import org.springframework.data.domain.Sort;
 @Service
 public class ProductService {
     private final ProductRepository products;
-    private final ObjectMapper json = new ObjectMapper();
+    private final ObjectMapper json;
 
-    public ProductService(ProductRepository products) {
+    public ProductService(ProductRepository products, ObjectMapper json) {
         this.products = products;
+        this.json = json;
     }
 
     @Transactional(readOnly = true)

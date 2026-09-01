@@ -21,17 +21,19 @@ public class AgentWorkflowBindingServiceImpl implements AgentWorkflowBindingServ
     private final WorkflowCatalogItemRepository items;
     private final WorkflowSourceRepository sources;
     private final AgentAssetRepository agents;
-    private final ObjectMapper json = new ObjectMapper();
+    private final ObjectMapper json;
 
     public AgentWorkflowBindingServiceImpl(
             AgentWorkflowBindingRepository bindings,
             WorkflowCatalogItemRepository items,
             WorkflowSourceRepository sources,
-            AgentAssetRepository agents) {
+            AgentAssetRepository agents,
+            ObjectMapper json) {
         this.bindings = bindings;
         this.items = items;
         this.sources = sources;
         this.agents = agents;
+        this.json = json;
     }
 
     @Override

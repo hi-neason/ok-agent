@@ -25,11 +25,13 @@ public class UserPersonaServiceImpl implements UserPersonaService {
 
     private final UserPersonaRepository repository;
     private final JdbcBaseStore baseStore;
-    private final ObjectMapper json = new ObjectMapper();
+    private final ObjectMapper json;
 
-    public UserPersonaServiceImpl(UserPersonaRepository repository, JdbcBaseStore baseStore) {
+    public UserPersonaServiceImpl(
+            UserPersonaRepository repository, JdbcBaseStore baseStore, ObjectMapper json) {
         this.repository = repository;
         this.baseStore = baseStore;
+        this.json = json;
     }
 
     private static List<String> namespace(String userId, UUID agentId) {

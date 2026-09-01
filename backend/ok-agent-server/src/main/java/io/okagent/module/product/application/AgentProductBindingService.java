@@ -22,11 +22,13 @@ import org.springframework.web.server.ResponseStatusException;
 public class AgentProductBindingService {
     private final AgentProductBindingRepository bindings;
     private final AgentAssetRepository agents;
-    private final ObjectMapper json = new ObjectMapper();
+    private final ObjectMapper json;
 
-    public AgentProductBindingService(AgentProductBindingRepository bindings, AgentAssetRepository agents) {
+    public AgentProductBindingService(
+            AgentProductBindingRepository bindings, AgentAssetRepository agents, ObjectMapper json) {
         this.bindings = bindings;
         this.agents = agents;
+        this.json = json;
     }
 
     @Transactional(readOnly = true)

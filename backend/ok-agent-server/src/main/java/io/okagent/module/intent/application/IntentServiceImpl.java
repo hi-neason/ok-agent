@@ -23,10 +23,11 @@ public class IntentServiceImpl implements IntentService {
     private static final TypeReference<List<String>> STRING_LIST = new TypeReference<>() {};
 
     private final IntentRepository intents;
-    private final ObjectMapper json = new ObjectMapper();
+    private final ObjectMapper json;
 
-    public IntentServiceImpl(IntentRepository intents) {
+    public IntentServiceImpl(IntentRepository intents, ObjectMapper json) {
         this.intents = intents;
+        this.json = json;
     }
 
     @Override

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.okagent.shared.api.Response;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 
@@ -22,6 +23,7 @@ final class SecurityErrorWriter {
             String path)
             throws IOException {
         response.setStatus(status);
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         json.writeValue(response.getOutputStream(), Response.error(message, message, path));
     }

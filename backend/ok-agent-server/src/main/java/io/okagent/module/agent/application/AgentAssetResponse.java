@@ -1,5 +1,6 @@
 package io.okagent.module.agent.application;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.okagent.module.agent.domain.AgentAsset;
@@ -119,7 +120,7 @@ public record AgentAssetResponse(
     private static List<UUID> readUuidList(String json) {
         try {
             return JSON.readValue(json, UUID_LIST);
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
             return List.of();
         }
     }
@@ -127,7 +128,7 @@ public record AgentAssetResponse(
     private static Map<String, List<String>> readToolFilters(String json) {
         try {
             return JSON.readValue(json, TOOL_FILTERS);
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
             return Map.of();
         }
     }

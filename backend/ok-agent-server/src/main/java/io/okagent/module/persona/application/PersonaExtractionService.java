@@ -56,7 +56,7 @@ public class PersonaExtractionService {
     private final DialogueService dialogue;
     private final UserPersonaRepository personas;
     private final UserPersonaService personaService;
-    private final ObjectMapper json = new ObjectMapper();
+    private final ObjectMapper json;
     private final HttpClient http =
             HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build();
     private final ExecutorService executor = Executors.newFixedThreadPool(2, new ThreadFactory() {
@@ -76,13 +76,15 @@ public class PersonaExtractionService {
             ApiKeyCipher cipher,
             DialogueService dialogue,
             UserPersonaRepository personas,
-            UserPersonaService personaService) {
+            UserPersonaService personaService,
+            ObjectMapper json) {
         this.agents = agents;
         this.models = models;
         this.cipher = cipher;
         this.dialogue = dialogue;
         this.personas = personas;
         this.personaService = personaService;
+        this.json = json;
     }
 
     /** Fires extraction asynchronously after a chat round; no-op when the agent has extraction disabled. */

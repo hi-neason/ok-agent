@@ -59,7 +59,7 @@ public class DingTalkRegistrationService {
     private static final long FALLBACK_INTERVAL_SECONDS = 5;
     private static final long SESSION_TTL_SECONDS = 7200; // the device code advertises ~2h
 
-    private final ObjectMapper json = new ObjectMapper();
+    private final ObjectMapper json;
     private final HttpClient http = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(HTTP_TIMEOUT_SECONDS))
             .build();
@@ -70,6 +70,10 @@ public class DingTalkRegistrationService {
     });
 
     private final Map<String, RegistrationSession> sessions = new ConcurrentHashMap<>();
+
+    public DingTalkRegistrationService(ObjectMapper json) {
+        this.json = json;
+    }
 
     public StartedSession start() {
         String loginId = UUID.randomUUID().toString();

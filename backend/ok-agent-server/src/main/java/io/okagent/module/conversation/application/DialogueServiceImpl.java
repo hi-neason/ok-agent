@@ -11,6 +11,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.time.format.DateTimeParseException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -200,12 +201,12 @@ public class DialogueServiceImpl implements DialogueService {
             }
             LocalDateTime dateTime = LocalDateTime.parse(value);
             return new Parsed(dateTime.atZone(ZoneId.systemDefault()).toInstant(), false);
-        } catch (Exception ignored) {
+        } catch (DateTimeParseException ignored) {
             // fall through to instant parsing
         }
         try {
             return new Parsed(Instant.parse(value), false);
-        } catch (Exception ignored) {
+        } catch (DateTimeParseException ignored) {
             return null;
         }
     }

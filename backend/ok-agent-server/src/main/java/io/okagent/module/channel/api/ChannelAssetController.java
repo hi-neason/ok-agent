@@ -39,7 +39,7 @@ public class ChannelAssetController {
     @GetMapping
     /** Returns channel instances configured in the management scope. */
     public Response<PageResponse<ChannelAssetResponse>> list(
-            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(defaultValue = "0") @jakarta.validation.constraints.Min(0) int page, @RequestParam(defaultValue = "20") @jakarta.validation.constraints.Min(1) @jakarta.validation.constraints.Max(100) int size) {
         return Response.success(PageResponse.of(service.list(page, size)));
     }
 

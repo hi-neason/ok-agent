@@ -87,7 +87,7 @@ public class ReleasedAgentChatService implements CustomerChatService {
     private final DialogueService dialogue;
     private final JdbcAgentStateStore stateStore;
     private final PersonaExtractionService personaExtraction;
-    private final ObjectMapper json = new ObjectMapper();
+    private final ObjectMapper json;
     private final HttpClient http =
             HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build();
     private final Map<String, Session> sessions = new ConcurrentHashMap<>();
@@ -103,7 +103,8 @@ public class ReleasedAgentChatService implements CustomerChatService {
             HarnessAgentFactory factory,
             DialogueService dialogue,
             JdbcAgentStateStore stateStore,
-            PersonaExtractionService personaExtraction) {
+            PersonaExtractionService personaExtraction,
+            ObjectMapper json) {
         this.intents = intents;
         this.agents = agents;
         this.channels = channels;
@@ -115,6 +116,7 @@ public class ReleasedAgentChatService implements CustomerChatService {
         this.dialogue = dialogue;
         this.stateStore = stateStore;
         this.personaExtraction = personaExtraction;
+        this.json = json;
     }
 
     @Override

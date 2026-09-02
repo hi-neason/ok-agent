@@ -36,11 +36,15 @@ public class DifyKnowledgeProvider implements KnowledgeProvider {
     private static final int PAGE_SIZE = 100;
     private static final int DEFAULT_TOP_K = 5;
 
-    private final ObjectMapper json = new ObjectMapper();
+    private final ObjectMapper json;
     private final HttpClient http = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
             .followRedirects(HttpClient.Redirect.NORMAL)
             .build();
+
+    public DifyKnowledgeProvider(ObjectMapper json) {
+        this.json = json;
+    }
 
     /**
      * Cache of each dataset's own {@code retrieval_model_dict}, keyed by

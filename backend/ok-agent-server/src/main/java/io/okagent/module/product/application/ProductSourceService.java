@@ -39,17 +39,19 @@ public class ProductSourceService {
     private final ProductRepository products;
     private final ApiKeyCipher cipher;
     private final List<ProductProvider> providers;
-    private final ObjectMapper json = new ObjectMapper();
+    private final ObjectMapper json;
 
     public ProductSourceService(
             ProductSourceRepository sources,
             ProductRepository products,
             ApiKeyCipher cipher,
-            List<ProductProvider> providers) {
+            List<ProductProvider> providers,
+            ObjectMapper json) {
         this.sources = sources;
         this.products = products;
         this.cipher = cipher;
         this.providers = providers;
+        this.json = json;
     }
 
     @Transactional(readOnly = true)

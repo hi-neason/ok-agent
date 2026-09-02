@@ -27,22 +27,23 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class WechatIlinkLoginServiceImpl implements WechatIlinkLoginService {
 
-    private static final ObjectMapper JSON = new ObjectMapper();
-
     private final ChannelAssetRepository channels;
     private final ChannelIlinkSessionRepository sessions;
     private final ApiKeyCipher cipher;
     private final ApplicationEventPublisher events;
+    private final ObjectMapper json;
 
     public WechatIlinkLoginServiceImpl(
             ChannelAssetRepository channels,
             ChannelIlinkSessionRepository sessions,
             ApiKeyCipher cipher,
-            ApplicationEventPublisher events) {
+            ApplicationEventPublisher events,
+            ObjectMapper json) {
         this.channels = channels;
         this.sessions = sessions;
         this.cipher = cipher;
         this.events = events;
+        this.json = json;
     }
 
     @Override
@@ -164,7 +165,7 @@ public class WechatIlinkLoginServiceImpl implements WechatIlinkLoginService {
             return Map.of();
         }
         try {
-            return JSON.readValue(configJson, new TypeReference<Map<String, String>>() {});
+            return json.readValue(configJson, new TypeReference<Map<String, String>>() {});
         } catch (Exception e) {
             return Map.of();
         }

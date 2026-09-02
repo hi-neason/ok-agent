@@ -34,7 +34,7 @@ public class WorkflowRuntimeCatalog {
     private final WorkflowExecutionAuditRepository audits;
     private final WorkflowSourceServiceImpl sourceService;
     private final List<WorkflowProvider> providers;
-    private final ObjectMapper json = new ObjectMapper();
+    private final ObjectMapper json;
     private final Map<String, Long> recentExecutions = new ConcurrentHashMap<>();
 
     public WorkflowRuntimeCatalog(
@@ -43,13 +43,15 @@ public class WorkflowRuntimeCatalog {
             WorkflowSourceRepository sources,
             WorkflowExecutionAuditRepository audits,
             WorkflowSourceServiceImpl sourceService,
-            List<WorkflowProvider> providers) {
+            List<WorkflowProvider> providers,
+            ObjectMapper json) {
         this.bindings = bindings;
         this.items = items;
         this.sources = sources;
         this.audits = audits;
         this.sourceService = sourceService;
         this.providers = providers;
+        this.json = json;
     }
 
     /** Returns the enabled workflows bound to the given agent, with overrides applied. */

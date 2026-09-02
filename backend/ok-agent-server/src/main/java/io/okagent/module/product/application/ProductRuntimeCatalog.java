@@ -35,11 +35,13 @@ public class ProductRuntimeCatalog {
 
     private final ProductRepository products;
     private final AgentProductBindingRepository bindings;
-    private final ObjectMapper json = new ObjectMapper();
+    private final ObjectMapper json;
 
-    public ProductRuntimeCatalog(ProductRepository products, AgentProductBindingRepository bindings) {
+    public ProductRuntimeCatalog(
+            ProductRepository products, AgentProductBindingRepository bindings, ObjectMapper json) {
         this.products = products;
         this.bindings = bindings;
+        this.json = json;
     }
 
     /** Returns true when the agent has an enabled product binding (drives toolkit registration). */

@@ -10,7 +10,11 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class AgentScopeMcpConnectionInspector implements McpConnectionInspector {
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
+
+    public AgentScopeMcpConnectionInspector(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
 
     @Override
     public List<McpToolResponse> inspect(

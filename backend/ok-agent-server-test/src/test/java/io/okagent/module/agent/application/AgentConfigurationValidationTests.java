@@ -93,7 +93,8 @@ class AgentConfigurationValidationTests {
                 skills,
                 mcpToolSnapshots,
                 validator,
-                mock(org.springframework.context.ApplicationEventPublisher.class));
+                mock(org.springframework.context.ApplicationEventPublisher.class),
+                new com.fasterxml.jackson.databind.ObjectMapper());
     }
 
     private Req validReq() {

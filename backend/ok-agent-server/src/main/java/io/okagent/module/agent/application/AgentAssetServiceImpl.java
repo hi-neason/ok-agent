@@ -51,7 +51,7 @@ public class AgentAssetServiceImpl implements AgentAssetService {
     private final McpToolSnapshotRepository mcpToolSnapshots;
     private final Validator validator;
     private final ApplicationEventPublisher events;
-    private final ObjectMapper json = new ObjectMapper();
+    private final ObjectMapper json;
 
     public AgentAssetServiceImpl(
             AgentAssetRepository agents,
@@ -60,7 +60,8 @@ public class AgentAssetServiceImpl implements AgentAssetService {
             SkillAssetRepository skills,
             McpToolSnapshotRepository mcpToolSnapshots,
             Validator validator,
-            ApplicationEventPublisher events) {
+            ApplicationEventPublisher events,
+            ObjectMapper json) {
         this.agents = agents;
         this.models = models;
         this.mcpServers = mcpServers;
@@ -68,6 +69,7 @@ public class AgentAssetServiceImpl implements AgentAssetService {
         this.mcpToolSnapshots = mcpToolSnapshots;
         this.validator = validator;
         this.events = events;
+        this.json = json;
     }
 
     @Override

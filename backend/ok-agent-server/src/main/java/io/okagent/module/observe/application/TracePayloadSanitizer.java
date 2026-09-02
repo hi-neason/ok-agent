@@ -1,5 +1,6 @@
 package io.okagent.module.observe.application;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -38,7 +39,7 @@ public class TracePayloadSanitizer {
         try {
             JsonNode root = sanitizeNode(json.readTree(payload));
             return json.writeValueAsString(root);
-        } catch (Exception ignored) {
+        } catch (JsonProcessingException ignored) {
             return sanitizeText(payload);
         }
     }

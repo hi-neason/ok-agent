@@ -160,6 +160,23 @@ class ModuleBoundaryTests {
         assertThat(violations).as("controllers discarding the standard response body").isEmpty();
     }
 
+    @Test
+    void controllerPaginationParametersAreBounded() throws IOException {
+        List<String> violations = new ArrayList<>();
+        try (var sources = Files.walk(MODULES)) {
+            for (Path source : sources
+                    .filter(file -> file.getFileName().toString().endsWith("Controller.java"))
+                    .toList()) {
+                String content = Files.readString(source);
+                if (content.contains("@RequestParam(defaultValue = \"20\") int size")
+                        || content.contains("@RequestParam(defaultValue = \"0\") int page")) {
+                    violations.add(MODULES.relativize(source).toString());
+                }
+            }
+        }
+        assertThat(violations).as("unbounded controller pagination parameters").isEmpty();
+    }
+
     private static void assertNoReferences(String module, List<String> forbidden) throws IOException {
         assertFilesDoNotReference(MODULES.resolve(module), forbidden);
     }

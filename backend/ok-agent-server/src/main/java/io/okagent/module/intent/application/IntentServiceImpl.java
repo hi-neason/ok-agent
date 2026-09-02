@@ -145,7 +145,7 @@ public class IntentServiceImpl implements IntentService {
         }
         try {
             return json.writeValueAsString(examples);
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
             return "[]";
         }
     }

@@ -39,8 +39,6 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class ChannelAssetServiceImpl implements ChannelAssetService {
 
-    private static final ObjectMapper JSON = new ObjectMapper();
-
     private final ChannelAssetRepository repository;
     private final AgentAssetRepository agentRepository;
     private final ChannelIlinkSessionRepository ilinkSessions;
@@ -50,6 +48,7 @@ public class ChannelAssetServiceImpl implements ChannelAssetService {
     private final ChannelOperatorService channelOperators;
     private final WechatLoginRegistrationService wechatRegistration;
     private final DingTalkRegistrationService dingtalkRegistration;
+    private final ObjectMapper objectMapper;
     private final String publicBaseUrl;
 
     public ChannelAssetServiceImpl(
@@ -62,6 +61,7 @@ public class ChannelAssetServiceImpl implements ChannelAssetService {
             ChannelOperatorService channelOperators,
             WechatLoginRegistrationService wechatRegistration,
             DingTalkRegistrationService dingtalkRegistration,
+            ObjectMapper objectMapper,
             @Value("${ok-agent.channels.public-base-url:}") String publicBaseUrl) {
         this.repository = repository;
         this.agentRepository = agentRepository;
@@ -72,6 +72,7 @@ public class ChannelAssetServiceImpl implements ChannelAssetService {
         this.channelOperators = channelOperators;
         this.wechatRegistration = wechatRegistration;
         this.dingtalkRegistration = dingtalkRegistration;
+        this.objectMapper = objectMapper;
         this.publicBaseUrl = publicBaseUrl;
     }
 
@@ -336,7 +337,7 @@ public class ChannelAssetServiceImpl implements ChannelAssetService {
             return flags;
         }
         try {
-            JsonNode node = JSON.readTree(json);
+            JsonNode node = objectMapper.readTree(json);
             if (node.isObject()) {
                 node.fields()
                         .forEachRemaining(
@@ -356,7 +357,7 @@ public class ChannelAssetServiceImpl implements ChannelAssetService {
         }
         try {
             String json = cipher.decrypt(ciphertext);
-            return JSON.readValue(json, new TypeReference<Map<String, String>>() {});
+            return objectMapper.readValue(json, new TypeReference<Map<String, String>>() {});
         } catch (Exception e) {
             return new LinkedHashMap<>();
         }
@@ -380,7 +381,7 @@ public class ChannelAssetServiceImpl implements ChannelAssetService {
 
     private String write(Object value) {
         try {
-            return JSON.writeValueAsString(value);
+            return objectMapper.writeValueAsString(value);
         } catch (Exception e) {
             throw new IllegalStateException("Failed to serialize channel config", e);
         }

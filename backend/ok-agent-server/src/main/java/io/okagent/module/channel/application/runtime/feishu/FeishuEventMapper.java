@@ -21,12 +21,12 @@ import java.util.Optional;
  */
 public final class FeishuEventMapper {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
-
     private final String channelId;
+    private final ObjectMapper mapper;
 
-    public FeishuEventMapper(String channelId) {
+    public FeishuEventMapper(String channelId, ObjectMapper mapper) {
         this.channelId = channelId;
+        this.mapper = mapper;
     }
 
     /** Parsed inbound turn: the normalized message plus the chat_id to reply to. */
@@ -93,12 +93,12 @@ public final class FeishuEventMapper {
     }
 
     /** Extracts the {@code text} field from the JSON-encoded message content string. */
-    private static String extractText(String contentJson) {
+    private String extractText(String contentJson) {
         if (contentJson == null || contentJson.isBlank()) {
             return null;
         }
         try {
-            JsonNode node = MAPPER.readTree(contentJson);
+            JsonNode node = mapper.readTree(contentJson);
             return node.path("text").asText(null);
         } catch (Exception e) {
             return null;

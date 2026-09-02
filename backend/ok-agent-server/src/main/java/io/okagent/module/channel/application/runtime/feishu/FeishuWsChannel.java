@@ -1,5 +1,6 @@
 package io.okagent.module.channel.application.runtime.feishu;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lark.oapi.event.EventDispatcher;
 import com.lark.oapi.service.im.ImService;
 import com.lark.oapi.service.im.v1.model.P2MessageReceiveV1;
@@ -87,13 +88,14 @@ public final class FeishuWsChannel implements Channel {
             ChannelIdentityResolver identityResolver,
             UUID agentId,
             String agentName,
-            String channelType) {
+            String channelType,
+            ObjectMapper objectMapper) {
         this.channelId = Objects.requireNonNull(channelId, "channelId");
         this.config = Objects.requireNonNull(config, "config");
         this.appId = Objects.requireNonNull(appId, "appId");
         this.appSecret = Objects.requireNonNull(appSecret, "appSecret");
         this.sender = new FeishuOutboundSender(Objects.requireNonNull(apiClient, "apiClient"));
-        this.mapper = new FeishuEventMapper(channelId);
+        this.mapper = new FeishuEventMapper(channelId, objectMapper);
         this.router = new ChannelRouter(config.defaultAgentId());
         this.dialogue = Objects.requireNonNull(dialogue, "dialogue");
         this.identityResolver = Objects.requireNonNull(identityResolver, "identityResolver");

@@ -114,7 +114,8 @@ public class ChannelGatewayFactory {
                 identityResolver,
                 released.agentId(),
                 released.agentName(),
-                asset.getType().name());
+                asset.getType().name(),
+                objectMapper);
 
         log.info(
                 "Building Feishu long-connection channel '{}' bound to agent '{}' (dmScope={})",

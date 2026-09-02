@@ -1,5 +1,6 @@
 package io.okagent.module.channel.application;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.okagent.module.channel.domain.ChannelAsset;
@@ -130,7 +131,7 @@ public record ChannelAssetResponse(
         }
         try {
             return JSON.readValue(json, new TypeReference<Map<String, Object>>() {});
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
             return Map.of();
         }
     }

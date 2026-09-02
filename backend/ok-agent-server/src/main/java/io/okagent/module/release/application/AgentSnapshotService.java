@@ -310,7 +310,7 @@ public class AgentSnapshotService {
             List<UUID> out = new ArrayList<>();
             for (JsonNode n : arr) out.add(UUID.fromString(n.asText()));
             return out;
-        } catch (Exception e) {
+        } catch (JsonProcessingException | IllegalArgumentException e) {
             return List.of();
         }
     }

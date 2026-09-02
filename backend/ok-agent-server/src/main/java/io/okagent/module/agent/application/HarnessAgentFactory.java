@@ -80,7 +80,7 @@ public class HarnessAgentFactory {
     private final IntentService intents;
     private final ProductRuntimeCatalog productCatalog;
     private final SolutionRuntimeCatalog solutionCatalog;
-    private final ObjectMapper json = new ObjectMapper();
+    private final ObjectMapper json;
 
     public HarnessAgentFactory(
             ModelAssetRepository models,
@@ -97,7 +97,8 @@ public class HarnessAgentFactory {
             TraceCollectingMiddleware traceMiddleware,
             IntentService intents,
             ProductRuntimeCatalog productCatalog,
-            SolutionRuntimeCatalog solutionCatalog) {
+            SolutionRuntimeCatalog solutionCatalog,
+            ObjectMapper json) {
         this.models = models;
         this.mcpServers = mcpServers;
         this.skills = skills;
@@ -113,6 +114,7 @@ public class HarnessAgentFactory {
         this.intents = intents;
         this.productCatalog = productCatalog;
         this.solutionCatalog = solutionCatalog;
+        this.json = json;
     }
 
     /** Debug entry: builds from the editable draft, resolving child agents from their current drafts. */

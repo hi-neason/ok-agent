@@ -328,7 +328,7 @@ public class AgentSnapshotService {
         try {
             JsonNode n = json.readTree(value == null || value.isBlank() ? "{}" : value);
             return n.isObject() ? n : json.createObjectNode();
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
             return json.createObjectNode();
         }
     }

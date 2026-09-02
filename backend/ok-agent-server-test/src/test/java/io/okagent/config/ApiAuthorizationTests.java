@@ -33,6 +33,7 @@ class ApiAuthorizationTests {
                 .andExpect(header().string("X-Content-Type-Options", "nosniff"))
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value("AUTHENTICATION_REQUIRED"))
+                .andExpect(jsonPath("$.timestamp").isString())
                 .andExpect(jsonPath("$.message").value("AUTHENTICATION_REQUIRED"));
         mvc.perform(get("/api/v1/workbench/sessions"))
                 .andExpect(status().isUnauthorized())

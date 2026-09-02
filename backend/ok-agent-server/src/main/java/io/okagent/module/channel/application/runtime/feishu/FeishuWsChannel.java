@@ -94,7 +94,8 @@ public final class FeishuWsChannel implements Channel {
         this.config = Objects.requireNonNull(config, "config");
         this.appId = Objects.requireNonNull(appId, "appId");
         this.appSecret = Objects.requireNonNull(appSecret, "appSecret");
-        this.sender = new FeishuOutboundSender(Objects.requireNonNull(apiClient, "apiClient"));
+        this.sender = new FeishuOutboundSender(
+                Objects.requireNonNull(apiClient, "apiClient"), objectMapper);
         this.mapper = new FeishuEventMapper(channelId, objectMapper);
         this.router = new ChannelRouter(config.defaultAgentId());
         this.dialogue = Objects.requireNonNull(dialogue, "dialogue");

@@ -13,12 +13,12 @@ import org.slf4j.LoggerFactory;
 public class FeishuOutboundSender {
 
     private static final Logger log = LoggerFactory.getLogger(FeishuOutboundSender.class);
-    private static final ObjectMapper JSON = new ObjectMapper();
-
     private final Client client;
+    private final ObjectMapper json;
 
-    public FeishuOutboundSender(Client client) {
+    public FeishuOutboundSender(Client client, ObjectMapper json) {
         this.client = client;
+        this.json = json;
     }
 
     /** Sends a text message to the given chat (works for both p2p and group chats). */
@@ -34,7 +34,7 @@ public class FeishuOutboundSender {
                     .createMessageReqBody(CreateMessageReqBody.newBuilder()
                             .receiveId(chatId)
                             .msgType("text")
-                            .content(JSON.writeValueAsString(content))
+                            .content(json.writeValueAsString(content))
                             .build())
                     .build();
             var resp = client.im().message().create(req);

@@ -25,6 +25,7 @@ final class SecurityErrorWriter {
         response.setStatus(status);
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setHeader("Cache-Control", "no-store");
         json.writeValue(response.getOutputStream(), Response.error(message, message, path));
     }
 }

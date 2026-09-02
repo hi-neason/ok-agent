@@ -1,6 +1,7 @@
 package io.okagent.infrastructure.store;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.agentscope.harness.agent.filesystem.remote.store.BaseStore;
 import io.agentscope.harness.agent.filesystem.remote.store.StoreItem;
@@ -120,7 +121,7 @@ public class JdbcBaseStore implements BaseStore {
     private Map<String, Object> parse(String namespace, String key, String valueJson) {
         try {
             return json.readValue(valueJson, new TypeReference<Map<String, Object>>() {});
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
             throw new IllegalStateException(
                     "Failed to deserialize BaseStore value namespace=" + namespace + ", key=" + key,
                     e);
@@ -130,7 +131,7 @@ public class JdbcBaseStore implements BaseStore {
     private String write(Map<String, Object> value) {
         try {
             return json.writeValueAsString(value);
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
             throw new IllegalStateException("Failed to serialize BaseStore value", e);
         }
     }

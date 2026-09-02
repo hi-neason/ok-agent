@@ -274,8 +274,8 @@ public class TraceCollectingMiddleware implements MiddlewareBase {
                 if (registered instanceof McpTool) {
                     return SpanType.MCP;
                 }
-            } catch (Exception ignored) {
-                // Toolkit lookup should not fail trace collection; fall through to TOOL.
+            } catch (Exception exception) {
+                log.debug("Failed to classify trace tool name={}", toolName, exception);
             }
         }
         return SpanType.TOOL;

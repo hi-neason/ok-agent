@@ -40,7 +40,6 @@ import org.springframework.transaction.support.TransactionTemplate;
 public class ChannelGatewayFactory {
 
     private static final Logger log = LoggerFactory.getLogger(ChannelGatewayFactory.class);
-    private static final ObjectMapper JSON = new ObjectMapper();
 
     private final HarnessAgentFactory agentFactory;
     private final ReleasedChannelAgentResolver releasedAgents;
@@ -49,6 +48,7 @@ public class ChannelGatewayFactory {
     private final DialogueService dialogue;
     private final ChannelIlinkSessionRepository ilinkSessions;
     private final TransactionTemplate tx;
+    private final ObjectMapper objectMapper;
 
     public ChannelGatewayFactory(
             HarnessAgentFactory agentFactory,
@@ -57,7 +57,8 @@ public class ChannelGatewayFactory {
             ChannelIdentityResolver identityResolver,
             DialogueService dialogue,
             ChannelIlinkSessionRepository ilinkSessions,
-            TransactionTemplate tx) {
+            TransactionTemplate tx,
+            ObjectMapper objectMapper) {
         this.agentFactory = agentFactory;
         this.releasedAgents = releasedAgents;
         this.cipher = cipher;
@@ -65,6 +66,7 @@ public class ChannelGatewayFactory {
         this.dialogue = dialogue;
         this.ilinkSessions = ilinkSessions;
         this.tx = tx;
+        this.objectMapper = objectMapper;
     }
 
     /**
@@ -226,7 +228,7 @@ public class ChannelGatewayFactory {
             return new LinkedHashMap<>();
         }
         try {
-            return JSON.readValue(json, new TypeReference<Map<String, Object>>() {});
+            return objectMapper.readValue(json, new TypeReference<Map<String, Object>>() {});
         } catch (Exception e) {
             throw new IllegalStateException("Failed to parse channel config", e);
         }
@@ -237,7 +239,8 @@ public class ChannelGatewayFactory {
             return Map.of();
         }
         try {
-            return JSON.readValue(cipher.decrypt(ciphertext), new TypeReference<Map<String, String>>() {});
+            return objectMapper.readValue(
+                    cipher.decrypt(ciphertext), new TypeReference<Map<String, String>>() {});
         } catch (Exception e) {
             throw new IllegalStateException("Failed to decrypt channel secrets", e);
         }

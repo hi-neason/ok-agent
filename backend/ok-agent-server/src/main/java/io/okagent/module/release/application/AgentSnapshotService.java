@@ -1,5 +1,6 @@
 package io.okagent.module.release.application;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -295,7 +296,7 @@ public class AgentSnapshotService {
                 }
                 out.put(id, keys);
             }
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
             log.warn("Failed to parse subagents_json for agent={}: {}", agent.getAgentKey(), e.getMessage());
         }
         return out;

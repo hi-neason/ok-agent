@@ -1,6 +1,7 @@
 package io.okagent.module.intent.application;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.okagent.module.intent.domain.Intent;
 import io.okagent.module.intent.infrastructure.persistence.IntentRepository;
@@ -133,7 +134,7 @@ public class IntentServiceImpl implements IntentService {
         }
         try {
             return json.readValue(raw, STRING_LIST);
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
             return new ArrayList<>();
         }
     }

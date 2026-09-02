@@ -254,8 +254,8 @@ public class AgentDebugServiceImpl implements AgentDebugService {
     private void closeQuietly(HarnessAgent agent) {
         try {
             agent.close();
-        } catch (Exception ignored) {
-            // best effort
+        } catch (Exception exception) {
+            log.debug("Failed to close debug agent", exception);
         }
     }
 

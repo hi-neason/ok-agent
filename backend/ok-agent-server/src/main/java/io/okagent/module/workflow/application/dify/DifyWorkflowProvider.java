@@ -31,11 +31,15 @@ public class DifyWorkflowProvider implements WorkflowProvider {
     private static final String SELF_WORKFLOW_ID = "self";
     private static final int OUTPUT_SUMMARY_LIMIT = 4000;
 
-    private final ObjectMapper json = new ObjectMapper();
+    private final ObjectMapper json;
     private final HttpClient http = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
             .followRedirects(HttpClient.Redirect.NORMAL)
             .build();
+
+    public DifyWorkflowProvider(ObjectMapper json) {
+        this.json = json;
+    }
 
     @Override
     public String type() {

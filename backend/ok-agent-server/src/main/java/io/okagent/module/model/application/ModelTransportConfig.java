@@ -4,6 +4,8 @@ import io.agentscope.core.model.transport.HttpTransport;
 import io.agentscope.core.model.transport.OkHttpTransport;
 import jakarta.annotation.PreDestroy;
 import java.time.Duration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -17,6 +19,8 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 public class ModelTransportConfig {
+
+    private static final Logger log = LoggerFactory.getLogger(ModelTransportConfig.class);
 
     private HttpTransport transport;
 
@@ -38,8 +42,8 @@ public class ModelTransportConfig {
         if (transport != null) {
             try {
                 transport.close();
-            } catch (Exception ignored) {
-                // best effort
+            } catch (Exception exception) {
+                log.debug("Failed to close model HTTP transport", exception);
             }
         }
     }

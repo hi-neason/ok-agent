@@ -1,5 +1,6 @@
 package io.okagent.module.release.application;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.okagent.module.agent.domain.AgentMemoryFlushMode;
@@ -40,7 +41,7 @@ public final class ReleaseAgentConfig implements ResolvedAgentConfig {
     public static ReleaseAgentConfig fromSnapshot(String snapshotJson) {
         try {
             return new ReleaseAgentConfig(JSON.readTree(snapshotJson));
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
             throw new IllegalArgumentException("Invalid version snapshot: " + e.getMessage(), e);
         }
     }

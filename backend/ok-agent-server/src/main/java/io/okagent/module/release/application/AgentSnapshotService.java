@@ -50,7 +50,7 @@ public class AgentSnapshotService {
     private final McpServerRepository mcpServers;
     private final SkillAssetRepository skills;
     private final ApiKeyCipher cipher;
-    private final ObjectMapper json = new ObjectMapper();
+    private final ObjectMapper json;
 
     public AgentSnapshotService(
             AgentAssetRepository agents,
@@ -58,13 +58,15 @@ public class AgentSnapshotService {
             ModelAssetRepository models,
             McpServerRepository mcpServers,
             SkillAssetRepository skills,
-            ApiKeyCipher cipher) {
+            ApiKeyCipher cipher,
+            ObjectMapper json) {
         this.agents = agents;
         this.versions = versions;
         this.models = models;
         this.mcpServers = mcpServers;
         this.skills = skills;
         this.cipher = cipher;
+        this.json = json;
     }
 
     public record SnapshotBundle(String snapshotJson, String contentHash, List<PinnedSubagent> pinnedSubagents) {}

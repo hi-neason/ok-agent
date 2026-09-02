@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.okagent.module.agent.domain.AgentAsset;
 import io.okagent.module.mcp.domain.McpServer;
 import io.okagent.module.mcp.domain.McpTransport;
@@ -84,7 +85,8 @@ class AgentSnapshotRuntimeAssetsTests {
         when(mcpServers.findById(mcpId)).thenReturn(Optional.of(mcp));
         when(skills.findById(skillId)).thenReturn(Optional.of(skill));
         AgentSnapshotService snapshots =
-                new AgentSnapshotService(agents, versions, models, mcpServers, skills, cipher);
+                new AgentSnapshotService(
+                        agents, versions, models, mcpServers, skills, cipher, new ObjectMapper());
 
         String snapshotJson = snapshots.buildSnapshot(agent).snapshotJson();
         model.update(

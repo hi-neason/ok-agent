@@ -140,7 +140,7 @@ public class ProductService {
     private String writeList(List<String> list) {
         try {
             return json.writeValueAsString(list == null ? List.of() : list);
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
             return "[]";
         }
     }

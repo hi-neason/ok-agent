@@ -1,5 +1,6 @@
 package io.okagent.module.persona.application;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.agentscope.harness.agent.filesystem.remote.store.StoreItem;
@@ -179,7 +180,7 @@ public class UserPersonaServiceImpl implements UserPersonaService {
     private String writeJson(Object value) {
         try {
             return json.writeValueAsString(value);
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
             throw new IllegalStateException("Failed to serialize persona json", e);
         }
     }

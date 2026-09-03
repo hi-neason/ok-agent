@@ -162,7 +162,7 @@ public class WorkflowSourceServiceImpl implements WorkflowSourceService {
             try {
                 detail = provider.describeRemote(config, summary.remoteWorkflowId());
             } catch (Exception e) {
-                log.warn("Failed to describe remote workflow {}: {}", summary.remoteWorkflowId(), e.getMessage());
+                log.warn("Failed to describe remote workflow {}: {}", summary.remoteWorkflowId(), e.getMessage(), e);
                 continue;
             }
             var previous = existing.get(detail.remoteWorkflowId());

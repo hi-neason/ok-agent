@@ -124,7 +124,7 @@ public class ChannelRuntimeManager {
         try {
             bootstrap.stop();
         } catch (Exception e) {
-            log.warn("Error stopping channel {}: {}", channelId, e.getMessage());
+            log.warn("Error stopping channel {}: {}", channelId, e.getMessage(), e);
         }
     }
 }

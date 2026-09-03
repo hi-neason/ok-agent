@@ -97,7 +97,7 @@ public class PersonaExtractionService {
             try {
                 runExtraction(agent, userId, sessionId);
             } catch (Exception e) {
-                log.warn("Persona extraction failed for agent={}, userId={}: {}", agentId, userId, e.getMessage());
+                log.warn("Persona extraction failed for agent={}, userId={}: {}", agentId, userId, e.getMessage(), e);
             }
         });
     }
@@ -204,7 +204,7 @@ public class PersonaExtractionService {
             if (!choices.isArray() || choices.isEmpty()) return null;
             return choices.get(0).path("message").path("content").asText("");
         } catch (Exception e) {
-            log.warn("LLM extraction call failed: {}", e.getMessage());
+            log.warn("LLM extraction call failed: {}", e.getMessage(), e);
             return null;
         }
     }
@@ -241,7 +241,7 @@ public class PersonaExtractionService {
                     tags.size(),
                     facts == null ? 0 : facts.length());
         } catch (Exception e) {
-            log.warn("Failed to apply persona extraction: {}", e.getMessage());
+            log.warn("Failed to apply persona extraction: {}", e.getMessage(), e);
         }
     }
 

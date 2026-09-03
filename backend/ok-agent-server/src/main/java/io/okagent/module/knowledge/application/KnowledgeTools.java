@@ -51,7 +51,7 @@ public class KnowledgeTools {
             }
             return sb.toString().trim();
         } catch (Exception e) {
-            log.warn("list_knowledge_bases failed for agent {}: {}", agentId, e.getMessage());
+            log.warn("list_knowledge_bases failed for agent {}: {}", agentId, e.getMessage(), e);
             return "Error listing knowledge bases: " + e.getMessage();
         }
     }
@@ -98,7 +98,7 @@ public class KnowledgeTools {
         } catch (SecurityException e) {
             return "Error: " + e.getMessage();
         } catch (Exception e) {
-            log.warn("search_knowledge failed for agent {}: {}", agentId, e.getMessage());
+            log.warn("search_knowledge failed for agent {}: {}", agentId, e.getMessage(), e);
             return "Error searching knowledge: " + e.getMessage();
         }
     }

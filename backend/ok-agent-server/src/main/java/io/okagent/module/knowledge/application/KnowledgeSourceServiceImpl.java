@@ -326,7 +326,7 @@ public class KnowledgeSourceServiceImpl implements KnowledgeSourceService {
     private String write(Object value) {
         try {
             return json.writeValueAsString(value);
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
             throw new IllegalStateException("Failed to serialize value", e);
         }
     }

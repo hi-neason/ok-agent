@@ -159,7 +159,7 @@ public class ProductSourceService {
         try {
             remote = provider.listProducts(toConfig(source));
         } catch (Exception e) {
-            log.warn("Product sync failed for source {}: {}", source.getSourceKey(), e.getMessage());
+            log.warn("Product sync failed for source {}: {}", source.getSourceKey(), e.getMessage(), e);
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Product sync failed: " + e.getMessage());
         }
         int upserted = 0;

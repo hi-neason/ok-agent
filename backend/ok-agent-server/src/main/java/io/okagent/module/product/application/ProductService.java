@@ -149,7 +149,7 @@ public class ProductService {
         if (value == null || value.isBlank()) return new HashMap<>();
         try {
             return json.readValue(value, new TypeReference<Map<String, Object>>() {});
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
             return new HashMap<>();
         }
     }

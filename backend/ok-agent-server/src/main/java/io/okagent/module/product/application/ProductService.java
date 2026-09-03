@@ -158,7 +158,7 @@ public class ProductService {
         if (value == null || value.isBlank()) return List.of();
         try {
             return json.readValue(value, new TypeReference<List<String>>() {});
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
             return List.of();
         }
     }

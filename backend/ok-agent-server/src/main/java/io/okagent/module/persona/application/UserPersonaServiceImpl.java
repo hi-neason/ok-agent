@@ -188,7 +188,7 @@ public class UserPersonaServiceImpl implements UserPersonaService {
     private String writeJsonSafe(Object value) {
         try {
             return json.writeValueAsString(value);
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
             return "";
         }
     }

@@ -1,3 +1,10 @@
 package io.okagent.module.identity.application;
 
-public record CreateUserGroupRequest(String groupKey, String name, String description, boolean enabled) {}
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
+public record CreateUserGroupRequest(
+        @NotBlank @Size(max = 64) String groupKey,
+        @NotBlank @Size(max = 128) String name,
+        @Size(max = 1024) String description,
+        boolean enabled) {}

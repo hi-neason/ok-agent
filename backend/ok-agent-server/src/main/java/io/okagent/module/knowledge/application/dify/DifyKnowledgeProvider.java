@@ -193,7 +193,7 @@ public class DifyKnowledgeProvider implements KnowledgeProvider {
             }
             return chunks;
         } catch (Exception e) {
-            log.warn("Dify retrieve failed for dataset {}: {}", remoteKnowledgeId, e.getMessage());
+            log.warn("Dify retrieve failed for dataset {}: {}", remoteKnowledgeId, e.getMessage(), e);
             throw new IllegalStateException("Failed to retrieve from Dify dataset: " + safeMessage(e), e);
         }
     }

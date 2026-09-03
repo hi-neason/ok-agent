@@ -234,7 +234,7 @@ public final class DingTalkStreamChannel implements Channel {
                 dialogue.recordMessage(sessionId, "user", userText, null, null);
             }
         } catch (Exception e) {
-            log.warn("DingTalk: failed to record user turn (session='{}'): {}", sessionId, e.getMessage());
+            log.warn("DingTalk: failed to record user turn (session='{}'): {}", sessionId, e.getMessage(), e);
         }
     }
 
@@ -258,7 +258,7 @@ public final class DingTalkStreamChannel implements Channel {
             }
             dialogue.touchSession(sessionId);
         } catch (Exception e) {
-            log.warn("DingTalk: failed to record assistant turn (session='{}'): {}", sessionId, e.getMessage());
+            log.warn("DingTalk: failed to record assistant turn (session='{}'): {}", sessionId, e.getMessage(), e);
         }
     }
 

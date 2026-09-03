@@ -1,5 +1,6 @@
 package io.okagent.module.product.application;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.okagent.module.product.domain.Product;
@@ -131,7 +132,7 @@ public class ProductService {
     private String writeJson(Map<String, Object> map) {
         try {
             return json.writeValueAsString(map == null ? Map.of() : map);
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
             return "{}";
         }
     }

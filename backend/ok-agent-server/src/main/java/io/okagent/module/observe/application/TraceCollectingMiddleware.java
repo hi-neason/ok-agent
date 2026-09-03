@@ -114,7 +114,7 @@ public class TraceCollectingMiddleware implements MiddlewareBase {
                     try {
                         sink.saveAll(trace.finish(rootStatus.get(), rootError.get()));
                     } catch (Exception e) {
-                        log.warn("Failed to persist trace {}: {}", traceId, e.getMessage());
+                        log.warn("Failed to persist trace {}: {}", traceId, e.getMessage(), e);
                     }
                 })
                 // Seed the per-turn trace into the downstream Reactor context so inner onModelCall

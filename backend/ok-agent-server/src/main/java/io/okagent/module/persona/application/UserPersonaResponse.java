@@ -50,7 +50,7 @@ public record UserPersonaResponse(
         if (value == null || value.isBlank()) return Map.of();
         try {
             return json.readValue(value, new TypeReference<Map<String, String>>() {});
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
             return Map.of();
         }
     }

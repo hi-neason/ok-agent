@@ -292,7 +292,7 @@ public class ReleasedAgentChatService implements CustomerChatService {
         try {
             raw = callLlm(model, buildClassificationPrompt(query, flat));
         } catch (Exception e) {
-            log.warn("Intent classification LLM call failed: {}", e.getMessage());
+            log.warn("Intent classification LLM call failed: {}", e.getMessage(), e);
             return new IntentClassification(null, null, 0.0, null, true);
         }
         if (raw == null || raw.isBlank()) {
@@ -309,7 +309,7 @@ public class ReleasedAgentChatService implements CustomerChatService {
                     .findFirst()
                     .orElse(null);
         } catch (Exception e) {
-            log.warn("Failed to parse intent classification: {}", e.getMessage());
+            log.warn("Failed to parse intent classification: {}", e.getMessage(), e);
             return new IntentClassification(null, null, 0.0, null, true);
         }
         if (matched == null || confidence < CONFIDENCE_FALLBACK) {
@@ -411,7 +411,7 @@ public class ReleasedAgentChatService implements CustomerChatService {
             if (!choices.isArray() || choices.isEmpty()) return null;
             return choices.get(0).path("message").path("content").asText("");
         } catch (Exception e) {
-            log.warn("Intent classification call failed: {}", e.getMessage());
+            log.warn("Intent classification call failed: {}", e.getMessage(), e);
             return null;
         }
     }

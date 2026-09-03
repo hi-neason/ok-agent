@@ -1,5 +1,6 @@
 package io.okagent.module.workflow.application;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.okagent.module.workflow.domain.WorkflowCatalogItem;
@@ -318,7 +319,7 @@ public class WorkflowSourceServiceImpl implements WorkflowSourceService {
                         : r.connectTimeoutSeconds());
         try {
             return json.writeValueAsString(config);
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
             throw new IllegalStateException("Failed to write source config", e);
         }
     }

@@ -1,3 +1,6 @@
 package io.okagent.module.persona.api;
 
-public record AppendMemoryRequest(String delta) {}
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
+public record AppendMemoryRequest(@NotBlank @Size(max = 20000) String delta) {}

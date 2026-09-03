@@ -1,5 +1,6 @@
 package io.okagent.module.product.application;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.okagent.module.product.domain.AgentProductBinding;
@@ -224,7 +225,7 @@ public class ProductRuntimeCatalog {
         if (value == null || value.isBlank()) return List.of();
         try {
             return json.readValue(value, new TypeReference<List<String>>() {});
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
             return List.of();
         }
     }

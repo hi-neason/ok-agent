@@ -226,7 +226,7 @@ public class HarnessAgentFactory {
                 collectIntents(node, intentByKey);
             }
         } catch (Exception e) {
-            log.warn("Failed to load intent tree for sub-agent descriptions: {}", e.getMessage());
+            log.warn("Failed to load intent tree for sub-agent descriptions: {}", e.getMessage(), e);
         }
         List<SubagentDeclaration> declarations = new ArrayList<>();
         for (ResolvedSubagent ref : refs) {

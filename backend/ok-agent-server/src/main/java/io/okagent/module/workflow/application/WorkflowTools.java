@@ -54,7 +54,7 @@ public class WorkflowTools {
             }
             return sb.toString().trim();
         } catch (Exception e) {
-            log.warn("list_workflows failed for agent {}: {}", agentId, e.getMessage());
+            log.warn("list_workflows failed for agent {}: {}", agentId, e.getMessage(), e);
             return "Error listing workflows: " + e.getMessage();
         }
     }
@@ -83,7 +83,7 @@ public class WorkflowTools {
         } catch (SecurityException e) {
             return "Error: " + e.getMessage();
         } catch (Exception e) {
-            log.warn("describe_workflow failed for agent {}: {}", agentId, e.getMessage());
+            log.warn("describe_workflow failed for agent {}: {}", agentId, e.getMessage(), e);
             return "Error describing workflow: " + e.getMessage();
         }
     }
@@ -115,7 +115,7 @@ public class WorkflowTools {
         } catch (SecurityException e) {
             return "Error: " + e.getMessage();
         } catch (Exception e) {
-            log.warn("start_workflow failed for agent {}: {}", agentId, e.getMessage());
+            log.warn("start_workflow failed for agent {}: {}", agentId, e.getMessage(), e);
             return "Error starting workflow: " + e.getMessage();
         }
     }

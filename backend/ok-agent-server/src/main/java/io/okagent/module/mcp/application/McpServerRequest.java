@@ -5,13 +5,13 @@ import jakarta.validation.constraints.*;
 import java.util.*;
 
 public record McpServerRequest(
-        @NotBlank String serverKey,
-        @NotBlank String name,
-        String description,
+        @NotBlank @Size(max = 128) String serverKey,
+        @NotBlank @Size(max = 128) String name,
+        @Size(max = 4000) String description,
         @NotNull McpTransport transport,
-        String serverUrl,
-        String command,
-        List<String> arguments,
+        @Size(max = 2048) String serverUrl,
+        @Size(max = 1024) String command,
+        @Size(max = 100) List<@Size(max = 4096) String> arguments,
         Map<String, String> headers,
         Map<String, String> environment,
         Map<String, String> queryParameters,

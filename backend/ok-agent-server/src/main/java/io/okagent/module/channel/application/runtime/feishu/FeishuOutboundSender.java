@@ -42,7 +42,7 @@ public class FeishuOutboundSender {
                 log.warn("Feishu send to chat {} failed: code={}, msg={}", chatId, resp.getCode(), resp.getMsg());
             }
         } catch (Exception e) {
-            log.warn("Feishu send to chat {} failed: {}", chatId, e.getMessage());
+            log.warn("Feishu send to chat {} failed: {}", chatId, e.getMessage(), e);
         }
     }
 }

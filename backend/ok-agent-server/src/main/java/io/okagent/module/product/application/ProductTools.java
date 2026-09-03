@@ -74,7 +74,7 @@ public class ProductTools {
                     topK == null ? 10 : topK);
             return renderProducts(products);
         } catch (Exception e) {
-            log.warn("search_products failed for agent {}: {}", agentId, e.getMessage());
+            log.warn("search_products failed for agent {}: {}", agentId, e.getMessage(), e);
             return "Error searching products: " + e.getMessage();
         }
     }
@@ -162,7 +162,7 @@ public class ProductTools {
                     + " get_product for full specs/details before quoting.");
             return sb.toString();
         } catch (Exception e) {
-            log.warn("recommend_products failed for agent {}: {}", agentId, e.getMessage());
+            log.warn("recommend_products failed for agent {}: {}", agentId, e.getMessage(), e);
             return "Error recommending products: " + e.getMessage();
         }
     }
@@ -205,7 +205,7 @@ public class ProductTools {
             }
             return sb.toString();
         } catch (Exception e) {
-            log.warn("get_product failed for agent {}: {}", agentId, e.getMessage());
+            log.warn("get_product failed for agent {}: {}", agentId, e.getMessage(), e);
             return "Error getting product: " + e.getMessage();
         }
     }
@@ -240,7 +240,7 @@ public class ProductTools {
             }
             return sb.toString().trim();
         } catch (Exception e) {
-            log.warn("list_solutions failed for agent {}: {}", agentId, e.getMessage());
+            log.warn("list_solutions failed for agent {}: {}", agentId, e.getMessage(), e);
             return "Error listing solutions: " + e.getMessage();
         }
     }
@@ -287,7 +287,7 @@ public class ProductTools {
             }
             return sb.toString();
         } catch (Exception e) {
-            log.warn("get_solution failed for agent {}: {}", agentId, e.getMessage());
+            log.warn("get_solution failed for agent {}: {}", agentId, e.getMessage(), e);
             return "Error getting solution: " + e.getMessage();
         }
     }

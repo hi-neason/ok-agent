@@ -150,7 +150,7 @@ public class DifyWorkflowProvider implements WorkflowProvider {
                     : data.path("error").asText();
             return WorkflowExecutionResult.failure(runId, error);
         } catch (Exception e) {
-            log.warn("Dify workflow execution failed: {}", e.getMessage());
+            log.warn("Dify workflow execution failed: {}", e.getMessage(), e);
             return WorkflowExecutionResult.failure(null, safeMessage(e));
         } finally {
             log.debug("Dify execute took {} ms", (System.nanoTime() - started) / 1_000_000);

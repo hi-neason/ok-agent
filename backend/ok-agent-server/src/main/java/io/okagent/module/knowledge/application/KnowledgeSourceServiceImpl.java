@@ -335,7 +335,7 @@ public class KnowledgeSourceServiceImpl implements KnowledgeSourceService {
         if (value == null || value.isBlank()) return Map.of();
         try {
             return json.readValue(value, new TypeReference<>() {});
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
             return Map.of();
         }
     }

@@ -1,5 +1,6 @@
 package io.okagent.module.knowledge.application;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.okagent.module.knowledge.domain.KnowledgeCatalogItem;
@@ -317,7 +318,7 @@ public class KnowledgeSourceServiceImpl implements KnowledgeSourceService {
                         : r.connectTimeoutSeconds());
         try {
             return json.writeValueAsString(config);
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
             throw new IllegalStateException("Failed to write source config", e);
         }
     }

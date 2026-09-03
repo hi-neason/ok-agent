@@ -297,7 +297,7 @@ public class AgentSnapshotService {
                 out.put(id, keys);
             }
         } catch (JsonProcessingException e) {
-            log.warn("Failed to parse subagents_json for agent={}: {}", agent.getAgentKey(), e.getMessage());
+            log.warn("Failed to parse subagents_json for agent={}: {}", agent.getAgentKey(), e.getMessage(), e);
         }
         return out;
     }

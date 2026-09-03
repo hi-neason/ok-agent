@@ -172,7 +172,7 @@ public final class WeChatIlinkChannel implements Channel {
                 if (!running.get()) {
                     break;
                 }
-                log.warn("WeChat iLink channel '{}' poll error: {}", channelId, e.getMessage());
+                log.warn("WeChat iLink channel '{}' poll error: {}", channelId, e.getMessage(), e);
                 sleep(backoff);
                 backoff = Math.min(backoff * 2, RECONNECT_MAX_MS);
             }
@@ -286,7 +286,7 @@ public final class WeChatIlinkChannel implements Channel {
         try {
             client.sendText(botToken, toUserId, contextToken, text);
         } catch (Exception e) {
-            log.warn("WeChat iLink send to {} failed: {}", toUserId, e.getMessage());
+            log.warn("WeChat iLink send to {} failed: {}", toUserId, e.getMessage(), e);
         }
     }
 
@@ -334,7 +334,7 @@ public final class WeChatIlinkChannel implements Channel {
                 dialogue.recordMessage(sessionId, "user", userText, null, null);
             }
         } catch (Exception e) {
-            log.warn("WeChat iLink: failed to record user turn (session='{}'): {}", sessionId, e.getMessage());
+            log.warn("WeChat iLink: failed to record user turn (session='{}'): {}", sessionId, e.getMessage(), e);
         }
     }
 
@@ -353,7 +353,7 @@ public final class WeChatIlinkChannel implements Channel {
             }
             dialogue.touchSession(sessionId);
         } catch (Exception e) {
-            log.warn("WeChat iLink: failed to record assistant turn (session='{}'): {}", sessionId, e.getMessage());
+            log.warn("WeChat iLink: failed to record assistant turn (session='{}'): {}", sessionId, e.getMessage(), e);
         }
     }
 

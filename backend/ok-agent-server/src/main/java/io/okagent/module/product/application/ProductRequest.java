@@ -2,6 +2,8 @@ package io.okagent.module.product.application;
 
 import io.okagent.module.product.domain.ProductStatus;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.util.List;
@@ -16,9 +18,9 @@ public record ProductRequest(
         BigDecimal priceMax,
         @Size(max = 8) String currency,
         Map<String, Object> spec,
-        String sellingPoints,
-        List<String> scenarioTags,
-        List<String> imageUrls,
-        String description,
+        @Size(max = 8000) String sellingPoints,
+        @Size(max = 100) List<@Size(max = 128) String> scenarioTags,
+        @Size(max = 100) List<@Size(max = 2048) String> imageUrls,
+        @Size(max = 20000) String description,
         ProductStatus status,
-        Integer weight) {}
+        @Min(-100000) @Max(100000) Integer weight) {}

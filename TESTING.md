@@ -4,6 +4,11 @@ Run before pushing:
 
 - Backend: `cd backend && mvn test` (Java 17+).
 - Frontend: `cd frontend && npm ci && npm test && npm run build` (Node 22).
+- Browser: `cd frontend && npx playwright install chromium && npm run test:browser`.
+  To use an already installed Chrome: `PLAYWRIGHT_CHANNEL=chrome npm run test:browser`.
+  The root workspace lockfile is authoritative. Tests start an isolated Vite
+  server on port 4273 and intercept all API requests with synthetic responses;
+  no running backend or real customer data is used.
 
 The GitHub Actions workflow runs both gates on pushes and pull requests and retains
 backend test reports. Configure these jobs as required branch checks separately;
@@ -25,8 +30,11 @@ adding a workflow alone does not prevent merges.
 
 ## Not yet covered
 
-These are not browser end-to-end tests. Real page rendering, interaction, save
-and reload flows still need browser automation. H2 tests do not validate Flyway
+Browser regressions now cover release Agent loading/reload, visible loading
+errors, and persona selection, editing, saving and reopening. These are UI
+integration tests with mocked APIs, not full-stack end-to-end tests.
+Other screens and real frontend/backend round trips remain unverified.
+H2 tests do not validate Flyway
 migrations against MySQL. Real provider delivery (Feishu, DingTalk, WeChat) is
 also outside these gates. Passing checks must not be described as proof that
 those external integrations or complete user journeys work.

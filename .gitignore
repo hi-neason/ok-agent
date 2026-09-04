@@ -43,3 +43,5 @@ backend/config/application-local.yml
 # WorkBuddy local workspace data (memory, skills, automations)
 .workbuddy/
 **/.workbuddy/
+frontend/test-results/
+frontend/playwright-report/

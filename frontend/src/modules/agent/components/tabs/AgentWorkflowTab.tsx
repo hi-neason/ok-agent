@@ -4,7 +4,7 @@ import { Button } from "../../../shared";
 import {
   listAgentBindings,
   listCatalog,
-  listSources,
+  listAllSources,
   replaceAgentBindings,
 } from "../../../workflow/api";
 import type {
@@ -41,13 +41,13 @@ export function AgentWorkflowTab({ agentId }: { agentId: string }) {
       setLoading(true);
       try {
         const [srcs, current] = await Promise.all([
-          listSources(0, 1000),
+          listAllSources(),
           listAgentBindings(agentId),
         ]);
         if (cancelled) return;
-        setSources(srcs.content);
+        setSources(srcs);
         const catalogLists = await Promise.all(
-          srcs.content.filter((s) => s.enabled).map((s) => listCatalog(s.id).catch(() => [] as WorkflowCatalogItem[])),
+          srcs.filter((s) => s.enabled).map((s) => listCatalog(s.id)),
         );
         if (cancelled) return;
         const all = catalogLists.flat();

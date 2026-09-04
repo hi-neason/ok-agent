@@ -4,7 +4,7 @@ import { Button } from "../../../shared";
 import {
   listAgentBindings,
   listCatalog,
-  listSources,
+  listAllSources,
   replaceAgentBindings,
 } from "../../../knowledge/api";
 import type {
@@ -53,15 +53,15 @@ export function AgentKnowledgeTab({ agentId }: { agentId: string }) {
       setLoading(true);
       try {
         const [srcs, current] = await Promise.all([
-          listSources(0, 1000),
+          listAllSources(),
           listAgentBindings(agentId),
         ]);
         if (cancelled) return;
-        setSources(srcs.content);
+        setSources(srcs);
         const catalogLists = await Promise.all(
-          srcs.content
+          srcs
             .filter((s) => s.enabled)
-            .map((s) => listCatalog(s.id).catch(() => [] as KnowledgeCatalogItem[])),
+            .map((s) => listCatalog(s.id)),
         );
         if (cancelled) return;
         setCatalog(catalogLists.flat());

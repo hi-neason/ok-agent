@@ -6,6 +6,11 @@ import type {
   KnowledgeSourceDraft,
 } from "./types";
 import type { Page } from "../shared";
+import { loadAllPages } from "../shared/loadAllPages";
+
+export function listAllSources(): Promise<KnowledgeSource[]> {
+  return loadAllPages(listSources);
+}
 
 async function jsonOrThrow<T>(res: Response): Promise<T> {
   if (!res.ok) {

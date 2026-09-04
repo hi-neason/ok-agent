@@ -177,7 +177,7 @@ public final class FeishuWsChannel implements Channel {
             try {
                 client.close();
             } catch (Exception e) {
-                log.debug("Error closing Feishu WS client '{}': {}", channelId, e.getMessage());
+                log.debug("Error closing Feishu WS client '{}': {}", channelId, e.getMessage(), e);
             }
         }
         ExecutorService runner = this.wsRunner;

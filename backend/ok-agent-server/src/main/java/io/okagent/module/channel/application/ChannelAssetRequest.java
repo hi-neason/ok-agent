@@ -10,7 +10,7 @@ import java.util.UUID;
  * update, leaving a secret blank preserves the previously stored value.
  */
 public record ChannelAssetRequest(
-        @Size(max = 128) String name,
+        @jakarta.validation.constraints.NotBlank @Size(max = 128) String name,
         ChannelType type,
         UUID boundAgentId,
         ChannelDmScope dmScope,

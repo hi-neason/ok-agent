@@ -98,5 +98,5 @@ public class UserController {
         return Response.success(mergeService.preview(id, secondaryId));
     }
 
-    record MergeRequest(UUID secondaryId) {}
+    record MergeRequest(@jakarta.validation.constraints.NotNull UUID secondaryId) {}
 }

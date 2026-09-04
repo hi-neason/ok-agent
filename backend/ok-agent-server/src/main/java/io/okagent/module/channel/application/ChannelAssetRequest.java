@@ -18,7 +18,7 @@ public record ChannelAssetRequest(
         @jakarta.validation.Valid WechatConfig wechat,
         @jakarta.validation.Valid DingTalkConfig dingtalk,
         @Size(max = 128) String wechatLoginId,
-        String dingtalkLoginId,
+        @Size(max = 128) String dingtalkLoginId,
         boolean enabled) {
 
     /** Feishu-provider non-secret config and write-only secrets. */

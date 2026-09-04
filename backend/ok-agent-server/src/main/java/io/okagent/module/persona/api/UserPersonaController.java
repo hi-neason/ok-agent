@@ -94,7 +94,7 @@ public class UserPersonaController {
     @PostMapping("/users/{userId}/agents/{agentId}/memory")
     @ResponseStatus(HttpStatus.CREATED)
     public Response<Map<String, String>> appendMemory(
-            @PathVariable String userId, @PathVariable UUID agentId, @RequestBody AppendMemoryRequest request) {
+            @PathVariable String userId, @PathVariable UUID agentId, @jakarta.validation.Valid @RequestBody AppendMemoryRequest request) {
         service.appendMemory(userId, agentId, request.delta());
         return Response.success(Map.of("memory", service.readMemory(userId, agentId)));
     }

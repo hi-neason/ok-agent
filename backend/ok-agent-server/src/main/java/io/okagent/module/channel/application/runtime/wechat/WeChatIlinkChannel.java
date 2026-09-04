@@ -306,7 +306,7 @@ public final class WeChatIlinkChannel implements Channel {
             return tx.execute(status ->
                     sessions.findByChannelId(channelDbId).map(ChannelIlinkSession::getPollCursor).orElse(""));
         } catch (Exception e) {
-            log.debug("WeChat iLink load cursor failed: {}", e.getMessage());
+            log.debug("WeChat iLink load cursor failed: {}", e.getMessage(), e);
             return "";
         }
     }

@@ -235,7 +235,8 @@ public class DifyKnowledgeProvider implements KnowledgeProvider {
             log.warn(
                     "Failed to fetch Dify dataset {} config, falling back to keyword_search: {}",
                     remoteKnowledgeId,
-                    safeMessage(e));
+                    safeMessage(e),
+                    e);
             ObjectNode fallback = json.createObjectNode();
             fallback.put("search_method", "keyword_search");
             return fallback;

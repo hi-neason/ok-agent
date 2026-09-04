@@ -151,6 +151,26 @@
   gap: 8px;
 }
 
+.inbox-customer-channels {
+  display: grid;
+  gap: 12px;
+  padding: 18px 22px;
+  border-bottom: 1px solid #dceafb;
+  background: #f6faff;
+  color: #244c76;
+}
+.inbox-channel-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.inbox-channel-tabs button {
+  padding: 7px 14px;
+  border: 1px solid #d3e4f8;
+  border-radius: 18px;
+  color: #597b9f;
+  background: white;
+  cursor: pointer;
+}
+.inbox-channel-tabs button[aria-pressed="true"] { background: #1978e5; color: white; border-color: #1978e5; }
+.inbox-customer-channels label { display: grid; gap: 6px; font-size: 12px; color: #718eaf; }
+.inbox-customer-channels select { width: 100%; min-width: 0; padding: 9px; border: 1px solid #d3e4f8; border-radius: 8px; background: white; color: #244c76; }
 .inbox-list-panel > header {
   display: flex;
   align-items: center;
@@ -236,7 +256,7 @@
   display: grid;
   min-width: 0;
   min-height: 0;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
   overflow: hidden;
   background: linear-gradient(rgba(255, 255, 255, 0.93), rgba(248, 252, 255, 0.93)),
     linear-gradient(90deg, rgba(51, 126, 200, 0.055) 1px, transparent 1px),

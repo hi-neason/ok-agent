@@ -12,6 +12,7 @@ export type WorkPriority = "LOW" | "NORMAL" | "HIGH" | "URGENT";
 
 export type ConversationWorkItem = {
   sessionId: string;
+  channelType?: string | null;
   agentId: string | null;
   agentName: string | null;
   title: string;

@@ -1,4 +1,9 @@
 import type { DialogueTurn } from "../observe/types";
+import { loadAllPages } from "../shared/loadAllPages";
+
+export function listCustomerSessions(status?: WorkStatus): Promise<ConversationWorkItem[]> {
+  return loadAllPages((page, size) => listWorkItems(status, page, size));
+}
 import type {
   ConversationWorkItem,
   ConversationWorkItemPage,

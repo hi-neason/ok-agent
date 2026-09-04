@@ -14,7 +14,7 @@ import {
   getTurns,
   listOperators,
   listCustomerCases,
-  listWorkItems,
+  listCustomerSessions,
   saveOutcome,
   saveSatisfaction,
 } from "./api";
@@ -31,6 +31,7 @@ import type {
   ServiceOperationsMetrics,
 } from "./types";
 import "./inbox.css";
+import { channelKey, customerKey, groupCustomers } from "./customerGroups";
 
 const QUEUES: Array<WorkStatus | "ALL"> = [
   "ALL",
@@ -73,12 +74,10 @@ function initials(value: string): string {
 
 export function InboxPage() {
   const { t, i18n } = useTranslation();
-  const [queue, setQueue] = useState<WorkStatus | "ALL">("WAITING_HUMAN");
+  const [queue, setQueue] = useState<WorkStatus | "ALL">("ALL");
   const [items, setItems] = useState<ConversationWorkItem[]>([]);
   const [pageNumber, setPageNumber] = useState(0);
   const [pageSize, setPageSize] = useState(20);
-  const [totalPages, setTotalPages] = useState(0);
-  const [totalElements, setTotalElements] = useState(0);
   const requestSequence = useRef(0);
   const [operators, setOperators] = useState<InboxOperator[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -100,31 +99,41 @@ export function InboxPage() {
     () => items.find((item) => item.sessionId === selectedId) ?? null,
     [items, selectedId],
   );
+  const customers = useMemo(() => groupCustomers(items), [items]);
+  const totalElements = customers.length;
+  const totalPages = Math.ceil(totalElements / pageSize);
+  const visibleCustomers = customers.slice(pageNumber * pageSize, (pageNumber + 1) * pageSize);
+  const selectedCustomer = selected ? customers.find((customer) => customer.key === customerKey(selected)) : null;
+  const selectedChannel = selected ? channelKey(selected) : null;
+  useEffect(() => {
+    if (loading) return;
+    if (pageNumber >= totalPages && pageNumber > 0) {
+      setPageNumber(Math.max(0, totalPages - 1));
+      return;
+    }
+    if (!visibleCustomers.some((customer) => customer.key === selectedCustomer?.key)) {
+      setSelectedId(visibleCustomers[0]?.latest.sessionId ?? null);
+    }
+  }, [customers, pageNumber, pageSize, loading, totalPages, selectedCustomer?.key]);
 
   const load = useCallback(async () => {
     const request = ++requestSequence.current;
     setLoading(true);
     setError("");
     try {
-      const [page, availableOperators, nextMetrics] = await Promise.all([
-        listWorkItems(queue === "ALL" ? undefined : queue, pageNumber, pageSize),
+      const [sessions, availableOperators, nextMetrics] = await Promise.all([
+        listCustomerSessions(queue === "ALL" ? undefined : queue),
         listOperators(),
         getServiceMetrics(),
       ]);
       if (request !== requestSequence.current) return;
-      if (pageNumber > 0 && pageNumber >= page.totalPages) {
-        setPageNumber(Math.max(0, page.totalPages - 1));
-        return;
-      }
-      setItems(page.content);
-      setTotalPages(page.totalPages);
-      setTotalElements(page.totalElements);
+      setItems(sessions);
       setOperators(availableOperators);
       setMetrics(nextMetrics);
       setSelectedId((current) =>
-        current && page.content.some((item) => item.sessionId === current)
+        current && sessions.some((item) => item.sessionId === current)
           ? current
-          : page.content[0]?.sessionId ?? null,
+          : groupCustomers(sessions)[0]?.latest.sessionId ?? null,
       );
     } catch (cause) {
       if (request !== requestSequence.current) return;
@@ -132,7 +141,7 @@ export function InboxPage() {
     } finally {
       if (request === requestSequence.current) setLoading(false);
     }
-  }, [queue, pageNumber, pageSize, t]);
+  }, [queue, t]);
 
   useEffect(() => {
     void load();
@@ -301,7 +310,7 @@ export function InboxPage() {
       <section className="inbox-workbench">
         <aside className="inbox-list-panel">
           <header>
-            <span>{t("inbox.queueTitle")}</span>
+            <span>{t("inbox.customerQueue")}</span>
             <b>{totalElements}</b>
           </header>
           <div className="inbox-list">
@@ -314,12 +323,13 @@ export function InboxPage() {
                 <small>{t("inbox.queueClearHint")}</small>
               </div>
             ) : (
-              items.map((item) => {
+              visibleCustomers.map((group) => {
+                const item = group.latest;
                 const customer = item.customerName || item.userId || t("inbox.anonymous");
                 return (
                   <button
-                    key={item.sessionId}
-                    className={`inbox-list-item ${selectedId === item.sessionId ? "selected" : ""}`}
+                    key={group.key}
+                    className={`inbox-list-item ${selectedCustomer?.key === group.key ? "selected" : ""}`}
                     onClick={() => setSelectedId(item.sessionId)}
                   >
                     <span className="inbox-customer-avatar">{initials(customer)}</span>
@@ -330,7 +340,8 @@ export function InboxPage() {
                       </span>
                       <strong>{item.title || t("inbox.untitled")}</strong>
                       <small>
-                        {item.agentName || "—"} · {t("inbox.turnCount", { count: item.turnCount })}
+                        {group.channels.map((channel) => t(`observe.channelTypes.${channel}`, { defaultValue: t("observe.channelTypes.UNKNOWN") })).join(" · ")}
+                        {" · "}{t("inbox.sessionCount", { count: group.sessions.length })}
                       </small>
                     </span>
                     <i className={`priority-stripe priority-${item.priority.toLowerCase()}`} />
@@ -359,6 +370,27 @@ export function InboxPage() {
             </div>
           ) : (
             <>
+              <div className="inbox-customer-channels">
+                <strong>{selectedCustomer?.latest.customerName || selected.userId || t("inbox.anonymous")}</strong>
+                <div className="inbox-channel-tabs" role="group" aria-label={t("inbox.customerChannels")}>
+                  {selectedCustomer?.channels.map((channel) => (
+                    <button key={channel} type="button" aria-pressed={channel === selectedChannel}
+                      onClick={() => setSelectedId(selectedCustomer.sessions.find((item) => channelKey(item) === channel)!.sessionId)}>
+                      {t(`observe.channelTypes.${channel}`, { defaultValue: t("observe.channelTypes.UNKNOWN") })}
+                    </button>
+                  ))}
+                </div>
+                <label>
+                  {t("inbox.channelHistory")}
+                  <select value={selected.sessionId} onChange={(event) => setSelectedId(event.target.value)}>
+                    {selectedCustomer?.sessions.filter((item) => channelKey(item) === selectedChannel).map((item) => (
+                      <option key={item.sessionId} value={item.sessionId}>
+                        {new Date(item.updatedAt).toLocaleString(locale)} · {item.agentName || "—"} · {item.title || item.sessionId}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
               <header className="inbox-conversation-head">
                 <div>
                   <small>{selected.sessionId}</small>

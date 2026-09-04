@@ -191,7 +191,8 @@ public class DialogueWorkItemServiceImpl implements DialogueWorkItemService {
                 session.getCreatedAt(),
                 session.getUpdatedAt(),
                 turns.countBySessionId(session.getSessionId()),
-                session.getRowVersion());
+                session.getRowVersion(),
+                session.getChannelType());
     }
 
     private Optional<User> findByUserId(String userId) {

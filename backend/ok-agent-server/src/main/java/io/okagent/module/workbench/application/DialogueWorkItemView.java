@@ -24,4 +24,5 @@ public record DialogueWorkItemView(
         Instant createdAt,
         Instant updatedAt,
         long turnCount,
-        long version) {}
+        long version,
+        String channelType) {}

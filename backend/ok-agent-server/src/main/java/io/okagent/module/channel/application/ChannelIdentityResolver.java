@@ -76,7 +76,8 @@ public class ChannelIdentityResolver {
                     channelType,
                     externalId,
                     channelKey,
-                    e.getMessage());
+                    e.getMessage(),
+                    e);
             return externalId;
         }
     }

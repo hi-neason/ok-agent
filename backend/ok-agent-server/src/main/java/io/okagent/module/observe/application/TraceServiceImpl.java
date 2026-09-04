@@ -54,7 +54,8 @@ public class TraceServiceImpl implements TraceService, TraceSink {
                                 "Failed to persist {} span(s) for trace {}: {}",
                                 spans.size(),
                                 spans.get(0).getTraceId(),
-                                e.getMessage());
+                                e.getMessage(),
+                                e);
                     }
                 },
                 writer);

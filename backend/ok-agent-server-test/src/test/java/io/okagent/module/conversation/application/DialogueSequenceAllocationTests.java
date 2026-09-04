@@ -18,6 +18,26 @@ import org.junit.jupiter.api.Test;
 class DialogueSequenceAllocationTests {
 
     @Test
+    void recordsActualChannelTypeForExistingSessionsAndRejectsUnknownTypes() {
+        DialogueSession session =
+                new DialogueSession("session", UUID.randomUUID(), "title", "user", Instant.now());
+        DialogueSessionRepository sessions = mock(DialogueSessionRepository.class);
+        when(sessions.findForTurnAllocation("session")).thenReturn(Optional.of(session));
+        DialogueServiceImpl service = new DialogueServiceImpl(
+                sessions, mock(DialogueTurnRepository.class), mock(AgentAssetRepository.class));
+        for (String type : java.util.List.of("DINGTALK", "FEISHU", "WECHAT")) {
+            service.recordChannelType("session", type);
+            assertThat(session.getChannelType()).isEqualTo(type);
+        }
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                () -> service.recordChannelType("session", "INVALID"))
+                .isInstanceOf(IllegalArgumentException.class);
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                () -> service.recordChannelType("missing", "DINGTALK"))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+    }
+
+    @Test
     void bothMessageEntryPointsStartATransaction() throws Exception {
         var attributes = new org.springframework.transaction.annotation.AnnotationTransactionAttributeSource();
         for (var method : DialogueService.class.getMethods()) {

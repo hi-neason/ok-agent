@@ -155,6 +155,7 @@ export function ObserveSessionsPage({
           <span>{t("observe.session")}</span>
           <span>{t("observe.topic")}</span>
           <span>{t("observe.agent")}</span>
+          <span>{t("observe.channelType")}</span>
           <span>{t("observe.user")}</span>
           <span>{t("observe.turns")}</span>
           <span>{t("observe.updated")}</span>
@@ -179,6 +180,7 @@ export function ObserveSessionsPage({
                 <small>{new Date(session.createdAt).toLocaleString()}</small>
               </span>
               <span>{session.agentName ?? "—"}</span>
+              <span>{t(`observe.channelTypes.${session.channelType ?? (session.sessionId.startsWith("dbg-") ? "DEBUG" : session.sessionId.startsWith("web:") ? "WEB" : "UNKNOWN")}`, { defaultValue: t("observe.channelTypes.UNKNOWN") })}</span>
               <span>{session.userId ?? "—"}</span>
               <span>{session.turnCount}</span>
               <span>{new Date(session.updatedAt).toLocaleString()}</span>

@@ -1012,6 +1012,8 @@ const resources = {
       },
       observe: {
         historyKicker: "运行观测 / 对话历史",
+        channelType: "渠道类型",
+        channelTypes: { DINGTALK: "钉钉", FEISHU: "飞书", WECHAT: "微信", DEBUG: "调试", WEB: "网页", UNKNOWN: "未知" },
         replayKicker: "运行观测 / 会话回放",
         title: "运行观测",
         description:
@@ -2162,6 +2164,8 @@ const resources = {
       },
       observe: {
         historyKicker: "RUNTIME OBSERVE / DIALOGUE HISTORY",
+        channelType: "Channel type",
+        channelTypes: { DINGTALK: "DingTalk", FEISHU: "Feishu", WECHAT: "WeChat", DEBUG: "Debug", WEB: "Web", UNKNOWN: "Unknown" },
         replayKicker: "RUNTIME OBSERVE / SESSION REPLAY",
         title: "Runtime Observability",
         description:

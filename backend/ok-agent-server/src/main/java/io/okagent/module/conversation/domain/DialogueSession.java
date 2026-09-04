@@ -24,6 +24,17 @@ public class DialogueSession {
     @Column(name = "session_id", nullable = false, length = 64)
     private String sessionId;
 
+    @Column(name = "channel_type", length = 24)
+    private String channelType;
+
+    public String getChannelType() {
+        return channelType;
+    }
+
+    public void setChannelType(String channelType) {
+        this.channelType = channelType;
+    }
+
     @Column(name = "agent_id", nullable = false)
     private UUID agentId;
 

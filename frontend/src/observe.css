@@ -43,7 +43,11 @@
 /* --- List rows --- */
 .dialogue-row {
   grid-template-columns:
-    minmax(150px, 1.1fr) minmax(180px, 1.6fr) 120px 110px 60px 150px 22px;
+    minmax(150px, 1.1fr) minmax(180px, 1.6fr) 120px 90px 110px 60px 150px 22px;
+}
+.dialogue-row > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .dialogue-session-id {
   overflow: hidden;

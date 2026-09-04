@@ -245,6 +245,7 @@ public final class FeishuWsChannel implements Channel {
                         : (userText.length() <= 50 ? userText : userText.substring(0, 50) + "...");
                 dialogue.ensureSession(sessionId, agentId, userId, title);
             }
+            dialogue.recordChannelType(sessionId, "FEISHU");
             if (userText != null && !userText.isBlank()) {
                 dialogue.recordMessage(sessionId, "user", userText, null, null);
             }

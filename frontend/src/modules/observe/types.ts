@@ -7,6 +7,7 @@ export type DialogueSummary = {
   createdAt: string;
   updatedAt: string;
   turnCount: number;
+  channelType?: string | null;
 };
 
 export type DialogueTurn = {

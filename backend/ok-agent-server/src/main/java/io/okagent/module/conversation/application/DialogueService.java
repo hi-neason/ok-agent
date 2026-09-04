@@ -64,4 +64,7 @@ public interface DialogueService {
 
     /** Cross-agent, optionally filtered, paginated search for the observability list view. */
     Page<DialogueSummary> search(DialogueQuery query, int page, int size);
+
+    /** Records the actual transport type for a channel conversation. */
+    void recordChannelType(String sessionId, String channelType);
 }

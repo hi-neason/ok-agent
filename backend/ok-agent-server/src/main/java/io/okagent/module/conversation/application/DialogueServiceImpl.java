@@ -170,7 +170,19 @@ public class DialogueServiceImpl implements DialogueService {
                 session.getUserId(),
                 session.getCreatedAt(),
                 session.getUpdatedAt(),
-                turnCount);
+                turnCount,
+                session.getChannelType());
+    }
+
+    @Override
+    @Transactional
+    public void recordChannelType(String sessionId, String channelType) {
+        if (!java.util.Set.of("DINGTALK", "FEISHU", "WECHAT").contains(channelType)) {
+            throw new IllegalArgumentException("Unsupported channel type");
+        }
+        DialogueSession session = sessions.findForTurnAllocation(sessionId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dialogue session not found"));
+        session.setChannelType(channelType);
     }
 
     private DialogueSession requireOwner(DialogueSession session, UUID agentId, String userId) {

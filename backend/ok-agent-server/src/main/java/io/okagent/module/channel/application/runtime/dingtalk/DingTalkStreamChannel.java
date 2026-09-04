@@ -230,6 +230,7 @@ public final class DingTalkStreamChannel implements Channel {
                         : (userText.length() <= 50 ? userText : userText.substring(0, 50) + "...");
                 dialogue.ensureSession(sessionId, agentId, userId, title);
             }
+            dialogue.recordChannelType(sessionId, "DINGTALK");
             if (userText != null && !userText.isBlank()) {
                 dialogue.recordMessage(sessionId, "user", userText, null, null);
             }

@@ -12,4 +12,5 @@ public record DialogueSummary(
         String userId,
         Instant createdAt,
         Instant updatedAt,
-        long turnCount) {}
+        long turnCount,
+        String channelType) {}

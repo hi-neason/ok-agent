@@ -63,7 +63,8 @@ public class ChannelUserServiceImpl implements ChannelUserService {
                         channelType,
                         externalId,
                         channelKey,
-                        e.getMessage());
+                        e.getMessage(),
+                        e);
             }
         });
     }

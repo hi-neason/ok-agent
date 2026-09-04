@@ -209,7 +209,7 @@ public final class WeChatIlinkChannel implements Channel {
 
             dispatch(inbound).subscribe();
         } catch (Throwable t) {
-            log.warn("WeChat iLink channel '{}' handle error: {}", channelId, t.getMessage());
+            log.warn("WeChat iLink channel '{}' handle error: {}", channelId, t.getMessage(), t);
         }
     }
 

@@ -86,7 +86,7 @@ public class WorkflowSourceController {
     /** Updates the owner-curated description for a catalog item. */
     @PutMapping("/catalog/{itemId}/description")
     public Response<WorkflowCatalogItemResponse> updateDescription(
-            @PathVariable UUID itemId, @RequestBody WorkflowDescriptionUpdateRequest request) {
+            @PathVariable UUID itemId, @Valid @RequestBody WorkflowDescriptionUpdateRequest request) {
         return Response.success(service.updateCatalogDescription(itemId, request.description()));
     }
 }

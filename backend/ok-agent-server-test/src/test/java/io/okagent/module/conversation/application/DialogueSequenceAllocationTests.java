@@ -18,6 +18,20 @@ import org.junit.jupiter.api.Test;
 class DialogueSequenceAllocationTests {
 
     @Test
+    void bothMessageEntryPointsStartATransaction() throws Exception {
+        var attributes = new org.springframework.transaction.annotation.AnnotationTransactionAttributeSource();
+        for (var method : DialogueService.class.getMethods()) {
+            if (method.getName().equals("recordMessage")) {
+                var transaction = attributes.getTransactionAttribute(method, DialogueServiceImpl.class);
+                assertThat(transaction).as("transaction for %s", method).isNotNull();
+                assertThat(transaction.isReadOnly()).isFalse();
+                assertThat(transaction.getPropagationBehavior())
+                        .isEqualTo(org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRED);
+            }
+        }
+    }
+
+    @Test
     void allocatesDistinctSequencesFromTheLockedSessionCounter() {
         DialogueSession session =
                 new DialogueSession("session", UUID.randomUUID(), "title", "user", Instant.now());

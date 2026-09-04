@@ -307,7 +307,7 @@ public class HarnessAgentFactory {
                 }
             }
         } catch (Exception e) {
-            log.warn("subagents_json is not a valid JSON array for agent={}", draft.getAgentKey());
+            log.warn("subagents_json is not a valid JSON array for agent={}", draft.getAgentKey(), e);
         }
         return out;
     }

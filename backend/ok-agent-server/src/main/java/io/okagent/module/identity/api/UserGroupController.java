@@ -48,7 +48,7 @@ public class UserGroupController {
 
     /** Updates an existing user group. */
     @PutMapping("/{id}")
-    public Response<UserGroupResponse> update(@PathVariable UUID id, @RequestBody UpdateUserGroupRequest request) {
+    public Response<UserGroupResponse> update(@PathVariable UUID id, @jakarta.validation.Valid @RequestBody UpdateUserGroupRequest request) {
         return Response.success(service.update(id, request));
     }
 

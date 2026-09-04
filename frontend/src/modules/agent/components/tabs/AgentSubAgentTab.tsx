@@ -144,6 +144,7 @@ export function AgentSubAgentTab({
                 style={{ marginLeft: depth * 14 }}
                 onClick={() => toggleCollapsed(n.node.intentKey)}
                 aria-label={t(isCollapsed ? "common.expand" : "common.collapse")}
+                aria-expanded={!isCollapsed}
               >
                 {isCollapsed ? "▸" : "▾"}
               </button>
@@ -152,7 +153,7 @@ export function AgentSubAgentTab({
                 className="intent-chevron placeholder"
                 style={{ marginLeft: depth * 14 }}
               >
-                ·
+                <span aria-hidden="true" />
               </span>
             )}
             <label className={nodeClasses}>
@@ -290,7 +291,7 @@ export function AgentSubAgentTab({
                           {t("agents.subagents.clear")}
                         </button>
                       </div>
-                      <div className="intent-tree intent-check-tree">
+                      <div className="intent-check-tree">
                         {renderIntentTree(intentTree, selected, idx)}
                       </div>
                     </div>

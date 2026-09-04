@@ -992,7 +992,86 @@ select.cfg-select,
 }
 .intent-picker-bar .link-button:hover { text-decoration: underline; }
 
-/* 复用意图管理页树样式（.intent-tree / .intent-tree-row / .intent-chevron / .intent-tree-node / .intent-name） */
+/* Self-contained: the intent management page stylesheet is lazy-loaded. */
+.subagent-intents .intent-tree-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 40px;
+}
+.subagent-intents .intent-chevron {
+  display: inline-flex;
+  flex: 0 0 24px;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #6e8cae;
+  font-size: 14px;
+  cursor: pointer;
+}
+.subagent-intents .intent-chevron:hover {
+  background: #e8f2fe;
+  color: #1677e8;
+}
+.subagent-intents .intent-chevron.placeholder {
+  visibility: hidden;
+  pointer-events: none;
+}
+.subagent-intents .intent-check-node {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 36px;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  box-sizing: border-box;
+  line-height: 1.4;
+  font-size: 13px;
+  transition: background 120ms, border-color 120ms;
+}
+.subagent-intents .intent-check-node:hover {
+  background: #f2f7fd;
+}
+.subagent-intents .intent-check-node.active {
+  background: #edf5ff;
+  border-color: #d5e7fc;
+  color: #176dc5;
+  box-shadow: none;
+}
+.subagent-intents .intent-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+.subagent-intents .intent-picker-bar {
+  gap: 8px;
+  padding: 8px 12px;
+}
+.subagent-intents .intent-picker-bar .link-button {
+  padding: 5px 9px;
+  border-radius: 6px;
+  line-height: 1.4;
+}
+.subagent-intents .intent-picker-bar .link-button:hover {
+  background: #e8f2fe;
+  text-decoration: none;
+}
+.subagent-intents :is(summary, button, input):focus-visible {
+  outline: 2px solid #2180e8;
+  outline-offset: 2px;
+}
+.subagent-intents summary {
+  padding: 12px 14px;
+}
+.subagent-intents .intent-claimed-by {
+  white-space: normal;
+}
 .intent-check-tree {
   max-height: 260px;
   overflow-y: auto;

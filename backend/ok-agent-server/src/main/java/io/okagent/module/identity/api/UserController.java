@@ -65,7 +65,7 @@ public class UserController {
 
     /** Updates an existing user. */
     @PutMapping("/{id}")
-    public Response<UserResponse> update(@PathVariable UUID id, @RequestBody UpdateUserRequest request) {
+    public Response<UserResponse> update(@PathVariable UUID id, @Valid @RequestBody UpdateUserRequest request) {
         return Response.success(service.update(id, request));
     }
 

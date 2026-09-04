@@ -15,6 +15,7 @@ try {
     ['mcp', 'fetchAllServers', 'mcp-servers'],
     ['usermgmt', 'fetchUserGroups', 'user-groups'],
     ['usermgmt', 'fetchUsers', 'users'],
+    ['persona', 'fetchPersonaAgents', 'agents'],
   ]) {
     const outfile = join(directory, domain + '.mjs');
     await build({

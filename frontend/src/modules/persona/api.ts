@@ -1,4 +1,10 @@
 import type { Persona, UpsertPersona } from "./types";
+import { listAgents } from "../agent/api";
+import { loadAllPages } from "../shared/loadAllPages";
+
+export function fetchPersonaAgents() {
+  return loadAllPages(listAgents);
+}
 
 const BASE = "/api/v1";
 

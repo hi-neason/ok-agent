@@ -11,6 +11,7 @@ import {
   fetchInjectionPreview,
   fetchPersona,
   fetchPersonaCoverage,
+  fetchPersonaAgents,
   listPersonas,
   savePersona,
 } from "./api";
@@ -31,12 +32,16 @@ export function PersonaPage() {
   const [selectedUser, setSelectedUser] = useState<UserItem | null>(null);
 
   useEffect(() => {
-    fetch("/api/v1/agents")
-      .then((r) => r.json())
-      .then((ag) => setAgents(Array.isArray(ag) ? ag : ag.items ?? []))
-      .catch(() => {});
-    fetchPersonaCoverage().then(setCoverage).catch(() => {});
-  }, []);
+    let active = true;
+    Promise.all([fetchPersonaAgents(), fetchPersonaCoverage()])
+      .then(([nextAgents, nextCoverage]) => {
+        if (!active) return;
+        setAgents(nextAgents);
+        setCoverage(nextCoverage);
+      })
+      .catch(() => { if (active) setError(t("persona.loadFailed")); });
+    return () => { active = false; };
+  }, [t]);
 
   useEffect(() => {
     void fetchUsersPage(userPageNumber, userPageSize)
@@ -57,6 +62,10 @@ export function PersonaPage() {
   }, [usersPage, query, onlyWithPersona, coverage]);
 
   const openPersona = (u: UserItem) => {
+    if (agents.length === 0) {
+      setError(t("persona.loadFailed"));
+      return;
+    }
     setError("");
     setSelectedUser(u);
   };

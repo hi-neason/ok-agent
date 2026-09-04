@@ -6,6 +6,7 @@ import io.okagent.module.identity.application.UserMergeService;
 import io.okagent.module.identity.application.UserService;
 import io.okagent.shared.api.Response;
 import io.okagent.shared.api.PageResponse;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -46,7 +47,7 @@ public class UserController {
     /** Creates a new user. */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Response<UserResponse> create(@RequestBody CreateUserRequest request) {
+    public Response<UserResponse> create(@Valid @RequestBody CreateUserRequest request) {
         return Response.success(service.create(request));
     }
 

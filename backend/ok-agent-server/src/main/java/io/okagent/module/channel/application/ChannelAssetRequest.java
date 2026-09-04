@@ -15,7 +15,7 @@ public record ChannelAssetRequest(
         UUID boundAgentId,
         @jakarta.validation.constraints.NotNull ChannelDmScope dmScope,
         @jakarta.validation.Valid FeishuConfig feishu,
-        WechatConfig wechat,
+        @jakarta.validation.Valid WechatConfig wechat,
         DingTalkConfig dingtalk,
         String wechatLoginId,
         String dingtalkLoginId,

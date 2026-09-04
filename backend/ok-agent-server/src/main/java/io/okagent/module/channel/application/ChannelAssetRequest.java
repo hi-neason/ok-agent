@@ -13,7 +13,7 @@ public record ChannelAssetRequest(
         @jakarta.validation.constraints.NotBlank @Size(max = 128) String name,
         @jakarta.validation.constraints.NotNull ChannelType type,
         UUID boundAgentId,
-        ChannelDmScope dmScope,
+        @jakarta.validation.constraints.NotNull ChannelDmScope dmScope,
         FeishuConfig feishu,
         WechatConfig wechat,
         DingTalkConfig dingtalk,

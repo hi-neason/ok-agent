@@ -318,7 +318,7 @@ public final class WeChatIlinkChannel implements Channel {
         try {
             tx.executeWithoutResult(status -> sessions.updateCursor(channelDbId, cursor, java.time.Instant.now()));
         } catch (Exception e) {
-            log.debug("WeChat iLink persist cursor failed: {}", e.getMessage());
+            log.debug("WeChat iLink persist cursor failed: {}", e.getMessage(), e);
         }
     }
 

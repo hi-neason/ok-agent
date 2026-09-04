@@ -8,6 +8,11 @@ import type {
   SolutionDraft,
 } from "./types";
 import type { Page } from "../shared";
+import { loadAllPages } from "../shared/loadAllPages";
+
+export function listAllProducts(): Promise<Product[]> {
+  return loadAllPages(listProducts);
+}
 import i18n from "../../i18n";
 
 async function jsonOrThrow<T>(res: Response): Promise<T> {

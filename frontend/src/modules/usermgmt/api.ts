@@ -1,20 +1,18 @@
 import type { ChannelIdentity, UserDetail, UserGroupItem, UserItem } from "./types";
 import type { Page } from "../shared";
+import { loadAllPages } from "../shared/loadAllPages";
 
 const BASE = "/api/v1";
 
 /** Full list of groups — used for the user-edit dropdown. */
 export async function fetchUserGroups(): Promise<UserGroupItem[]> {
-  const response = await fetch(`${BASE}/user-groups?page=0&size=1000`);
-  if (!response.ok) return [];
-  const data = (await response.json()) as Page<UserGroupItem>;
-  return data.content ?? [];
+  return loadAllPages(fetchUserGroupsPage);
 }
 
 /** Paged groups for the group-management tab. */
 export async function fetchUserGroupsPage(page = 0, size = 20): Promise<Page<UserGroupItem>> {
   const response = await fetch(`${BASE}/user-groups?page=${page}&size=${size}`);
-  if (!response.ok) return { content: [], totalElements: 0, totalPages: 0, number: page, size } as Page<UserGroupItem>;
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
   return (await response.json()) as Page<UserGroupItem>;
 }
 
@@ -46,16 +44,13 @@ export async function deleteUserGroup(id: string): Promise<void> {
 
 /** Full list of users — used for the merge dropdown. */
 export async function fetchUsers(): Promise<UserItem[]> {
-  const response = await fetch(`${BASE}/users?page=0&size=1000`);
-  if (!response.ok) return [];
-  const data = (await response.json()) as Page<UserItem>;
-  return data.content ?? [];
+  return loadAllPages(fetchUsersPage);
 }
 
 /** Paged users for the user-management tab. */
 export async function fetchUsersPage(page = 0, size = 20): Promise<Page<UserItem>> {
   const response = await fetch(`${BASE}/users?page=${page}&size=${size}`);
-  if (!response.ok) return { content: [], totalElements: 0, totalPages: 0, number: page, size } as Page<UserItem>;
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
   return (await response.json()) as Page<UserItem>;
 }
 

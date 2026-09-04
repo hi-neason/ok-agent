@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { PageHeader } from "../shared";
+import { PageHeader, Pagination } from "../shared";
 import { Markdown } from "../shared/Markdown";
 import {
   assignWorkItem,
@@ -75,6 +75,11 @@ export function InboxPage() {
   const { t, i18n } = useTranslation();
   const [queue, setQueue] = useState<WorkStatus | "ALL">("WAITING_HUMAN");
   const [items, setItems] = useState<ConversationWorkItem[]>([]);
+  const [pageNumber, setPageNumber] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
+  const requestSequence = useRef(0);
   const [operators, setOperators] = useState<InboxOperator[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [turns, setTurns] = useState<Awaited<ReturnType<typeof getTurns>>>([]);
@@ -97,15 +102,23 @@ export function InboxPage() {
   );
 
   const load = useCallback(async () => {
+    const request = ++requestSequence.current;
     setLoading(true);
     setError("");
     try {
       const [page, availableOperators, nextMetrics] = await Promise.all([
-        listWorkItems(queue === "ALL" ? undefined : queue),
+        listWorkItems(queue === "ALL" ? undefined : queue, pageNumber, pageSize),
         listOperators(),
         getServiceMetrics(),
       ]);
+      if (request !== requestSequence.current) return;
+      if (pageNumber > 0 && pageNumber >= page.totalPages) {
+        setPageNumber(Math.max(0, page.totalPages - 1));
+        return;
+      }
       setItems(page.content);
+      setTotalPages(page.totalPages);
+      setTotalElements(page.totalElements);
       setOperators(availableOperators);
       setMetrics(nextMetrics);
       setSelectedId((current) =>
@@ -114,11 +127,12 @@ export function InboxPage() {
           : page.content[0]?.sessionId ?? null,
       );
     } catch (cause) {
+      if (request !== requestSequence.current) return;
       setError(cause instanceof Error ? cause.message : t("inbox.loadFailed"));
     } finally {
-      setLoading(false);
+      if (request === requestSequence.current) setLoading(false);
     }
-  }, [queue, t]);
+  }, [queue, pageNumber, pageSize, t]);
 
   useEffect(() => {
     void load();
@@ -274,7 +288,7 @@ export function InboxPage() {
             role="tab"
             aria-selected={queue === status}
             className={queue === status ? "active" : ""}
-            onClick={() => setQueue(status)}
+            onClick={() => { setPageNumber(0); setQueue(status); }}
           >
             <i className={`status-dot status-${status.toLowerCase()}`} />
             {t(`inbox.status.${status}`)}
@@ -288,7 +302,7 @@ export function InboxPage() {
         <aside className="inbox-list-panel">
           <header>
             <span>{t("inbox.queueTitle")}</span>
-            <b>{items.length}</b>
+            <b>{totalElements}</b>
           </header>
           <div className="inbox-list">
             {loading ? (
@@ -325,6 +339,15 @@ export function InboxPage() {
               })
             )}
           </div>
+          <Pagination
+            page={pageNumber}
+            totalPages={totalPages}
+            totalElements={totalElements}
+            size={pageSize}
+            loading={loading}
+            onPageChange={setPageNumber}
+            onSizeChange={(size) => { setPageNumber(0); setPageSize(size); }}
+          />
         </aside>
 
         <main className="inbox-conversation-panel">

@@ -206,9 +206,7 @@ export function SkillRegistryPage() {
       setSelectedFile(saved);
       setFileDraft(null);
       setFileSuccess(t("skills.fileSaved", { version: saved.version }));
-      const items = await fetchSkills(0, 1000);
-      setPage((p) => (p ? { ...p, content: items.content } : p));
-      setViewing(items.content.find((item) => item.id === viewing.id) ?? viewing);
+      await load(pageNumber);
     } catch (failure) {
       setFileError(
         failure instanceof SkillFileConflictError

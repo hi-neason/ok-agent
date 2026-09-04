@@ -1,5 +1,10 @@
 import type { McpDraft, McpServer, McpTool } from "./types";
 import type { Page } from "../shared";
+import { loadAllPages } from "../shared/loadAllPages";
+
+export function fetchAllServers(): Promise<McpServer[]> {
+  return loadAllPages(fetchServers);
+}
 
 export type McpInspection = {
   success: boolean;

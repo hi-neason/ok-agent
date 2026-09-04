@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../shared";
-import { callTool, fetchServers, fetchTools, inspectServerById } from "./api";
+import { callTool, fetchAllServers, fetchTools, inspectServerById } from "./api";
 import { isJsonObject, type McpServer, type McpTool } from "./types";
 
 export function McpDebugPage({ serverId }: { serverId: string }) {
@@ -76,13 +76,13 @@ export function McpDebugPage({ serverId }: { serverId: string }) {
   useEffect(() => {
     void (async () => {
       try {
-        const loaded = await fetchServers(0, 1000);
-        const current = loaded.content.find((item) => item.id === serverId) ?? null;
+        const loaded = await fetchAllServers();
+        const current = loaded.find((item) => item.id === serverId) ?? null;
         setServer(current);
         if (!current) setError(t("mcp.serverNotFound"));
         else await loadTools(false);
       } catch {
-        setError(t("mcp.serverNotFound"));
+        setError(t("mcp.toolsLoadFailed"));
       }
     })();
   }, [serverId]);

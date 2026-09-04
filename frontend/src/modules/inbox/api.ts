@@ -25,8 +25,10 @@ async function jsonOrThrow<T>(response: Response): Promise<T> {
 
 export async function listWorkItems(
   status?: WorkStatus,
+  page = 0,
+  size = 20,
 ): Promise<ConversationWorkItemPage> {
-  const params = new URLSearchParams({ page: "0", size: "100" });
+  const params = new URLSearchParams({ page: String(page), size: String(size) });
   if (status) params.set("status", status);
   return jsonOrThrow(await fetch(`/api/v1/workbench/sessions?${params}`));
 }

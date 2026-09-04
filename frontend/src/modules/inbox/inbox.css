@@ -145,6 +145,12 @@
   border-right: 1px solid var(--inbox-line);
 }
 
+.inbox-list-panel > .pagination-bar,
+.inbox-list-panel .pagination-controls {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .inbox-list-panel > header {
   display: flex;
   align-items: center;

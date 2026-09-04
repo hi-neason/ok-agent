@@ -5,7 +5,7 @@ import { Button, Pagination, Toggle, useConfirm, type Page } from "../shared";
 import {
   createSolution,
   deleteSolution,
-  listProducts,
+  listAllProducts,
   listSolutions,
   setSolutionStatus,
   updateSolution,
@@ -48,10 +48,10 @@ export function SolutionsTab() {
     try {
       const [sols, prods] = await Promise.all([
         listSolutions(targetPage, pageSize),
-        listProducts(0, 1000),
+        listAllProducts(),
       ]);
       setSolutions(sols);
-      setProducts(prods.content);
+      setProducts(prods);
     } catch (e) {
       setNotice({ ok: false, text: msg(e) });
     }

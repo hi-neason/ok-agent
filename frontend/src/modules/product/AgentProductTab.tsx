@@ -4,7 +4,7 @@ import { Button } from "../shared";
 import {
   deleteAgentProductBinding,
   getAgentProductBinding,
-  listProducts,
+  listAllProducts,
   upsertAgentProductBinding,
 } from "./api";
 import {
@@ -79,11 +79,11 @@ export function AgentProductTab({ agentId }: { agentId: string }) {
       try {
         const [binding, prods] = await Promise.all([
           getAgentProductBinding(agentId),
-          listProducts(0, 1000).catch(() => [] as Product[]),
+          listAllProducts(),
         ]);
         if (cancelled) return;
         setExisting(binding);
-        setProducts(Array.isArray(prods) ? prods : prods.content);
+        setProducts(prods);
         if (binding) {
           setForm({
             enabled: binding.enabled,

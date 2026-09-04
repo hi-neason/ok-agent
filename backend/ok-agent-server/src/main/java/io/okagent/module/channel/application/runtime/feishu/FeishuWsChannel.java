@@ -152,7 +152,7 @@ public final class FeishuWsChannel implements Channel {
                 client.start();
             } catch (Throwable t) {
                 if (!isShuttingDown()) {
-                    log.warn("Feishu WS client for channel '{}' ended: {}", channelId, t.getMessage());
+                    log.warn("Feishu WS client for channel '{}' ended: {}", channelId, t.getMessage(), t);
                 }
             }
         });

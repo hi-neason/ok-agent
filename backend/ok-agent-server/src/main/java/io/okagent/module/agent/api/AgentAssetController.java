@@ -65,7 +65,7 @@ public class AgentAssetController {
     /** Validates an agent configuration and returns field-level errors, warnings, and checks. */
     @PostMapping("/{id}/configuration/validate")
     public Response<AgentConfigValidationResponse> validateConfiguration(
-            @PathVariable UUID id, @RequestBody AgentConfigRequest request) {
+            @PathVariable UUID id, @Valid @RequestBody AgentConfigRequest request) {
         return Response.success(service.validateConfiguration(id, request));
     }
 

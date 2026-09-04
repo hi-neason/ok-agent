@@ -14,6 +14,6 @@ public record McpServerRequest(
         @Size(max = 100) List<@NotBlank @Size(max = 4096) String> arguments,
         @Size(max = 100) Map<@Size(max = 256) String, @Size(max = 4096) String> headers,
         @Size(max = 100) Map<@Size(max = 256) String, @Size(max = 4096) String> environment,
-        Map<String, String> queryParameters,
+        @Size(max = 100) Map<@Size(max = 256) String, @Size(max = 4096) String> queryParameters,
         @Min(1) @Max(300) int requestTimeoutSeconds,
         @Min(1) @Max(300) int initializationTimeoutSeconds) {}

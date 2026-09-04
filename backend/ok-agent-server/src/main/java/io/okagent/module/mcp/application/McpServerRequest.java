@@ -5,7 +5,7 @@ import jakarta.validation.constraints.*;
 import java.util.*;
 
 public record McpServerRequest(
-        @NotBlank @Size(max = 128) String serverKey,
+        @NotBlank @Size(max = 128) @Pattern(regexp = "[A-Za-z0-9._-]+") String serverKey,
         @NotBlank @Size(max = 128) String name,
         @Size(max = 4000) String description,
         @NotNull McpTransport transport,

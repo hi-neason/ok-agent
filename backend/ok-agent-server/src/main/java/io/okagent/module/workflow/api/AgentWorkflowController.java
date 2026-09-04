@@ -25,7 +25,7 @@ public class AgentWorkflowController {
     /** Replaces the set of workflows bound to an agent. */
     @PutMapping
     public Response<List<AgentWorkflowBindingResponse>> replace(
-            @PathVariable UUID agentId, @RequestBody List<AgentWorkflowBindingRequest> bindings) {
+            @PathVariable UUID agentId, @RequestBody List<@jakarta.validation.Valid AgentWorkflowBindingRequest> bindings) {
         return Response.success(service.replace(agentId, bindings));
     }
 }

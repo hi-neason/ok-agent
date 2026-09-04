@@ -86,7 +86,7 @@ public class KnowledgeSourceController {
     /** Updates the owner-curated description for a catalog item. */
     @PutMapping("/catalog/{itemId}/description")
     public Response<KnowledgeCatalogItemResponse> updateDescription(
-            @PathVariable UUID itemId, @RequestBody KnowledgeDescriptionUpdateRequest request) {
+            @PathVariable UUID itemId, @Valid @RequestBody KnowledgeDescriptionUpdateRequest request) {
         return Response.success(service.updateCatalogDescription(itemId, request.description()));
     }
 }

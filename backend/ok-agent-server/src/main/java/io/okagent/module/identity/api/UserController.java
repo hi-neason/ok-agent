@@ -86,7 +86,7 @@ public class UserController {
 
     /** Merges another user (secondary) into this user (primary). */
     @PostMapping("/{id}/merge")
-    public Response<Void> merge(@PathVariable UUID id, @RequestBody MergeRequest body) {
+    public Response<Void> merge(@PathVariable UUID id, @Valid @RequestBody MergeRequest body) {
         mergeService.merge(id, body.secondaryId());
         return Response.success(null);
     }

@@ -36,7 +36,7 @@ public class UserGroupController {
     /** Creates a new user group. */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Response<UserGroupResponse> create(@RequestBody CreateUserGroupRequest request) {
+    public Response<UserGroupResponse> create(@jakarta.validation.Valid @RequestBody CreateUserGroupRequest request) {
         return Response.success(service.create(request));
     }
 

@@ -1,5 +1,7 @@
 package io.okagent.module.knowledge.application;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -15,6 +17,11 @@ public record KnowledgeSourceConfig(
         Map<String, Object> secrets,
         int retrieveTimeoutSeconds,
         int connectTimeoutSeconds) {
+
+    public KnowledgeSourceConfig {
+        config = config == null ? Map.of() : Collections.unmodifiableMap(new LinkedHashMap<>(config));
+        secrets = secrets == null ? Map.of() : Collections.unmodifiableMap(new LinkedHashMap<>(secrets));
+    }
 
     public String secret(String key) {
         var value = secrets.get(key);

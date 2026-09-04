@@ -56,12 +56,19 @@ export function ReleasePage() {
   >({});
 
   useEffect(() => {
+    let cancelled = false;
     void (async () => {
-      const [a, c] = await Promise.all([listAgents(), listChannels()]);
-      setAgents(a);
-      setChannels(c);
-      if (a.length > 0) setAgentId(a[0].id);
+      try {
+        const [a, c] = await Promise.all([listAgents(), listChannels()]);
+        if (cancelled) return;
+        setAgents(a);
+        setChannels(c);
+        if (a.length > 0) setAgentId(a[0].id);
+      } catch (e) {
+        if (!cancelled) setError(e instanceof Error ? e.message : String(e));
+      }
     })();
+    return () => { cancelled = true; };
   }, []);
 
   const agentChannels = useMemo(

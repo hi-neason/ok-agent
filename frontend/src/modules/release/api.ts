@@ -22,16 +22,29 @@ async function parse<T>(response: Response): Promise<T> {
   throw new Error(detail || i18n.t("common.requestFailed", { status: response.status }));
 }
 
+async function listOptions<T>(path: string): Promise<T[]> {
+  const items: T[] = [];
+  for (let page = 0; ; page += 1) {
+    const data = await parse<Page<T>>(await fetch(`${path}?page=${page}&size=100`));
+    if (!data || !Array.isArray(data.content) || !Number.isInteger(data.totalPages) || data.totalPages < 0) {
+      throw new Error(i18n.t("common.requestFailed", { status: "Invalid pagination" }));
+    }
+    items.push(...data.content);
+    if (page + 1 >= data.totalPages) return items;
+    if (data.content.length === 0) {
+      throw new Error(i18n.t("common.requestFailed", { status: "Incomplete pagination" }));
+    }
+  }
+}
+
 export async function listAgents(): Promise<AgentOption[]> {
-  const res = await fetch("/api/v1/agents?page=0&size=1000");
-  if (!res.ok) return [];
-  const data = (await res.json()) as Page<{
+  const items = await listOptions<{
     id: string;
     agentKey: string;
     name: string;
     enabled: boolean;
-  }>;
-  return data.content
+  }>("/api/v1/agents");
+  return items
     .filter((a) => a.enabled !== false)
     .map((a) => ({
       id: String(a.id),
@@ -41,10 +54,7 @@ export async function listAgents(): Promise<AgentOption[]> {
 }
 
 export async function listChannels(): Promise<ChannelOption[]> {
-  const res = await fetch("/api/v1/channels?page=0&size=1000");
-  if (!res.ok) return [];
-  const data = (await res.json()) as Page<ChannelOption>;
-  return data.content;
+  return listOptions<ChannelOption>("/api/v1/channels");
 }
 
 export async function listVersions(

@@ -22,5 +22,5 @@ public record ProductRequest(
         @Size(max = 100) List<@Size(max = 128) String> scenarioTags,
         @Size(max = 100) List<@Size(max = 2048) String> imageUrls,
         @Size(max = 20000) String description,
-        ProductStatus status,
+        @jakarta.validation.constraints.NotNull ProductStatus status,
         @Min(-100000) @Max(100000) Integer weight) {}

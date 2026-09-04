@@ -165,7 +165,8 @@ public final class FeishuWsChannel implements Channel {
                     "Feishu long-connection channel '{}' not ready within {}ms: {}",
                     channelId,
                     CONNECT_TIMEOUT_MS,
-                    e.getMessage());
+                    e.getMessage(),
+                    e);
         }
     }
 

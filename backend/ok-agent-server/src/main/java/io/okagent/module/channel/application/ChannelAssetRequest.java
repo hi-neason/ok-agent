@@ -38,7 +38,7 @@ public record ChannelAssetRequest(
     /** DingTalk enterprise-internal-app (Stream mode) config. appSecret is write-only. */
     public record DingTalkConfig(
             @Size(max = 128) String appKey,
-            String appSecret,
+            @Size(max = 4096) String appSecret,
             @Size(max = 128) String robotCode,
             @Size(max = 512) String apiBase,
             @Size(max = 512) String oapiBase,

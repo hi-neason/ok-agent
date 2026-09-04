@@ -24,7 +24,7 @@ public record ChannelAssetRequest(
     /** Feishu-provider non-secret config and write-only secrets. */
     public record FeishuConfig(
             @Size(max = 128) String appId,
-            String appSecret,
+            @Size(max = 4096) String appSecret,
             String encryptKey,
             String verificationToken,
             @Size(max = 512) String apiBase,

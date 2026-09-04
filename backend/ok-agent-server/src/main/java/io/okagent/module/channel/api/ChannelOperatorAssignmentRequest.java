@@ -5,4 +5,8 @@ import java.util.Set;
 import java.util.UUID;
 
 /** Complete replacement of the human operators assigned to one channel. */
-public record ChannelOperatorAssignmentRequest(@NotNull Set<UUID> operatorAccountIds) {}
+public record ChannelOperatorAssignmentRequest(@NotNull Set<UUID> operatorAccountIds) {
+    public ChannelOperatorAssignmentRequest {
+        operatorAccountIds = operatorAccountIds == null ? null : Set.copyOf(operatorAccountIds);
+    }
+}

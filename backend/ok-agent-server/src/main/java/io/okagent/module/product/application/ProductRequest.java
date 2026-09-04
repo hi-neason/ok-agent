@@ -15,7 +15,7 @@ public record ProductRequest(
         @Size(max = 128) String brand,
         @Size(max = 128) String category,
         @jakarta.validation.constraints.DecimalMin("0.0") BigDecimal priceMin,
-        BigDecimal priceMax,
+        @jakarta.validation.constraints.DecimalMin("0.0") BigDecimal priceMax,
         @Size(max = 8) String currency,
         Map<String, Object> spec,
         @Size(max = 8000) String sellingPoints,

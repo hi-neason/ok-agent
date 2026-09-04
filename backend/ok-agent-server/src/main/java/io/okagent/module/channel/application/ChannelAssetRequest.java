@@ -16,7 +16,7 @@ public record ChannelAssetRequest(
         @jakarta.validation.constraints.NotNull ChannelDmScope dmScope,
         @jakarta.validation.Valid FeishuConfig feishu,
         @jakarta.validation.Valid WechatConfig wechat,
-        DingTalkConfig dingtalk,
+        @jakarta.validation.Valid DingTalkConfig dingtalk,
         String wechatLoginId,
         String dingtalkLoginId,
         boolean enabled) {

@@ -11,7 +11,7 @@ public record McpServerRequest(
         @NotNull McpTransport transport,
         @Size(max = 2048) String serverUrl,
         @Size(max = 1024) String command,
-        @Size(max = 100) List<@Size(max = 4096) String> arguments,
+        @Size(max = 100) List<@NotBlank @Size(max = 4096) String> arguments,
         Map<String, String> headers,
         Map<String, String> environment,
         Map<String, String> queryParameters,

@@ -11,7 +11,7 @@ import java.util.UUID;
  */
 public record ChannelAssetRequest(
         @jakarta.validation.constraints.NotBlank @Size(max = 128) String name,
-        ChannelType type,
+        @jakarta.validation.constraints.NotNull ChannelType type,
         UUID boundAgentId,
         ChannelDmScope dmScope,
         FeishuConfig feishu,

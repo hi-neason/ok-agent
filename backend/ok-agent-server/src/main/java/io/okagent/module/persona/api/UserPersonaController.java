@@ -80,7 +80,7 @@ public class UserPersonaController {
     /** Updates the structured persona fields for a (user, agent). */
     @PutMapping("/users/{userId}/agents/{agentId}")
     public Response<UserPersonaResponse> upsert(
-            @PathVariable String userId, @PathVariable UUID agentId, @RequestBody UpsertPersonaRequest request) {
+            @PathVariable String userId, @PathVariable UUID agentId, @jakarta.validation.Valid @RequestBody UpsertPersonaRequest request) {
         return Response.success(service.upsert(userId, agentId, request));
     }
 

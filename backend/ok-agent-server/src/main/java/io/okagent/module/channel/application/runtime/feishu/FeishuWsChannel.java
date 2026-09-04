@@ -314,6 +314,11 @@ public final class FeishuWsChannel implements Channel {
 
     private void onEvent(P2MessageReceiveV1 event) {
         try {
+            var payload = event != null ? event.getEvent() : null;
+            var message = payload != null ? payload.getMessage() : null;
+            log.info("Feishu inbound event (channel='{}', messageType='{}', chatType='{}')",
+                    channelId, message != null ? message.getMessageType() : null,
+                    message != null ? message.getChatType() : null);
             // Idempotency by event id (long-connection also retries on handler timeout).
             String eventId = event.getHeader() != null ? event.getHeader().getEventId() : null;
             if (eventId != null && !idempotency.firstSeen(channelId + "|" + eventId)) {
@@ -322,6 +327,7 @@ public final class FeishuWsChannel implements Channel {
 
             FeishuEventMapper.Mapped mapped = mapper.map(event).orElse(null);
             if (mapped == null) {
+                log.warn("Feishu inbound event ignored by message mapper (channel='{}')", channelId);
                 return;
             }
             InboundMessage in = mapped.inbound();

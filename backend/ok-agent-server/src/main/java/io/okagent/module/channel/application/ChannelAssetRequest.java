@@ -25,7 +25,7 @@ public record ChannelAssetRequest(
     public record FeishuConfig(
             @Size(max = 128) String appId,
             @Size(max = 4096) String appSecret,
-            String encryptKey,
+            @Size(max = 4096) String encryptKey,
             String verificationToken,
             @Size(max = 512) String apiBase,
             @Size(max = 512) String callbackPath) {}

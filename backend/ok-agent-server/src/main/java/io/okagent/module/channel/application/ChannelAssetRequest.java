@@ -26,7 +26,7 @@ public record ChannelAssetRequest(
             @Size(max = 128) String appId,
             @Size(max = 4096) String appSecret,
             @Size(max = 4096) String encryptKey,
-            String verificationToken,
+            @Size(max = 4096) String verificationToken,
             @Size(max = 512) String apiBase,
             @Size(max = 512) String callbackPath) {}
 

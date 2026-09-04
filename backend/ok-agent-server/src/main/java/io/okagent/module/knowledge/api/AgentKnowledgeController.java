@@ -25,7 +25,7 @@ public class AgentKnowledgeController {
     /** Replaces the set of knowledge bases bound to an agent. */
     @PutMapping
     public Response<List<AgentKnowledgeBindingResponse>> replace(
-            @PathVariable UUID agentId, @RequestBody List<AgentKnowledgeBindingRequest> bindings) {
+            @PathVariable UUID agentId, @RequestBody List<@jakarta.validation.Valid AgentKnowledgeBindingRequest> bindings) {
         return Response.success(service.replace(agentId, bindings));
     }
 }

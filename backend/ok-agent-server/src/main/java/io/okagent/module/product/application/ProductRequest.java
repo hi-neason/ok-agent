@@ -17,7 +17,7 @@ public record ProductRequest(
         @jakarta.validation.constraints.DecimalMin("0.0") BigDecimal priceMin,
         @jakarta.validation.constraints.DecimalMin("0.0") BigDecimal priceMax,
         @Size(max = 8) @jakarta.validation.constraints.Pattern(regexp = "[A-Z]{3}") String currency,
-        Map<String, Object> spec,
+        @Size(max = 200) Map<@Size(max = 128) String, Object> spec,
         @Size(max = 8000) String sellingPoints,
         @Size(max = 100) List<@Size(max = 128) String> scenarioTags,
         @Size(max = 100) List<@Size(max = 2048) String> imageUrls,

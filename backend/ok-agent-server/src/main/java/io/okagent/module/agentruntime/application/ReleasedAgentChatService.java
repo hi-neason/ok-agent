@@ -81,7 +81,7 @@ public class ReleasedAgentChatService implements CustomerChatService {
     private final ObjectMapper json;
     private final HttpClient http =
             HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build();
-    private final Map<String, Session> sessions = new ConcurrentHashMap<>();
+    private final SessionPool<HarnessAgent> sessions = new SessionPool<>(MAX_SESSIONS);
 
     public ReleasedAgentChatService(
             IntentService intents,
@@ -124,15 +124,8 @@ public class ReleasedAgentChatService implements CustomerChatService {
         var userId = req.userId();
         var sessionKey = sessionAddress.storageKey();
         dialogue.assertSessionOwner(sessionKey, cfg.getId(), userId);
-        var session = sessions.compute(sessionKey, (k, ex) -> resolveSession(k, ex, cfg, userId));
-        if (session == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Session not found or invalid");
-        }
-        if (!session.executionLock.tryLock()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Session is already processing a request");
-        }
-
-        try {
+        try (var lease = sessions.acquire(sessionKey, cfg.contentHash(), () -> factory.build(cfg, userId))) {
+            var agent = lease.value();
             var classification = classify(req.message(), cfg);
             var turnMessage = buildRoutedMessage(req.message(), classification);
             String traceId = UUID.randomUUID().toString().replace("-", "");
@@ -144,7 +137,7 @@ public class ReleasedAgentChatService implements CustomerChatService {
                     .put(TraceCollectingMiddleware.CTX_TURN_SEQ, turnSeq)
                     .put(TraceCollectingMiddleware.CTX_AGENT_ID, cfg.getId().toString())
                     .build();
-            session.agent.setPermissionMode(
+            agent.setPermissionMode(
                     ctx, PermissionMode.valueOf(cfg.getPermissionMode().name()));
 
             ensureSession(sessionKey, cfg, runtime, turnMessage, userId);
@@ -155,7 +148,7 @@ public class ReleasedAgentChatService implements CustomerChatService {
             var toolCalled = new AtomicBoolean(false);
             var toolResultSeen = new AtomicBoolean(false);
             var started = Instant.now();
-            session.agent
+            agent
                     .streamEvents(turnMessage, ctx)
                     .doOnNext(event -> {
                         if (event instanceof TextBlockDeltaEvent delta) {
@@ -197,7 +190,6 @@ public class ReleasedAgentChatService implements CustomerChatService {
             } else {
                 recordTurn(sessionKey, "assistant", reply, null, latencyMs, traceId, runtime);
             }
-            session.touch();
             touchSession(sessionKey);
             personaExtraction.extractAsync(cfg.getId(), userId, sessionKey);
             return new CustomerChatResult(
@@ -208,12 +200,12 @@ public class ReleasedAgentChatService implements CustomerChatService {
                     classification.confidence(),
                     classification.targetSubagentKey(),
                     classification.fallback());
+        } catch (ResponseStatusException exception) {
+            throw exception;
         } catch (Exception e) {
             var unwrapped = Exceptions.unwrap(e);
             log.warn("Production chat failed: {}", unwrapped.getMessage(), unwrapped);
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, unwrapped.getMessage());
-        } finally {
-            session.executionLock.unlock();
         }
     }
 
@@ -449,37 +441,9 @@ public class ReleasedAgentChatService implements CustomerChatService {
 
     record SessionAddress(String sessionId, String storageKey) {}
 
-    private Session resolveSession(String key, Session existing, ResolvedAgentConfig cfg, String userId) {
-        if (existing != null
-                && existing.agentId.equals(cfg.getId())
-                && existing.configKey.equals(cfg.contentHash())
-                && java.util.Objects.equals(existing.userId, userId)) {
-            return existing;
-        }
-        if (existing != null) {
-            closeQuietly(existing.agent);
-        }
-        evictIfFull();
-        return new Session(cfg.getId(), cfg.contentHash(), factory.build(cfg, userId), userId);
-    }
-
-    private void evictIfFull() {
-        if (sessions.size() < MAX_SESSIONS) return;
-        sessions.entrySet().stream()
-                .min(Map.Entry.comparingByValue((a, b) -> a.lastTouched.compareTo(b.lastTouched)))
-                .ifPresent(e -> {
-                    if (sessions.remove(e.getKey(), e.getValue())) {
-                        closeQuietly(e.getValue().agent);
-                    }
-                });
-    }
-
-    private void closeQuietly(HarnessAgent agent) {
-        try {
-            agent.close();
-        } catch (Exception exception) {
-            log.debug("Failed to close released agent", exception);
-        }
+    @jakarta.annotation.PreDestroy
+    public void shutdown() {
+        sessions.close();
     }
 
     private void ensureSession(
@@ -508,23 +472,4 @@ public class ReleasedAgentChatService implements CustomerChatService {
         dialogue.touchSession(key);
     }
 
-    private static final class Session {
-        private final UUID agentId;
-        private final String configKey;
-        private final HarnessAgent agent;
-        private final String userId;
-        private volatile Instant lastTouched = Instant.now();
-        private final ReentrantLock executionLock = new ReentrantLock();
-
-        private Session(UUID agentId, String configKey, HarnessAgent agent, String userId) {
-            this.agentId = agentId;
-            this.configKey = configKey;
-            this.agent = agent;
-            this.userId = userId;
-        }
-
-        private void touch() {
-            lastTouched = Instant.now();
-        }
-    }
 }

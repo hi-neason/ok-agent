@@ -14,3 +14,10 @@ Existing web conversations retain their original immutable release, including af
 Agent instance replacement never deletes business history. Legacy sessions without release attribution require
 an explicit new session; their history remains readable. No schema migration is needed.
 Validation: backend `mvn -o test`, including pinned-version and missing-version regressions.
+
+## 3. Coordinate runtime cache lifecycle
+
+A bounded lease-based pool now prevents replacement or eviction of active Agent instances.
+Saturated runtimes reject new sessions, failed builds do not consume capacity, and shutdown drains active leases.
+Validation: backend `mvn -o test`, including busy replacement, capacity, shutdown and construction failures.
+This cache is process-local; production must use one runtime owner until distributed execution ownership is configured.

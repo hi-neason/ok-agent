@@ -3,6 +3,9 @@ import { useTranslation } from "react-i18next";
 import { PageHeader, RichChatMessage } from "../shared";
 import { loadAgents, loadUsers, type AgentOption, type DebugUser } from "../agent/api";
 import "./chat.css";
+import { fetchChannels } from "../channel/api";
+import type { ChannelItem } from "../channel/types";
+import { loadAllPages } from "../shared/loadAllPages";
 
 type ChatMessage = { role: "user" | "assistant"; content: string; error?: boolean };
 type RoutingInfo = {
@@ -15,11 +18,12 @@ type RoutingInfo = {
 
 export function CustomerChatPage() {
   const { t } = useTranslation();
+  const [channels, setChannels] = useState<ChannelItem[]>([]);
   const [agents, setAgents] = useState<AgentOption[]>([]);
   const [users, setUsers] = useState<DebugUser[]>([]);
   const [agentId, setAgentId] = useState<string>("");
   const [userId, setUserId] = useState<string>("");
-  const [channelId, setChannelId] = useState<string>("web");
+  const [channelId, setChannelId] = useState<string>("");
   const [sessionId, setSessionId] = useState<string>(() => "cs-" + Math.random().toString(36).slice(2, 10));
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -31,10 +35,13 @@ export function CustomerChatPage() {
   useEffect(() => {
     void (async () => {
       try {
-        const [list, uRes] = await Promise.all([loadAgents(), loadUsers()]);
+        const [list, uRes, channelList] = await Promise.all([loadAgents(), loadUsers(), loadAllPages(fetchChannels)]);
+        const published = channelList.filter((channel) => channel.enabled && channel.currentReleaseId && channel.boundAgentId);
+        setChannels(published);
+        setChannelId(published[0]?.id ?? "");
         setAgents(list);
         setUsers(uRes);
-        if (list.length > 0) setAgentId(list[0].id);
+        setAgentId(published[0]?.boundAgentId ?? "");
         if (uRes.length > 0) setUserId(uRes[0].userId);
       } catch {
         setNotice(t("chat.loadFailed"));
@@ -126,7 +133,7 @@ export function CustomerChatPage() {
           <span>{t("chat.routingAgent")}</span>
           <select
             value={agentId}
-            disabled={sending}
+            disabled
             onChange={(e) => changeContext(() => setAgentId(e.target.value))}
           >
             {agents.map((a) => (
@@ -152,11 +159,14 @@ export function CustomerChatPage() {
         </label>
         <label>
           <span>{t("chat.channelId")}</span>
-          <input
-            value={channelId}
-            disabled={sending}
-            onChange={(e) => changeContext(() => setChannelId(e.target.value))}
-          />
+          <select value={channelId} disabled={sending} onChange={(e) => changeContext(() => {
+            setChannelId(e.target.value);
+            setAgentId(channels.find((channel) => channel.id === e.target.value)?.boundAgentId ?? "");
+            setSessionId(crypto.randomUUID());
+          })}>
+            <option value="">{t("chat.selectPublishedChannel")}</option>
+            {channels.map((channel) => <option key={channel.id} value={channel.id}>{channel.name}</option>)}
+          </select>
         </label>
         <label>
           <span>{t("chat.sessionId")}</span>

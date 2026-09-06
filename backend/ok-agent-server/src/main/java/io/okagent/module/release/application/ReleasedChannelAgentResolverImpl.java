@@ -49,6 +49,6 @@ public class ReleasedChannelAgentResolverImpl implements ReleasedChannelAgentRes
         if (!release.getAgentId().equals(config.getId())) {
             throw new IllegalStateException("Released snapshot Agent does not match release " + release.getId());
         }
-        return new ReleasedChannelAgent(config.getId(), config.getAgentKey(), config.getName(), config);
+        return new ReleasedChannelAgent(config.getId(), config.getAgentKey(), config.getName(), config, release.getId(), version.getVersionNo());
     }
 }

@@ -245,6 +245,7 @@ const resources = {
         },
       },
       chat: {
+      selectPublishedChannel: "请选择已发布渠道",
         kicker: "生产环境 / 客服对话",
         title: "客服对话",
         description: "基于渠道与会话的生产对话入口：系统按意图自动路由到主智能体下的子智能体。",
@@ -1386,6 +1387,7 @@ const resources = {
         },
       },
       chat: {
+        selectPublishedChannel: "Select a published channel",
         kicker: "PRODUCTION / CUSTOMER CHAT",
         title: "Customer Chat",
         description: "A production chat entry point based on channels and sessions. The system routes each intent to a sub-agent under the routing agent.",

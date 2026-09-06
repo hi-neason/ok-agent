@@ -10,20 +10,14 @@ import io.agentscope.core.event.ToolResultEndEvent;
 import io.agentscope.core.message.Msg;
 import io.agentscope.core.permission.PermissionMode;
 import io.agentscope.harness.agent.HarnessAgent;
-import io.okagent.module.agent.domain.AgentAsset;
 import io.okagent.module.channel.domain.ChannelAsset;
 import io.okagent.module.conversation.domain.DialogueSession;
-import io.okagent.module.release.domain.AgentRelease;
-import io.okagent.module.release.domain.AgentVersion;
 import io.okagent.infrastructure.store.JdbcAgentStateStore;
 import io.okagent.module.customerchat.application.CustomerChatCommand;
 import io.okagent.module.customerchat.application.CustomerChatResult;
 import io.okagent.module.customerchat.application.CustomerChatService;
-import io.okagent.module.agent.infrastructure.persistence.AgentAssetRepository;
 import io.okagent.module.channel.infrastructure.persistence.ChannelAssetRepository;
 import io.okagent.module.model.infrastructure.persistence.ModelAssetRepository;
-import io.okagent.module.release.infrastructure.persistence.AgentReleaseRepository;
-import io.okagent.module.release.infrastructure.persistence.AgentVersionRepository;
 import io.okagent.module.agent.application.HarnessAgentFactory;
 import io.okagent.module.agent.application.ResolvedAgentConfig;
 import io.okagent.module.agent.application.ResolvedSubagent;
@@ -35,7 +29,6 @@ import io.okagent.module.intent.application.IntentService;
 import io.okagent.module.model.application.ApiKeyCipher;
 import io.okagent.module.observe.application.TraceCollectingMiddleware;
 import io.okagent.module.persona.application.PersonaExtractionService;
-import io.okagent.module.release.application.ReleaseAgentConfig;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -63,11 +56,8 @@ import reactor.core.Exceptions;
 /**
  * Production chat entry point for the intent-routed, multi-agent customer-service topology.
  *
- * <p>Production traffic is resolved from a channel's currently-promoted release: the channel points
- * at an {@link AgentRelease}, which points at an immutable {@link AgentVersion} whose snapshot is
- * built into a {@link HarnessAgent}. The runtime never reads the editable draft for a published
- * channel. If a channel has no release yet the service falls back to the draft (for pre-go-lucky
- * testing), logging a warning so the gap is visible.
+ * <p>All production requests use the channel's validated immutable release. Draft execution is
+ * available only through the separate Agent debug API.
  */
 @Service
 public class ReleasedAgentChatService implements CustomerChatService {
@@ -77,10 +67,10 @@ public class ReleasedAgentChatService implements CustomerChatService {
     private static final int MAX_SESSIONS = 200;
 
     private final IntentService intents;
-    private final AgentAssetRepository agents;
+    private final io.okagent.module.release.application.ReleasedChannelAgentResolver releasedAgents;
     private final ChannelAssetRepository channels;
-    private final AgentReleaseRepository releases;
-    private final AgentVersionRepository versions;
+
+
     private final ModelAssetRepository models;
     private final ApiKeyCipher cipher;
     private final HarnessAgentFactory factory;
@@ -94,10 +84,8 @@ public class ReleasedAgentChatService implements CustomerChatService {
 
     public ReleasedAgentChatService(
             IntentService intents,
-            AgentAssetRepository agents,
+            io.okagent.module.release.application.ReleasedChannelAgentResolver releasedAgents,
             ChannelAssetRepository channels,
-            AgentReleaseRepository releases,
-            AgentVersionRepository versions,
             ModelAssetRepository models,
             ApiKeyCipher cipher,
             HarnessAgentFactory factory,
@@ -106,10 +94,8 @@ public class ReleasedAgentChatService implements CustomerChatService {
             PersonaExtractionService personaExtraction,
             ObjectMapper json) {
         this.intents = intents;
-        this.agents = agents;
+        this.releasedAgents = releasedAgents;
         this.channels = channels;
-        this.releases = releases;
-        this.versions = versions;
         this.models = models;
         this.cipher = cipher;
         this.factory = factory;
@@ -124,13 +110,7 @@ public class ReleasedAgentChatService implements CustomerChatService {
         if (req.message() == null || req.message().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "message is required");
         }
-        AgentAsset draft = agents.findById(req.agentId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Router agent not found"));
-
-        // Resolve the runtime config: a published channel runs its release snapshot; otherwise fall
-        // back to the draft (pre-go-live testing). The resolved config also carries the release id
-        // for observability attribution.
-        ResolvedRuntime runtime = resolveRuntime(req, draft);
+        ResolvedRuntime runtime = resolveRuntime(req);
         ResolvedAgentConfig cfg = runtime.config();
         if (cfg.getModelAssetId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "该路由智能体尚未配置模型，请先选择模型");
@@ -234,40 +214,27 @@ public class ReleasedAgentChatService implements CustomerChatService {
     }
 
     /** Resolves the runtime config and its release attribution for a production request. */
-    private ResolvedRuntime resolveRuntime(CustomerChatCommand req, AgentAsset draft) {
-        if (req.channelId() != null && !req.channelId().isBlank()) {
-            try {
-                UUID channelId = UUID.fromString(req.channelId().trim());
-                ChannelAsset channel = channels.findById(channelId).orElse(null);
-                if (channel != null && channel.getCurrentReleaseId() != null) {
-                    AgentRelease release =
-                            releases.findById(channel.getCurrentReleaseId()).orElse(null);
-                    if (release != null) {
-                        AgentVersion version = versions.findById(release.getVersionId()).orElse(null);
-                        if (version != null) {
-                            return new ResolvedRuntime(
-                                    ReleaseAgentConfig.fromSnapshot(version.getSnapshotJson()),
-                                    release.getId(),
-                                    version.getVersionNo(),
-                                    true);
-                        }
-                    }
-                    log.warn(
-                            "Channel {} has current_release_id={} but the release/version is missing; falling back to draft",
-                            channelId,
-                            channel.getCurrentReleaseId());
-                }
-            } catch (IllegalArgumentException e) {
-                log.warn("Production request has non-UUID channelId '{}'; using draft", req.channelId());
-            }
+    ResolvedRuntime resolveRuntime(CustomerChatCommand req) {
+        UUID channelId;
+        try {
+            channelId = UUID.fromString(req.channelId() == null ? "" : req.channelId().trim());
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A published channel UUID is required");
         }
-        // No published release on this channel (or no channel): build from draft so pre-go-live
-        // testing keeps working. This path should disappear once every channel is published.
-        log.info("No release for channel={}; serving draft for agent={}", req.channelId(), draft.getAgentKey());
-        return new ResolvedRuntime(factory.draftConfig(draft), null, null, false);
+        ChannelAsset channel = channels.findById(channelId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Channel not found"));
+        if (!channel.isEnabled() || !java.util.Objects.equals(channel.getBoundAgentId(), req.agentId())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Channel is disabled or agent binding does not match");
+        }
+        try {
+            var released = releasedAgents.resolve(channel);
+            return new ResolvedRuntime(released.config(), released.releaseId(), released.versionNo(), true);
+        } catch (IllegalStateException exception) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Channel has no valid promoted release");
+        }
     }
 
-    private record ResolvedRuntime(
+    record ResolvedRuntime(
             ResolvedAgentConfig config, UUID releaseId, Integer versionNo, boolean fromRelease) {}
 
     /**

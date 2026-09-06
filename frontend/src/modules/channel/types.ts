@@ -66,6 +66,7 @@ export type ChannelItem = {
   wechat: WechatChannelView | null;
   dingtalk: DingTalkChannelView | null;
   enabled: boolean;
+  currentReleaseId?: string | null;
   runtimeStatus: ChannelRuntimeStatus;
   lastError: string | null;
   callbackUrl: string | null;

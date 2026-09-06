@@ -66,6 +66,7 @@ public class ReleasedAgentChatService implements CustomerChatService {
     private static final double CONFIDENCE_FALLBACK = 0.6;
     private static final int MAX_SESSIONS = 200;
 
+    private final io.okagent.module.release.infrastructure.persistence.AgentVersionRepository versions;
     private final IntentService intents;
     private final io.okagent.module.release.application.ReleasedChannelAgentResolver releasedAgents;
     private final ChannelAssetRepository channels;
@@ -92,7 +93,9 @@ public class ReleasedAgentChatService implements CustomerChatService {
             DialogueService dialogue,
             JdbcAgentStateStore stateStore,
             PersonaExtractionService personaExtraction,
-            ObjectMapper json) {
+            ObjectMapper json,
+            io.okagent.module.release.infrastructure.persistence.AgentVersionRepository versions) {
+        this.versions = versions;
         this.intents = intents;
         this.releasedAgents = releasedAgents;
         this.channels = channels;
@@ -111,13 +114,14 @@ public class ReleasedAgentChatService implements CustomerChatService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "message is required");
         }
         ResolvedRuntime runtime = resolveRuntime(req);
+        var sessionAddress = deriveSessionAddress(req.channelId(), req.sessionId());
+        runtime = pinRuntime(sessionAddress.storageKey(), runtime, req.userId());
         ResolvedAgentConfig cfg = runtime.config();
         if (cfg.getModelAssetId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "该路由智能体尚未配置模型，请先选择模型");
         }
 
         var userId = req.userId();
-        var sessionAddress = deriveSessionAddress(req.channelId(), req.sessionId());
         var sessionKey = sessionAddress.storageKey();
         dialogue.assertSessionOwner(sessionKey, cfg.getId(), userId);
         var session = sessions.compute(sessionKey, (k, ex) -> resolveSession(k, ex, cfg, userId));
@@ -232,6 +236,20 @@ public class ReleasedAgentChatService implements CustomerChatService {
         } catch (IllegalStateException exception) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Channel has no valid promoted release");
         }
+    }
+
+    ResolvedRuntime pinRuntime(String sessionKey, ResolvedRuntime current, String userId) {
+        var existing = dialogue.findById(sessionKey).orElse(null);
+        if (existing == null) return current;
+        dialogue.assertSessionOwner(sessionKey, current.config().getId(), userId);
+        if (existing.getVersionNo() == null || existing.getReleaseId() == null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Legacy session has no pinned release; start a new session");
+        }
+        var version = versions.findByAgentIdAndVersionNo(existing.getAgentId(), existing.getVersionNo())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT, "Pinned session version is unavailable"));
+        return new ResolvedRuntime(
+                io.okagent.module.release.application.ReleaseAgentConfig.fromSnapshot(version.getSnapshotJson()),
+                existing.getReleaseId(), existing.getVersionNo(), true);
     }
 
     record ResolvedRuntime(
@@ -440,7 +458,6 @@ public class ReleasedAgentChatService implements CustomerChatService {
         }
         if (existing != null) {
             closeQuietly(existing.agent);
-            purgeSession(key, existing.userId);
         }
         evictIfFull();
         return new Session(cfg.getId(), cfg.contentHash(), factory.build(cfg, userId), userId);
@@ -489,16 +506,6 @@ public class ReleasedAgentChatService implements CustomerChatService {
 
     private void touchSession(String key) {
         dialogue.touchSession(key);
-    }
-
-    private void purgeSession(String key, String userId) {
-        String effectiveUserId = userId;
-        if (effectiveUserId == null) {
-            effectiveUserId =
-                    dialogue.findById(key).map(DialogueSession::getUserId).orElse(null);
-        }
-        stateStore.delete(effectiveUserId, key);
-        dialogue.purge(key);
     }
 
     private static final class Session {

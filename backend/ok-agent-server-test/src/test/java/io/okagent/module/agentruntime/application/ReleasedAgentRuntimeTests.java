@@ -12,7 +12,7 @@ class ReleasedAgentRuntimeTests {
     @Test void requiresPublishedChannelAndMatchingBinding() {
         var channels = mock(ChannelAssetRepository.class);
         var resolver = mock(ReleasedChannelAgentResolver.class);
-        var service = new ReleasedAgentChatService(null, resolver, channels, null, null, null, null, null, null, null);
+        var service = new ReleasedAgentChatService(null, resolver, channels, null, null, null, null, null, null, null, null);
         UUID agent = UUID.randomUUID(), channelId = UUID.randomUUID();
         var req = new CustomerChatCommand(agent, channelId.toString(), "s", "u", "hello");
         assertThatThrownBy(() -> service.resolveRuntime(new CustomerChatCommand(agent, "web", "s", "u", "hello")))
@@ -30,5 +30,28 @@ class ReleasedAgentRuntimeTests {
         doReturn(released).when(resolver).resolve(channel);
         assertThat(service.resolveRuntime(req).config()).isSameAs(config);
         assertThat(service.resolveRuntime(req).releaseId()).isEqualTo(released.releaseId());
+    }
+    @Test void existingConversationKeepsItsOriginalVersionAndHistory() {
+        var dialogue = mock(io.okagent.module.conversation.application.DialogueService.class);
+        var versions = mock(io.okagent.module.release.infrastructure.persistence.AgentVersionRepository.class);
+        var service = new ReleasedAgentChatService(null, null, null, null, null, null, dialogue, null, null, null, versions);
+        var agent = UUID.randomUUID();
+        var config = mock(io.okagent.module.agent.application.ResolvedAgentConfig.class);
+        when(config.getId()).thenReturn(agent);
+        var current = new ReleasedAgentChatService.ResolvedRuntime(config, UUID.randomUUID(), 2, true);
+        var oldRelease = UUID.randomUUID();
+        var session = new io.okagent.module.conversation.domain.DialogueSession("s", agent, "History", "u", java.time.Instant.now());
+        session.setReleaseInfo(oldRelease, 1);
+        when(dialogue.findById("s")).thenReturn(Optional.of(session));
+        var version = new io.okagent.module.release.domain.AgentVersion(UUID.randomUUID(), agent, 1, null,
+                "{\"agentId\":\"" + agent + "\",\"agentKey\":\"old\"}", "hash", null, null, "test");
+        when(versions.findByAgentIdAndVersionNo(agent, 1)).thenReturn(Optional.of(version));
+        var pinned = service.pinRuntime("s", current, "u");
+        assertThat(pinned.versionNo()).isEqualTo(1);
+        assertThat(pinned.releaseId()).isEqualTo(oldRelease);
+        assertThat(pinned.config().getAgentKey()).isEqualTo("old");
+        verify(dialogue, never()).purge(anyString());
+        when(versions.findByAgentIdAndVersionNo(agent, 1)).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> service.pinRuntime("s", current, "u")).isInstanceOf(ResponseStatusException.class);
     }
 }

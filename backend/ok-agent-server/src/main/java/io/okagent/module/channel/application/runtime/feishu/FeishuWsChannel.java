@@ -161,12 +161,8 @@ public final class FeishuWsChannel implements Channel {
             client.awaitReady(CONNECT_TIMEOUT_MS);
             log.info("Feishu long-connection channel '{}' connected (appId={})", channelId, appId);
         } catch (Exception e) {
-            log.warn(
-                    "Feishu long-connection channel '{}' not ready within {}ms: {}",
-                    channelId,
-                    CONNECT_TIMEOUT_MS,
-                    e.getMessage(),
-                    e);
+            stop();
+            throw new IllegalStateException("FEISHU_CONNECTION_NOT_READY", e);
         }
     }
 

@@ -31,6 +31,21 @@ class ChannelRuntimeManagerTests {
             slow.get(3, TimeUnit.SECONDS);
         } finally { finish.countDown(); executor.shutdownNow(); manager.shutdown(); }
     }
+    @Test void failedStartupStopsResourcesAndNeverReportsRunning() {
+        var repository = mock(ChannelAssetRepository.class);
+        var factory = mock(ChannelGatewayFactory.class);
+        var status = mock(ChannelRuntimeStatusWriter.class);
+        var manager = new ChannelRuntimeManager(repository, factory, status);
+        var asset = channel();
+        when(repository.findById(asset.getId())).thenReturn(Optional.of(asset));
+        var bootstrap = mock(GatewayBootstrap.class);
+        when(factory.build(asset)).thenReturn(bootstrap);
+        doThrow(new IllegalStateException("private provider details")).when(bootstrap).start();
+        manager.onChannelChanged(new ChannelRuntimeEvent(asset.getId(), false));
+        verify(bootstrap).stop();
+        verify(status, never()).write(eq(asset.getId()), eq(io.okagent.module.channel.domain.ChannelRuntimeStatus.RUNNING), any());
+        verify(status).write(asset.getId(), io.okagent.module.channel.domain.ChannelRuntimeStatus.ERROR, "CHANNEL_START_FAILED");
+    }
     private ChannelAsset channel() {
         var channel = mock(ChannelAsset.class);
         when(channel.getId()).thenReturn(UUID.randomUUID());

@@ -93,14 +93,16 @@ public class ChannelRuntimeManager {
             return;
         }
         statusWriter.write(channelId, ChannelRuntimeStatus.STARTING, null);
+        GatewayBootstrap bootstrap = null;
         try {
-            GatewayBootstrap bootstrap = gatewayFactory.build(asset);
+            bootstrap = gatewayFactory.build(asset);
             bootstrap.start();
             if (stopping) { bootstrap.stop(); return; }
             live.put(channelId, bootstrap);
             statusWriter.write(channelId, ChannelRuntimeStatus.RUNNING, null);
             log.info("Channel '{}' started and bound to agent {}", asset.getChannelKey(), asset.getBoundAgentId());
         } catch (Exception e) {
+            if (bootstrap != null) stopQuietly(channelId, bootstrap);
             // For WeChat iLink, "not logged in" is an expected idle state (awaiting QR scan),
             // not a runtime failure — surface it as STOPPED rather than ERROR.
             String msg = e.getMessage() == null ? "" : e.getMessage();
@@ -111,7 +113,7 @@ public class ChannelRuntimeManager {
                 return;
             }
             log.warn("Failed to start channel '{}': {}", asset.getChannelKey(), e.getMessage(), e);
-            statusWriter.write(channelId, ChannelRuntimeStatus.ERROR, e.getMessage());
+            statusWriter.write(channelId, ChannelRuntimeStatus.ERROR, "CHANNEL_START_FAILED");
         }
     }
 

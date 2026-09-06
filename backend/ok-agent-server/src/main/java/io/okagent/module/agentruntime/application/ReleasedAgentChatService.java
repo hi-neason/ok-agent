@@ -94,16 +94,16 @@ public class ReleasedAgentChatService implements CustomerChatService {
 
         var userId = req.userId();
         var sessionKey = sessionAddress.storageKey();
+        String traceId = UUID.randomUUID().toString().replace("-", "");
         dialogue.assertSessionOwner(sessionKey, cfg.getId(), userId);
         try (var lease = sessions.acquire(sessionKey, cfg.contentHash(), () -> factory.build(cfg, userId))) {
             var agent = lease.value();
             ensureSession(sessionKey, cfg, runtime, req.message(), userId);
-            recordTurn(sessionKey, "user", req.message(), null, null, null, runtime);
+            int turnSeq = dialogue.nextSeq(sessionKey);
+            recordTurn(sessionKey, "user", req.message(), null, null, traceId, runtime);
             requireAutomation(sessionKey);
             var classification = classify(req.message(), cfg);
             var turnMessage = buildRoutedMessage(req.message(), classification);
-            String traceId = UUID.randomUUID().toString().replace("-", "");
-            int turnSeq = dialogue.nextSeq(sessionKey);
             var ctx = RuntimeContext.builder()
                     .userId(userId)
                     .sessionId(sessionKey)
@@ -177,8 +177,10 @@ public class ReleasedAgentChatService implements CustomerChatService {
             throw exception;
         } catch (Exception e) {
             var unwrapped = Exceptions.unwrap(e);
-            log.warn("Production chat failed: {}", unwrapped.getMessage(), unwrapped);
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, unwrapped.getMessage());
+            var failure = io.okagent.shared.runtime.RuntimeFailure.from(unwrapped, traceId);
+            log.warn("Production chat failed agent={} session={} trace={} code={} causeType={}",
+                    cfg.getId(), sessionKey, traceId, failure.code(), unwrapped.getClass().getSimpleName());
+            throw failure;
         }
     }
 
@@ -237,7 +239,7 @@ public class ReleasedAgentChatService implements CustomerChatService {
         try {
             raw = factory.classify(router, buildClassificationPrompt(query, flat));
         } catch (Exception e) {
-            log.warn("Intent classification LLM call failed: {}", e.getMessage(), e);
+            log.warn("Intent classification failed agent={} causeType={}", router.getId(), e.getClass().getSimpleName());
             return new IntentClassification(null, null, 0.0, null, true);
         }
         if (raw == null || raw.isBlank()) {
@@ -254,7 +256,7 @@ public class ReleasedAgentChatService implements CustomerChatService {
                     .findFirst()
                     .orElse(null);
         } catch (Exception e) {
-            log.warn("Failed to parse intent classification: {}", e.getMessage(), e);
+            log.warn("Invalid classification response agent={} causeType={}", router.getId(), e.getClass().getSimpleName());
             return new IntentClassification(null, null, 0.0, null, true);
         }
         if (matched == null || (!Double.isFinite(confidence) || confidence > 1.0 || confidence < CONFIDENCE_FALLBACK)) {

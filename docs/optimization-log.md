@@ -64,3 +64,12 @@ shared AgentScope transport, bounded retry/timeout and structured duration/usage
 resolved references. Agents without delegates skip classification. Legacy snapshots without routing rules skip
 pre-classification rather than reading live mutable rules; publish a new version to enable it.
 Validation: backend frozen-rule/legacy tests and existing snapshot asset regressions. No provider calls in tests.
+
+## 9. Sanitize failures and report startup accurately
+
+Runtime errors now distinguish timeout (504), provider rate limiting (429) and upstream failure (502),
+with stable codes and X-Trace-Id. Business status exceptions retain their status; optimistic conflicts return 409.
+Provider bodies are not returned. Feishu readiness failure aborts startup; failed bootstraps are stopped and
+never marked RUNNING. Channel credentials are validated before allocating an Agent.
+Validation: backend failure-classification and failed-startup cleanup regressions.
+RUNNING indicates successful startup; continuous provider reconnect telemetry remains SDK-specific.

@@ -83,7 +83,6 @@ public class ChannelGatewayFactory {
 
     private GatewayBootstrap buildFeishu(ChannelAsset asset) {
         ReleasedChannelAgent released = releasedAgents.resolve(asset);
-        HarnessAgent agent = agentFactory.build(released.config(), null);
         String agentKey = released.agentKey();
 
         Map<String, Object> properties = feishuProperties(asset);
@@ -123,6 +122,7 @@ public class ChannelGatewayFactory {
                 agentKey,
                 asset.getDmScope());
 
+        HarnessAgent agent = agentFactory.build(released.config(), null);
         return GatewayBootstrap.builder()
                 .agent(agentKey, agent)
                 .channel(channel)
@@ -131,7 +131,6 @@ public class ChannelGatewayFactory {
 
     private GatewayBootstrap buildWechatIlink(ChannelAsset asset) {
         ReleasedChannelAgent released = releasedAgents.resolve(asset);
-        HarnessAgent agent = agentFactory.build(released.config(), null);
         String agentKey = released.agentKey();
 
         ChannelIlinkSession session =
@@ -171,6 +170,7 @@ public class ChannelGatewayFactory {
                 agentKey,
                 session.getBotId());
 
+        HarnessAgent agent = agentFactory.build(released.config(), null);
         return GatewayBootstrap.builder()
                 .agent(agentKey, agent)
                 .channel(channel)
@@ -179,7 +179,6 @@ public class ChannelGatewayFactory {
 
     private GatewayBootstrap buildDingTalk(ChannelAsset asset) {
         ReleasedChannelAgent released = releasedAgents.resolve(asset);
-        HarnessAgent agent = agentFactory.build(released.config(), null);
         String agentKey = released.agentKey();
 
         Map<String, Object> props = new LinkedHashMap<>(readMap(asset.getConfigJson()));
@@ -209,6 +208,7 @@ public class ChannelGatewayFactory {
                 properties.robotCode(),
                 asset.getDmScope());
 
+        HarnessAgent agent = agentFactory.build(released.config(), null);
         return GatewayBootstrap.builder()
                 .agent(agentKey, agent)
                 .channel(channel)

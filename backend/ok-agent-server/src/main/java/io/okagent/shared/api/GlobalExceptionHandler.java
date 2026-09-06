@@ -1,5 +1,7 @@
 package io.okagent.shared.api;
 
+import io.okagent.shared.runtime.RuntimeFailure;
+
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import io.okagent.module.identity.application.UserConflictException;
@@ -29,6 +31,20 @@ import org.springframework.web.server.ResponseStatusException;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    /** Returns a sanitized execution failure and its diagnostic correlation header. */
+    @ExceptionHandler(RuntimeFailure.class)
+    public ResponseEntity<Response<Void>> handleRuntimeFailure(RuntimeFailure ex, HttpServletRequest request) {
+        return ResponseEntity.status(ex.status()).header("X-Trace-Id", ex.traceId())
+                .body(Response.error(ex.code(), ex.code(), request.getRequestURI()));
+    }
+
+    /** Reports competing business edits as a conflict rather than an internal error. */
+    @ExceptionHandler(org.springframework.orm.ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<Response<Void>> handleConcurrentEdit(Exception ex, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Response.error("CONCURRENT_UPDATE", "CONCURRENT_UPDATE", request.getRequestURI()));
+    }
 
     @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<Response<Void>> handleUserNotFound(

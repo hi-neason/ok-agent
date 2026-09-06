@@ -41,3 +41,15 @@ those external integrations or complete user journeys work.
 
 Never point tests at the developer's real database, run real model calls, or
 include production credentials or customer messages in fixtures.
+
+## Isolated MySQL migration gate
+
+Run `bash scripts/test-mysql.sh` from the repository root. It starts an installed local `mysqld` process with a fresh temporary data directory,
+uses a random loopback port and password, and removes that temporary instance on exit.
+Set `MYSQL_BIN=/path/to/mysql/bin` if the executables are not on PATH. Docker is not used. It never reads application-local.yml.
+The explicit `MySqlMigrationIT` gate creates uniquely named temporary databases, migrates both an empty schema
+and a version-53 schema containing a synthetic account, validates Flyway, and removes only those test databases.
+CI runs the same test against a dedicated local MySQL process. Ordinary H2 runs do not discover the `*IT` class.
+
+Use Node 22 (`nvm use`) for frontend scripts. Browser tests also cover inbox customer paging, earlier messages
+and explicit automation resume. All API requests are intercepted, so these remain UI integration tests.

@@ -73,3 +73,14 @@ Provider bodies are not returned. Feishu readiness failure aborts startup; faile
 never marked RUNNING. Channel credentials are validated before allocating an Agent.
 Validation: backend failure-classification and failed-startup cleanup regressions.
 RUNNING indicates successful startup; continuous provider reconnect telemetry remains SDK-specific.
+
+## 10. Strengthen verification and restore architecture documentation
+
+Added real signed-token revocation coverage, inbox browser regression, disposable MySQL empty-schema/upgrade
+migration tests and a dedicated CI gate. Node 22 is declared in engines and .nvmrc. The README architecture link
+now resolves to the module boundaries, lifecycle policies and deployment limitations.
+
+Validation on 2026-09-06: 117 backend tests passed; 2 explicit MySQL 8.4.7 migration tests passed;
+4 Chrome browser regressions passed; frontend script tests and production build passed under Node 22.
+The MySQL gate starts installed native executables with --no-defaults and a temporary data directory;
+Docker is not used. No existing application database or external model/provider was contacted by tests.

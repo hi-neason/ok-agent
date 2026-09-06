@@ -45,3 +45,17 @@ jobs:
           path: |
             frontend/playwright-report/
             frontend/test-results/
+
+  mysql-migrations:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Install local MySQL executables
+        run: sudo apt-get update && sudo apt-get install -y mysql-server
+      - name: Test migrations with an isolated local MySQL process
+        run: PATH="/usr/sbin:$PATH" bash scripts/test-mysql.sh

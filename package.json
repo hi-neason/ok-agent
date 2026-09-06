@@ -9,5 +9,8 @@
     "dev": "npm run dev --workspace=ok-agent-console",
     "build": "npm run build --workspace=ok-agent-console",
     "preview": "npm run preview --workspace=ok-agent-console"
+  },
+  "engines": {
+    "node": ">=22 <23"
   }
 }

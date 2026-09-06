@@ -48,9 +48,9 @@ export async function listOperators(): Promise<InboxOperator[]> {
   return jsonOrThrow(await fetch("/api/v1/workbench/sessions/operators"));
 }
 
-export async function getTurns(sessionId: string): Promise<DialogueTurn[]> {
+export async function getTurns(sessionId: string, beforeSeq = 2147483647): Promise<DialogueTurn[]> {
   return jsonOrThrow(
-    await fetch(`/api/v1/observe/sessions/${encodeURIComponent(sessionId)}/turns`),
+    await fetch(`/api/v1/observe/sessions/${encodeURIComponent(sessionId)}/message-window?beforeSeq=${beforeSeq}&size=100`),
   );
 }
 

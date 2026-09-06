@@ -10,6 +10,8 @@ public interface DialogueTurnRepository extends JpaRepository<DialogueTurn, Long
 
     List<DialogueTurn> findBySessionIdOrderBySeqAsc(String sessionId);
 
+    List<DialogueTurn> findBySessionIdAndSeqLessThanOrderBySeqDesc(String sessionId, int beforeSeq, org.springframework.data.domain.Pageable pageable);
+
     long countBySessionId(String sessionId);
 
     void deleteBySessionId(String sessionId);

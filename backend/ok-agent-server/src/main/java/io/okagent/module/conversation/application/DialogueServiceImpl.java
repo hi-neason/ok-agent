@@ -119,6 +119,15 @@ public class DialogueServiceImpl implements DialogueService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public java.util.List<DialogueTurn> messageWindow(String sessionId, int beforeSeq, int size) {
+        if (beforeSeq < 1 || size < 1 || size > 100) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid message window");
+        var result = new java.util.ArrayList<>(turns.findBySessionIdAndSeqLessThanOrderBySeqDesc(sessionId, beforeSeq, PageRequest.of(0, size)));
+        java.util.Collections.reverse(result);
+        return result;
+    }
+
+    @Override
     public java.util.List<DialogueTurn> getMessages(String sessionId) {
         return turns.findBySessionIdOrderBySeqAsc(sessionId);
     }

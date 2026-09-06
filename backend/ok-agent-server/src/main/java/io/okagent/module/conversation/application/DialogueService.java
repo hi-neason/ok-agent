@@ -14,6 +14,9 @@ import org.springframework.data.domain.Page;
  * event transcript ({@code agent_transcript}) are intentionally out of scope here.
  */
 public interface DialogueService {
+    /** Loads a bounded window of messages before a sequence cursor in chronological order. */
+    java.util.List<io.okagent.module.conversation.domain.DialogueTurn> messageWindow(String sessionId, int beforeSeq, int size);
+
     /** Returns whether a persisted conversation currently permits automated replies. */
     boolean allowsAutomation(String sessionId);
 

@@ -51,6 +51,14 @@ public class AgentObserveController {
                 PageResponse.of(dialogue.search(new DialogueQuery(sessionId, userId, agentId, from, to), page, size)));
     }
 
+    /** Returns up to 100 recent messages before an exclusive sequence cursor. */
+    @GetMapping("/sessions/{sessionId}/message-window")
+    public Response<List<DialogueTurn>> messageWindow(@PathVariable String sessionId,
+            @RequestParam(defaultValue = "2147483647") int beforeSeq,
+            @RequestParam(defaultValue = "100") int size) {
+        return Response.success(dialogue.messageWindow(sessionId, beforeSeq, size));
+    }
+
     /** Returns the full, ordered conversation of a session for the detail / replay view. */
     @GetMapping("/sessions/{sessionId}/turns")
     public Response<List<DialogueTurn>> getTurns(@PathVariable String sessionId) {

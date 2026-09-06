@@ -273,6 +273,7 @@ const resources = {
         cardRetry: "发送失败，请重试",
       },
       inbox: {
+        loadOlder: "加载更早消息",
         resumeAutomation: "恢复机器人接待",
         resumeAutomationConfirm: "确定恢复会话「{{title}}」的机器人接待并清除人工负责人？",
         kicker: "服务运营 / 统一收件箱",
@@ -1417,6 +1418,7 @@ const resources = {
         cardRetry: "Failed to send. Try again.",
       },
       inbox: {
+        loadOlder: "Load earlier messages",
         resumeAutomation: "Resume automated replies",
         resumeAutomationConfirm: "Resume automated replies for “{{title}}” and clear the human assignee?",
         kicker: "SERVICE OPERATIONS / UNIFIED INBOX",

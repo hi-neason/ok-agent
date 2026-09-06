@@ -80,6 +80,8 @@ export function InboxPage() {
   const [pageNumber, setPageNumber] = useState(0);
   const [pageSize, setPageSize] = useState(20);
   const requestSequence = useRef(0);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const selectedIdRef = useRef<string | null>(null);
   const [operators, setOperators] = useState<InboxOperator[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [turns, setTurns] = useState<Awaited<ReturnType<typeof getTurns>>>([]);
@@ -151,6 +153,7 @@ export function InboxPage() {
   }, [load]);
 
   useEffect(() => {
+    selectedIdRef.current = selectedId;
     if (!selectedId) {
       setTurns([]);
       setOutcome(EMPTY_OUTCOME);
@@ -404,6 +407,16 @@ export function InboxPage() {
                 </span>
               </header>
               <div className="inbox-thread">
+                {!detailLoading && turns.length > 0 && turns[0].seq > 1 && <button disabled={loadingOlder} onClick={async () => {
+                  const id = selectedId;
+                  if (!id) return;
+                  setLoadingOlder(true);
+                  try {
+                    const older = await getTurns(id, turns[0].seq);
+                    if (selectedIdRef.current === id) setTurns((current) => [...older, ...current]);
+                  } catch { setError(t("inbox.turnsFailed")); }
+                  finally { setLoadingOlder(false); }
+                }}>{t("inbox.loadOlder")}</button>}
                 {detailLoading ? (
                   <div className="inbox-state">{t("common.loading")}</div>
                 ) : turns.length === 0 ? (

@@ -43,3 +43,9 @@ The inbox now requests one database page of customer groups. Sessions for the pa
 anonymous sessions remain separate. Related Agent/customer/operator names are loaded in batches, and
 message counts use the transactionally allocated sequence counter instead of one count query per row.
 Validation: backend customer grouping/pagination integration tests, frontend tests and build.
+
+## 6b. Bound conversation message loading
+
+Inbox details load the latest 100 messages with an exclusive sequence cursor and an explicit older-message action.
+Changing the selected session prevents an older request from writing into the new session's history.
+The existing full replay API remains compatible. Validation: message-window integration tests and frontend build.

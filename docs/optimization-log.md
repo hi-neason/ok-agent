@@ -49,3 +49,10 @@ Validation: backend customer grouping/pagination integration tests, frontend tes
 Inbox details load the latest 100 messages with an exclusive sequence cursor and an explicit older-message action.
 Changing the selected session prevents an older request from writing into the new session's history.
 The existing full replay API remains compatible. Validation: message-window integration tests and frontend build.
+
+## 7. Isolate channel reconciliation from draft edits
+
+Saving an Agent draft no longer restarts its production channels. Release/channel events continue to reconcile
+runtime instances. Each channel has its own lifecycle monitor, so slow network startup does not serialize
+unrelated channels. Shutdown coordinates with in-progress starts.
+Validation: backend tests, including simultaneous slow/fast channel startup with bounded latches.

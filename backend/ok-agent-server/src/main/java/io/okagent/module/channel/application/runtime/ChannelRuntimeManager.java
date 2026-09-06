@@ -29,6 +29,8 @@ public class ChannelRuntimeManager {
     private final ChannelAssetRepository repository;
     private final ChannelGatewayFactory gatewayFactory;
     private final ChannelRuntimeStatusWriter statusWriter;
+    private final Map<UUID, Object> channelLocks = new ConcurrentHashMap<>();
+    private volatile boolean stopping;
     private final Map<UUID, GatewayBootstrap> live = new ConcurrentHashMap<>();
 
     public ChannelRuntimeManager(
@@ -52,34 +54,33 @@ public class ChannelRuntimeManager {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void onChannelChanged(ChannelRuntimeEvent event) {
         if (event.deleted()) {
-            stopLive(event.channelId());
+            synchronized (channelLock(event.channelId())) { stopLive(event.channelId()); }
             return;
         }
         reconcile(event.channelId());
     }
 
-    /**
-     * Rebuilds any live channel bound to the given agent when its configuration changes.
-     * Fired by the agent service after configuration is committed.
-     */
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
-    public void onAgentChanged(AgentConfigChangedEvent event) {
-        for (ChannelAsset channel : repository.findByBoundAgentId(event.agentId())) {
-            if (channel.isEnabled()) {
-                reconcile(channel.getId());
-            }
-        }
-    }
-
     @PreDestroy
     public void shutdown() {
+        stopping = true;
         for (Map.Entry<UUID, GatewayBootstrap> entry : live.entrySet()) {
-            stopQuietly(entry.getKey(), entry.getValue());
+            synchronized (channelLock(entry.getKey())) { stopLive(entry.getKey()); }
         }
         live.clear();
     }
 
-    private synchronized void reconcile(UUID channelId) {
+    private Object channelLock(UUID channelId) {
+        // Locks survive channel deletion so concurrent old/new events cannot use different monitors.
+        return channelLocks.computeIfAbsent(channelId, ignored -> new Object());
+    }
+
+    private void reconcile(UUID channelId) {
+        synchronized (channelLock(channelId)) {
+            if (!stopping) reconcileLocked(channelId);
+        }
+    }
+
+    private void reconcileLocked(UUID channelId) {
         stopLive(channelId);
         ChannelAsset asset = repository.findById(channelId).orElse(null);
         if (asset == null || !asset.isEnabled()) {
@@ -95,6 +96,7 @@ public class ChannelRuntimeManager {
         try {
             GatewayBootstrap bootstrap = gatewayFactory.build(asset);
             bootstrap.start();
+            if (stopping) { bootstrap.stop(); return; }
             live.put(channelId, bootstrap);
             statusWriter.write(channelId, ChannelRuntimeStatus.RUNNING, null);
             log.info("Channel '{}' started and bound to agent {}", asset.getChannelKey(), asset.getBoundAgentId());

@@ -8,7 +8,6 @@ import io.okagent.module.mcp.infrastructure.persistence.McpServerRepository;
 import io.okagent.module.mcp.infrastructure.persistence.McpToolSnapshotRepository;
 import io.okagent.module.model.infrastructure.persistence.ModelAssetRepository;
 import io.okagent.module.skill.infrastructure.persistence.SkillAssetRepository;
-import io.okagent.module.channel.application.runtime.AgentConfigChangedEvent;
 import io.okagent.module.agent.application.AgentAssetResponse;
 import io.okagent.module.agent.application.AgentConfigRequest;
 import io.okagent.module.agent.application.AgentConfigValidationCheck;
@@ -167,7 +166,6 @@ public class AgentAssetServiceImpl implements AgentAssetService {
                 saved.getMaxIters(),
                 saved.getModelTimeoutSeconds(),
                 saved.getToolTimeoutSeconds());
-        events.publishEvent(new AgentConfigChangedEvent(saved.getId()));
         return AgentAssetResponse.from(saved, modelNameOf(saved.getModelAssetId()));
     }
 

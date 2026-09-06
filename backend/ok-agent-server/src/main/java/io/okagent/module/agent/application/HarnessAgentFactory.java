@@ -508,6 +508,26 @@ public class HarnessAgentFactory {
         return base + "\n\n<user_profile>\n" + block.strip() + "\n</user_profile>";
     }
 
+    /** Classifies through the same frozen model resolution and shared transport as agent execution. */
+    public String classify(ResolvedAgentConfig cfg, String prompt) {
+        if (cfg.getResolvedModelAsset() == null) throw new IllegalStateException("Classification requires a frozen model");
+        var model = resolveModel(cfg).orElseThrow();
+        var message = io.agentscope.core.message.Msg.builder().role(io.agentscope.core.message.MsgRole.USER)
+                .content(java.util.List.of(io.agentscope.core.message.TextBlock.builder().text(prompt).build())).build();
+        var started = System.nanoTime();
+        var response = model.stream(java.util.List.of(message), null,
+                        GenerateOptions.builder().temperature(0.0).maxTokens(500).build())
+                .retryWhen(reactor.util.retry.Retry.backoff(Math.min(cfg.getMaxRetries(), 2), Duration.ofSeconds(1)))
+                .blockLast(Duration.ofSeconds(Math.min(cfg.getModelTimeoutSeconds(), 30)));
+        org.slf4j.LoggerFactory.getLogger(HarnessAgentFactory.class).info(
+                "Classification completed agent={} durationMs={} usage={}", cfg.getId(),
+                (System.nanoTime() - started) / 1_000_000, response == null ? null : response.getUsage());
+        if (response == null) return "";
+        return response.getContent().stream().filter(io.agentscope.core.message.TextBlock.class::isInstance)
+                .map(io.agentscope.core.message.TextBlock.class::cast).map(io.agentscope.core.message.TextBlock::getText)
+                .collect(java.util.stream.Collectors.joining());
+    }
+
     private java.util.Optional<OpenAIChatModel> resolveModel(ResolvedAgentConfig cfg) {
         if (cfg.getModelAssetId() == null) {
             return java.util.Optional.empty();

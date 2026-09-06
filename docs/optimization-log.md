@@ -56,3 +56,11 @@ Saving an Agent draft no longer restarts its production channels. Release/channe
 runtime instances. Each channel has its own lifecycle monitor, so slow network startup does not serialize
 unrelated channels. Shutdown coordinates with in-progress starts.
 Validation: backend tests, including simultaneous slow/fast channel startup with bounded latches.
+
+## 8. Freeze intent routing and reuse model transport
+
+New versions include routing rules in their content hash. Classification uses the frozen model endpoint/name,
+shared AgentScope transport, bounded retry/timeout and structured duration/usage logging. Credentials remain
+resolved references. Agents without delegates skip classification. Legacy snapshots without routing rules skip
+pre-classification rather than reading live mutable rules; publish a new version to enable it.
+Validation: backend frozen-rule/legacy tests and existing snapshot asset regressions. No provider calls in tests.

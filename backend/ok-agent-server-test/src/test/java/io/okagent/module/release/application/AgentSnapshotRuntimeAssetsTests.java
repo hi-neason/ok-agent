@@ -86,7 +86,7 @@ class AgentSnapshotRuntimeAssetsTests {
         when(skills.findById(skillId)).thenReturn(Optional.of(skill));
         AgentSnapshotService snapshots =
                 new AgentSnapshotService(
-                        agents, versions, models, mcpServers, skills, cipher, new ObjectMapper());
+                        agents, versions, models, mcpServers, skills, cipher, new ObjectMapper(), mock(io.okagent.module.intent.application.IntentService.class));
 
         String snapshotJson = snapshots.buildSnapshot(agent).snapshotJson();
         model.update(

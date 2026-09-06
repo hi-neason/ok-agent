@@ -52,6 +52,7 @@ public class AgentSnapshotService {
     private final SkillAssetRepository skills;
     private final ApiKeyCipher cipher;
     private final ObjectMapper json;
+    private final io.okagent.module.intent.application.IntentService intents;
 
     public AgentSnapshotService(
             AgentAssetRepository agents,
@@ -60,7 +61,8 @@ public class AgentSnapshotService {
             McpServerRepository mcpServers,
             SkillAssetRepository skills,
             ApiKeyCipher cipher,
-            ObjectMapper json) {
+            ObjectMapper json, io.okagent.module.intent.application.IntentService intents) {
+        this.intents = intents;
         this.agents = agents;
         this.versions = versions;
         this.models = models;
@@ -138,10 +140,20 @@ public class AgentSnapshotService {
         }
     }
 
+    private void freezeIntents(List<io.okagent.module.intent.application.IntentNode> nodes, ArrayNode rules) {
+        for (var node : nodes) {
+            rules.addObject().put("intentKey", node.node().intentKey()).put("name", node.node().name())
+                    .put("description", node.node().description());
+            freezeIntents(node.children(), rules);
+        }
+    }
+
     /** Recursively freezes an agent's scalar fields and its pinned sub-agent versions. */
     private ObjectNode freezeAgent(AgentAsset agent, Set<UUID> visited, List<PinnedSubagent> pinned) {
         ObjectNode n = json.createObjectNode();
         n.put("agentId", agent.getId().toString());
+        var rules = n.putArray("routingIntents");
+        freezeIntents(intents.getTree(), rules);
         n.put("agentKey", agent.getAgentKey());
         n.put("name", agent.getName());
         n.put("description", agent.getDescription());

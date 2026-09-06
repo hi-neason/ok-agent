@@ -64,6 +64,16 @@ public final class ReleaseAgentConfig implements ResolvedAgentConfig {
     }
 
     @Override
+    public List<io.okagent.module.agent.application.ResolvedIntent> getResolvedIntents() {
+        var result = new ArrayList<io.okagent.module.agent.application.ResolvedIntent>();
+        for (JsonNode intent : node.path("routingIntents")) {
+            result.add(new io.okagent.module.agent.application.ResolvedIntent(
+                    intent.path("intentKey").asText(), intent.path("name").asText(), intent.path("description").asText()));
+        }
+        return List.copyOf(result);
+    }
+
+    @Override
     public String contentHash() {
         return contentHash;
     }

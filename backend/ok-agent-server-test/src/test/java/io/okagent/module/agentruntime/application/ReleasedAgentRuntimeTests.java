@@ -12,7 +12,7 @@ class ReleasedAgentRuntimeTests {
     @Test void requiresPublishedChannelAndMatchingBinding() {
         var channels = mock(ChannelAssetRepository.class);
         var resolver = mock(ReleasedChannelAgentResolver.class);
-        var service = new ReleasedAgentChatService(null, resolver, channels, null, null, null, null, null, null, null, null);
+        var service = new ReleasedAgentChatService(resolver, channels, null, null, null, null, null);
         UUID agent = UUID.randomUUID(), channelId = UUID.randomUUID();
         var req = new CustomerChatCommand(agent, channelId.toString(), "s", "u", "hello");
         assertThatThrownBy(() -> service.resolveRuntime(new CustomerChatCommand(agent, "web", "s", "u", "hello")))
@@ -34,7 +34,7 @@ class ReleasedAgentRuntimeTests {
     @Test void existingConversationKeepsItsOriginalVersionAndHistory() {
         var dialogue = mock(io.okagent.module.conversation.application.DialogueService.class);
         var versions = mock(io.okagent.module.release.infrastructure.persistence.AgentVersionRepository.class);
-        var service = new ReleasedAgentChatService(null, null, null, null, null, null, dialogue, null, null, null, versions);
+        var service = new ReleasedAgentChatService(null, null, null, dialogue, null, null, versions);
         var agent = UUID.randomUUID();
         var config = mock(io.okagent.module.agent.application.ResolvedAgentConfig.class);
         when(config.getId()).thenReturn(agent);

@@ -24,6 +24,9 @@ import java.util.UUID;
  * editable assets by id.
  */
 public interface ResolvedAgentConfig {
+    /** Returns frozen routing rules; legacy snapshots safely omit pre-classification. */
+    default List<ResolvedIntent> getResolvedIntents() { return List.of(); }
+
 
     UUID getId();
 

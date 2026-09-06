@@ -11,41 +11,26 @@ import io.agentscope.core.message.Msg;
 import io.agentscope.core.permission.PermissionMode;
 import io.agentscope.harness.agent.HarnessAgent;
 import io.okagent.module.channel.domain.ChannelAsset;
-import io.okagent.module.conversation.domain.DialogueSession;
-import io.okagent.infrastructure.store.JdbcAgentStateStore;
 import io.okagent.module.customerchat.application.CustomerChatCommand;
 import io.okagent.module.customerchat.application.CustomerChatResult;
 import io.okagent.module.customerchat.application.CustomerChatService;
 import io.okagent.module.channel.infrastructure.persistence.ChannelAssetRepository;
-import io.okagent.module.model.infrastructure.persistence.ModelAssetRepository;
 import io.okagent.module.agent.application.HarnessAgentFactory;
 import io.okagent.module.agent.application.ResolvedAgentConfig;
 import io.okagent.module.agent.application.ResolvedSubagent;
 import io.okagent.module.conversation.application.DialogueService;
 import io.okagent.module.intent.application.IntentClassification;
-import io.okagent.module.intent.application.IntentDto;
-import io.okagent.module.intent.application.IntentNode;
-import io.okagent.module.intent.application.IntentService;
-import io.okagent.module.model.application.ApiKeyCipher;
 import io.okagent.module.observe.application.TraceCollectingMiddleware;
 import io.okagent.module.persona.application.PersonaExtractionService;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -67,43 +52,29 @@ public class ReleasedAgentChatService implements CustomerChatService {
     private static final int MAX_SESSIONS = 200;
 
     private final io.okagent.module.release.infrastructure.persistence.AgentVersionRepository versions;
-    private final IntentService intents;
     private final io.okagent.module.release.application.ReleasedChannelAgentResolver releasedAgents;
     private final ChannelAssetRepository channels;
 
 
-    private final ModelAssetRepository models;
-    private final ApiKeyCipher cipher;
     private final HarnessAgentFactory factory;
     private final DialogueService dialogue;
-    private final JdbcAgentStateStore stateStore;
     private final PersonaExtractionService personaExtraction;
     private final ObjectMapper json;
-    private final HttpClient http =
-            HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build();
     private final SessionPool<HarnessAgent> sessions = new SessionPool<>(MAX_SESSIONS);
 
     public ReleasedAgentChatService(
-            IntentService intents,
             io.okagent.module.release.application.ReleasedChannelAgentResolver releasedAgents,
             ChannelAssetRepository channels,
-            ModelAssetRepository models,
-            ApiKeyCipher cipher,
             HarnessAgentFactory factory,
             DialogueService dialogue,
-            JdbcAgentStateStore stateStore,
             PersonaExtractionService personaExtraction,
             ObjectMapper json,
             io.okagent.module.release.infrastructure.persistence.AgentVersionRepository versions) {
         this.versions = versions;
-        this.intents = intents;
         this.releasedAgents = releasedAgents;
         this.channels = channels;
-        this.models = models;
-        this.cipher = cipher;
         this.factory = factory;
         this.dialogue = dialogue;
-        this.stateStore = stateStore;
         this.personaExtraction = personaExtraction;
         this.json = json;
     }
@@ -255,21 +226,16 @@ public class ReleasedAgentChatService implements CustomerChatService {
      * delegate. Best-effort: any failure yields a fallback classification with no delegate.
      */
     private IntentClassification classify(String query, ResolvedAgentConfig router) {
-        List<IntentDto> flat = flatten(intents.getTree());
+        if (router.getSubagents() == null || router.getSubagents().isEmpty()) {
+            return new IntentClassification(null, null, 0.0, null, true);
+        }
+        List<io.okagent.module.agent.application.ResolvedIntent> flat = router.getResolvedIntents();
         if (flat.isEmpty()) {
-            return new IntentClassification(null, null, 0.0, null, true);
-        }
-        UUID modelId = router.getModelAssetId();
-        if (modelId == null) {
-            return new IntentClassification(null, null, 0.0, null, true);
-        }
-        var model = models.findById(modelId).filter(m -> m.isEnabled()).orElse(null);
-        if (model == null) {
             return new IntentClassification(null, null, 0.0, null, true);
         }
         String raw;
         try {
-            raw = callLlm(model, buildClassificationPrompt(query, flat));
+            raw = factory.classify(router, buildClassificationPrompt(query, flat));
         } catch (Exception e) {
             log.warn("Intent classification LLM call failed: {}", e.getMessage(), e);
             return new IntentClassification(null, null, 0.0, null, true);
@@ -277,7 +243,7 @@ public class ReleasedAgentChatService implements CustomerChatService {
         if (raw == null || raw.isBlank()) {
             return new IntentClassification(null, null, 0.0, null, true);
         }
-        IntentDto matched;
+        io.okagent.module.agent.application.ResolvedIntent matched;
         double confidence;
         try {
             JsonNode node = json.readTree(stripCodeFences(raw));
@@ -291,7 +257,7 @@ public class ReleasedAgentChatService implements CustomerChatService {
             log.warn("Failed to parse intent classification: {}", e.getMessage(), e);
             return new IntentClassification(null, null, 0.0, null, true);
         }
-        if (matched == null || confidence < CONFIDENCE_FALLBACK) {
+        if (matched == null || (!Double.isFinite(confidence) || confidence > 1.0 || confidence < CONFIDENCE_FALLBACK)) {
             return new IntentClassification(
                     matched != null ? matched.intentKey() : null,
                     matched != null ? matched.name() : null,
@@ -343,7 +309,7 @@ public class ReleasedAgentChatService implements CustomerChatService {
                 query);
     }
 
-    private String buildClassificationPrompt(String query, List<IntentDto> flat) {
+    private String buildClassificationPrompt(String query, List<io.okagent.module.agent.application.ResolvedIntent> flat) {
         var sb = new StringBuilder();
         sb.append("你是一个客服意图分类器。下面是可用的意图树（意图键 | 名称 | 描述）：\n");
         for (var i : flat) {
@@ -362,46 +328,6 @@ public class ReleasedAgentChatService implements CustomerChatService {
         return sb.toString();
     }
 
-    private String callLlm(io.okagent.module.model.domain.ModelAsset model, String prompt) {
-        try {
-            Map<String, Object> body = new java.util.LinkedHashMap<>();
-            body.put("model", model.getModelId());
-            body.put("temperature", 0.0);
-            body.put("max_tokens", 500);
-            body.put("response_format", Map.of("type", "json_object"));
-            List<Map<String, String>> messages = List.of(
-                    Map.of("role", "system", "content", "你是严谨的意图分类助手，只输出 JSON。"),
-                    Map.of("role", "user", "content", prompt));
-            body.put("messages", messages);
-            HttpRequest req = HttpRequest.newBuilder()
-                    .uri(URI.create(chatCompletionsUrl(model.getEndpoint())))
-                    .timeout(Duration.ofSeconds(30))
-                    .header("Content-Type", "application/json")
-                    .header("Authorization", "Bearer " + cipher.decrypt(model.getApiKeyCiphertext()))
-                    .POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(body)))
-                    .build();
-            HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
-            if (resp.statusCode() / 100 != 2) {
-                log.warn("Intent classification LLM returned HTTP {}", resp.statusCode());
-                return null;
-            }
-            JsonNode root = json.readTree(resp.body());
-            JsonNode choices = root.path("choices");
-            if (!choices.isArray() || choices.isEmpty()) return null;
-            return choices.get(0).path("message").path("content").asText("");
-        } catch (Exception e) {
-            log.warn("Intent classification call failed: {}", e.getMessage(), e);
-            return null;
-        }
-    }
-
-    private static String chatCompletionsUrl(String endpoint) {
-        String base = endpoint == null ? "" : endpoint.trim();
-        if (base.endsWith("/chat/completions")) return base;
-        if (base.endsWith("/")) return base + "chat/completions";
-        return base + "/chat/completions";
-    }
-
     private static String stripCodeFences(String raw) {
         String s = raw.strip();
         if (s.startsWith("```")) {
@@ -410,15 +336,6 @@ public class ReleasedAgentChatService implements CustomerChatService {
             if (s.endsWith("```")) s = s.substring(0, s.length() - 3);
         }
         return s.strip();
-    }
-
-    private static List<IntentDto> flatten(List<IntentNode> nodes) {
-        List<IntentDto> out = new ArrayList<>();
-        for (var n : nodes) {
-            out.add(n.node());
-            out.addAll(flatten(n.children()));
-        }
-        return out;
     }
 
     static SessionAddress deriveSessionAddress(String channelId, String sessionId) {

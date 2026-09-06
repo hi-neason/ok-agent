@@ -1,8 +1,14 @@
 import type { DialogueTurn } from "../observe/types";
-import { loadAllPages } from "../shared/loadAllPages";
 
-export function listCustomerSessions(status?: WorkStatus): Promise<ConversationWorkItem[]> {
-  return loadAllPages((page, size) => listWorkItems(status, page, size));
+
+export function listCustomerSessions(status?: WorkStatus, page = 0, size = 20): Promise<{
+  sessions: ConversationWorkItem[]; totalCustomers: number; totalPages: number;
+}> {
+  const params = new URLSearchParams({ page: String(page), size: String(size) });
+  if (status) params.set("status", status);
+  return fetch(`/api/v1/workbench/sessions/customers?${params}`).then(jsonOrThrow<{
+    sessions: ConversationWorkItem[]; totalCustomers: number; totalPages: number;
+  }>);
 }
 import type {
   ConversationWorkItem,

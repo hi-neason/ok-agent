@@ -58,6 +58,15 @@ public class DialogueInboxController {
                 size)));
     }
 
+    /** Lists a database page of customer groups and their matching channel sessions. */
+    @GetMapping("/customers")
+    public Response<io.okagent.module.workbench.application.CustomerConversationPage> customers(
+            @RequestParam(required = false) DialogueWorkStatus status,
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
+        return Response.success(workItems.customers(status, page, size));
+    }
+
     /** Returns one actionable conversation for the inbox detail panel. */
     @GetMapping("/{sessionId}")
     public Response<DialogueWorkItemView> get(@PathVariable String sessionId) {

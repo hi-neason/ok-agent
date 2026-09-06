@@ -12,6 +12,9 @@ public interface DialogueWorkItemService {
     DialogueWorkItemView resumeAutomation(String sessionId, UUID actorAccountId);
 
 
+    /** Pages customer groups in the database while retaining all matching sessions in each group. */
+    CustomerConversationPage customers(DialogueWorkStatus status, int page, int size);
+
     /** Lists enabled console operators available for conversation assignment. */
     List<DialogueOperatorView> listOperators();
 

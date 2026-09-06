@@ -11,6 +11,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface UserRepository extends JpaRepository<User, UUID> {
+    List<User> findByUserIdIn(java.util.Collection<String> userIds);
+
     Optional<User> findByUsername(String username);
 
     Optional<User> findByUserId(String userId);

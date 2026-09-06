@@ -101,9 +101,9 @@ export function InboxPage() {
     [items, selectedId],
   );
   const customers = useMemo(() => groupCustomers(items), [items]);
-  const totalElements = customers.length;
-  const totalPages = Math.ceil(totalElements / pageSize);
-  const visibleCustomers = customers.slice(pageNumber * pageSize, (pageNumber + 1) * pageSize);
+  const [totalElements, setTotalElements] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const visibleCustomers = customers;
   const selectedCustomer = selected ? customers.find((customer) => customer.key === customerKey(selected)) : null;
   const selectedChannel = selected ? channelKey(selected) : null;
   useEffect(() => {
@@ -123,18 +123,20 @@ export function InboxPage() {
     setError("");
     try {
       const [sessions, availableOperators, nextMetrics] = await Promise.all([
-        listCustomerSessions(queue === "ALL" ? undefined : queue),
+        listCustomerSessions(queue === "ALL" ? undefined : queue, pageNumber, pageSize),
         listOperators(),
         getServiceMetrics(),
       ]);
       if (request !== requestSequence.current) return;
-      setItems(sessions);
+      setItems(sessions.sessions);
+      setTotalElements(sessions.totalCustomers);
+      setTotalPages(sessions.totalPages);
       setOperators(availableOperators);
       setMetrics(nextMetrics);
       setSelectedId((current) =>
-        current && sessions.some((item) => item.sessionId === current)
+        current && sessions.sessions.some((item) => item.sessionId === current)
           ? current
-          : groupCustomers(sessions)[0]?.latest.sessionId ?? null,
+          : groupCustomers(sessions.sessions)[0]?.latest.sessionId ?? null,
       );
     } catch (cause) {
       if (request !== requestSequence.current) return;
@@ -142,7 +144,7 @@ export function InboxPage() {
     } finally {
       if (request === requestSequence.current) setLoading(false);
     }
-  }, [queue, t]);
+  }, [queue, pageNumber, pageSize, t]);
 
   useEffect(() => {
     void load();

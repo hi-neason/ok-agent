@@ -15,6 +15,17 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface DialogueSessionRepository
         extends JpaRepository<DialogueSession, String>, JpaSpecificationExecutor<DialogueSession> {
+    @Query(value = "select case when s.userId is null or s.userId = '' then concat('anonymous:', s.sessionId) else concat('user:', s.userId) end from DialogueSession s "
+            + "where (:status is null or s.workStatus = :status) group by case when s.userId is null or s.userId = '' then concat('anonymous:', s.sessionId) else concat('user:', s.userId) end "
+            + "order by max(s.updatedAt) desc, case when s.userId is null or s.userId = '' then concat('anonymous:', s.sessionId) else concat('user:', s.userId) end asc",
+            countQuery = "select count(distinct case when s.userId is null or s.userId = '' then concat('anonymous:', s.sessionId) else concat('user:', s.userId) end) from DialogueSession s "
+            + "where (:status is null or s.workStatus = :status)")
+    org.springframework.data.domain.Page<String> customerKeys(@Param("status") DialogueWorkStatus status, org.springframework.data.domain.Pageable pageable);
+
+    @Query("select s from DialogueSession s where (case when s.userId is null or s.userId = '' then concat('anonymous:', s.sessionId) else concat('user:', s.userId) end) in :keys "
+            + "and (:status is null or s.workStatus = :status) order by s.updatedAt desc, s.sessionId asc")
+    java.util.List<DialogueSession> customerSessions(@Param("keys") java.util.List<String> keys, @Param("status") DialogueWorkStatus status);
+
     long countByWorkStatus(DialogueWorkStatus status);
 
     boolean existsBySessionId(String sessionId);

@@ -82,7 +82,9 @@ public class DialogueWorkItemServiceImpl implements DialogueWorkItemService {
                 Sort.Order.desc("priorityRank"),
                 Sort.Order.desc("handoffRequestedAt").nullsLast(),
                 Sort.Order.desc("updatedAt"));
-        return sessions.findAll(spec, PageRequest.of(page, size, sort)).map(this::toView);
+        var result = sessions.findAll(spec, PageRequest.of(page, size, sort));
+        var views = batchViews(result.getContent());
+        return new org.springframework.data.domain.PageImpl<>(views, result.getPageable(), result.getTotalElements());
     }
 
     @Override
@@ -148,6 +150,29 @@ public class DialogueWorkItemServiceImpl implements DialogueWorkItemService {
         return toView(sessions.save(session));
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public CustomerConversationPage customers(io.okagent.module.conversation.domain.DialogueWorkStatus status, int page, int size) {
+        var keys = sessions.customerKeys(status, PageRequest.of(page, size));
+        var matching = keys.isEmpty() ? List.<DialogueSession>of() : sessions.customerSessions(keys.getContent(), status);
+        return new CustomerConversationPage(batchViews(matching), keys.getTotalElements(), keys.getTotalPages());
+    }
+
+    private List<DialogueWorkItemView> batchViews(List<DialogueSession> items) {
+        if (items.isEmpty()) return List.of();
+        var agentIds = items.stream().map(DialogueSession::getAgentId).filter(java.util.Objects::nonNull).distinct().toList();
+        var accountIds = items.stream().map(DialogueSession::getAssigneeAccountId).filter(java.util.Objects::nonNull).distinct().toList();
+        var userIds = items.stream().map(DialogueSession::getUserId).filter(java.util.Objects::nonNull).distinct().toList();
+        var agentNames = new java.util.HashMap<UUID, String>();
+        agents.findAllById(agentIds).forEach(agent -> agentNames.put(agent.getId(), agent.getName()));
+        var accountNames = new java.util.HashMap<UUID, String>();
+        users.findAllById(accountIds).forEach(user -> accountNames.put(user.getId(), user.getDisplayName()));
+        var customerNames = new java.util.HashMap<String, String>();
+        users.findByUserIdIn(userIds).forEach(user -> customerNames.put(user.getUserId(), user.getDisplayName()));
+        return items.stream().map(session -> toView(session, agentNames.get(session.getAgentId()),
+                customerNames.get(session.getUserId()), accountNames.get(session.getAssigneeAccountId()))).toList();
+    }
+
     private DialogueSession require(String sessionId) {
         return sessions.findById(sessionId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dialogue session not found"));
@@ -182,6 +207,10 @@ public class DialogueWorkItemServiceImpl implements DialogueWorkItemService {
         String assigneeName = session.getAssigneeAccountId() == null
                 ? null
                 : users.findById(session.getAssigneeAccountId()).map(User::getDisplayName).orElse(null);
+        return toView(session, agentName, customerName, assigneeName);
+    }
+
+    private DialogueWorkItemView toView(DialogueSession session, String agentName, String customerName, String assigneeName) {
         return new DialogueWorkItemView(
                 session.getSessionId(),
                 session.getAgentId(),
@@ -199,7 +228,7 @@ public class DialogueWorkItemServiceImpl implements DialogueWorkItemService {
                 session.getClosedAt(),
                 session.getCreatedAt(),
                 session.getUpdatedAt(),
-                turns.countBySessionId(session.getSessionId()),
+                Math.max(0, session.getNextTurnSeq() - 1),
                 session.getRowVersion(),
                 session.getChannelType());
     }

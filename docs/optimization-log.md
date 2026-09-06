@@ -36,3 +36,10 @@ V54 adds a security version to console accounts. JWT validation checks current e
 role, subject and security version on every request. Disabling, changing roles or resetting passwords
 invalidates previously issued tokens across replicas. Existing tokens without the new claim require re-login.
 Validation: backend tests, including disable/re-enable, downgrade and password reset.
+
+## 6. Page customers and batch inbox lookups
+
+The inbox now requests one database page of customer groups. Sessions for the page retain channel grouping;
+anonymous sessions remain separate. Related Agent/customer/operator names are loaded in batches, and
+message counts use the transactionally allocated sequence counter instead of one count query per row.
+Validation: backend customer grouping/pagination integration tests, frontend tests and build.

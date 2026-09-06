@@ -169,7 +169,7 @@ public class DialogueServiceImpl implements DialogueService {
                 agentName = asset.get().getName();
             }
         }
-        long turnCount = turns.countBySessionId(session.getSessionId());
+        long turnCount = Math.max(0, session.getNextTurnSeq() - 1);
         return new DialogueSummary(
                 session.getSessionId(),
                 session.getAgentId(),

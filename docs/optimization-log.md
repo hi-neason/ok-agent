@@ -29,3 +29,10 @@ session is OPEN. Each channel checks again immediately before outbound delivery 
 response generated during handoff. Explicit resume clears the human assignee; closed sessions cannot resume.
 No new automated delivery is attempted during handoff; an already transmitted network request cannot be recalled.
 Validation: backend tests and frontend build; live provider delivery is not exercised.
+
+## 5. Revoke stale account tokens
+
+V54 adds a security version to console accounts. JWT validation checks current enabled state,
+role, subject and security version on every request. Disabling, changing roles or resetting passwords
+invalidates previously issued tokens across replicas. Existing tokens without the new claim require re-login.
+Validation: backend tests, including disable/re-enable, downgrade and password reset.

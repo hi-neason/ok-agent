@@ -1,0 +1,1 @@
+ALTER TABLE app_user ADD COLUMN security_version BIGINT NOT NULL DEFAULT 0;

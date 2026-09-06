@@ -54,6 +54,9 @@ public class User {
     @Column(name = "last_login_at")
     private Instant lastLoginAt;
 
+    @Column(name = "security_version", nullable = false)
+    private long securityVersion;
+
     @Version
     private long version;
 
@@ -123,6 +126,7 @@ public class User {
         this.email = email;
         this.phone = phone;
         this.groupId = groupId;
+        if (this.enabled != enabled) securityVersion++;
         this.enabled = enabled;
         this.updatedAt = Instant.now();
     }
@@ -153,6 +157,7 @@ public class User {
     /** Updates the interactive account profile and role without changing its password. */
     public void updateAccountAccess(String displayName, AccountRole role, boolean enabled) {
         requireInteractiveAccount();
+        if (this.role != role || this.enabled != enabled) securityVersion++;
         this.displayName = displayName;
         this.role = role;
         this.enabled = enabled;
@@ -162,6 +167,7 @@ public class User {
     /** Replaces the encoded password for an initialized interactive account. */
     public void changePassword(String passwordHash) {
         requireInteractiveAccount();
+        securityVersion++;
         this.passwordHash = passwordHash;
         this.updatedAt = Instant.now();
     }
@@ -223,6 +229,8 @@ public class User {
     public Instant getLastLoginAt() {
         return lastLoginAt;
     }
+
+    public long getSecurityVersion() { return securityVersion; }
 
     public long getVersion() {
         return version;

@@ -33,6 +33,7 @@ public class JwtTokenServiceImpl implements JwtTokenService {
                 .claim("username", user.getUsername())
                 .claim("displayName", user.getDisplayName())
                 .claim("role", user.getRole().name())
+                .claim("securityVersion", user.getSecurityVersion())
                 .build();
         JwsHeader header = JwsHeader.with(MacAlgorithm.HS256).build();
         String value = jwtEncoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();

@@ -102,11 +102,12 @@ public class SecurityConfiguration {
     }
 
     @Bean
-    JwtDecoder jwtDecoder(SecretKey secretKey) {
+    JwtDecoder jwtDecoder(SecretKey secretKey, AccountTokenValidator accountValidator) {
         NimbusJwtDecoder decoder = NimbusJwtDecoder.withSecretKey(secretKey)
                 .macAlgorithm(MacAlgorithm.HS256)
                 .build();
-        decoder.setJwtValidator(JwtValidators.createDefaultWithIssuer("ok-agent"));
+        decoder.setJwtValidator(new org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator<>(
+                JwtValidators.createDefaultWithIssuer("ok-agent"), accountValidator));
         return decoder;
     }
 }

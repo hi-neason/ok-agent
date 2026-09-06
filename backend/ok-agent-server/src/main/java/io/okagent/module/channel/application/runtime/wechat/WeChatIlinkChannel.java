@@ -240,7 +240,9 @@ public final class WeChatIlinkChannel implements Channel {
                 .build();
         return Mono.fromRunnable(() -> recordTurnStart(sessionId, userId, userText))
                 .then(Mono.fromCallable(Instant::now))
+                .filter(started -> dialogue.allowsAutomation(sessionId))
                 .flatMap(started -> g.run(route.context(), in.messages(), route.outboundAddress(), runtimeCtx, in)
+                        .filter(reply -> dialogue.allowsAutomation(sessionId))
                         .flatMap(reply -> sendReply(from, reply).thenReturn(reply))
                         .doOnNext(reply -> recordTurnEnd(sessionId, reply, started, null, traceId))
                         .doOnError(err -> recordTurnEnd(sessionId, null, started, err, traceId)));

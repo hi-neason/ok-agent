@@ -105,6 +105,12 @@ public class DialogueInboxController {
         return Response.success(workItems.changePriority(sessionId, request.priority(), actorId(jwt)));
     }
 
+    /** Explicitly returns an open human-handled conversation to automated reception. */
+    @PostMapping("/{sessionId}/resume-automation")
+    public Response<DialogueWorkItemView> resumeAutomation(@PathVariable String sessionId, @AuthenticationPrincipal Jwt jwt) {
+        return Response.success(workItems.resumeAutomation(sessionId, actorId(jwt)));
+    }
+
     private static UUID actorId(Jwt jwt) {
         return UUID.fromString(jwt.getClaimAsString("accountId"));
     }

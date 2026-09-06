@@ -148,12 +148,14 @@ public final class DingTalkStreamChannel implements Channel {
 
         return Mono.fromRunnable(() -> recordTurnStart(sessionId, userId, userText))
                 .then(Mono.fromCallable(Instant::now))
+                .filter(started -> dialogue.allowsAutomation(sessionId))
                 .flatMap(started -> g.run(
                                 route.context(),
                                 message.messages(),
                                 route.outboundAddress(),
                                 runtimeCtx,
                                 message)
+                        .filter(reply -> dialogue.allowsAutomation(sessionId))
                         .flatMap(reply -> outboundClient
                                 .send(route.outboundAddress(), List.of(reply))
                                 .thenReturn(reply))

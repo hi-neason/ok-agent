@@ -126,6 +126,9 @@ public class ReleasedAgentChatService implements CustomerChatService {
         dialogue.assertSessionOwner(sessionKey, cfg.getId(), userId);
         try (var lease = sessions.acquire(sessionKey, cfg.contentHash(), () -> factory.build(cfg, userId))) {
             var agent = lease.value();
+            ensureSession(sessionKey, cfg, runtime, req.message(), userId);
+            recordTurn(sessionKey, "user", req.message(), null, null, null, runtime);
+            requireAutomation(sessionKey);
             var classification = classify(req.message(), cfg);
             var turnMessage = buildRoutedMessage(req.message(), classification);
             String traceId = UUID.randomUUID().toString().replace("-", "");
@@ -140,8 +143,6 @@ public class ReleasedAgentChatService implements CustomerChatService {
             agent.setPermissionMode(
                     ctx, PermissionMode.valueOf(cfg.getPermissionMode().name()));
 
-            ensureSession(sessionKey, cfg, runtime, turnMessage, userId);
-            recordTurn(sessionKey, "user", req.message(), null, null, traceId, runtime);
 
             var answer = new StringBuilder();
             var finalMsg = new AtomicReference<Msg>();
@@ -185,6 +186,7 @@ public class ReleasedAgentChatService implements CustomerChatService {
                 reply = "模型返回空答复，请换个说法或选择其它模型。";
             }
 
+            requireAutomation(sessionKey);
             if (text == null || text.isBlank()) {
                 recordTurn(sessionKey, "error", reply, null, latencyMs, traceId, runtime);
             } else {
@@ -440,6 +442,12 @@ public class ReleasedAgentChatService implements CustomerChatService {
     }
 
     record SessionAddress(String sessionId, String storageKey) {}
+
+    private void requireAutomation(String sessionKey) {
+        if (!dialogue.allowsAutomation(sessionKey)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "HUMAN_HANDOFF_ACTIVE");
+        }
+    }
 
     @jakarta.annotation.PreDestroy
     public void shutdown() {

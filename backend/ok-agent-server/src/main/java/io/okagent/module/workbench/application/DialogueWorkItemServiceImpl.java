@@ -139,6 +139,15 @@ public class DialogueWorkItemServiceImpl implements DialogueWorkItemService {
         return toView(sessions.save(session));
     }
 
+    @Override
+    @Transactional
+    public DialogueWorkItemView resumeAutomation(String sessionId, UUID actorAccountId) {
+        requireAssignableAccount(actorAccountId);
+        DialogueSession session = require(sessionId);
+        apply(() -> session.resumeAutomation(actorAccountId, Instant.now()));
+        return toView(sessions.save(session));
+    }
+
     private DialogueSession require(String sessionId) {
         return sessions.findById(sessionId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dialogue session not found"));

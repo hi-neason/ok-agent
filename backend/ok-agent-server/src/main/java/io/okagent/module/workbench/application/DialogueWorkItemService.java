@@ -8,6 +8,9 @@ import org.springframework.data.domain.Page;
 
 /** Application service for operating customer conversations as assignable inbox work items. */
 public interface DialogueWorkItemService {
+    /** Explicitly resumes automated reception and clears human assignment. */
+    DialogueWorkItemView resumeAutomation(String sessionId, UUID actorAccountId);
+
 
     /** Lists enabled console operators available for conversation assignment. */
     List<DialogueOperatorView> listOperators();

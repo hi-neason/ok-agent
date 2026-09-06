@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { PageHeader, Pagination } from "../shared";
 import { Markdown } from "../shared/Markdown";
 import {
+  resumeAutomation,
   assignWorkItem,
   changeWorkPriority,
   changeWorkStatus,
@@ -483,6 +484,13 @@ export function InboxPage() {
               <section className="inbox-control-section">
                 <label>{t("inbox.nextAction")}</label>
                 <div className="inbox-status-actions">
+                  {selected.status !== "OPEN" && selected.status !== "CLOSED" && (
+                    <button disabled={mutating} onClick={() => {
+                      if (window.confirm(t("inbox.resumeAutomationConfirm", { title: selected.title }))) {
+                        void mutate(() => resumeAutomation(selected.sessionId));
+                      }
+                    }}>{t("inbox.resumeAutomation")}</button>
+                  )}
                   {NEXT_STATUS[selected.status].map((status) => (
                     <button
                       key={status}

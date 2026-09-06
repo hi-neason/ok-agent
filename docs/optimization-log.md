@@ -21,3 +21,11 @@ A bounded lease-based pool now prevents replacement or eviction of active Agent 
 Saturated runtimes reject new sessions, failed builds do not consume capacity, and shutdown drains active leases.
 Validation: backend `mvn -o test`, including busy replacement, capacity, shutdown and construction failures.
 This cache is process-local; production must use one runtime owner until distributed execution ownership is configured.
+
+## 4. Enforce human handoff at runtime
+
+Web, Feishu, DingTalk and WeChat persist inbound messages but only run/reply while the business
+session is OPEN. Each channel checks again immediately before outbound delivery to suppress a
+response generated during handoff. Explicit resume clears the human assignee; closed sessions cannot resume.
+No new automated delivery is attempted during handoff; an already transmitted network request cannot be recalled.
+Validation: backend tests and frontend build; live provider delivery is not exercised.

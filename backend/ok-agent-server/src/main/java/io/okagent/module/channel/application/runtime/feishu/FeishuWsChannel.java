@@ -221,8 +221,10 @@ public final class FeishuWsChannel implements Channel {
 
         return Mono.fromRunnable(() -> recordTurnStart(sessionId, userId, userText))
                 .then(Mono.fromCallable(Instant::now))
+                .filter(started -> dialogue.allowsAutomation(sessionId))
                 .flatMap(started -> g.run(
                                 route.context(), message.messages(), route.outboundAddress(), runtimeCtx, message)
+                        .filter(reply -> dialogue.allowsAutomation(sessionId))
                         .flatMap(reply ->
                                 sendReply(route.outboundAddress(), reply).thenReturn(reply))
                         .doOnNext(reply -> recordTurnEnd(sessionId, reply, started, null, traceId))

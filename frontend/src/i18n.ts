@@ -273,6 +273,8 @@ const resources = {
         cardRetry: "发送失败，请重试",
       },
       inbox: {
+        resumeAutomation: "恢复机器人接待",
+        resumeAutomationConfirm: "确定恢复会话「{{title}}」的机器人接待并清除人工负责人？",
         kicker: "服务运营 / 统一收件箱",
         title: "会话工作台",
         description: "集中处理机器人转交和人工跟进会话，管理负责人、优先级与解决状态。",
@@ -1415,6 +1417,8 @@ const resources = {
         cardRetry: "Failed to send. Try again.",
       },
       inbox: {
+        resumeAutomation: "Resume automated replies",
+        resumeAutomationConfirm: "Resume automated replies for “{{title}}” and clear the human assignee?",
         kicker: "SERVICE OPERATIONS / UNIFIED INBOX",
         title: "Conversation Workspace",
         description: "Handle bot handoffs and human follow-ups in one place, with clear ownership, priority, and resolution state.",

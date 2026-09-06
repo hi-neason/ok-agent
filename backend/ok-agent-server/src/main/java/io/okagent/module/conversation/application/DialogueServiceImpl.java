@@ -40,6 +40,14 @@ public class DialogueServiceImpl implements DialogueService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public boolean allowsAutomation(String sessionId) {
+        return sessions.findById(sessionId)
+                .map(session -> session.getWorkStatus() == io.okagent.module.conversation.domain.DialogueWorkStatus.OPEN)
+                .orElse(false);
+    }
+
+    @Override
     public boolean sessionExists(String sessionId) {
         return sessions.existsBySessionId(sessionId);
     }

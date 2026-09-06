@@ -156,3 +156,7 @@ export async function changeWorkPriority(
     }),
   );
 }
+
+export async function resumeAutomation(sessionId: string): Promise<ConversationWorkItem> {
+  return jsonOrThrow(await fetch(`/api/v1/workbench/sessions/${encodeURIComponent(sessionId)}/resume-automation`, { method: "POST" }));
+}

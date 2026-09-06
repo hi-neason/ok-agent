@@ -233,6 +233,18 @@ public class DialogueSession {
         markWorkItemChanged(actorId, now);
     }
 
+    /** Explicitly returns a human-handled conversation to automated reception. */
+    public void resumeAutomation(UUID actorId, Instant now) {
+        if (workStatus == DialogueWorkStatus.CLOSED) {
+            throw new IllegalStateException("CLOSED_CONVERSATION_CANNOT_RESUME");
+        }
+        workStatus = DialogueWorkStatus.OPEN;
+        assigneeAccountId = null;
+        assignedAt = null;
+        resolvedAt = null;
+        markWorkItemChanged(actorId, now);
+    }
+
     /** Changes operational priority without changing assignment or lifecycle state. */
     public void changePriority(DialoguePriority next, UUID actorId, Instant now) {
         priority = java.util.Objects.requireNonNull(next, "priority");

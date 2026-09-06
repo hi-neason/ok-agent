@@ -14,6 +14,9 @@ import org.springframework.data.domain.Page;
  * event transcript ({@code agent_transcript}) are intentionally out of scope here.
  */
 public interface DialogueService {
+    /** Returns whether a persisted conversation currently permits automated replies. */
+    boolean allowsAutomation(String sessionId);
+
 
     /** True when a session with the given id already exists. */
     boolean sessionExists(String sessionId);

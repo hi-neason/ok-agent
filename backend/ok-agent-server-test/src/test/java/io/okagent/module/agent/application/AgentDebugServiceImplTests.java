@@ -30,6 +30,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
@@ -179,5 +180,62 @@ class AgentDebugServiceImplTests {
         }
 
         assertThat(first.get(2, TimeUnit.SECONDS).reply()).isEqualTo("done");
+    }
+
+    @Test
+    void shouldNotEvictBusySessionWhenDebugPoolIsFull() throws Exception {
+        var agentId = UUID.randomUUID();
+        var asset = new AgentAsset(agentId, "agent", "Agent", "", "testing");
+        asset.updateConfiguration("", "", UUID.randomUUID(), 0.7, null, null, 2048, "[]", "[]");
+        var agents = mock(AgentAssetRepository.class);
+        var factory = mock(HarnessAgentFactory.class);
+        var dialogue = mock(DialogueService.class);
+        var config = new DraftAgentConfig(asset, List.of());
+        var activeAgent = mock(HarnessAgent.class);
+        var created = new AtomicInteger();
+        when(agents.findById(agentId)).thenReturn(Optional.of(asset));
+        when(factory.draftConfig(asset)).thenReturn(config);
+        when(factory.build(config, "user")).thenAnswer(invocation -> {
+            if (created.getAndIncrement() == 0) {
+                return activeAgent;
+            }
+            var idleAgent = mock(HarnessAgent.class);
+            when(idleAgent.streamEvents(any(String.class), any(RuntimeContext.class)))
+                    .thenReturn(Flux.just(new AgentResultEvent(new AssistantMessage("idle"))));
+            return idleAgent;
+        });
+        when(dialogue.nextSeq(any(String.class))).thenReturn(1);
+        var entered = new CountDownLatch(1);
+        var release = new CountDownLatch(1);
+        when(activeAgent.streamEvents(any(String.class), any(RuntimeContext.class)))
+                .thenReturn(Flux.create(sink -> {
+                    entered.countDown();
+                    try {
+                        release.await();
+                        sink.next(new AgentResultEvent(new AssistantMessage("active")));
+                        sink.complete();
+                    } catch (InterruptedException exception) {
+                        Thread.currentThread().interrupt();
+                        sink.error(exception);
+                    }
+                }));
+        var service = new AgentDebugServiceImpl(
+                agents,
+                factory,
+                dialogue,
+                mock(JdbcAgentStateStore.class),
+                mock(PersonaExtractionService.class));
+
+        var active = CompletableFuture.supplyAsync(
+                () -> service.chat(agentId, new AgentChatRequest("active", "session-0", "user")));
+        assertThat(entered.await(2, TimeUnit.SECONDS)).isTrue();
+
+        for (int i = 1; i < 51; i++) {
+            service.chat(agentId, new AgentChatRequest("idle-" + i, "session-" + i, "user"));
+        }
+        verify(activeAgent, never()).close();
+
+        release.countDown();
+        assertThat(active.get(2, TimeUnit.SECONDS).reply()).isEqualTo("active");
     }
 }

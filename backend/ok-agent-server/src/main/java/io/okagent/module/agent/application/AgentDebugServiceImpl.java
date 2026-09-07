@@ -235,13 +235,24 @@ public class AgentDebugServiceImpl implements AgentDebugService {
         if (sessions.size() < MAX_SESSIONS) {
             return;
         }
-        sessions.entrySet().stream()
-                .min(Map.Entry.comparingByValue((a, b) -> a.lastTouched.compareTo(b.lastTouched)))
-                .ifPresent(entry -> {
-                    if (sessions.remove(entry.getKey(), entry.getValue())) {
-                        closeQuietly(entry.getValue().agent);
-                    }
-                });
+        var candidates = sessions.entrySet().stream()
+                .sorted(Map.Entry.comparingByValue((a, b) -> a.lastTouched.compareTo(b.lastTouched)))
+                .toList();
+        for (var entry : candidates) {
+            var candidate = entry.getValue();
+            if (!candidate.executionLock.tryLock()) {
+                continue;
+            }
+            try {
+                if (sessions.remove(entry.getKey(), candidate)) {
+                    closeQuietly(candidate.agent);
+                    return;
+                }
+            } finally {
+                candidate.executionLock.unlock();
+            }
+        }
+        throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Debug session pool is busy");
     }
 
     private ResponseStatusException toUserFacingError(Exception e) {

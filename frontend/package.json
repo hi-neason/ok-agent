@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "test:browser": "playwright test",
-    "test": "node tests/agent-options.mjs && node tests/release-options.mjs && node tests/integration-options.mjs && node tests/customer-groups.mjs && node tests/auth-fetch.mjs",
+    "test": "node tests/agent-options.mjs && node tests/release-options.mjs && node tests/integration-options.mjs && node tests/customer-groups.mjs && node tests/load-all-pages.mjs && node tests/auth-fetch.mjs",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview"

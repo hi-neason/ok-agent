@@ -2,6 +2,7 @@ package io.okagent.module.persona.application;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PreDestroy;
 import io.okagent.module.agent.domain.AgentAsset;
 import io.okagent.module.conversation.domain.DialogueTurn;
 import io.okagent.module.model.domain.ModelAsset;
@@ -57,6 +58,7 @@ public class PersonaExtractionService {
     private final UserPersonaRepository personas;
     private final UserPersonaService personaService;
     private final ObjectMapper json;
+    private volatile boolean stopping;
     private final HttpClient http =
             HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build();
     private final ExecutorService executor = Executors.newFixedThreadPool(2, new ThreadFactory() {
@@ -89,6 +91,7 @@ public class PersonaExtractionService {
 
     /** Fires extraction asynchronously after a chat round; no-op when the agent has extraction disabled. */
     public void extractAsync(UUID agentId, String userId, String sessionId) {
+        if (stopping) return;
         if (userId == null || userId.isBlank()) return;
         AgentAsset agent = agents.findById(agentId).orElse(null);
         if (agent == null || !agent.isPersonaExtractEnabled()) return;
@@ -100,6 +103,12 @@ public class PersonaExtractionService {
                 log.warn("Persona extraction failed for agent={}, userId={}: {}", agentId, userId, e.getMessage(), e);
             }
         });
+    }
+
+    @PreDestroy
+    public void shutdown() {
+        stopping = true;
+        executor.shutdownNow();
     }
 
     private void runExtraction(AgentAsset agent, String userId, String sessionId) {

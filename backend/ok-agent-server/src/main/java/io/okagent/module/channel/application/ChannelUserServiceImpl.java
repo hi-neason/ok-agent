@@ -2,6 +2,7 @@ package io.okagent.module.channel.application;
 
 import io.okagent.module.channel.domain.ChannelUserIdentity;
 import io.okagent.module.channel.infrastructure.persistence.ChannelUserIdentityRepository;
+import jakarta.annotation.PreDestroy;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -21,6 +22,7 @@ public class ChannelUserServiceImpl implements ChannelUserService {
     private static final Logger log = LoggerFactory.getLogger(ChannelUserServiceImpl.class);
 
     private final ChannelUserIdentityRepository repository;
+    private volatile boolean stopping;
 
     private final ExecutorService executor = Executors.newFixedThreadPool(1, new ThreadFactory() {
         private final AtomicInteger seq = new AtomicInteger();
@@ -46,6 +48,9 @@ public class ChannelUserServiceImpl implements ChannelUserService {
             String tenantKey,
             String displayName,
             String avatarUrl) {
+        if (stopping) {
+            return;
+        }
         if (channelType == null
                 || channelType.isBlank()
                 || channelKey == null
@@ -67,6 +72,12 @@ public class ChannelUserServiceImpl implements ChannelUserService {
                         e);
             }
         });
+    }
+
+    @PreDestroy
+    public void shutdown() {
+        stopping = true;
+        executor.shutdown();
     }
 
     @Override

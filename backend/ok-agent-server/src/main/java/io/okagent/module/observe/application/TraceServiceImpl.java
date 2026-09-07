@@ -2,6 +2,7 @@ package io.okagent.module.observe.application;
 
 import io.okagent.module.observe.domain.TraceSpan;
 import io.okagent.module.observe.infrastructure.persistence.TraceSpanRepository;
+import jakarta.annotation.PreDestroy;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -28,6 +29,7 @@ public class TraceServiceImpl implements TraceService, TraceSink {
 
     private final TraceSpanRepository repository;
     private final ExecutorService writer;
+    private volatile boolean stopping;
 
     public TraceServiceImpl(TraceSpanRepository repository) {
         this.repository = repository;
@@ -42,6 +44,9 @@ public class TraceServiceImpl implements TraceService, TraceSink {
 
     @Override
     public void saveAll(List<TraceSpan> spans) {
+        if (stopping) {
+            return;
+        }
         if (spans == null || spans.isEmpty()) {
             return;
         }
@@ -59,6 +64,12 @@ public class TraceServiceImpl implements TraceService, TraceSink {
                     }
                 },
                 writer);
+    }
+
+    @PreDestroy
+    public void shutdown() {
+        stopping = true;
+        writer.shutdown();
     }
 
     @Override

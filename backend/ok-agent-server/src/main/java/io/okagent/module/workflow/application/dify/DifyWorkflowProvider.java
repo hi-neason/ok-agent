@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.okagent.module.workflow.application.*;
+import io.okagent.shared.runtime.RemoteErrorSanitizer;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -30,6 +31,7 @@ public class DifyWorkflowProvider implements WorkflowProvider {
     private static final Logger log = LoggerFactory.getLogger(DifyWorkflowProvider.class);
     private static final String SELF_WORKFLOW_ID = "self";
     private static final int OUTPUT_SUMMARY_LIMIT = 4000;
+    private static final String AUTHENTICATION_HINT = "Authentication failed: check the Dify API key";
 
     private final ObjectMapper json;
     private final HttpClient http = HttpClient.newBuilder()
@@ -125,7 +127,8 @@ public class DifyWorkflowProvider implements WorkflowProvider {
             HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() / 100 != 2) {
                 return WorkflowExecutionResult.failure(
-                        null, "Dify returned HTTP " + response.statusCode() + ": " + truncate(response.body(), 500));
+                        null, RemoteErrorSanitizer.http(
+                                "Dify workflow", response.statusCode(), response.body(), AUTHENTICATION_HINT));
             }
             JsonNode root = json.readTree(response.body());
             JsonNode data = root.path("data");
@@ -147,7 +150,8 @@ public class DifyWorkflowProvider implements WorkflowProvider {
             }
             String error = data.path("error").isNull()
                     ? "Dify workflow ended with status '" + status + "'"
-                    : data.path("error").asText();
+                    : RemoteErrorSanitizer.exception(
+                            new IllegalStateException(data.path("error").asText()), AUTHENTICATION_HINT);
             return WorkflowExecutionResult.failure(runId, error);
         } catch (Exception e) {
             log.warn("Dify workflow execution failed: {}", e.getMessage(), e);
@@ -176,7 +180,7 @@ public class DifyWorkflowProvider implements WorkflowProvider {
         HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() / 100 != 2) {
             throw new IllegalStateException(
-                    "HTTP " + response.statusCode() + " from Dify: " + truncate(response.body(), 300));
+                    RemoteErrorSanitizer.http("Dify", response.statusCode(), response.body(), AUTHENTICATION_HINT));
         }
         return json.readTree(response.body());
     }
@@ -278,13 +282,6 @@ public class DifyWorkflowProvider implements WorkflowProvider {
     }
 
     private String safeMessage(Exception e) {
-        var root = e;
-        while (root.getCause() instanceof Exception cause && cause != root) root = cause;
-        String message = root.getMessage();
-        if (message == null || message.isBlank()) return root.getClass().getSimpleName();
-        if (message.contains("401") || message.toLowerCase().contains("unauthorized")) {
-            return "Authentication failed: check the Dify API key";
-        }
-        return message;
+        return RemoteErrorSanitizer.exception(e, AUTHENTICATION_HINT);
     }
 }

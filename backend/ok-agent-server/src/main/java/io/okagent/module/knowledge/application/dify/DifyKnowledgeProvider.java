@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.okagent.module.knowledge.application.*;
+import io.okagent.shared.runtime.RemoteErrorSanitizer;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -35,6 +36,7 @@ public class DifyKnowledgeProvider implements KnowledgeProvider {
     private static final Logger log = LoggerFactory.getLogger(DifyKnowledgeProvider.class);
     private static final int PAGE_SIZE = 100;
     private static final int DEFAULT_TOP_K = 5;
+    private static final String AUTHENTICATION_HINT = "Authentication failed: check the Dify dataset API key";
 
     private final ObjectMapper json;
     private final HttpClient http = HttpClient.newBuilder()
@@ -171,7 +173,8 @@ public class DifyKnowledgeProvider implements KnowledgeProvider {
             HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() / 100 != 2) {
                 throw new IllegalStateException(
-                        "HTTP " + response.statusCode() + " from Dify retrieve: " + truncate(response.body(), 300));
+                        RemoteErrorSanitizer.http(
+                                "Dify retrieve", response.statusCode(), response.body(), AUTHENTICATION_HINT));
             }
             JsonNode root = json.readTree(response.body());
             JsonNode records = root.path("records");
@@ -256,7 +259,7 @@ public class DifyKnowledgeProvider implements KnowledgeProvider {
         HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() / 100 != 2) {
             throw new IllegalStateException(
-                    "HTTP " + response.statusCode() + " from Dify: " + truncate(response.body(), 300));
+                    RemoteErrorSanitizer.http("Dify", response.statusCode(), response.body(), AUTHENTICATION_HINT));
         }
         return json.readTree(response.body());
     }
@@ -282,19 +285,7 @@ public class DifyKnowledgeProvider implements KnowledgeProvider {
         return base;
     }
 
-    private String truncate(String value, int limit) {
-        if (value == null) return "";
-        return value.length() <= limit ? value : value.substring(0, limit) + "...(truncated)";
-    }
-
     private String safeMessage(Exception e) {
-        var root = e;
-        while (root.getCause() instanceof Exception cause && cause != root) root = cause;
-        String message = root.getMessage();
-        if (message == null || message.isBlank()) return root.getClass().getSimpleName();
-        if (message.contains("401") || message.toLowerCase().contains("unauthorized")) {
-            return "Authentication failed: check the Dify dataset API key";
-        }
-        return message;
+        return RemoteErrorSanitizer.exception(e, AUTHENTICATION_HINT);
     }
 }

@@ -13,8 +13,11 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -44,8 +47,11 @@ public class FeishuAppRegistrationService {
     private static final List<String> TENANT_EVENTS = List.of("im.message.receive_v1");
 
     private static final long SESSION_TTL_SECONDS = 600;
+    private static final int MAX_CONCURRENT_SESSIONS = 4;
+    private static final long TERMINAL_RETENTION_SECONDS = 60;
 
-    private final ExecutorService executor = Executors.newCachedThreadPool(r -> {
+    private final ExecutorService executor = new ThreadPoolExecutor(0, MAX_CONCURRENT_SESSIONS, 30, TimeUnit.SECONDS,
+            new SynchronousQueue<>(), r -> {
         Thread t = new Thread(r, "feishu-app-register");
         t.setDaemon(true);
         return t;
@@ -54,6 +60,7 @@ public class FeishuAppRegistrationService {
     private final Map<String, RegistrationSession> sessions = new ConcurrentHashMap<>();
 
     public StartedSession start() {
+        cleanupExpiredSessions();
         // 重新发起意味着旧二维码作废：取消所有未完成的会话，即时释放阻塞线程，
         // 避免 RegisterApp.register() 长阻塞（最长 10 分钟）把线程池占满导致新会话排队停在 STARTING。
         cancelPendingSessions();
@@ -62,47 +69,53 @@ public class FeishuAppRegistrationService {
         RegistrationSession session = new RegistrationSession(sessionId);
         sessions.put(sessionId, session);
 
-        Future<?> future = executor.submit(() -> {
-            try {
-                // 不传 createOnly / appId：扫码落地页同时支持「新建应用」和「选择已有应用」，
-                // 已有应用会被增量授予下方预置的 scopes/events。
-                RegisterAppOptions options = RegisterAppOptions.newBuilder()
-                        .source("ok-agent")
-                        .addons(AppAddons.newBuilder()
-                                .tenantScopes(TENANT_SCOPES)
-                                .tenantEvents(TENANT_EVENTS)
-                                .build())
-                        .onQRCode(info -> {
-                            session.qrUrl = info.getUrl();
-                            session.expireAt = Instant.now().plusSeconds(Math.max(1, info.getExpireIn()));
-                            session.state = State.WAITING_SCAN;
-                            log.info(
-                                    "Feishu app-registration '{}': QR ready (expires in {}s)",
-                                    sessionId,
-                                    info.getExpireIn());
-                        })
-                        .onStatusChange(this::onStatus)
-                        .build();
+        Future<?> future;
+        try {
+            future = executor.submit(() -> {
+                try {
+                    // 不传 createOnly / appId：扫码落地页同时支持「新建应用」和「选择已有应用」，
+                    // 已有应用会被增量授予下方预置的 scopes/events。
+                    RegisterAppOptions options = RegisterAppOptions.newBuilder()
+                            .source("ok-agent")
+                            .addons(AppAddons.newBuilder()
+                                    .tenantScopes(TENANT_SCOPES)
+                                    .tenantEvents(TENANT_EVENTS)
+                                    .build())
+                            .onQRCode(info -> {
+                                session.qrUrl = info.getUrl();
+                                session.expireAt = Instant.now().plusSeconds(Math.max(1, info.getExpireIn()));
+                                session.state = State.WAITING_SCAN;
+                                log.info(
+                                        "Feishu app-registration '{}': QR ready (expires in {}s)",
+                                        sessionId,
+                                        info.getExpireIn());
+                            })
+                            .onStatusChange(this::onStatus)
+                            .build();
 
-                RegisterAppResult result = RegisterApp.register(options);
-                session.appId = result.getClientId();
-                session.appSecret = result.getClientSecret();
-                session.state = State.SUCCESS;
-                log.info(
-                        "Feishu app-registration '{}': authorized (appId={}, secretReturned={})",
-                        sessionId,
-                        result.getClientId(),
-                        result.getClientSecret() != null && !result.getClientSecret().isBlank());
-            } catch (RegisterAppException e) {
-                session.state = State.FAILED;
-                session.error = e.getCode() != null ? e.getCode() + " " + e.getDescription() : e.getMessage();
-                log.warn("Feishu app-registration '{}' failed: {}", sessionId, session.error);
-            } catch (Exception e) {
-                session.state = State.FAILED;
-                session.error = e.getMessage();
-                log.warn("Feishu app-registration '{}' failed", sessionId, e);
-            }
-        });
+                    RegisterAppResult result = RegisterApp.register(options);
+                    session.appId = result.getClientId();
+                    session.appSecret = result.getClientSecret();
+                    session.state = State.SUCCESS;
+                    log.info(
+                            "Feishu app-registration '{}': authorized (appId={}, secretReturned={})",
+                            sessionId,
+                            result.getClientId(),
+                            result.getClientSecret() != null && !result.getClientSecret().isBlank());
+                } catch (RegisterAppException e) {
+                    session.state = State.FAILED;
+                    session.error = e.getCode() != null ? e.getCode() + " " + e.getDescription() : e.getMessage();
+                    log.warn("Feishu app-registration '{}' failed: {}", sessionId, session.error);
+                } catch (Exception e) {
+                    session.state = State.FAILED;
+                    session.error = e.getMessage();
+                    log.warn("Feishu app-registration '{}' failed", sessionId, e);
+                }
+            });
+        } catch (RejectedExecutionException e) {
+            sessions.remove(sessionId);
+            throw new IllegalStateException("飞书扫码注册正在处理中，请稍后重试", e);
+        }
         session.future = future;
         return new StartedSession(sessionId);
     }
@@ -115,6 +128,7 @@ public class FeishuAppRegistrationService {
     }
 
     public SessionStatus status(String sessionId) {
+        cleanupExpiredSessions();
         RegistrationSession s = sessions.get(sessionId);
         if (s == null) {
             return new SessionStatus("NOT_FOUND", null, null, null, 0, null);
@@ -138,6 +152,21 @@ public class FeishuAppRegistrationService {
             }
         });
         sessions.clear();
+    }
+
+    private void cleanupExpiredSessions() {
+        Instant now = Instant.now();
+        sessions.forEach((id, s) -> {
+            Instant expireAt = s.expireAt;
+            if (expireAt == null || now.isBefore(expireAt.plusSeconds(TERMINAL_RETENTION_SECONDS))) {
+                return;
+            }
+            if (s.state == State.SUCCESS || s.state == State.FAILED || s.state == State.EXPIRED) {
+                if (sessions.remove(id, s) && s.future != null) {
+                    s.future.cancel(true);
+                }
+            }
+        });
     }
 
     @PreDestroy

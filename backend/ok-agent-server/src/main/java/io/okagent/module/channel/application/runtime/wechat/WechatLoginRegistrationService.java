@@ -9,8 +9,11 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,9 +41,12 @@ public class WechatLoginRegistrationService {
 
     private static final long SESSION_TTL_SECONDS = 480; // 8 min, matching the reference SDK QR timeout
     private static final long POLL_INTERVAL_MS = 2000;
+    private static final int MAX_CONCURRENT_SESSIONS = 4;
+    private static final long TERMINAL_RETENTION_SECONDS = 60;
 
     private final ApiKeyCipher cipher;
-    private final ExecutorService executor = Executors.newCachedThreadPool(r -> {
+    private final ExecutorService executor = new ThreadPoolExecutor(0, MAX_CONCURRENT_SESSIONS, 30, TimeUnit.SECONDS,
+            new SynchronousQueue<>(), r -> {
         Thread t = new Thread(r, "wechat-ilink-register");
         t.setDaemon(true);
         return t;
@@ -53,16 +59,24 @@ public class WechatLoginRegistrationService {
     }
 
     public StartedSession start(StartRequest request) {
+        cleanupExpiredSessions();
         String loginId = UUID.randomUUID().toString();
         RegistrationSession session = new RegistrationSession(loginId, request);
         sessions.put(loginId, session);
 
-        Future<?> future = executor.submit(() -> run(session));
+        Future<?> future;
+        try {
+            future = executor.submit(() -> run(session));
+        } catch (RejectedExecutionException e) {
+            sessions.remove(loginId);
+            throw new IllegalStateException("微信扫码登录正在处理中，请稍后重试", e);
+        }
         session.future = future;
         return new StartedSession(loginId);
     }
 
     public SessionStatus status(String loginId) {
+        cleanupExpiredSessions();
         RegistrationSession s = sessions.get(loginId);
         if (s == null) {
             return new SessionStatus("NOT_FOUND", null, null, null, null, 0, null);
@@ -88,6 +102,7 @@ public class WechatLoginRegistrationService {
      * creation transaction.
      */
     public ClaimedCredentials consume(String loginId) {
+        cleanupExpiredSessions();
         if (loginId == null || loginId.isBlank()) {
             return null;
         }
@@ -150,6 +165,21 @@ public class WechatLoginRegistrationService {
             s.error = e.getMessage();
             log.warn("WeChat iLink registration '{}' failed", s.loginId, e);
         }
+    }
+
+    private void cleanupExpiredSessions() {
+        Instant now = Instant.now();
+        sessions.forEach((id, s) -> {
+            Instant expireAt = s.expireAt;
+            if (expireAt == null || now.isBefore(expireAt.plusSeconds(TERMINAL_RETENTION_SECONDS))) {
+                return;
+            }
+            if (s.state == State.SUCCESS || s.state == State.FAILED || s.state == State.EXPIRED) {
+                if (sessions.remove(id, s) && s.future != null) {
+                    s.future.cancel(true);
+                }
+            }
+        });
     }
 
     @PreDestroy

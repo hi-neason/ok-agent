@@ -14,8 +14,11 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -58,12 +61,15 @@ public class DingTalkRegistrationService {
     private static final long HTTP_TIMEOUT_SECONDS = 15;
     private static final long FALLBACK_INTERVAL_SECONDS = 5;
     private static final long SESSION_TTL_SECONDS = 7200; // the device code advertises ~2h
+    private static final int MAX_CONCURRENT_SESSIONS = 4;
+    private static final long TERMINAL_RETENTION_SECONDS = 60;
 
     private final ObjectMapper json;
     private final HttpClient http = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(HTTP_TIMEOUT_SECONDS))
             .build();
-    private final ExecutorService executor = Executors.newCachedThreadPool(r -> {
+    private final ExecutorService executor = new ThreadPoolExecutor(0, MAX_CONCURRENT_SESSIONS, 30, TimeUnit.SECONDS,
+            new SynchronousQueue<>(), r -> {
         Thread t = new Thread(r, "dingtalk-register");
         t.setDaemon(true);
         return t;
@@ -76,6 +82,7 @@ public class DingTalkRegistrationService {
     }
 
     public StartedSession start() {
+        cleanupExpiredSessions();
         String loginId = UUID.randomUUID().toString();
         RegistrationSession session = new RegistrationSession(loginId);
         sessions.put(loginId, session);
@@ -101,7 +108,13 @@ public class DingTalkRegistrationService {
             session.intervalSeconds = interval;
             session.state = State.WAITING_SCAN;
 
-            Future<?> future = executor.submit(() -> run(session));
+            Future<?> future;
+            try {
+                future = executor.submit(() -> run(session));
+            } catch (RejectedExecutionException e) {
+                sessions.remove(loginId);
+                throw new IllegalStateException("钉钉扫码注册正在处理中，请稍后重试", e);
+            }
             session.future = future;
             return new StartedSession(loginId, verificationUrl, session.userCode,
                     session.expireAt.getEpochSecond(), interval);
@@ -115,6 +128,7 @@ public class DingTalkRegistrationService {
     }
 
     public SessionStatus status(String loginId) {
+        cleanupExpiredSessions();
         RegistrationSession s = sessions.get(loginId);
         if (s == null) {
             return new SessionStatus("NOT_FOUND", null, null, null, 0, 0, null);
@@ -139,6 +153,7 @@ public class DingTalkRegistrationService {
      * creation transaction.
      */
     public ClaimedCredentials consume(String loginId) {
+        cleanupExpiredSessions();
         if (loginId == null || loginId.isBlank()) {
             return null;
         }
@@ -210,6 +225,21 @@ public class DingTalkRegistrationService {
             s.error = e.getMessage();
             log.warn("DingTalk registration '{}' failed", s.loginId, e);
         }
+    }
+
+    private void cleanupExpiredSessions() {
+        Instant now = Instant.now();
+        sessions.forEach((id, s) -> {
+            Instant expireAt = s.expireAt;
+            if (expireAt == null || now.isBefore(expireAt.plusSeconds(TERMINAL_RETENTION_SECONDS))) {
+                return;
+            }
+            if (s.state == State.SUCCESS || s.state == State.FAILED || s.state == State.EXPIRED) {
+                if (sessions.remove(id, s) && s.future != null) {
+                    s.future.cancel(true);
+                }
+            }
+        });
     }
 
     // ------------------------------------------------------------------

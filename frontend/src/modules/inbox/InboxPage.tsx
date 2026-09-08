@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { PageHeader, Pagination } from "../shared";
+import { PageHeader, Pagination, useConfirm } from "../shared";
 import { Markdown } from "../shared/Markdown";
 import {
   resumeAutomation,
@@ -75,6 +75,7 @@ function initials(value: string): string {
 
 export function InboxPage() {
   const { t, i18n } = useTranslation();
+  const { confirm, Dialog } = useConfirm();
   const [queue, setQueue] = useState<WorkStatus | "ALL">("ALL");
   const [items, setItems] = useState<ConversationWorkItem[]>([]);
   const [pageNumber, setPageNumber] = useState(0);
@@ -501,9 +502,10 @@ export function InboxPage() {
                 <div className="inbox-status-actions">
                   {selected.status !== "OPEN" && selected.status !== "CLOSED" && (
                     <button disabled={mutating} onClick={() => {
-                      if (window.confirm(t("inbox.resumeAutomationConfirm", { title: selected.title }))) {
-                        void mutate(() => resumeAutomation(selected.sessionId));
-                      }
+                      void confirm({ message: t("inbox.resumeAutomationConfirm", { title: selected.title }) })
+                        .then((approved) => {
+                          if (approved) void mutate(() => resumeAutomation(selected.sessionId));
+                        });
                     }}>{t("inbox.resumeAutomation")}</button>
                   )}
                   {NEXT_STATUS[selected.status].map((status) => (
@@ -666,6 +668,7 @@ export function InboxPage() {
           )}
         </aside>
       </section>
+      <Dialog />
     </div>
   );
 }

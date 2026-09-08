@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { PageHeader, Button } from "../shared";
+import { PageHeader, Button, useConfirm } from "../shared";
 import {
   createIntent,
   deleteIntent,
@@ -38,6 +38,7 @@ function collectDescendantIds(node: IntentNode, acc: Set<string>) {
 
 export function IntentPage() {
   const { t } = useTranslation();
+  const { confirm, Dialog } = useConfirm();
   const [tree, setTree] = useState<IntentNode[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isNew, setIsNew] = useState(false);
@@ -166,7 +167,7 @@ export function IntentPage() {
 
   const remove = async () => {
     if (!selected) return;
-    if (!window.confirm(t("intents.deleteConfirm", { name: selected.name }))) return;
+    if (!(await confirm({ message: t("intents.deleteConfirm", { name: selected.name }), dangerous: true }))) return;
     try {
       await deleteIntent(selected.id);
       setSelectedId(null);
@@ -362,6 +363,7 @@ export function IntentPage() {
           )}
         </section>
       </div>
+      <Dialog />
     </>
   );
 }

@@ -19,6 +19,7 @@ import io.okagent.module.channel.infrastructure.persistence.ChannelIlinkSessionR
 import io.okagent.module.channel.application.ChannelIdentityResolver;
 import io.okagent.module.conversation.application.DialogueService;
 import io.okagent.module.observe.application.TraceCollectingMiddleware;
+import io.okagent.shared.runtime.RuntimeFailure;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -346,8 +347,9 @@ public final class WeChatIlinkChannel implements Channel {
         try {
             int latencyMs = (int) Duration.between(started, Instant.now()).toMillis();
             if (error != null) {
+                RuntimeFailure failure = RuntimeFailure.from(error, traceId);
                 dialogue.recordMessage(
-                        sessionId, "error", "Agent 执行失败：" + error.getMessage(), null, latencyMs, traceId);
+                        sessionId, "error", "Agent 执行失败：" + failure.code(), null, latencyMs, traceId);
             } else if (reply != null) {
                 String text = reply.getTextContent();
                 if (text != null && !text.isBlank()) {

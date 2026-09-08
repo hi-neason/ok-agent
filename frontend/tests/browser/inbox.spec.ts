@@ -41,8 +41,8 @@ test("inbox requests one customer page, loads older messages and resumes automat
   expect([...new Set(requestedPages)]).toEqual(["0"]);
   await page.getByRole("button", { name: "加载更早消息" }).click();
   await expect(page.getByText("Earlier message", { exact: true })).toBeVisible();
-  page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "恢复机器人接待", exact: true }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "确定" }).click();
   await expect.poll(() => resumed).toBe(true);
   await expect(page.getByRole("button", { name: "恢复机器人接待", exact: true })).toHaveCount(0);
   await page.locator(".pagination-bar").getByRole("button").last().click();

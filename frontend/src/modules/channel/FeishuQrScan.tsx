@@ -5,6 +5,7 @@ import {
   pollFeishuRegistration,
   startFeishuRegistration,
 } from "./api";
+import { qrSvgDataUri } from "./qrImage";
 import "./channel.css";
 
 type Props = {
@@ -160,11 +161,7 @@ export function FeishuQrScan({ onSuccess }: Props) {
       {(phase === "show" || phase === "expired") && qrUrl && (
         <div className={`feishu-qr-body ${phase === "expired" ? "is-expired" : ""}`}>
           {qrSvg ? (
-            <span
-              className="feishu-qr-img"
-              // qrcode 库生成的是受信任的静态 SVG 字符串
-              dangerouslySetInnerHTML={{ __html: qrSvg }}
-            />
+            <img className="feishu-qr-img-tag" src={qrSvgDataUri(qrSvg)} alt={t("qr.feishu.title")} />
           ) : (
             <a
               className="feishu-qr-link"

@@ -7,6 +7,7 @@ import {
   startWechatLogin,
   wechatLogout,
 } from "./api";
+import { qrSvgDataUri } from "./qrImage";
 import type { WechatIlinkStatus } from "./types";
 import "./channel.css";
 
@@ -299,10 +300,7 @@ export function WechatQrLogin({ channelId, autoStart = true, onCancel }: Props) 
         <div
           className={`feishu-qr-body ${phase === "expired" ? "is-expired" : ""}`}
         >
-          <span
-            className="feishu-qr-img"
-            dangerouslySetInnerHTML={{ __html: qrSvg ?? "" }}
-          />
+          <img className="feishu-qr-img-tag" src={qrSvgDataUri(qrSvg ?? "")} alt={t("qr.wechat.alt")} />
           {phase === "expired" && (
             <div className="feishu-qr-mask">
               <span>{t("qr.expired")}</span>

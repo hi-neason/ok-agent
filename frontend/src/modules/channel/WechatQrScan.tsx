@@ -6,6 +6,7 @@ import {
   startWechatRegistration,
   type WechatRegisterStatus,
 } from "./api";
+import { qrSvgDataUri } from "./qrImage";
 import "./channel.css";
 
 type Props = {
@@ -186,10 +187,7 @@ export function WechatQrScan({ apiBase, channelVersion, onSuccess }: Props) {
           {qrImage ? (
             <img className="feishu-qr-img-tag" src={qrImage} alt={t("qr.wechat.alt")} />
           ) : (
-            <span
-              className="feishu-qr-img"
-              dangerouslySetInnerHTML={{ __html: qrSvg ?? "" }}
-            />
+            <img className="feishu-qr-img-tag" src={qrSvgDataUri(qrSvg ?? "")} alt={t("qr.wechat.alt")} />
           )}
           {phase === "expired" && (
             <div className="feishu-qr-mask">

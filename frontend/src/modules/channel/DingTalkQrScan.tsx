@@ -6,6 +6,7 @@ import {
   startDingTalkRegistration,
   type DingTalkRegisterStatus,
 } from "./api";
+import { qrSvgDataUri } from "./qrImage";
 import "./channel.css";
 
 type Props = {
@@ -158,10 +159,7 @@ export function DingTalkQrScan({ onSuccess }: Props) {
 
       {(phase === "show" || phase === "expired") && qrSvg && (
         <div className={`feishu-qr-body ${phase === "expired" ? "is-expired" : ""}`}>
-          <span
-            className="feishu-qr-img"
-            dangerouslySetInnerHTML={{ __html: qrSvg ?? "" }}
-          />
+          <img className="feishu-qr-img-tag" src={qrSvgDataUri(qrSvg)} alt={t("qr.dingtalk.title")} />
           {phase === "expired" && (
             <div className="feishu-qr-mask">
               <span>{t("qr.expired")}</span>

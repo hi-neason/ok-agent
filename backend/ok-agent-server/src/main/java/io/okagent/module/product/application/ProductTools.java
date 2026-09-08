@@ -3,6 +3,7 @@ package io.okagent.module.product.application;
 import io.agentscope.core.agent.RuntimeContext;
 import io.agentscope.core.tool.Tool;
 import io.agentscope.core.tool.ToolParam;
+import io.okagent.shared.runtime.ToolFailureMessage;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
@@ -75,7 +76,7 @@ public class ProductTools {
             return renderProducts(products);
         } catch (Exception e) {
             log.warn("search_products failed for agent {}: {}", agentId, e.getMessage(), e);
-            return "Error searching products: " + e.getMessage();
+            return ToolFailureMessage.of("search_products", e);
         }
     }
 
@@ -163,7 +164,7 @@ public class ProductTools {
             return sb.toString();
         } catch (Exception e) {
             log.warn("recommend_products failed for agent {}: {}", agentId, e.getMessage(), e);
-            return "Error recommending products: " + e.getMessage();
+            return ToolFailureMessage.of("recommend_products", e);
         }
     }
 
@@ -206,7 +207,7 @@ public class ProductTools {
             return sb.toString();
         } catch (Exception e) {
             log.warn("get_product failed for agent {}: {}", agentId, e.getMessage(), e);
-            return "Error getting product: " + e.getMessage();
+            return ToolFailureMessage.of("get_product", e);
         }
     }
 
@@ -241,7 +242,7 @@ public class ProductTools {
             return sb.toString().trim();
         } catch (Exception e) {
             log.warn("list_solutions failed for agent {}: {}", agentId, e.getMessage(), e);
-            return "Error listing solutions: " + e.getMessage();
+            return ToolFailureMessage.of("list_solutions", e);
         }
     }
 
@@ -288,7 +289,7 @@ public class ProductTools {
             return sb.toString();
         } catch (Exception e) {
             log.warn("get_solution failed for agent {}: {}", agentId, e.getMessage(), e);
-            return "Error getting solution: " + e.getMessage();
+            return ToolFailureMessage.of("get_solution", e);
         }
     }
 

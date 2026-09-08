@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.agentscope.core.agent.RuntimeContext;
 import io.agentscope.core.tool.Tool;
 import io.agentscope.core.tool.ToolParam;
+import io.okagent.shared.runtime.ToolFailureMessage;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -55,7 +56,7 @@ public class WorkflowTools {
             return sb.toString().trim();
         } catch (Exception e) {
             log.warn("list_workflows failed for agent {}: {}", agentId, e.getMessage(), e);
-            return "Error listing workflows: " + e.getMessage();
+            return ToolFailureMessage.of("list_workflows", e);
         }
     }
 
@@ -81,10 +82,10 @@ public class WorkflowTools {
             }
             return sb.toString();
         } catch (SecurityException e) {
-            return "Error: " + e.getMessage();
+            return ToolFailureMessage.of("describe_workflow", e);
         } catch (Exception e) {
             log.warn("describe_workflow failed for agent {}: {}", agentId, e.getMessage(), e);
-            return "Error describing workflow: " + e.getMessage();
+            return ToolFailureMessage.of("describe_workflow", e);
         }
     }
 
@@ -113,10 +114,10 @@ public class WorkflowTools {
             }
             return "Workflow failed: " + result.message();
         } catch (SecurityException e) {
-            return "Error: " + e.getMessage();
+            return ToolFailureMessage.of("start_workflow", e);
         } catch (Exception e) {
             log.warn("start_workflow failed for agent {}: {}", agentId, e.getMessage(), e);
-            return "Error starting workflow: " + e.getMessage();
+            return ToolFailureMessage.of("start_workflow", e);
         }
     }
 

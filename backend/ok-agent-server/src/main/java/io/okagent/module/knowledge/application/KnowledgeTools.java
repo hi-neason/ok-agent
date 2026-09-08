@@ -3,6 +3,7 @@ package io.okagent.module.knowledge.application;
 import io.agentscope.core.agent.RuntimeContext;
 import io.agentscope.core.tool.Tool;
 import io.agentscope.core.tool.ToolParam;
+import io.okagent.shared.runtime.ToolFailureMessage;
 import java.util.List;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -52,7 +53,7 @@ public class KnowledgeTools {
             return sb.toString().trim();
         } catch (Exception e) {
             log.warn("list_knowledge_bases failed for agent {}: {}", agentId, e.getMessage(), e);
-            return "Error listing knowledge bases: " + e.getMessage();
+            return ToolFailureMessage.of("list_knowledge_bases", e);
         }
     }
 
@@ -96,10 +97,10 @@ public class KnowledgeTools {
             }
             return sb.toString().trim();
         } catch (SecurityException e) {
-            return "Error: " + e.getMessage();
+            return ToolFailureMessage.of("search_knowledge", e);
         } catch (Exception e) {
             log.warn("search_knowledge failed for agent {}: {}", agentId, e.getMessage(), e);
-            return "Error searching knowledge: " + e.getMessage();
+            return ToolFailureMessage.of("search_knowledge", e);
         }
     }
 

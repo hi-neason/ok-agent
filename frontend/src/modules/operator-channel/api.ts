@@ -7,7 +7,7 @@ async function parse<T>(response: Response): Promise<T> {
   if (response.ok) return response.json() as Promise<T>;
   let detail = "";
   try {
-    const body = await response.json();
+    const body = await response.clone().json();
     detail = body.detail || body.message || "";
   } catch {
     detail = await response.text().catch(() => "");

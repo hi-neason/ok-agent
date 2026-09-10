@@ -29,7 +29,7 @@
 ```bash
 cd backend
 cp config/application-local.example.yml config/application-local.yml
-# 编辑 config/application-local.yml，设置两个足够长的随机密钥
+# 编辑 config/application-local.yml，设置数据库密码和两个足够长的随机密钥
 mvn -pl ok-agent-server spring-boot:run
 ```
 

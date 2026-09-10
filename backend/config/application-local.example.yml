@@ -1,5 +1,9 @@
 # Copy this file to application-local.yml. The destination is ignored by Git.
 # Use long, random, stable values and never commit the real file.
+spring:
+  datasource:
+    username: ok_agent
+    password: replace-with-local-database-password
 ok-agent:
   security:
     api-key-encryption-key: replace-with-a-stable-private-key

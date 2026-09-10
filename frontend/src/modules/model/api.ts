@@ -1,13 +1,22 @@
 import type { ModelApiItem, ModelItem } from "./types";
 import type { Page } from "../shared";
 
+async function errorMessage(response: Response, fallback: string): Promise<string> {
+  try {
+    const body = await response.json();
+    return body.detail || body.message || fallback;
+  } catch {
+    return (await response.text().catch(() => "")) || fallback;
+  }
+}
+
 export async function fetchModels(
   page = 0,
   size = 20,
 ): Promise<Page<ModelItem>> {
   const response = await fetch(`/api/v1/models?page=${page}&size=${size}`);
   if (!response.ok) {
-    throw new Error("fetch models failed");
+    throw new Error(await errorMessage(response, "fetch models failed"));
   }
   const data = (await response.json()) as Page<ModelApiItem>;
   return {
@@ -30,7 +39,7 @@ export async function saveModel(model: ModelItem): Promise<ModelItem> {
       body: JSON.stringify(model),
     },
   );
-  if (!response.ok) throw new Error("save failed");
+  if (!response.ok) throw new Error(await errorMessage(response, "save failed"));
   return (await response.json()) as ModelItem;
 }
 
@@ -38,7 +47,7 @@ export async function deleteModel(id: string): Promise<void> {
   const response = await fetch(`/api/v1/models/${encodeURIComponent(id)}`, {
     method: "DELETE",
   });
-  if (!response.ok) throw new Error("delete failed");
+  if (!response.ok) throw new Error(await errorMessage(response, "delete failed"));
 }
 
 export type RawConnectionResult = {

@@ -554,8 +554,8 @@ function ValidationSummary({
         <div className="validation-group validation-group--error">
           <b>{t("agents.validationErrors", { count: validation.errors.length })}</b>
           <ul>
-            {validation.errors.map((e, i) => (
-              <li key={i}>
+            {validation.errors.map((e) => (
+              <li key={validationIssueKey(e)}>
                 <button className="link-button" onClick={() => onSelectIssue(e)}>
                   {t(`agents.validation.${e.code}`, { defaultValue: e.message })}
                 </button>
@@ -568,8 +568,8 @@ function ValidationSummary({
         <div className="validation-group validation-group--warning">
           <b>{t("agents.validationWarnings", { count: validation.warnings.length })}</b>
           <ul>
-            {validation.warnings.map((w, i) => (
-              <li key={i}>
+            {validation.warnings.map((w) => (
+              <li key={validationIssueKey(w)}>
                 <button className="link-button" onClick={() => onSelectIssue(w)}>
                   {t(`agents.validation.${w.code}`, { defaultValue: w.message })}
                 </button>
@@ -580,6 +580,10 @@ function ValidationSummary({
       )}
     </div>
   );
+}
+
+function validationIssueKey(issue: ValidationIssue): string {
+  return `${issue.code}:${issue.field ?? ""}:${issue.message}`;
 }
 
 function permissionModeChanged(agent: AgentItem, form: AgentForm): boolean {

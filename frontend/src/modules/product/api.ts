@@ -89,6 +89,16 @@ function sourcePayload(draft: ProductSourceDraft) {
   };
 }
 
+
+function solutionPayload(draft: SolutionDraft) {
+  return {
+    ...draft,
+    items: draft.items
+      .filter((it) => it.productId)
+      .map(({ _clientKey: _clientKey, ...item }) => item),
+  };
+}
+
 // ---- Products ----
 
 export async function listProducts(
@@ -147,7 +157,7 @@ export async function createSolution(draft: SolutionDraft): Promise<Solution> {
   const res = await fetch("/api/v1/solutions", {
     method: "POST",
     headers: jsonHeaders,
-    body: JSON.stringify({ ...draft, items: draft.items.filter((it) => it.productId) }),
+    body: JSON.stringify(solutionPayload(draft)),
   });
   return jsonOrThrow<Solution>(res);
 }
@@ -156,7 +166,7 @@ export async function updateSolution(id: string, draft: SolutionDraft): Promise<
   const res = await fetch(`/api/v1/solutions/${id}`, {
     method: "PUT",
     headers: jsonHeaders,
-    body: JSON.stringify({ ...draft, items: draft.items.filter((it) => it.productId) }),
+    body: JSON.stringify(solutionPayload(draft)),
   });
   return jsonOrThrow<Solution>(res);
 }

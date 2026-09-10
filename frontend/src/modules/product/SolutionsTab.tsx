@@ -31,6 +31,11 @@ const slugify = (value: string) =>
 
 const ROLES: SolutionItemRole[] = ["PRIMARY", "ADDON", "OPTIONAL"];
 
+const newItemKey = () => {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  return `${Date.now()}-${globalThis.crypto?.getRandomValues(new Uint32Array(1))[0] ?? 0}`;
+};
+
 export function SolutionsTab() {
   const { t } = useTranslation();
   const { confirm, Dialog } = useConfirm();
@@ -76,6 +81,7 @@ export function SolutionsTab() {
           productId: it.productId,
           quantity: it.quantity,
           role: it.role,
+          _clientKey: it.id,
         })),
       });
     } else {
@@ -137,7 +143,7 @@ export function SolutionsTab() {
   const addItem = () =>
     setDraft((d) => ({
       ...d,
-      items: [...d.items, { productId: "", quantity: 1, role: "PRIMARY" }],
+      items: [...d.items, { productId: "", quantity: 1, role: "PRIMARY", _clientKey: newItemKey() }],
     }));
 
   const visible = useMemo(() => {
@@ -327,7 +333,7 @@ export function SolutionsTab() {
                     <small className="prod-items-empty">{t("product.solutions.noProducts")}</small>
                   )}
                   {draft.items.map((item, index) => (
-                    <div className="prod-item-row" key={index}>
+                    <div className="prod-item-row" key={item._clientKey ?? `${item.productId}-${index}`}>
                       <select
                         value={item.productId}
                         onChange={(e) => setItem(index, { productId: e.target.value })}

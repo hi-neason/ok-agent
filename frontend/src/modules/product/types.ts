@@ -83,7 +83,7 @@ export type SolutionDraft = {
   scenario: string;
   priceNote: string;
   status: SolutionStatus;
-  items: { productId: string; quantity: number; role: SolutionItemRole }[];
+  items: { productId: string; quantity: number; role: SolutionItemRole; _clientKey?: string }[];
 };
 
 export type ProductSource = {

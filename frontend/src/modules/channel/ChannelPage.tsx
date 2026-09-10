@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { Button, PageHeader, Pagination, Toggle, useConfirm, type Page } from "../shared";
@@ -43,6 +43,12 @@ export function ChannelPage() {
   const [operators, setOperators] = useState<ChannelOperator[]>([]);
   const [assignmentLoading, setAssignmentLoading] = useState(false);
   const [assignmentError, setAssignmentError] = useState<string | null>(null);
+  const settleTimers = useRef<Set<number>>(new Set());
+
+  const clearSettleTimers = useCallback(() => {
+    settleTimers.current.forEach((timer) => window.clearTimeout(timer));
+    settleTimers.current.clear();
+  }, []);
 
   const reload = (targetPage = pageNumber) => {
     void fetchChannels(targetPage, pageSize)
@@ -59,6 +65,8 @@ export function ChannelPage() {
       })
       .catch(() => setAgentLoadError(t("channels.agentsFailed")));
   }, [pageNumber, pageSize, t]);
+
+  useEffect(() => clearSettleTimers, [clearSettleTimers]);
 
   const agentName = useMemo(() => {
     const map = new Map<string, string>();
@@ -173,23 +181,30 @@ export function ChannelPage() {
    * while the real RUNNING/ERROR is written a moment later. Poll the list until the given
    * channel leaves the transient STARTING state (or we give up), keeping the row accurate.
    */
-  const settleChannel = (id: string) => {
+  const settleChannel = useCallback((id: string) => {
     let attempts = 0;
+    const schedule = (callback: () => void, delay: number) => {
+      const timer = window.setTimeout(() => {
+        settleTimers.current.delete(timer);
+        callback();
+      }, delay);
+      settleTimers.current.add(timer);
+    };
     const tick = async () => {
       attempts += 1;
       try {
-        const next = await fetchChannels(pageNumber);
+        const next = await fetchChannels(pageNumber, pageSize);
         setPage(next);
         const target = next.content.find((x) => x.id === id);
         if (target && target.runtimeStatus === "STARTING" && attempts < 15) {
-          window.setTimeout(tick, 500);
+          schedule(tick, 500);
         }
       } catch {
         /* ignore — next manual refresh will pick it up */
       }
     };
-    window.setTimeout(tick, 400);
-  };
+    schedule(tick, 400);
+  }, [pageNumber, pageSize]);
 
   const toggleEnabled = async (item: ChannelItem, enabled: boolean) => {
     await setChannelEnabled(item.id, enabled);

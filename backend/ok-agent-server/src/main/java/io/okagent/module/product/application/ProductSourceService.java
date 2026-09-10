@@ -8,6 +8,7 @@ import io.okagent.module.product.domain.ProductSourceType;
 import io.okagent.module.product.domain.ProductStatus;
 import io.okagent.module.product.infrastructure.persistence.ProductRepository;
 import io.okagent.module.product.infrastructure.persistence.ProductSourceRepository;
+import io.okagent.shared.runtime.RemoteErrorSanitizer;
 import io.okagent.module.model.application.ApiKeyCipher;
 import io.okagent.module.product.application.ProductSourceRequest;
 import io.okagent.module.product.application.ProductSourceResponse;
@@ -162,7 +163,10 @@ public class ProductSourceService {
             remote = provider.listProducts(toConfig(source));
         } catch (Exception e) {
             log.warn("Product sync failed for source {}: {}", source.getSourceKey(), e.getMessage(), e);
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Product sync failed: " + e.getMessage());
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_GATEWAY,
+                    "Product sync failed: "
+                            + RemoteErrorSanitizer.exception(e, "Authentication failed: check the product source credentials"));
         }
         int upserted = 0;
         Set<String> seenExternalIds = new HashSet<>();

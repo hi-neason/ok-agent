@@ -10,7 +10,7 @@ async function parse<T>(response: Response): Promise<T> {
     const body = await response.json();
     detail = body.detail || body.message || "";
   } catch {
-    // Ignore malformed error responses and use the localized fallback.
+    detail = await response.text().catch(() => "");
   }
   throw new Error(detail || i18n.t("common.requestFailed", { status: response.status }));
 }

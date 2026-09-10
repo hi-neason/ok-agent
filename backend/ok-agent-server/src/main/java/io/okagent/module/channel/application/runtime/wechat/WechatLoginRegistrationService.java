@@ -2,6 +2,7 @@ package io.okagent.module.channel.application.runtime.wechat;
 
 import io.okagent.module.channel.domain.ChannelIlinkSession;
 import io.okagent.module.model.application.ApiKeyCipher;
+import io.okagent.shared.runtime.RemoteErrorSanitizer;
 import jakarta.annotation.PreDestroy;
 import java.time.Duration;
 import java.time.Instant;
@@ -162,7 +163,7 @@ public class WechatLoginRegistrationService {
             Thread.currentThread().interrupt();
         } catch (Exception e) {
             s.state = State.FAILED;
-            s.error = e.getMessage();
+            s.error = RemoteErrorSanitizer.exception(e, "WeChat iLink registration failed");
             log.warn("WeChat iLink registration '{}' failed", s.loginId, e);
         }
     }

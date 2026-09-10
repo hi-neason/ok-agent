@@ -7,7 +7,7 @@ export async function fetchModels(
 ): Promise<Page<ModelItem>> {
   const response = await fetch(`/api/v1/models?page=${page}&size=${size}`);
   if (!response.ok) {
-    return { content: [], totalElements: 0, totalPages: 0, number: page, size };
+    throw new Error("fetch models failed");
   }
   const data = (await response.json()) as Page<ModelApiItem>;
   return {

@@ -84,6 +84,7 @@ export type Option = { id: string; name: string; sub?: string };
 export type AgentSubagentConfig = {
   agentId: string | null;
   intentKeys: string[];
+  _clientKey?: string;
 };
 
 export type ChatMessage = {

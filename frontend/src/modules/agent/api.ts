@@ -190,6 +190,15 @@ export async function validateAgentConfig(
   return (await jsonOrThrow(res)) as ValidationResponse;
 }
 
+const newSubagentKey = () => {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  return `${Date.now()}-${globalThis.crypto?.getRandomValues(new Uint32Array(1))[0] ?? 0}`;
+};
+
+function subagentsPayload(subagents: AgentForm["subagents"]) {
+  return JSON.stringify((subagents ?? []).map(({ _clientKey: _clientKey, ...item }) => item));
+}
+
 export function toConfigPayload(_agentId: string, form: AgentForm) {
   return {
     systemPrompt: form.systemPrompt,
@@ -228,7 +237,7 @@ export function toConfigPayload(_agentId: string, form: AgentForm) {
     dockerImage: form.dockerImage,
     sandboxMemoryMb: form.sandboxMemoryMb,
     sandboxCpuCount: form.sandboxCpuCount,
-    subagentsJson: JSON.stringify(form.subagents ?? []),
+    subagentsJson: subagentsPayload(form.subagents),
   };
 }
 
@@ -240,6 +249,7 @@ export function parseSubagents(raw: string | undefined): AgentSubagentConfig[] {
     return arr.map((x: Record<string, unknown>) => ({
       agentId: x.agentId ? String(x.agentId) : null,
       intentKeys: Array.isArray(x.intentKeys) ? (x.intentKeys as unknown[]).map(String) : [],
+      _clientKey: newSubagentKey(),
     }));
   } catch {
     return [];

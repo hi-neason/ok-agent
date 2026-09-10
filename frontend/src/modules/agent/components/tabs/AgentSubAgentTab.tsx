@@ -6,6 +6,11 @@ import { loadIntentTree, flatten } from "../../../intent/api";
 import type { IntentDto, IntentNode } from "../../../intent/types";
 import type { AgentForm, AgentSubagentConfig } from "../../types";
 
+const newSubagentKey = () => {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  return `${Date.now()}-${globalThis.crypto?.getRandomValues(new Uint32Array(1))[0] ?? 0}`;
+};
+
 export function AgentSubAgentTab({
   form,
   setField,
@@ -51,7 +56,7 @@ export function AgentSubAgentTab({
   const update = (next: AgentSubagentConfig[]) => setField("subagents", next);
 
   const addOne = () =>
-    update([...subagents, { agentId: null, intentKeys: [] }]);
+    update([...subagents, { agentId: null, intentKeys: [], _clientKey: newSubagentKey() }]);
 
   const removeAt = (idx: number) => update(subagents.filter((_, i) => i !== idx));
 
@@ -212,7 +217,7 @@ export function AgentSubAgentTab({
             (!referencedAgentIds.has(a.id) || a.id === s.agentId),
         );
         return (
-          <div className="subagent-card" key={idx}>
+          <div className="subagent-card" key={s._clientKey ?? s.agentId ?? idx}>
             <div className="subagent-card-head">
               <strong>{agent ? agent.name : t("agents.subagents.fallbackName", { index: idx + 1 })}</strong>
               <button className="link-button danger" onClick={() => removeAt(idx)}>

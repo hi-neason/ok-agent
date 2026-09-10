@@ -122,7 +122,7 @@ export function AgentDebugPanel({
           </div>
         )}
         {messages.map((m, i) => (
-          <div key={i} className={`chat-bubble ${m.error ? "error" : m.role}`}>
+          <div key={debugMessageKey(m, i)} className={`chat-bubble ${m.error ? "error" : m.role}`}>
             {m.role === "assistant" && !m.error ? (
               <RichChatMessage source={m.content} onAction={onSend} />
             ) : (
@@ -155,4 +155,8 @@ export function AgentDebugPanel({
       </div>
     </>
   );
+}
+
+function debugMessageKey(message: ChatMessage, index: number): string {
+  return `${message.role}:${message.error ? "error" : "ok"}:${message.content}:${index}`;
 }

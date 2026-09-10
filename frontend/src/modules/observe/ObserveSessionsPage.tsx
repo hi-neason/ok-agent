@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button, PageHeader, Pagination } from "../shared";
 import { searchSessions } from "./api";
@@ -41,26 +41,28 @@ export function ObserveSessionsPage({
   const [result, setResult] = useState<SessionPage | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const requestSeq = useRef(0);
 
   const load = useCallback(
     async (target: Filters, targetPage: number, targetSize: number) => {
+      const seq = requestSeq.current + 1;
+      requestSeq.current = seq;
       setLoading(true);
       setError("");
       try {
-        setResult(
-          await searchSessions({
-            sessionId: target.sessionId,
-            userId: target.userId,
-            from: dayBoundary(target.from, 0),
-            to: dayBoundary(target.to, 1),
-            page: targetPage,
-            size: targetSize,
-          }),
-        );
+        const next = await searchSessions({
+          sessionId: target.sessionId,
+          userId: target.userId,
+          from: dayBoundary(target.from, 0),
+          to: dayBoundary(target.to, 1),
+          page: targetPage,
+          size: targetSize,
+        });
+        if (requestSeq.current === seq) setResult(next);
       } catch {
-        setError(t("observe.loadFailed"));
+        if (requestSeq.current === seq) setError(t("observe.loadFailed"));
       } finally {
-        setLoading(false);
+        if (requestSeq.current === seq) setLoading(false);
       }
     },
     [t],

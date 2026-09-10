@@ -9,6 +9,7 @@ import io.okagent.module.workflow.domain.WorkflowSource;
 import io.okagent.module.workflow.domain.WorkflowSourceType;
 import io.okagent.module.workflow.infrastructure.persistence.WorkflowCatalogItemRepository;
 import io.okagent.module.workflow.infrastructure.persistence.WorkflowSourceRepository;
+import io.okagent.shared.runtime.RemoteErrorSanitizer;
 import io.okagent.module.model.application.ApiKeyCipher;
 import io.okagent.module.workflow.application.WorkflowCatalogItemResponse;
 import io.okagent.module.workflow.application.WorkflowSourceRequest;
@@ -149,7 +150,8 @@ public class WorkflowSourceServiceImpl implements WorkflowSourceService {
         try {
             remote = provider.listWorkflows(config);
         } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Failed to list workflows: " + safe(e));
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Failed to list workflows: "
+                    + RemoteErrorSanitizer.exception(e, "Workflow source authentication failed; check API key"));
         }
 
         var existing = new LinkedHashMap<String, WorkflowCatalogItem>();
@@ -350,10 +352,6 @@ public class WorkflowSourceServiceImpl implements WorkflowSourceService {
         }
     }
 
-    private String safe(Exception e) {
-        String message = e.getMessage();
-        return message == null || message.isBlank() ? e.getClass().getSimpleName() : message;
-    }
 
     // Exposed for runtime use when lastTestedAt needs a timestamp without persisting in this path.
     Instant now() {

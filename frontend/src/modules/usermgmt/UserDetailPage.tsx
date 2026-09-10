@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Button, PageHeader } from "../shared";
 import { fetchUserDetail } from "./api";
-import type { UserDetail as UserDetailType } from "./types";
+import type { ChannelIdentity, UserDetail as UserDetailType } from "./types";
 import { channelFriendlyName, channelLabel, formatInstant } from "./channelUtil";
 import "./usermgmt.css";
 
@@ -161,10 +161,10 @@ export function UserDetailPage({ id, onBack }: { id: string; onBack: () => void 
           <div className="um-empty">{t("users.detail.channelsEmpty")}</div>
         ) : (
           <div className="um-channels-list">
-            {detail.channels.map((c, i) => {
+            {detail.channels.map((c) => {
               const { name, sub } = channelFriendlyName(c, t);
               return (
-                <div className="um-channel-card" key={i}>
+                <div className="um-channel-card" key={channelIdentityKey(c)}>
                   <div className="um-chan-head">
                     <span className="um-chan-type">{channelLabel(c.channelType, t)}</span>
                     <span className="um-chan-name">{name}</span>
@@ -197,4 +197,8 @@ export function UserDetailPage({ id, onBack }: { id: string; onBack: () => void 
       </section>
     </>
   );
+}
+
+function channelIdentityKey(channel: ChannelIdentity): string {
+  return `${channel.channelType}:${channel.channelKey}:${channel.externalId}`;
 }

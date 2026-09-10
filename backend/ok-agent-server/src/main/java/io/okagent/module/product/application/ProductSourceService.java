@@ -13,8 +13,10 @@ import io.okagent.module.product.application.ProductSourceRequest;
 import io.okagent.module.product.application.ProductSourceResponse;
 import java.math.BigDecimal;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -163,10 +165,12 @@ public class ProductSourceService {
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Product sync failed: " + e.getMessage());
         }
         int upserted = 0;
+        Set<String> seenExternalIds = new HashSet<>();
         for (RemoteProductSummary r : remote) {
             if (r.externalId() == null || r.externalId().isBlank() || r.name() == null || r.name().isBlank()) {
                 continue;
             }
+            seenExternalIds.add(r.externalId());
             Product product = products
                     .findBySourceIdAndExternalId(source.getId(), r.externalId())
                     .orElseGet(() -> new Product(
@@ -190,6 +194,13 @@ public class ProductSourceService {
                     null);
             products.save(product);
             upserted++;
+        }
+        for (Product product : products.findBySourceId(source.getId())) {
+            String externalId = product.getExternalId();
+            if (externalId != null && !externalId.isBlank() && !seenExternalIds.contains(externalId)) {
+                product.setStatus(ProductStatus.DISCONTINUED);
+                products.save(product);
+            }
         }
         source.recordSynced(upserted);
         sources.save(source);

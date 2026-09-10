@@ -16,7 +16,7 @@ async function jsonOrThrow<T>(res: Response): Promise<T> {
   if (!res.ok) {
     let detail = "";
     try {
-      const data = await res.json();
+      const data = await res.clone().json();
       detail = data.message || data.detail || data.error || "";
     } catch {
       detail = await res.text().catch(() => "");

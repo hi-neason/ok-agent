@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../shared";
 import { callTool, fetchAllServers, fetchTools, inspectServerById } from "./api";
@@ -16,6 +16,7 @@ export function McpDebugPage({ serverId }: { serverId: string }) {
   const [durationMs, setDurationMs] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const loadSeq = useRef(0);
 
   const argumentTemplate = (tool: McpTool) => {
     try {
@@ -49,27 +50,32 @@ export function McpDebugPage({ serverId }: { serverId: string }) {
   };
 
   const loadTools = async (refresh = false) => {
+    const seq = loadSeq.current + 1;
+    loadSeq.current = seq;
     setBusy(true);
     setError("");
     try {
       if (refresh) {
         const inspection = await inspectServerById(serverId);
+        if (loadSeq.current !== seq) return;
         setTools(inspection.tools);
         const next = inspection.tools[0] ?? null;
         if (next) chooseTool(next);
       } else {
         const loaded = await fetchTools(serverId);
+        if (loadSeq.current !== seq) return;
         setTools(loaded);
         if (loaded[0]) chooseTool(loaded[0]);
       }
     } catch (loadError) {
+      if (loadSeq.current !== seq) return;
       setError(
         loadError instanceof Error && loadError.message
           ? loadError.message
           : t("mcp.toolsLoadFailed"),
       );
     } finally {
-      setBusy(false);
+      if (loadSeq.current === seq) setBusy(false);
     }
   };
 

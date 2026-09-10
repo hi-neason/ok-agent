@@ -678,10 +678,10 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
                 <div className="um-empty">{t("users.channelsEmpty")}</div>
               ) : (
                 <div className="um-channels-row">
-                  {channels.map((c, i) => {
+                  {channels.map((c) => {
                     const { name, sub } = channelFriendlyName(c, t);
                     return (
-                      <div className="um-channel-chip" key={i}>
+                      <div className="um-channel-chip" key={channelIdentityKey(c)}>
                         <span className="um-chan-type">
                           {channelLabel(c.channelType, t)}
                         </span>
@@ -785,4 +785,8 @@ export function UserManagementPage({ onOpenUser }: { onOpenUser?: (id: string) =
         )}
     </>
   );
+}
+
+function channelIdentityKey(channel: ChannelIdentity): string {
+  return `${channel.channelType}:${channel.channelKey}:${channel.externalId}`;
 }

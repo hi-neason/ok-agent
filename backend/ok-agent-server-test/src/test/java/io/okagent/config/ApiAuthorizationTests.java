@@ -118,6 +118,12 @@ class ApiAuthorizationTests {
                 .andExpect(status().isBadRequest());
     }
 
+    @Test
+    void rejectsUnmappedRoutesByDefault() throws Exception {
+        mvc.perform(get("/internal/not-mapped").with(jwtRole("ADMIN")))
+                .andExpect(status().isForbidden());
+    }
+
     private static org.springframework.test.web.servlet.request.RequestPostProcessor jwtRole(String role) {
         return jwt().authorities(new SimpleGrantedAuthority("ROLE_" + role));
     }

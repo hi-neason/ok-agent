@@ -80,7 +80,7 @@ public class SecurityConfiguration {
                         .requestMatchers("/api/v1/**")
                         .hasAnyRole("ADMIN", "EDITOR")
                         .anyRequest()
-                        .permitAll())
+                        .denyAll())
                 .exceptionHandling(errors -> errors
                         .authenticationEntryPoint(authenticationEntryPoint)
                         .accessDeniedHandler(accessDeniedHandler))

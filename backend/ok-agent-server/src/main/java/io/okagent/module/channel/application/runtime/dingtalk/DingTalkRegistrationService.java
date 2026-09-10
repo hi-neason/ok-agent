@@ -2,6 +2,7 @@ package io.okagent.module.channel.application.runtime.dingtalk;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.okagent.shared.runtime.RemoteErrorSanitizer;
 import jakarta.annotation.PreDestroy;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -120,10 +121,10 @@ public class DingTalkRegistrationService {
                     session.expireAt.getEpochSecond(), interval);
         } catch (Exception e) {
             session.state = State.FAILED;
-            session.error = e.getMessage();
+            session.error = safeError(e);
             sessions.remove(loginId);
             log.warn("DingTalk registration '{}' failed to start", loginId, e);
-            throw new IllegalStateException("无法生成钉钉二维码：" + e.getMessage(), e);
+            throw new IllegalStateException("无法生成钉钉二维码：" + safeError(e), e);
         }
     }
 
@@ -222,9 +223,13 @@ public class DingTalkRegistrationService {
             Thread.currentThread().interrupt();
         } catch (Exception e) {
             s.state = State.FAILED;
-            s.error = e.getMessage();
+            s.error = safeError(e);
             log.warn("DingTalk registration '{}' failed", s.loginId, e);
         }
+    }
+
+    private String safeError(Exception e) {
+        return RemoteErrorSanitizer.exception(e, "DingTalk registration authorization failed");
     }
 
     private void cleanupExpiredSessions() {

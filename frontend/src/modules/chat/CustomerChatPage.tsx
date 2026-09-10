@@ -7,7 +7,7 @@ import { fetchChannels } from "../channel/api";
 import type { ChannelItem } from "../channel/types";
 import { loadAllPages } from "../shared/loadAllPages";
 
-type ChatMessage = { role: "user" | "assistant"; content: string; error?: boolean };
+type ChatMessage = { id: string; role: "user" | "assistant"; content: string; error?: boolean };
 type RoutingInfo = {
   intentKey: string | null;
   intentName: string | null;
@@ -24,7 +24,7 @@ export function CustomerChatPage() {
   const [agentId, setAgentId] = useState<string>("");
   const [userId, setUserId] = useState<string>("");
   const [channelId, setChannelId] = useState<string>("");
-  const [sessionId, setSessionId] = useState<string>(() => "cs-" + Math.random().toString(36).slice(2, 10));
+  const [sessionId, setSessionId] = useState<string>(newSessionId);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -79,7 +79,7 @@ export function CustomerChatPage() {
     }
     setInput("");
     setNotice(null);
-    setMessages((m) => [...m, { role: "user", content: text }]);
+    setMessages((m) => [...m, { id: newSessionId(), role: "user", content: text }]);
     setSending(true);
     try {
       const res = await fetch("/api/v1/customer-chat/messages", {
@@ -102,7 +102,7 @@ export function CustomerChatPage() {
       if (!res.ok || !data) {
         throw new Error(data?.message || data?.detail || t("chat.requestFailed"));
       }
-      setMessages((m) => [...m, { role: "assistant", content: data.reply ?? "" }]);
+      setMessages((m) => [...m, { id: newSessionId(), role: "assistant", content: data.reply ?? "" }]);
       setRouting({
         intentKey: data.intentKey ?? null,
         intentName: data.intentName ?? null,
@@ -113,7 +113,7 @@ export function CustomerChatPage() {
       return true;
     } catch (e) {
       const msg = e instanceof Error ? e.message : t("chat.requestFailed");
-      setMessages((m) => [...m, { role: "assistant", content: msg, error: true }]);
+      setMessages((m) => [...m, { id: newSessionId(), role: "assistant", content: msg, error: true }]);
       return false;
     } finally {
       setSending(false);
@@ -162,7 +162,7 @@ export function CustomerChatPage() {
           <select value={channelId} disabled={sending} onChange={(e) => changeContext(() => {
             setChannelId(e.target.value);
             setAgentId(channels.find((channel) => channel.id === e.target.value)?.boundAgentId ?? "");
-            setSessionId(crypto.randomUUID());
+            setSessionId(newSessionId());
           })}>
             <option value="">{t("chat.selectPublishedChannel")}</option>
             {channels.map((channel) => <option key={channel.id} value={channel.id}>{channel.name}</option>)}
@@ -195,8 +195,8 @@ export function CustomerChatPage() {
       <div className="cs-chat">
         <div className="cs-messages">
           {messages.length === 0 && <div className="empty-state">{t("chat.empty")}</div>}
-          {messages.map((m, i) => (
-            <div key={i} className={m.role === "user" ? "cs-msg user" : "cs-msg assistant"}>
+          {messages.map((m) => (
+            <div key={m.id} className={m.role === "user" ? "cs-msg user" : "cs-msg assistant"}>
               <span className="cs-role">
                 {m.role === "user" ? t("chat.user") : t("chat.assistant")}
               </span>
@@ -227,4 +227,16 @@ export function CustomerChatPage() {
       </div>
     </>
   );
+}
+
+function newSessionId(): string {
+  if (globalThis.crypto?.randomUUID) {
+    return "cs-" + globalThis.crypto.randomUUID();
+  }
+  if (globalThis.crypto?.getRandomValues) {
+    const bytes = new Uint8Array(16);
+    globalThis.crypto.getRandomValues(bytes);
+    return "cs-" + Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  }
+  return "cs-" + Date.now().toString(36);
 }

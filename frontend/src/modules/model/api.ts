@@ -3,7 +3,7 @@ import type { Page } from "../shared";
 
 async function errorMessage(response: Response, fallback: string): Promise<string> {
   try {
-    const body = await response.json();
+    const body = await response.clone().json();
     return body.detail || body.message || fallback;
   } catch {
     return (await response.text().catch(() => "")) || fallback;

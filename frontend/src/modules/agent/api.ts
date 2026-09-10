@@ -10,11 +10,13 @@ import type {
 
 async function jsonOrThrow(res: Response): Promise<unknown> {
   if (!res.ok) {
-    const body = (await res.json().catch(() => null)) as
+    const body = (await res.clone().json().catch(() => null)) as
       | { message?: unknown; detail?: unknown }
       | null;
     const message = body?.message ?? body?.detail;
-    throw new Error(typeof message === "string" ? message : `HTTP ${res.status}`);
+    if (typeof message === "string" && message) throw new Error(message);
+    const text = await res.text().catch(() => "");
+    throw new Error(text || `HTTP ${res.status}`);
   }
   return res.status === 204 ? undefined : res.json();
 }

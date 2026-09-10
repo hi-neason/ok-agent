@@ -84,6 +84,33 @@ class ApiAuthorizationTests {
     }
 
     @Test
+    void limitsUserAndPersonaReadsToAdministrators() throws Exception {
+        UUID id = UUID.randomUUID();
+        UUID agentId = UUID.randomUUID();
+
+        mvc.perform(get("/api/v1/users").with(jwtRole("VIEWER")))
+                .andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/users/{id}", id).with(jwtRole("VIEWER")))
+                .andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/users/{id}/detail", id).with(jwtRole("VIEWER")))
+                .andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/users/{id}/channels", id).with(jwtRole("VIEWER")))
+                .andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/persona/coverage").with(jwtRole("VIEWER")))
+                .andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/persona/users/{userId}", "user-1").with(jwtRole("VIEWER")))
+                .andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/persona/users/{userId}/agents/{agentId}", "user-1", agentId)
+                        .with(jwtRole("VIEWER")))
+                .andExpect(status().isForbidden());
+
+        mvc.perform(get("/api/v1/users").with(jwtRole("ADMIN")))
+                .andExpect(status().isOk());
+        mvc.perform(get("/api/v1/persona/coverage").with(jwtRole("ADMIN")))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void keepsLoginEndpointPublic() throws Exception {
         mvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)

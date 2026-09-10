@@ -43,6 +43,12 @@ public class SecurityConfiguration {
                         .requestMatchers("/api/v1/accounts/**", "/api/v1/security-audit/**")
                         .hasRole("ADMIN")
                         .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/v1/users/**",
+                                "/api/v1/user-groups/**",
+                                "/api/v1/persona/**")
+                        .hasRole("ADMIN")
+                        .requestMatchers(
                                 HttpMethod.POST,
                                 "/api/v1/users/**",
                                 "/api/v1/user-groups/**",

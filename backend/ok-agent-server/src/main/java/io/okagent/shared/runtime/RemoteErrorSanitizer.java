@@ -59,6 +59,7 @@ public final class RemoteErrorSanitizer {
         }
         String cleaned = value
                 .replaceAll("(?i)(bearer\\s+)[A-Za-z0-9._~+/=-]+", "$1***")
+                .replaceAll("(?i)(basic\\s+)[A-Za-z0-9._~+/=-]+", "$1***")
                 .replaceAll("(?i)(api[_-]?key[\"'\\s:=]+)[^\"'\\s,}]+", "$1***")
                 .replaceAll("(?i)(token[\"'\\s:=]+)[^\"'\\s,}]+", "$1***")
                 .replaceAll("(?i)(secret[\"'\\s:=]+)[^\"'\\s,}]+", "$1***")

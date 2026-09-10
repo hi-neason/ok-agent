@@ -33,6 +33,15 @@ class RemoteErrorSanitizerTests {
     }
 
     @Test
+    void redactsBasicAuthorizationFragments() {
+        String message = RemoteErrorSanitizer.http(
+                "Dify", 400, "Authorization: Basic dXNlcjpwYXNz failed", "check key");
+
+        assertThat(message).contains("Authorization: Basic *** failed");
+        assertThat(message).doesNotContain("dXNlcjpwYXNz");
+    }
+
+    @Test
     void collapsesProviderOutagesAndTimeouts() {
         assertThat(RemoteErrorSanitizer.http("Dify", 502, "<html>provider stack trace</html>", "check key"))
                 .isEqualTo("Dify service is temporarily unavailable (HTTP 502)");

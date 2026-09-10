@@ -163,11 +163,12 @@ export async function sendChat(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ message, sessionId, userId }),
   });
-  const data = (await res.json().catch(() => null)) as
+  const data = (await res.clone().json().catch(() => null)) as
     | { reply?: string; sessionId?: string; detail?: string; message?: string }
     | null;
   if (!res.ok || !data) {
-    throw new Error(data?.message || data?.detail || "chat failed");
+    const text = data ? "" : await res.text().catch(() => "");
+    throw new Error(data?.message || data?.detail || text || "chat failed");
   }
   return { reply: data.reply ?? "", sessionId: data.sessionId };
 }

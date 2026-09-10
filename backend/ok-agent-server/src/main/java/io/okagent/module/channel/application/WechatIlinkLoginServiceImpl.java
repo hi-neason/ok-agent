@@ -13,6 +13,7 @@ import io.okagent.module.channel.application.runtime.ChannelRuntimeEvent;
 import io.okagent.module.channel.application.runtime.wechat.IlinkClient;
 import io.okagent.module.channel.application.runtime.wechat.IlinkException;
 import io.okagent.module.model.application.ApiKeyCipher;
+import io.okagent.shared.runtime.RemoteErrorSanitizer;
 import io.okagent.module.channel.application.WechatIlinkStatusResponse;
 import java.util.Map;
 import java.util.UUID;
@@ -77,7 +78,7 @@ public class WechatIlinkLoginServiceImpl implements WechatIlinkLoginService {
         } catch (Exception e) {
             session.markError(wrap(e));
             sessions.save(session);
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "iLink 登录二维码获取失败：" + e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "iLink 登录二维码获取失败：" + wrap(e));
         }
     }
 
@@ -116,7 +117,7 @@ public class WechatIlinkLoginServiceImpl implements WechatIlinkLoginService {
         } catch (Exception e) {
             session.markError(wrap(e));
             sessions.save(session);
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "iLink 登录状态查询失败：" + e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "iLink 登录状态查询失败：" + wrap(e));
         }
     }
 
@@ -173,9 +174,9 @@ public class WechatIlinkLoginServiceImpl implements WechatIlinkLoginService {
 
     private String wrap(Exception e) {
         if (e instanceof IlinkException il) {
-            return "iLink 错误(" + il.statusCode() + "): " + il.getMessage();
+            return RemoteErrorSanitizer.http("iLink", il.statusCode(), il.getMessage(), "iLink authentication failed");
         }
-        return e.getMessage();
+        return RemoteErrorSanitizer.exception(e, "iLink authentication failed");
     }
 
     private void reconcileAfterCommit(UUID channelId) {

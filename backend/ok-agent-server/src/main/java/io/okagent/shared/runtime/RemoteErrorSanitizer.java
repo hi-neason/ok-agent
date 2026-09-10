@@ -62,6 +62,7 @@ public final class RemoteErrorSanitizer {
                 .replaceAll("(?i)(api[_-]?key[\"'\\s:=]+)[^\"'\\s,}]+", "$1***")
                 .replaceAll("(?i)(token[\"'\\s:=]+)[^\"'\\s,}]+", "$1***")
                 .replaceAll("(?i)(secret[\"'\\s:=]+)[^\"'\\s,}]+", "$1***")
+                .replaceAll("(?i)(password[\"'\\s:=]+)[^\"'\\s,}]+", "$1***")
                 .replaceAll("\\s+", " ")
                 .trim();
         if (cleaned.length() <= RESPONSE_SNIPPET_LIMIT) {

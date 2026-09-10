@@ -232,7 +232,9 @@ public class ProductSourceService {
         try {
             return provider.test(config);
         } catch (Exception e) {
-            return new ConnectionTestResult(false, e.getMessage());
+            return new ConnectionTestResult(
+                    false,
+                    RemoteErrorSanitizer.exception(e, "Authentication failed: check the product source credentials"));
         }
     }
 

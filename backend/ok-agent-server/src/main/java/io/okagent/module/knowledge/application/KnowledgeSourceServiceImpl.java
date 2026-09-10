@@ -8,6 +8,7 @@ import io.okagent.module.knowledge.domain.KnowledgeMetadataStatus;
 import io.okagent.module.knowledge.domain.KnowledgeSource;
 import io.okagent.module.knowledge.infrastructure.persistence.KnowledgeCatalogItemRepository;
 import io.okagent.module.knowledge.infrastructure.persistence.KnowledgeSourceRepository;
+import io.okagent.shared.runtime.RemoteErrorSanitizer;
 import io.okagent.module.model.application.ApiKeyCipher;
 import io.okagent.module.knowledge.application.KnowledgeCatalogItemResponse;
 import io.okagent.module.knowledge.application.KnowledgeSourceRequest;
@@ -147,7 +148,8 @@ public class KnowledgeSourceServiceImpl implements KnowledgeSourceService {
         try {
             remote = provider.listKnowledgeBases(config);
         } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Failed to list knowledge bases: " + safe(e));
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Failed to list knowledge bases: "
+                    + RemoteErrorSanitizer.exception(e, "Knowledge source authentication failed; check API key"));
         }
 
         var existing = new LinkedHashMap<String, KnowledgeCatalogItem>();
@@ -349,8 +351,4 @@ public class KnowledgeSourceServiceImpl implements KnowledgeSourceService {
         }
     }
 
-    private String safe(Exception e) {
-        String message = e.getMessage();
-        return message == null || message.isBlank() ? e.getClass().getSimpleName() : message;
-    }
 }

@@ -6,6 +6,7 @@ import com.lark.oapi.scene.registration.RegisterAppException;
 import com.lark.oapi.scene.registration.RegisterAppOptions;
 import com.lark.oapi.scene.registration.RegisterAppResult;
 import com.lark.oapi.scene.registration.StatusChangeInfo;
+import io.okagent.shared.runtime.RemoteErrorSanitizer;
 import jakarta.annotation.PreDestroy;
 import java.time.Instant;
 import java.util.List;
@@ -104,11 +105,13 @@ public class FeishuAppRegistrationService {
                             result.getClientSecret() != null && !result.getClientSecret().isBlank());
                 } catch (RegisterAppException e) {
                     session.state = State.FAILED;
-                    session.error = e.getCode() != null ? e.getCode() + " " + e.getDescription() : e.getMessage();
+                    session.error = e.getCode() != null
+                            ? e.getCode() + " " + RemoteErrorSanitizer.exception(e, "Feishu app registration authorization failed")
+                            : RemoteErrorSanitizer.exception(e, "Feishu app registration authorization failed");
                     log.warn("Feishu app-registration '{}' failed: {}", sessionId, session.error);
                 } catch (Exception e) {
                     session.state = State.FAILED;
-                    session.error = e.getMessage();
+                    session.error = RemoteErrorSanitizer.exception(e, "Feishu app registration authorization failed");
                     log.warn("Feishu app-registration '{}' failed", sessionId, e);
                 }
             });

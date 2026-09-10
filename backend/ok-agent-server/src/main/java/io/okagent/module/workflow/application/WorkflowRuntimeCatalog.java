@@ -9,6 +9,7 @@ import io.okagent.module.workflow.infrastructure.persistence.AgentWorkflowBindin
 import io.okagent.module.workflow.infrastructure.persistence.WorkflowCatalogItemRepository;
 import io.okagent.module.workflow.infrastructure.persistence.WorkflowExecutionAuditRepository;
 import io.okagent.module.workflow.infrastructure.persistence.WorkflowSourceRepository;
+import io.okagent.shared.runtime.RemoteErrorSanitizer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Duration;
@@ -128,7 +129,8 @@ public class WorkflowRuntimeCatalog {
         try {
             result = provider.execute(config, item.getRemoteWorkflowId(), safeInputs, userId);
         } catch (Exception e) {
-            result = WorkflowExecutionResult.failure(null, e.getMessage());
+            result = WorkflowExecutionResult.failure(
+                    null, RemoteErrorSanitizer.exception(e, "Workflow provider authentication failed; check source credentials"));
         }
         int latencyMs = (int) ((System.nanoTime() - started) / 1_000_000);
         audits.save(new WorkflowExecutionAudit(

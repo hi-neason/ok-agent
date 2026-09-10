@@ -23,12 +23,22 @@ export function UserDetailPage({ id, onBack }: { id: string; onBack: () => void 
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let active = true;
     setLoading(true);
     setError("");
     fetchUserDetail(id)
-      .then(setDetail)
-      .catch(() => setError(t("users.detail.loadFailed")))
-      .finally(() => setLoading(false));
+      .then((next) => {
+        if (active) setDetail(next);
+      })
+      .catch(() => {
+        if (active) setError(t("users.detail.loadFailed"));
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, [id, t]);
 
   if (loading) {

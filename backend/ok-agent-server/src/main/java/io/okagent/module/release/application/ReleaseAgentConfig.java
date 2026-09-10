@@ -155,7 +155,7 @@ public final class ReleaseAgentConfig implements ResolvedAgentConfig {
 
     @Override
     public AgentPermissionMode getPermissionMode() {
-        return enumValue("permissionMode", AgentPermissionMode.class, AgentPermissionMode.BYPASS);
+        return enumValue("permissionMode", AgentPermissionMode.class, AgentPermissionMode.DEFAULT);
     }
 
     @Override

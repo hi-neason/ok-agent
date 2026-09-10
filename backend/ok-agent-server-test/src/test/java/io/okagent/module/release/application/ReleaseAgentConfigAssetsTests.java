@@ -2,6 +2,7 @@ package io.okagent.module.release.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.okagent.module.agent.domain.AgentPermissionMode;
 import io.okagent.module.mcp.domain.McpTransport;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -62,5 +63,12 @@ class ReleaseAgentConfigAssetsTests {
 
         assertThat(config.getResolvedMcpServers()).isEmpty();
         assertThat(config.getResolvedSkillAssets()).isEmpty();
+    }
+
+    @Test
+    void defaultsMissingPermissionModeToDefault() {
+        ReleaseAgentConfig config = ReleaseAgentConfig.fromSnapshot("{}");
+
+        assertThat(config.getPermissionMode()).isEqualTo(AgentPermissionMode.DEFAULT);
     }
 }

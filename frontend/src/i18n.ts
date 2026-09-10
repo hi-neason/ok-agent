@@ -751,6 +751,8 @@ const resources = {
         connectionRetry: "重新测试",
         connectionFailed: "连接失败",
         saveFailed: "保存失败，请检查服务连接和输入内容",
+        deleteFailed: "删除失败，请稍后重试",
+        deleteConfirm: "确定删除模型“{{name}}”吗？删除后无法恢复。",
         connectionHint:
           "测试会向模型厂商发起一次最小真实请求，不保存响应内容。",
         apiKeyConfigured: "已安全保存；留空将继续使用现有密钥",
@@ -1896,6 +1898,8 @@ const resources = {
         connectionRetry: "Test again",
         connectionFailed: "Connection failed",
         saveFailed: "Save failed. Check the service connection and input.",
+        deleteFailed: "Failed to delete the model. Try again later.",
+        deleteConfirm: "Delete model “{{name}}”? This cannot be undone.",
         connectionHint:
           "The test sends one minimal request to the model provider and does not store its response.",
         apiKeyConfigured:

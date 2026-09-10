@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { Button, PageHeader, Pagination, Toggle, type Page } from "../shared";
-import { fetchModels, requestConnectionTest, saveModel } from "./api";
+import { Button, PageHeader, Pagination, Toggle, useConfirm, type Page } from "../shared";
+import { deleteModel, fetchModels, requestConnectionTest, saveModel } from "./api";
 import { llmProviders, type ModelItem } from "./types";
 
 export function ModelRegistryPage() {
   const { t } = useTranslation();
+  const { confirm, Dialog } = useConfirm();
   const [page, setPage] = useState<Page<ModelItem> | null>(null);
   const [pageNumber, setPageNumber] = useState(0);
   const [pageSize, setPageSize] = useState(20);
@@ -31,7 +32,6 @@ export function ModelRegistryPage() {
   );
   const save = async () => {
     if (!editing || testResult?.state === "testing") return;
-    const existing = Boolean(editing.id);
     try {
       await saveModel(editing);
       await load(pageNumber);
@@ -41,6 +41,22 @@ export function ModelRegistryPage() {
         state: "error",
         message: t("models.saveFailed"),
       });
+    }
+  };
+  const remove = async (model: ModelItem) => {
+    if (
+      !(await confirm({
+        message: t("models.deleteConfirm", { name: model.name }),
+        dangerous: true,
+      }))
+    ) {
+      return;
+    }
+    try {
+      await deleteModel(model.id);
+      await load(pageNumber);
+    } catch {
+      setTestResult({ state: "error", message: t("models.deleteFailed") });
     }
   };
   const applyLlmProvider = (provider: string) => {
@@ -171,11 +187,7 @@ export function ModelRegistryPage() {
               </button>
               <button
                 className="link-button"
-                onClick={() =>
-                  setPage((p) =>
-                    p ? { ...p, content: p.content.filter((x) => x.id !== model.id) } : p,
-                  )
-                }
+                onClick={() => void remove(model)}
               >
                 {t("common.delete")}
               </button>
@@ -371,6 +383,7 @@ export function ModelRegistryPage() {
           </div>,
           document.body,
         )}
+      <Dialog />
     </>
   );
 }

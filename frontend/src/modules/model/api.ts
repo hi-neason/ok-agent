@@ -34,6 +34,13 @@ export async function saveModel(model: ModelItem): Promise<ModelItem> {
   return (await response.json()) as ModelItem;
 }
 
+export async function deleteModel(id: string): Promise<void> {
+  const response = await fetch(`/api/v1/models/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+  if (!response.ok) throw new Error("delete failed");
+}
+
 export type RawConnectionResult = {
   success?: boolean;
   statusCode?: number;

@@ -47,5 +47,5 @@ ok-agent:
 
 logging:
   level:
-    io.agentscope: DEBUG
-    io.okagent.service.agent: DEBUG
+    io.agentscope: INFO
+    io.okagent.service.agent: INFO

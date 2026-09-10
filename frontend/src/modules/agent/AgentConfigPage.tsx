@@ -258,7 +258,7 @@ export function AgentConfigPage({
     if (issue.tab !== tab) navigateTab(issue.tab);
     window.setTimeout(() => {
       const el = document.querySelector(
-        `[data-field="${issue.field}"]`,
+        `[data-field="${escapeDataField(issue.field)}"]`,
       ) as HTMLElement | null;
       if (el) {
         el.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -580,6 +580,12 @@ function ValidationSummary({
       )}
     </div>
   );
+}
+
+function escapeDataField(value: string): string {
+  const css = globalThis.CSS;
+  if (css?.escape) return css.escape(value);
+  return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
 function validationIssueKey(issue: ValidationIssue): string {

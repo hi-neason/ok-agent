@@ -38,7 +38,7 @@ export async function fetchInjectionPreview(
   const response = await fetch(
     `${BASE}/persona/users/${encodeURIComponent(userId)}/agents/${encodeURIComponent(agentId)}/injection-preview`,
   );
-  if (!response.ok) throw new Error("fetch injection preview failed");
+  if (!response.ok) throw new Error(await errorMessage(response, "fetch injection preview failed"));
   return (await response.json()) as { mode: string; block: string };
 }
 

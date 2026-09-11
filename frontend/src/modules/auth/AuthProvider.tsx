@@ -15,6 +15,13 @@ import {
 import { LoginPage } from "./LoginPage";
 import type { AuthUser, LoginResponse } from "./types";
 
+
+async function authErrorMessage(response: Response, fallback: string): Promise<string> {
+  const body = (await response.clone().json().catch(() => null)) as { message?: string; detail?: string } | null;
+  if (body?.message || body?.detail) return body.message || body.detail || fallback;
+  return (await response.text().catch(() => "")) || fallback;
+}
+
 type AuthContextValue = {
   user: AuthUser;
   logout: () => void;
@@ -62,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password }),
     });
-    if (!response.ok) throw new Error("INVALID_CREDENTIALS");
+    if (!response.ok) throw new Error(await authErrorMessage(response, "INVALID_CREDENTIALS"));
     const result = (await response.json()) as LoginResponse;
     storeAccessToken(result.accessToken);
     setState({ status: "authenticated", user: result.user });

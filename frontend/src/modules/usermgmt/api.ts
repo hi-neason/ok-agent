@@ -90,7 +90,7 @@ export async function deleteUser(id: string): Promise<void> {
 
 export async function fetchUserChannels(id: string): Promise<ChannelIdentity[]> {
   const response = await fetch(`${BASE}/users/${id}/channels`);
-  if (!response.ok) throw new Error("fetch user channels failed");
+  if (!response.ok) throw new Error(await errorMessage(response, "fetch user channels failed"));
   return (await response.json()) as ChannelIdentity[];
 }
 

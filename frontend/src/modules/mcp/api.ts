@@ -2,6 +2,12 @@ import type { McpDraft, McpServer, McpTool } from "./types";
 import type { Page } from "../shared";
 import { loadAllPages } from "../shared/loadAllPages";
 
+async function errorMessage(response: Response, fallback: string): Promise<string> {
+  const body = (await response.clone().json().catch(() => null)) as { message?: string; detail?: string } | null;
+  if (body?.message || body?.detail) return body.message || body.detail || fallback;
+  return (await response.text().catch(() => "")) || fallback;
+}
+
 export function fetchAllServers(): Promise<McpServer[]> {
   return loadAllPages(fetchServers);
 }
@@ -19,7 +25,7 @@ export async function fetchServers(
   const response = await fetch(
     `/api/v1/mcp-servers?page=${page}&size=${size}`,
   );
-  if (!response.ok) throw new Error("load failed");
+  if (!response.ok) throw new Error(await errorMessage(response, "load failed"));
   return (await response.json()) as Page<McpServer>;
 }
 

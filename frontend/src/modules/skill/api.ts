@@ -101,7 +101,7 @@ export async function setSkillEnabled(
     `/api/v1/skills/${id}/enabled?value=${enabled}`,
     { method: "PATCH" },
   );
-  if (!response.ok) throw new Error("status failed");
+  if (!response.ok) throw new Error(await errorMessage(response, "status failed"));
   return (await response.json()) as SkillItem;
 }
 

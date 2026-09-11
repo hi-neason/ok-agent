@@ -89,7 +89,7 @@ export async function saveSkillFile(
     body: JSON.stringify(payload),
   });
   if (response.status === 409) throw new SkillFileConflictError();
-  if (!response.ok) throw new Error("file save failed");
+  if (!response.ok) throw new Error(await errorMessage(response, "file save failed"));
   return (await response.json()) as SkillFileContent;
 }
 

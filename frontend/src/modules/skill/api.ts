@@ -107,5 +107,5 @@ export async function setSkillEnabled(
 
 export async function deleteSkill(id: string): Promise<void> {
   const response = await fetch(`/api/v1/skills/${id}`, { method: "DELETE" });
-  if (!response.ok) throw new Error("delete failed");
+  if (!response.ok) throw new Error(await errorMessage(response, "delete failed"));
 }

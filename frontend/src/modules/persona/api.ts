@@ -50,7 +50,7 @@ export async function fetchPersona(
   const response = await fetch(
     `${BASE}/persona/users/${encodeURIComponent(userId)}/agents/${encodeURIComponent(agentId)}`,
   );
-  if (!response.ok) throw new Error("fetch persona failed");
+  if (!response.ok) throw new Error(await errorMessage(response, "fetch persona failed"));
   return (await response.json()) as Persona;
 }
 

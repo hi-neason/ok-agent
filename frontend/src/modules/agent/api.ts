@@ -146,8 +146,7 @@ export async function saveAgentConfig(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(toConfigPayload(agentId, payload)),
   });
-  if (!res.ok) throw new Error("save failed");
-  return (await res.json()) as AgentItem;
+  return (await jsonOrThrow(res)) as AgentItem;
 }
 
 export async function sendChat(

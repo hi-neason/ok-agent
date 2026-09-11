@@ -84,6 +84,6 @@ export async function appendPersonaMemory(
       body: JSON.stringify({ delta }),
     },
   );
-  if (!response.ok) throw new Error("append memory failed");
+  if (!response.ok) throw new Error(await errorMessage(response, "append memory failed"));
   return (await response.json()) as { memory: string };
 }

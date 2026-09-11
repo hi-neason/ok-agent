@@ -44,9 +44,10 @@ export async function inspectServerById(id: string): Promise<McpInspection> {
   const response = await fetch(`/api/v1/mcp-servers/${id}/inspect`, {
     method: "POST",
   });
-  const result = (await response.json().catch(() => null)) as McpInspection | null;
+  const result = (await response.clone().json().catch(() => null)) as McpInspection | null;
   if (!response.ok || !result?.success) {
-    throw new Error(result?.message || "inspect failed");
+    const text = result ? "" : await response.text().catch(() => "");
+    throw new Error(result?.message || text || "inspect failed");
   }
   return result;
 }

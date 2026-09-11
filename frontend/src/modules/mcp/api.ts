@@ -42,7 +42,7 @@ export async function saveServer(
       body: JSON.stringify(payload),
     },
   );
-  if (!response.ok) throw new Error("save failed");
+  if (!response.ok) throw new Error(await errorMessage(response, "save failed"));
   return (await response.json()) as McpServer;
 }
 

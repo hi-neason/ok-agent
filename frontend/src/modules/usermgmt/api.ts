@@ -39,7 +39,7 @@ export async function saveUserGroup(
       }),
     },
   );
-  if (!response.ok) throw new Error("save group failed");
+  if (!response.ok) throw new Error(await errorMessage(response, "save group failed"));
   return (await response.json()) as UserGroupItem;
 }
 

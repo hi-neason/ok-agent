@@ -45,7 +45,7 @@ export async function saveUserGroup(
 
 export async function deleteUserGroup(id: string): Promise<void> {
   const response = await fetch(`${BASE}/user-groups/${id}`, { method: "DELETE" });
-  if (!response.ok) throw new Error("delete group failed");
+  if (!response.ok) throw new Error(await errorMessage(response, "delete group failed"));
 }
 
 /** Full list of users — used for the merge dropdown. */

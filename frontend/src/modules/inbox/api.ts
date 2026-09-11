@@ -26,7 +26,7 @@ import type {
 
 async function jsonOrThrow<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    const body = await response.json().catch(() => null) as
+    const body = (await (response.clone?.() ?? response).json().catch(() => null)) as
       | { detail?: string; message?: string }
       | null;
     throw new Error(body?.detail || body?.message || `HTTP ${response.status}`);

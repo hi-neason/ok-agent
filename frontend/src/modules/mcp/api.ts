@@ -92,7 +92,7 @@ export async function setServerEnabled(
 
 export async function fetchTools(id: string): Promise<McpTool[]> {
   const response = await fetch(`/api/v1/mcp-servers/${id}/tools`);
-  if (!response.ok) throw new Error("tools failed");
+  if (!response.ok) throw new Error(await errorMessage(response, "tools failed"));
   return (await response.json()) as McpTool[];
 }
 

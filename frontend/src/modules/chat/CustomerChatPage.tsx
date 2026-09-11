@@ -87,7 +87,7 @@ export function CustomerChatPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ agentId, userId, channelId, sessionId, message: text }),
       });
-      const data = (await res.json().catch(() => null)) as
+      const data = (await res.clone().json().catch(() => null)) as
         | {
             reply?: string;
             intentKey?: string | null;
@@ -100,7 +100,8 @@ export function CustomerChatPage() {
           }
         | null;
       if (!res.ok || !data) {
-        throw new Error(data?.message || data?.detail || t("chat.requestFailed"));
+        const fallback = data ? "" : await res.text().catch(() => "");
+        throw new Error(data?.message || data?.detail || fallback || t("chat.requestFailed"));
       }
       setMessages((m) => [...m, { id: newSessionId(), role: "assistant", content: data.reply ?? "" }]);
       setRouting({

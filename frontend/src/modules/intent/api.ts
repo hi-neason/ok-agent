@@ -39,7 +39,7 @@ export async function updateIntent(id: string, req: UpdateIntentRequest): Promis
 }
 
 export async function deleteIntent(id: string): Promise<void> {
-  await fetch(`/api/v1/intents/${id}`, { method: "DELETE" }).catch(() => undefined);
+  await jsonOrThrow(await fetch(`/api/v1/intents/${id}`, { method: "DELETE" }));
 }
 
 export function flatten(nodes: IntentNode[]): IntentDto[] {

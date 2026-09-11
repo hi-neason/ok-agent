@@ -14,7 +14,7 @@ async function parse<T>(response: Response): Promise<T> {
   }
   let detail = "";
   try {
-    const body = await response.clone().json();
+    const body = await (response.clone?.() ?? response).json();
     detail = body.detail || body.message || "";
   } catch {
     detail = await response.text().catch(() => "");

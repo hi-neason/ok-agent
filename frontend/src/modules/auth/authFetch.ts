@@ -25,7 +25,7 @@ async function unwrapSuccessfulApiResponse(response: Response): Promise<Response
   }
   let envelope: unknown;
   try {
-    envelope = await response.clone().json();
+    envelope = await (response.clone?.() ?? response).json();
   } catch {
     return response;
   }

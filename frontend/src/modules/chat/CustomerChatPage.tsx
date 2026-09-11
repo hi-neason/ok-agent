@@ -87,7 +87,7 @@ export function CustomerChatPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ agentId, userId, channelId, sessionId, message: text }),
       });
-      const data = (await res.clone().json().catch(() => null)) as
+      const data = (await (res.clone?.() ?? res).json().catch(() => null)) as
         | {
             reply?: string;
             intentKey?: string | null;

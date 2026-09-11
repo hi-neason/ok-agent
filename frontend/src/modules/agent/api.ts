@@ -10,7 +10,7 @@ import type {
 
 async function jsonOrThrow(res: Response): Promise<unknown> {
   if (!res.ok) {
-    const body = (await res.clone().json().catch(() => null)) as
+    const body = (await (res.clone?.() ?? res).json().catch(() => null)) as
       | { message?: unknown; detail?: unknown }
       | null;
     const message = body?.message ?? body?.detail;
@@ -163,7 +163,7 @@ export async function sendChat(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ message, sessionId, userId }),
   });
-  const data = (await res.clone().json().catch(() => null)) as
+  const data = (await (res.clone?.() ?? res).json().catch(() => null)) as
     | { reply?: string; sessionId?: string; detail?: string; message?: string }
     | null;
   if (!res.ok || !data) {

@@ -3,7 +3,7 @@ import type { Page } from "../shared";
 import { loadAllPages } from "../shared/loadAllPages";
 
 async function errorMessage(response: Response, fallback: string): Promise<string> {
-  const body = (await response.clone().json().catch(() => null)) as { message?: string; detail?: string } | null;
+  const body = (await (response.clone?.() ?? response).json().catch(() => null)) as { message?: string; detail?: string } | null;
   if (body?.message || body?.detail) return body.message || body.detail || fallback;
   return (await response.text().catch(() => "")) || fallback;
 }
@@ -50,7 +50,7 @@ export async function inspectServerById(id: string): Promise<McpInspection> {
   const response = await fetch(`/api/v1/mcp-servers/${id}/inspect`, {
     method: "POST",
   });
-  const result = (await response.clone().json().catch(() => null)) as McpInspection | null;
+  const result = (await (response.clone?.() ?? response).json().catch(() => null)) as McpInspection | null;
   if (!response.ok || !result?.success) {
     const text = result ? "" : await response.text().catch(() => "");
     throw new Error(result?.message || text || "inspect failed");
@@ -66,7 +66,7 @@ export async function inspectServerByDraft(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
-  const result = (await response.clone().json().catch(() => null)) as McpInspection | null;
+  const result = (await (response.clone?.() ?? response).json().catch(() => null)) as McpInspection | null;
   if (!response.ok || !result?.success) {
     const text = result ? "" : await response.text().catch(() => "");
     throw new Error(result?.message || text || "inspect failed");
@@ -116,7 +116,7 @@ export async function callTool(
       body: JSON.stringify({ arguments: args }),
     },
   );
-  const result = (await response.clone().json().catch(() => null)) as McpToolCallResult | null;
+  const result = (await (response.clone?.() ?? response).json().catch(() => null)) as McpToolCallResult | null;
   if (!response.ok || !result) {
     const text = result ? "" : await response.text().catch(() => "");
     throw new Error(result?.message || text || "call failed");

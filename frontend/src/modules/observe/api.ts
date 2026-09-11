@@ -1,7 +1,7 @@
 import type { DialogueTurn, SessionPage, SessionQuery, TraceSpan } from "./types";
 
 async function errorMessage(response: Response, fallback: string): Promise<string> {
-  const body = (await response.clone().json().catch(() => null)) as { message?: string; detail?: string } | null;
+  const body = (await (response.clone?.() ?? response).json().catch(() => null)) as { message?: string; detail?: string } | null;
   if (body?.message || body?.detail) return body.message || body.detail || fallback;
   return (await response.text().catch(() => "")) || fallback;
 }

@@ -2,7 +2,7 @@ import type { SkillFileContent, SkillFileItem, SkillItem } from "./types";
 import type { Page } from "../shared";
 
 async function errorMessage(response: Response, fallback: string): Promise<string> {
-  const body = (await response.clone().json().catch(() => null)) as { message?: string; detail?: string } | null;
+  const body = (await (response.clone?.() ?? response).json().catch(() => null)) as { message?: string; detail?: string } | null;
   if (body?.message || body?.detail) return body.message || body.detail || fallback;
   return (await response.text().catch(() => "")) || fallback;
 }
@@ -43,7 +43,7 @@ export async function importSkillArchive(form: FormData): Promise<SkillItem> {
   });
   if (response.status === 409) throw new SkillConflictError();
   if (!response.ok) {
-    const failure = (await response.clone().json().catch(() => null)) as {
+    const failure = (await (response.clone?.() ?? response).json().catch(() => null)) as {
       code?: string;
       message?: string;
     } | null;

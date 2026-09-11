@@ -17,8 +17,7 @@ async function jsonOrThrow(res: Response): Promise<unknown> {
 
 export async function loadIntentTree(): Promise<IntentNode[]> {
   const res = await fetch("/api/v1/intents/tree");
-  if (!res.ok) throw new Error(i18n.t("intents.loadFailed"));
-  return (await res.json()) as IntentNode[];
+  return (await jsonOrThrow(res)) as IntentNode[];
 }
 
 export async function createIntent(req: CreateIntentRequest): Promise<IntentDto> {

@@ -37,12 +37,14 @@ export async function importSkillArchive(form: FormData): Promise<SkillItem> {
   });
   if (response.status === 409) throw new SkillConflictError();
   if (!response.ok) {
-    const failure = (await response.json().catch(() => null)) as {
+    const failure = (await response.clone().json().catch(() => null)) as {
       code?: string;
+      message?: string;
     } | null;
     if (failure?.code === "SKILL_MD_NOT_AT_ROOT")
       throw new Error("SKILL_MD_NOT_AT_ROOT");
-    throw new Error("import failed");
+    const text = failure ? "" : await response.text().catch(() => "");
+    throw new Error(failure?.message || text || "import failed");
   }
   return (await response.json()) as SkillItem;
 }

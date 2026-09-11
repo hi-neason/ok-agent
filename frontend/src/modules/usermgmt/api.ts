@@ -4,6 +4,12 @@ import { loadAllPages } from "../shared/loadAllPages";
 
 const BASE = "/api/v1";
 
+async function errorMessage(response: Response, fallback: string): Promise<string> {
+  const body = (await (response.clone?.() ?? response).json().catch(() => null)) as { message?: string; detail?: string } | null;
+  if (body?.message || body?.detail) return body.message || body.detail || fallback;
+  return (await response.text().catch(() => "")) || fallback;
+}
+
 /** Full list of groups — used for the user-edit dropdown. */
 export async function fetchUserGroups(): Promise<UserGroupItem[]> {
   return loadAllPages(fetchUserGroupsPage);
@@ -12,7 +18,7 @@ export async function fetchUserGroups(): Promise<UserGroupItem[]> {
 /** Paged groups for the group-management tab. */
 export async function fetchUserGroupsPage(page = 0, size = 20): Promise<Page<UserGroupItem>> {
   const response = await fetch(`${BASE}/user-groups?page=${page}&size=${size}`);
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  if (!response.ok) throw new Error(await errorMessage(response, `HTTP ${response.status}`));
   return (await response.json()) as Page<UserGroupItem>;
 }
 

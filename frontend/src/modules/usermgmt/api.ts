@@ -56,7 +56,7 @@ export async function fetchUsers(): Promise<UserItem[]> {
 /** Paged users for the user-management tab. */
 export async function fetchUsersPage(page = 0, size = 20): Promise<Page<UserItem>> {
   const response = await fetch(`${BASE}/users?page=${page}&size=${size}`);
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  if (!response.ok) throw new Error(await errorMessage(response, `HTTP ${response.status}`));
   return (await response.json()) as Page<UserItem>;
 }
 

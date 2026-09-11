@@ -38,7 +38,7 @@ export async function fetchTurns(sessionId: string): Promise<DialogueTurn[]> {
   const response = await fetch(
     `/api/v1/observe/sessions/${encodeURIComponent(sessionId)}/turns`,
   );
-  if (!response.ok) throw new Error("turns failed");
+  if (!response.ok) throw new Error(await errorMessage(response, "turns failed"));
   return (await response.json()) as DialogueTurn[];
 }
 

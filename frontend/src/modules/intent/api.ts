@@ -7,6 +7,8 @@ import type {
 
 async function jsonOrThrow(res: Response): Promise<unknown> {
   if (!res.ok) {
+    const body = (await (res.clone?.() ?? res).json().catch(() => null)) as { message?: string; detail?: string } | null;
+    if (body?.message || body?.detail) throw new Error(body.message || body.detail || `HTTP ${res.status}`);
     const text = await res.text().catch(() => "");
     throw new Error(text || `HTTP ${res.status}`);
   }

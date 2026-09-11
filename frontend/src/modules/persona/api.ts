@@ -67,7 +67,7 @@ export async function savePersona(
       body: JSON.stringify(payload),
     },
   );
-  if (!response.ok) throw new Error("save persona failed");
+  if (!response.ok) throw new Error(await errorMessage(response, "save persona failed"));
   return (await response.json()) as Persona;
 }
 

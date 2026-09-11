@@ -8,10 +8,16 @@ export function fetchPersonaAgents() {
 
 const BASE = "/api/v1";
 
+async function errorMessage(response: Response, fallback: string): Promise<string> {
+  const body = (await (response.clone?.() ?? response).json().catch(() => null)) as { message?: string; detail?: string } | null;
+  if (body?.message || body?.detail) return body.message || body.detail || fallback;
+  return (await response.text().catch(() => "")) || fallback;
+}
+
 /** Coverage map: userId -> agentIds that hold a persona. */
 export async function fetchPersonaCoverage(): Promise<Record<string, string[]>> {
   const response = await fetch(`${BASE}/persona/coverage`);
-  if (!response.ok) throw new Error("fetch coverage failed");
+  if (!response.ok) throw new Error(await errorMessage(response, "fetch coverage failed"));
   return (await response.json()) as Record<string, string[]>;
 }
 

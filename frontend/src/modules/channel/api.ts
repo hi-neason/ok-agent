@@ -59,9 +59,7 @@ export async function setChannelRuntime(
 
 export async function deleteChannel(id: string): Promise<void> {
   const response = await fetch(`${BASE}/${id}`, { method: "DELETE" });
-  if (!response.ok && response.status !== 204) {
-    throw new Error(i18n.t("common.deleteFailed", { status: response.status }));
-  }
+  if (!response.ok) await parse<never>(response);
 }
 
 export async function fetchChannelOperators(id: string): Promise<ChannelOperator[]> {

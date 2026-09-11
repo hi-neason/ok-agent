@@ -79,7 +79,7 @@ export async function saveUser(
       }),
     },
   );
-  if (!response.ok) throw new Error("save user failed");
+  if (!response.ok) throw new Error(await errorMessage(response, "save user failed"));
   return (await response.json()) as UserItem;
 }
 

@@ -60,9 +60,10 @@ export async function inspectServerByDraft(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
-  const result = (await response.json().catch(() => null)) as McpInspection | null;
+  const result = (await response.clone().json().catch(() => null)) as McpInspection | null;
   if (!response.ok || !result?.success) {
-    throw new Error(result?.message || "inspect failed");
+    const text = result ? "" : await response.text().catch(() => "");
+    throw new Error(result?.message || text || "inspect failed");
   }
   return result;
 }

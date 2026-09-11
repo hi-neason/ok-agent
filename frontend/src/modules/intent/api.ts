@@ -53,4 +53,3 @@ export function flatten(nodes: IntentNode[]): IntentDto[] {
   walk(nodes);
   return out;
 }
-import i18n from "../../i18n";

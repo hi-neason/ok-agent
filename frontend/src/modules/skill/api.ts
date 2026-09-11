@@ -57,7 +57,7 @@ export async function importSkillArchive(form: FormData): Promise<SkillItem> {
 
 export async function fetchSkillFiles(id: string): Promise<SkillFileItem[]> {
   const response = await fetch(`/api/v1/skills/${id}/files`);
-  if (!response.ok) throw new Error("files failed");
+  if (!response.ok) throw new Error(await errorMessage(response, "files failed"));
   return (await response.json()) as SkillFileItem[];
 }
 

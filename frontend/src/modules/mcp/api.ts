@@ -87,7 +87,7 @@ export async function setServerEnabled(
     `/api/v1/mcp-servers/${id}/enabled?value=${value}`,
     { method: "PATCH" },
   );
-  if (!response.ok) throw new Error("toggle failed");
+  if (!response.ok) throw new Error(await errorMessage(response, "toggle failed"));
 }
 
 export async function fetchTools(id: string): Promise<McpTool[]> {

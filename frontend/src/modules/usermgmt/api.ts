@@ -85,7 +85,7 @@ export async function saveUser(
 
 export async function deleteUser(id: string): Promise<void> {
   const response = await fetch(`${BASE}/users/${id}`, { method: "DELETE" });
-  if (!response.ok) throw new Error("delete user failed");
+  if (!response.ok) throw new Error(await errorMessage(response, "delete user failed"));
 }
 
 export async function fetchUserChannels(id: string): Promise<ChannelIdentity[]> {

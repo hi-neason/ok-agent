@@ -47,6 +47,6 @@ export async function fetchTrace(traceId: string): Promise<TraceSpan[]> {
     `/api/v1/observe/traces/${encodeURIComponent(traceId)}`,
   );
   if (response.status === 404) return [];
-  if (!response.ok) throw new Error("trace failed");
+  if (!response.ok) throw new Error(await errorMessage(response, "trace failed"));
   return (await response.json()) as TraceSpan[];
 }

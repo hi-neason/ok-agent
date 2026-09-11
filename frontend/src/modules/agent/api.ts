@@ -46,8 +46,7 @@ async function loadOptions(path: string): Promise<Array<Record<string, unknown>>
 
 export async function loadAgent(agentId: string): Promise<AgentItem> {
   const res = await fetch(`/api/v1/agents/${agentId}`);
-  if (!res.ok) throw new Error("agent not found");
-  return (await res.json()) as AgentItem;
+  return (await jsonOrThrow(res)) as AgentItem;
 }
 
 export async function loadModels(): Promise<Option[]> {

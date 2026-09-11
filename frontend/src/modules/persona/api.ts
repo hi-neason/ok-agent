@@ -26,7 +26,7 @@ export async function listPersonas(userId: string): Promise<Persona[]> {
   const response = await fetch(
     `${BASE}/persona/users/${encodeURIComponent(userId)}`,
   );
-  if (!response.ok) throw new Error("list personas failed");
+  if (!response.ok) throw new Error(await errorMessage(response, "list personas failed"));
   return (await response.json()) as Persona[];
 }
 

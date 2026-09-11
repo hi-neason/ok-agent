@@ -96,7 +96,7 @@ export async function fetchUserChannels(id: string): Promise<ChannelIdentity[]> 
 
 export async function fetchUserDetail(id: string): Promise<UserDetail> {
   const response = await fetch(`${BASE}/users/${id}/detail`);
-  if (!response.ok) throw new Error("fetch user detail failed");
+  if (!response.ok) throw new Error(await errorMessage(response, "fetch user detail failed"));
   return (await response.json()) as UserDetail;
 }
 

@@ -72,8 +72,7 @@ export async function listAgents(
   size = 20,
 ): Promise<Page<AgentItem>> {
   const res = await fetch(`/api/v1/agents?page=${page}&size=${size}`);
-  if (!res.ok) throw new Error("agents failed");
-  return (await res.json()) as Page<AgentItem>;
+  return (await jsonOrThrow(res)) as Page<AgentItem>;
 }
 
 export async function loadAgents(): Promise<AgentOption[]> {

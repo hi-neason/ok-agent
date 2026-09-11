@@ -1,12 +1,18 @@
 import type { SkillFileContent, SkillFileItem, SkillItem } from "./types";
 import type { Page } from "../shared";
 
+async function errorMessage(response: Response, fallback: string): Promise<string> {
+  const body = (await response.clone().json().catch(() => null)) as { message?: string; detail?: string } | null;
+  if (body?.message || body?.detail) return body.message || body.detail || fallback;
+  return (await response.text().catch(() => "")) || fallback;
+}
+
 export async function fetchSkills(
   page = 0,
   size = 20,
 ): Promise<Page<SkillItem>> {
   const response = await fetch(`/api/v1/skills?page=${page}&size=${size}`);
-  if (!response.ok) throw new Error("load failed");
+  if (!response.ok) throw new Error(await errorMessage(response, "load failed"));
   return (await response.json()) as Page<SkillItem>;
 }
 

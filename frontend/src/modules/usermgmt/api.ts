@@ -109,8 +109,5 @@ export async function mergeUsers(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ secondaryId }),
   });
-  if (!response.ok) {
-    const text = await response.text().catch(() => "");
-    throw new Error(text || "merge failed");
-  }
+  if (!response.ok) throw new Error(await errorMessage(response, "merge failed"));
 }

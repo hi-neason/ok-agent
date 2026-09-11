@@ -1,5 +1,11 @@
 import type { DialogueTurn, SessionPage, SessionQuery, TraceSpan } from "./types";
 
+async function errorMessage(response: Response, fallback: string): Promise<string> {
+  const body = (await response.clone().json().catch(() => null)) as { message?: string; detail?: string } | null;
+  if (body?.message || body?.detail) return body.message || body.detail || fallback;
+  return (await response.text().catch(() => "")) || fallback;
+}
+
 /**
  * Read-only client for the runtime observability surface. It talks to `/api/v1/observe`,
  * which serves dialogue history produced by any runtime (debug preview today, real
@@ -24,7 +30,7 @@ function buildQuery(query: SessionQuery): string {
 
 export async function searchSessions(query: SessionQuery): Promise<SessionPage> {
   const response = await fetch(`/api/v1/observe/sessions?${buildQuery(query)}`);
-  if (!response.ok) throw new Error("sessions failed");
+  if (!response.ok) throw new Error(await errorMessage(response, "sessions failed"));
   return (await response.json()) as SessionPage;
 }
 

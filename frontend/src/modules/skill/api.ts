@@ -68,7 +68,7 @@ export async function fetchSkillFile(
   const response = await fetch(
     `/api/v1/skills/${id}/file?path=${encodeURIComponent(path)}`,
   );
-  if (!response.ok) throw new Error("file failed");
+  if (!response.ok) throw new Error(await errorMessage(response, "file failed"));
   return (await response.json()) as SkillFileContent;
 }
 

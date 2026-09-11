@@ -75,7 +75,8 @@ export async function inspectServerByDraft(
 }
 
 export async function deleteServer(id: string): Promise<void> {
-  await fetch(`/api/v1/mcp-servers/${id}`, { method: "DELETE" });
+  const response = await fetch(`/api/v1/mcp-servers/${id}`, { method: "DELETE" });
+  if (!response.ok) throw new Error(await errorMessage(response, "delete failed"));
 }
 
 export async function setServerEnabled(

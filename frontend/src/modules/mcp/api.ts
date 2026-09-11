@@ -109,7 +109,10 @@ export async function callTool(
       body: JSON.stringify({ arguments: args }),
     },
   );
-  const result = (await response.json().catch(() => null)) as McpToolCallResult | null;
-  if (!response.ok || !result) throw new Error("call failed");
+  const result = (await response.clone().json().catch(() => null)) as McpToolCallResult | null;
+  if (!response.ok || !result) {
+    const text = result ? "" : await response.text().catch(() => "");
+    throw new Error(result?.message || text || "call failed");
+  }
   return result;
 }

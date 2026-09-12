@@ -6,6 +6,7 @@ const BASE = "/api/v1/channels";
 
 async function parse<T>(response: Response): Promise<T> {
   if (response.ok) {
+    if (response.status === 204 || response.status === 205) return undefined as T;
     return (await response.json()) as T;
   }
   let detail = "";

@@ -18,7 +18,7 @@ async function jsonOrThrow(res: Response): Promise<unknown> {
     const text = await res.text().catch(() => "");
     throw new Error(text || `HTTP ${res.status}`);
   }
-  return res.status === 204 ? undefined : res.json();
+  return res.status === 204 || res.status === 205 ? undefined : res.json();
 }
 
 async function loadOptions(path: string): Promise<Array<Record<string, unknown>>> {

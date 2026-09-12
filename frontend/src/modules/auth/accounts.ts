@@ -21,7 +21,7 @@ export type CreateAccount = {
 
 async function jsonOrThrow<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    const body = (await (response.clone?.() ?? response).json().catch(() => null)) as { message?: string } | null;
+    const body = (await (response.clone?.() ?? response).json().catch(() => null)) as { message?: string; detail?: string } | null;
     const text = body ? "" : await response.text().catch(() => "");
     throw new Error(body?.message ?? (text || "ACCOUNT_REQUEST_FAILED"));
   }

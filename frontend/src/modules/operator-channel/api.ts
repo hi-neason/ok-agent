@@ -4,7 +4,7 @@ import type { MyChannel, OperatorPresence, OperatorPresenceStatus } from "./type
 const BASE = "/api/v1/workbench/operator";
 
 async function parse<T>(response: Response): Promise<T> {
-  if (response.ok) return response.status === 204 ? (undefined as T) : response.json() as Promise<T>;
+  if (response.ok) return response.status === 204 || response.status === 205 ? (undefined as T) : response.json() as Promise<T>;
   let detail = "";
   try {
     const body = await (response.clone?.() ?? response).json();

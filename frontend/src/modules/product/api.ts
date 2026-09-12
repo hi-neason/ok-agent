@@ -26,7 +26,7 @@ async function jsonOrThrow<T>(res: Response): Promise<T> {
     }
     throw new Error(detail || `HTTP ${res.status}`);
   }
-  if (res.status === 204) return undefined as T;
+  if (res.status === 204 || res.status === 205) return undefined as T;
   return (await res.json()) as T;
 }
 

@@ -74,7 +74,7 @@ export async function fetchSkillFile(
     `/api/v1/skills/${id}/file?path=${encodeURIComponent(path)}`,
   );
   if (!response.ok) throw new Error(await errorMessage(response, "file failed"));
-  return (await response.json()) as SkillFileContent;
+  return readJson<SkillFileContent>(response);
 }
 
 export class SkillFileConflictError extends Error {

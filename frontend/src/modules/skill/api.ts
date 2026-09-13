@@ -107,7 +107,7 @@ export async function setSkillEnabled(
     { method: "PATCH" },
   );
   if (!response.ok) throw new Error(await errorMessage(response, "status failed"));
-  return (await response.json()) as SkillItem;
+  return readJson<SkillItem>(response);
 }
 
 export async function deleteSkill(id: string): Promise<void> {

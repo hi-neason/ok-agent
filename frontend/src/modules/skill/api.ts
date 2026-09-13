@@ -57,7 +57,7 @@ export async function importSkillArchive(form: FormData): Promise<SkillItem> {
     const text = failure ? "" : await response.text().catch(() => "");
     throw new Error(failure?.message || text || "import failed");
   }
-  return (await response.json()) as SkillItem;
+  return readJson<SkillItem>(response);
 }
 
 export async function fetchSkillFiles(id: string): Promise<SkillFileItem[]> {

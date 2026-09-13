@@ -8,6 +8,11 @@ async function errorMessage(response: Response, fallback: string): Promise<strin
   return (await response.text().catch(() => "")) || fallback;
 }
 
+async function readJson<T>(response: Response): Promise<T> {
+  if (response.status === 204 || response.status === 205) return undefined as T;
+  return (await response.json()) as T;
+}
+
 export function fetchAllServers(): Promise<McpServer[]> {
   return loadAllPages(fetchServers);
 }
@@ -26,7 +31,7 @@ export async function fetchServers(
     `/api/v1/mcp-servers?page=${page}&size=${size}`,
   );
   if (!response.ok) throw new Error(await errorMessage(response, "load failed"));
-  return (await response.json()) as Page<McpServer>;
+  return readJson<Page<McpServer>>(response);
 }
 
 export async function saveServer(

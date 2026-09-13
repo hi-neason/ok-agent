@@ -95,7 +95,7 @@ export async function saveSkillFile(
   });
   if (response.status === 409) throw new SkillFileConflictError();
   if (!response.ok) throw new Error(await errorMessage(response, "file save failed"));
-  return (await response.json()) as SkillFileContent;
+  return readJson<SkillFileContent>(response);
 }
 
 export async function setSkillEnabled(

@@ -31,7 +31,7 @@ export async function saveSkillMetadata(
     body: JSON.stringify(payload),
   });
   if (!response.ok) throw new Error(await errorMessage(response, "save failed"));
-  return (await response.json()) as SkillItem;
+  return readJson<SkillItem>(response);
 }
 
 export class SkillConflictError extends Error {

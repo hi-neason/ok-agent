@@ -48,7 +48,7 @@ export async function saveServer(
     },
   );
   if (!response.ok) throw new Error(await errorMessage(response, "save failed"));
-  return (await response.json()) as McpServer;
+  return readJson<McpServer>(response);
 }
 
 export async function inspectServerById(id: string): Promise<McpInspection> {

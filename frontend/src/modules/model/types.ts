@@ -1,7 +1,9 @@
+export const modelTypes = ["LLM", "DECISION", "SPEECH", "VISION", "OCR", "AUDIO_VIDEO"] as const;
+
 export type ModelItem = {
   id: string;
   name: string;
-  type: "LLM" | "SPEECH" | "VISION" | "OCR" | "AUDIO_VIDEO";
+  type: (typeof modelTypes)[number];
   provider: string;
   modelId: string;
   endpoint: string;

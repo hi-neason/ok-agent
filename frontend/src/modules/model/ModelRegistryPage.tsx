@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { Button, PageHeader, Pagination, Toggle, useConfirm, type Page } from "../shared";
 import { deleteModel, fetchModels, requestConnectionTest, saveModel } from "./api";
-import { llmProviders, type ModelItem } from "./types";
+import { llmProviders, modelTypes, type ModelItem } from "./types";
 
 export function ModelRegistryPage() {
   const { t } = useTranslation();
@@ -137,7 +137,7 @@ export function ModelRegistryPage() {
               onChange={(event) => setType(event.target.value as typeof type)}
             >
               <option value="ALL">{t("models.allTypes")}</option>
-              {(["LLM", "SPEECH", "VISION", "OCR", "AUDIO_VIDEO"] as const).map((modelType) => (
+              {modelTypes.map((modelType) => (
                 <option key={modelType} value={modelType}>{t(`models.types.${modelType}`)}</option>
               ))}
             </select>
@@ -155,7 +155,7 @@ export function ModelRegistryPage() {
               <b>{model.name}</b>
               <small>{model.endpoint}</small>
             </span>
-            <span>{model.type.replace("_", " / ")}</span>
+            <span>{t(`models.types.${model.type}`)}</span>
             <span>{model.provider}</span>
             <code>{model.modelId}</code>
             <code>{t(model.apiKeyConfigured ? "common.configured" : "common.notConfigured")}</code>
@@ -238,17 +238,18 @@ export function ModelRegistryPage() {
                 </button>
               </div>
               <div className="provider-pills">
-                {(
-                  ["LLM", "SPEECH", "VISION", "OCR", "AUDIO_VIDEO"] as const
-                ).map((x) => (
+                {modelTypes.map((x) => (
                   <button
                     key={x}
-                    onClick={() => setEditing({ ...editing, type: x })}
+                    onClick={() => {
+                      setTestResult(null);
+                      setEditing({ ...editing, type: x });
+                    }}
                     className={
                       editing.type === x ? "provider active" : "provider"
                     }
                   >
-                    {x.replace("_", " / ")}
+                    {t(`models.types.${x}`)}
                   </button>
                 ))}
               </div>

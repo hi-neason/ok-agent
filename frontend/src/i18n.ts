@@ -738,9 +738,9 @@ const resources = {
       },
       models: {
         kicker: "模型资产 / 注册中心", title: "模型管理",
-        description: "统一管理文本、语音、视觉、OCR 和音视频模型。智能体仅引用已启用的模型资产与其版本。",
+        description: "统一管理文本、决策、语音、视觉、OCR 和音视频模型。智能体仅引用已启用的模型资产与其版本。",
         add: "新增模型", total: "共 {{count}} 个模型", type: "类型", allTypes: "全部类型",
-        types: { LLM: "大语言模型", SPEECH: "语音模型", VISION: "视觉模型", OCR: "OCR 模型", AUDIO_VIDEO: "音视频模型" },
+        types: { LLM: "大语言模型", DECISION: "决策模型", SPEECH: "语音模型", VISION: "视觉模型", OCR: "OCR 模型", AUDIO_VIDEO: "音视频模型" },
         name: "模型名称", provider: "提供商", modelId: "模型 ID", apiKeyReference: "密钥引用", enabledStatus: "启用状态",
         configAria: "模型配置", edit: "编辑模型", close: "关闭 ×", custom: "自定义",
         customProviderPlaceholder: "请输入自定义模型厂商", nameField: "名称", providerField: "模型提供商",
@@ -1885,9 +1885,9 @@ const resources = {
       },
       models: {
         kicker: "MODEL ASSETS / REGISTRY", title: "Model Management",
-        description: "Manage text, speech, vision, OCR, and audio/video models in one place. Agents reference enabled model assets and versions only.",
+        description: "Manage text, decision, speech, vision, OCR, and audio/video models in one place. Agents reference enabled model assets and versions only.",
         add: "Add model", total: "{{count}} models", type: "Type", allTypes: "All types",
-        types: { LLM: "Large language model", SPEECH: "Speech model", VISION: "Vision model", OCR: "OCR model", AUDIO_VIDEO: "Audio/video model" },
+        types: { LLM: "Large language model", DECISION: "Decision model", SPEECH: "Speech model", VISION: "Vision model", OCR: "OCR model", AUDIO_VIDEO: "Audio/video model" },
         name: "Model name", provider: "Provider", modelId: "Model ID", apiKeyReference: "API key", enabledStatus: "Enabled",
         configAria: "Model configuration", edit: "Edit model", close: "Close ×", custom: "Custom",
         customProviderPlaceholder: "Enter a custom model provider", nameField: "Name", providerField: "Model provider",

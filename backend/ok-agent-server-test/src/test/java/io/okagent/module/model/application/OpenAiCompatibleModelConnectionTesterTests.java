@@ -82,6 +82,23 @@ class OpenAiCompatibleModelConnectionTesterTests {
         assertThat(result.message()).doesNotContain("secret detail");
     }
 
+    @Test
+    void refusesDecisionModelWithoutSendingChatRequest() {
+        var requested = new java.util.concurrent.atomic.AtomicBoolean();
+        server.createContext("/", exchange -> {
+            requested.set(true);
+            respond(exchange, 500, "Unexpected chat request");
+        });
+        var asset = new ModelAsset(
+                UUID.randomUUID(), "Decision model", ModelType.DECISION, "Custom", "decision-model", baseUrl, "encrypted", true);
+
+        var result = new OpenAiCompatibleModelConnectionTester(transport).test(asset, "test-api-key");
+
+        assertThat(result.success()).isFalse();
+        assertThat(result.statusCode()).isZero();
+        assertThat(requested.get()).isFalse();
+    }
+
     private void respond(HttpExchange exchange, int statusCode, String body) throws IOException {
         var bytes = body.getBytes(StandardCharsets.UTF_8);
         exchange.getResponseHeaders().set("Content-Type", "application/json");

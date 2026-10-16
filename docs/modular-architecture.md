@@ -46,7 +46,7 @@ Legacy snapshots without this field retain their existing classification behavio
 
 The `decision` runtime module exposes a provider-neutral bounded-choice SDK and a JEV adapter.
 The production web intent pre-classifier uses it when a frozen decision model is configured; otherwise
-it preserves LLM classification. Existing debug and IM flows do not run this web pre-classifier.
+it preserves LLM classification. Configured decision models also run in Harness middleware for IM and debug. Web marks pre-classified turns to avoid duplicate calls. Leaf delegates do not classify again. Debug resolves current enabled decision assets and intent rules; production uses frozen snapshots.
 The JEV preset uses `jev-latest` and `https://api.typesafe.ai/v1/systemone` ([official API](https://docs.typesafe.ai/api)).
 The adapter also accepts a provider root or `/v1` base and appends the System One path locally.
 It reserves one explicit no-match option, allowing up to 254 application intents. It validates returned

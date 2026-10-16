@@ -19,8 +19,17 @@ public final class DraftAgentConfig implements ResolvedAgentConfig {
     private final AgentAsset draft;
     private final List<ResolvedSubagent> subagents;
     private final String contentHash;
+    private final List<ResolvedIntent> intents;
+    private final ResolvedDecisionModelAsset decisionModel;
 
     public DraftAgentConfig(AgentAsset draft, List<ResolvedSubagent> subagents) {
+        this(draft, subagents, List.of(), null);
+    }
+
+    public DraftAgentConfig(AgentAsset draft, List<ResolvedSubagent> subagents,
+            List<ResolvedIntent> intents, ResolvedDecisionModelAsset decisionModel) {
+        this.intents = List.copyOf(intents);
+        this.decisionModel = decisionModel;
         this.draft = draft;
         this.subagents = List.copyOf(subagents);
         this.contentHash = computeHash();
@@ -31,9 +40,16 @@ public final class DraftAgentConfig implements ResolvedAgentConfig {
         return contentHash;
     }
 
+    @Override
+    public List<ResolvedIntent> getResolvedIntents() { return intents; }
+
+    @Override
+    public ResolvedDecisionModelAsset getResolvedDecisionModelAsset() { return decisionModel; }
+
     private String computeHash() {
         var sb = new StringBuilder();
         sb.append(draft.getId()).append(':').append(draft.getUpdatedAt() == null ? "" : draft.getUpdatedAt());
+        sb.append(intents).append(decisionModel);
         for (var child : subagents) {
             sb.append('|').append(child.config().getId()).append(':').append(child.config().contentHash());
         }

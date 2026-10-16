@@ -81,6 +81,7 @@ public class HarnessAgentFactory {
     private final ProductRuntimeCatalog productCatalog;
     private final SolutionRuntimeCatalog solutionCatalog;
     private final ObjectMapper json;
+    private final io.okagent.module.decision.application.DecisionRoutingService decisions;
 
     public HarnessAgentFactory(
             ModelAssetRepository models,
@@ -98,7 +99,9 @@ public class HarnessAgentFactory {
             IntentService intents,
             ProductRuntimeCatalog productCatalog,
             SolutionRuntimeCatalog solutionCatalog,
-            ObjectMapper json) {
+            ObjectMapper json,
+            io.okagent.module.decision.application.DecisionRoutingService decisions) {
+        this.decisions = decisions;
         this.models = models;
         this.mcpServers = mcpServers;
         this.skills = skills;
@@ -148,7 +151,23 @@ public class HarnessAgentFactory {
                     .filter(AgentAsset::isEnabled)
                     .ifPresent(child -> children.add(new ResolvedSubagent(draftConfig(child), entry.getValue())));
         }
-        return new DraftAgentConfig(draft, children);
+        ResolvedDecisionModelAsset decision = null;
+        if (draft.getDecisionModelAssetId() != null) {
+            var model = models.findById(draft.getDecisionModelAssetId())
+                    .filter(m -> m.isEnabled() && m.getType() == io.okagent.module.model.domain.ModelType.DECISION)
+                    .orElseThrow(() -> new IllegalStateException("Decision model must exist, be enabled and have DECISION type"));
+            decision = new ResolvedDecisionModelAsset(model.getId(), model.getProvider(), model.getModelId(), model.getEndpoint());
+        }
+        var rules = new ArrayList<ResolvedIntent>();
+        if (decision != null) collectRoutingIntents(intents.getTree(), rules);
+        return new DraftAgentConfig(draft, children, rules, decision);
+    }
+
+    private void collectRoutingIntents(List<IntentNode> nodes, List<ResolvedIntent> rules) {
+        for (var node : nodes) {
+            rules.add(new ResolvedIntent(node.node().intentKey(), node.node().name(), node.node().description()));
+            collectRoutingIntents(node.children(), rules);
+        }
     }
 
     private HarnessAgent build(ResolvedAgentConfig cfg, String userId, boolean asLeaf) {
@@ -164,6 +183,9 @@ public class HarnessAgentFactory {
                 .stateStore(stateStore)
                 .toolsConfig(toolsConfig(cfg))
                 .middleware(traceMiddleware);
+        if (DecisionRoutingMiddleware.enabled(cfg, asLeaf)) {
+            builder.middleware(new DecisionRoutingMiddleware(cfg, decisions));
+        }
         if (asLeaf) {
             builder.disableSubagents();
         } else {

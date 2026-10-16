@@ -85,7 +85,11 @@ public class JevDecisionModelClient implements DecisionModelClient {
                         : status == 429 ? DecisionModelException.Kind.RATE_LIMIT : DecisionModelException.Kind.PROVIDER;
                 throw new DecisionModelException(kind, status);
             }
-            var answer = json.readTree(response.body()).path("answers").path("route");
+            var root = json.readTree(response.body());
+            if (root == null) {
+                throw new DecisionModelException(DecisionModelException.Kind.INVALID_RESPONSE, status);
+            }
+            var answer = root.path("answers").path("route");
             var choice = answer.path("choice");
             if (!"choice".equals(answer.path("type").asText())
                     || !choice.isTextual()

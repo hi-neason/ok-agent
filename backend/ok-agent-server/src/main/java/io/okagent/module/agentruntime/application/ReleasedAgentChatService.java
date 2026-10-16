@@ -48,7 +48,7 @@ import reactor.core.Exceptions;
 public class ReleasedAgentChatService implements CustomerChatService {
     private static final Logger log = LoggerFactory.getLogger(ReleasedAgentChatService.class);
     private static final Duration CALL_TIMEOUT = Duration.ofSeconds(300);
-    private static final double CONFIDENCE_FALLBACK = 0.6;
+    private static final double CONFIDENCE_FALLBACK = io.okagent.module.agent.application.DecisionRoutingPolicy.MIN_CONFIDENCE;
     private static final int MAX_SESSIONS = 200;
 
     private final io.okagent.module.release.infrastructure.persistence.AgentVersionRepository versions;
@@ -107,6 +107,7 @@ public class ReleasedAgentChatService implements CustomerChatService {
             var classification = classify(req.message(), cfg);
             var turnMessage = buildRoutedMessage(req.message(), classification);
             var ctx = RuntimeContext.builder()
+                    .put(io.okagent.module.agent.application.DecisionRoutingMiddleware.CTX_ALREADY_CLASSIFIED, true)
                     .userId(userId)
                     .sessionId(sessionKey)
                     .put(TraceCollectingMiddleware.CTX_TRACE_ID, traceId)
@@ -249,28 +250,15 @@ public class ReleasedAgentChatService implements CustomerChatService {
             long started = System.nanoTime();
             try {
                 var decision = decisions.choose(router, query);
-                String key = decision.key();
-                var matched = flat.stream()
-                        .filter(i -> i.intentKey().equals(key))
-                        .findFirst()
-                        .orElse(null);
-                String delegate = matched == null
-                                || (decision.confidence() != null && decision.confidence() < CONFIDENCE_FALLBACK)
-                        ? null
-                        : resolveDelegate(router, key);
+                var classification = io.okagent.module.agent.application.DecisionRoutingPolicy.classify(router, decision);
                 log.info(
                         "Decision routing completed agent={} durationMs={} matched={} delegated={} confidence={}",
                         router.getId(),
                         (System.nanoTime() - started) / 1_000_000,
-                        matched != null,
-                        delegate != null,
+                        classification.intentKey() != null,
+                        classification.targetSubagentKey() != null,
                         decision.confidence());
-                return new IntentClassification(
-                        matched == null ? null : key,
-                        matched == null ? null : matched.name(),
-                        decision.confidence(),
-                        delegate,
-                        delegate == null);
+                return classification;
             } catch (Exception e) {
                 var failure = e instanceof io.okagent.module.decision.application.DecisionModelException provider
                         ? provider

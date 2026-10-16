@@ -112,6 +112,8 @@ class JevDecisionModelClientTests {
     @ParameterizedTest
     @ValueSource(
             strings = {
+                "",
+                "   ",
                 "not-json",
                 "{}",
                 "null",

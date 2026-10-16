@@ -44,6 +44,24 @@ New release snapshots freeze the decision model's asset ID, provider, model ID a
 credential reference. Editing a draft or model endpoint cannot change a published decision configuration.
 Legacy snapshots without this field retain their existing classification behavior.
 
+The `decision` runtime module exposes a provider-neutral bounded-choice SDK and a JEV adapter.
+The production web intent pre-classifier uses it when a frozen decision model is configured; otherwise
+it preserves LLM classification. Existing debug and IM flows do not run this web pre-classifier.
+The JEV preset uses `jev-latest` and `https://api.typesafe.ai/v1/systemone` ([official API](https://docs.typesafe.ai/api)).
+The adapter also accepts a provider root or `/v1` base and appends the System One path locally.
+It reserves one explicit no-match option, allowing up to 254 application intents. It validates returned
+choices and the official confidence value; the existing 0.6 routing threshold remains in effect and
+should be calibrated against real requests before production use. An exact model version can be configured
+instead of a moving alias when threshold stability matters.
+
+Decision calls make one attempt, bounded by the Agent model timeout and a 30-second cap. No-match and
+low confidence preserve fallback to the parent Agent. Decision provider/configuration failures surface as
+a sanitized gateway error, rather than silently bypassing the configured classifier.
+Failures emit sanitized kind/status and latency logs, never provider bodies, prompts or credentials.
+There is no hidden secondary classifier or provider retry. Connection tests use the decision protocol.
+A provider-neutral decision may omit confidence; the chat API then returns null and the UI omits it.
+JEV's own adapter requires the confidence field specified by its API.
+
 ## Human handling
 
 Only `OPEN` conversations permit automated replies. Incoming messages remain recorded during human handling.

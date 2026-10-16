@@ -44,8 +44,8 @@ class ModelAssetServiceTests {
     void updatesDecisionModelWhileRetainingSavedCredentialWhenBlank() {
         var id = UUID.randomUUID();
         var encrypted = cipher.encrypt("test-credential");
-        var asset = new ModelAsset(id, "Original", ModelType.DECISION, "Custom", "original",
-                "https://example.invalid", encrypted, true);
+        var asset = new ModelAsset(
+                id, "Original", ModelType.DECISION, "Custom", "original", "https://example.invalid", encrypted, true);
         when(repository.findById(id)).thenReturn(Optional.of(asset));
 
         var response = service.update(id, request(""));
@@ -64,7 +64,13 @@ class ModelAssetServiceTests {
     }
 
     private ModelAssetRequest request(String apiKey) {
-        return new ModelAssetRequest("Decision model", ModelType.DECISION, "Custom", "decision-model",
-                "https://example.invalid", apiKey, true);
+        return new ModelAssetRequest(
+                "Decision model",
+                ModelType.DECISION,
+                "Custom",
+                "decision-model",
+                "https://example.invalid",
+                apiKey,
+                true);
     }
 }

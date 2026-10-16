@@ -6,6 +6,6 @@ public record CustomerChatResult(
         String reply,
         String intentKey,
         String intentName,
-        double confidence,
+        Double confidence,
         String targetSubagentKey,
         boolean fallback) {}

@@ -8,7 +8,7 @@ public record CustomerChatResponse(
         String reply,
         String intentKey,
         String intentName,
-        double confidence,
+        Double confidence,
         String targetSubagentKey,
         boolean fallback) {
     static CustomerChatResponse from(CustomerChatResult result) {

@@ -11,7 +11,7 @@ type ChatMessage = { id: string; role: "user" | "assistant"; content: string; er
 type RoutingInfo = {
   intentKey: string | null;
   intentName: string | null;
-  confidence: number;
+  confidence: number | null;
   targetSubagentKey: string | null;
   fallback: boolean;
 };
@@ -92,7 +92,7 @@ export function CustomerChatPage() {
             reply?: string;
             intentKey?: string | null;
             intentName?: string | null;
-            confidence?: number;
+            confidence?: number | null;
             targetSubagentKey?: string | null;
             fallback?: boolean;
             detail?: string;
@@ -107,7 +107,7 @@ export function CustomerChatPage() {
       setRouting({
         intentKey: data.intentKey ?? null,
         intentName: data.intentName ?? null,
-        confidence: data.confidence ?? 0,
+        confidence: data.confidence ?? null,
         targetSubagentKey: data.targetSubagentKey ?? null,
         fallback: data.fallback ?? false,
       });
@@ -183,9 +183,9 @@ export function CustomerChatPage() {
         <div className={routing.fallback ? "cs-routing fallback" : "cs-routing"}>
           {t("chat.routing", { intent: routing.intentName ?? t("chat.unmatched") })}
           {routing.intentKey && <code>{routing.intentKey}</code>}
-          <span className="cs-conf">
+          {routing.confidence != null && <span className="cs-conf">
             {t("chat.confidence", { value: Math.round(routing.confidence * 100) })}
-          </span>
+          </span>}
           {routing.targetSubagentKey && (
             <span>{t("chat.subagent", { key: routing.targetSubagentKey })}</span>
           )}

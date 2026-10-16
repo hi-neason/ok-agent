@@ -90,7 +90,14 @@ class OpenAiCompatibleModelConnectionTesterTests {
             respond(exchange, 500, "Unexpected chat request");
         });
         var asset = new ModelAsset(
-                UUID.randomUUID(), "Decision model", ModelType.DECISION, "Custom", "decision-model", baseUrl, "encrypted", true);
+                UUID.randomUUID(),
+                "Decision model",
+                ModelType.DECISION,
+                "Custom",
+                "decision-model",
+                baseUrl,
+                "encrypted",
+                true);
 
         var result = new OpenAiCompatibleModelConnectionTester(transport).test(asset, "test-api-key");
 

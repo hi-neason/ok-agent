@@ -10,15 +10,15 @@ import io.agentscope.core.event.ToolResultEndEvent;
 import io.agentscope.core.message.Msg;
 import io.agentscope.core.permission.PermissionMode;
 import io.agentscope.harness.agent.HarnessAgent;
-import io.okagent.module.channel.domain.ChannelAsset;
-import io.okagent.module.customerchat.application.CustomerChatCommand;
-import io.okagent.module.customerchat.application.CustomerChatResult;
-import io.okagent.module.customerchat.application.CustomerChatService;
-import io.okagent.module.channel.infrastructure.persistence.ChannelAssetRepository;
 import io.okagent.module.agent.application.HarnessAgentFactory;
 import io.okagent.module.agent.application.ResolvedAgentConfig;
 import io.okagent.module.agent.application.ResolvedSubagent;
+import io.okagent.module.channel.domain.ChannelAsset;
+import io.okagent.module.channel.infrastructure.persistence.ChannelAssetRepository;
 import io.okagent.module.conversation.application.DialogueService;
+import io.okagent.module.customerchat.application.CustomerChatCommand;
+import io.okagent.module.customerchat.application.CustomerChatResult;
+import io.okagent.module.customerchat.application.CustomerChatService;
 import io.okagent.module.intent.application.IntentClassification;
 import io.okagent.module.observe.application.TraceCollectingMiddleware;
 import io.okagent.module.persona.application.PersonaExtractionService;
@@ -55,7 +55,7 @@ public class ReleasedAgentChatService implements CustomerChatService {
     private final io.okagent.module.release.application.ReleasedChannelAgentResolver releasedAgents;
     private final ChannelAssetRepository channels;
 
-
+    private final io.okagent.module.decision.application.DecisionRoutingService decisions;
     private final HarnessAgentFactory factory;
     private final DialogueService dialogue;
     private final PersonaExtractionService personaExtraction;
@@ -69,7 +69,9 @@ public class ReleasedAgentChatService implements CustomerChatService {
             DialogueService dialogue,
             PersonaExtractionService personaExtraction,
             ObjectMapper json,
-            io.okagent.module.release.infrastructure.persistence.AgentVersionRepository versions) {
+            io.okagent.module.release.infrastructure.persistence.AgentVersionRepository versions,
+            io.okagent.module.decision.application.DecisionRoutingService decisions) {
+        this.decisions = decisions;
         this.versions = versions;
         this.releasedAgents = releasedAgents;
         this.channels = channels;
@@ -114,14 +116,12 @@ public class ReleasedAgentChatService implements CustomerChatService {
             agent.setPermissionMode(
                     ctx, PermissionMode.valueOf(cfg.getPermissionMode().name()));
 
-
             var answer = new StringBuilder();
             var finalMsg = new AtomicReference<Msg>();
             var toolCalled = new AtomicBoolean(false);
             var toolResultSeen = new AtomicBoolean(false);
             var started = Instant.now();
-            agent
-                    .streamEvents(turnMessage, ctx)
+            agent.streamEvents(turnMessage, ctx)
                     .doOnNext(event -> {
                         if (event instanceof TextBlockDeltaEvent delta) {
                             answer.append(delta.getDelta());
@@ -178,8 +178,13 @@ public class ReleasedAgentChatService implements CustomerChatService {
         } catch (Exception e) {
             var unwrapped = Exceptions.unwrap(e);
             var failure = io.okagent.shared.runtime.RuntimeFailure.from(unwrapped, traceId);
-            log.warn("Production chat failed agent={} session={} trace={} code={} causeType={}",
-                    cfg.getId(), sessionKey, traceId, failure.code(), unwrapped.getClass().getSimpleName());
+            log.warn(
+                    "Production chat failed agent={} session={} trace={} code={} causeType={}",
+                    cfg.getId(),
+                    sessionKey,
+                    traceId,
+                    failure.code(),
+                    unwrapped.getClass().getSimpleName());
             throw failure;
         }
     }
@@ -188,14 +193,16 @@ public class ReleasedAgentChatService implements CustomerChatService {
     ResolvedRuntime resolveRuntime(CustomerChatCommand req) {
         UUID channelId;
         try {
-            channelId = UUID.fromString(req.channelId() == null ? "" : req.channelId().trim());
+            channelId = UUID.fromString(
+                    req.channelId() == null ? "" : req.channelId().trim());
         } catch (IllegalArgumentException exception) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A published channel UUID is required");
         }
         ChannelAsset channel = channels.findById(channelId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Channel not found"));
         if (!channel.isEnabled() || !java.util.Objects.equals(channel.getBoundAgentId(), req.agentId())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Channel is disabled or agent binding does not match");
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT, "Channel is disabled or agent binding does not match");
         }
         try {
             var released = releasedAgents.resolve(channel);
@@ -210,24 +217,27 @@ public class ReleasedAgentChatService implements CustomerChatService {
         if (existing == null) return current;
         dialogue.assertSessionOwner(sessionKey, current.config().getId(), userId);
         if (existing.getVersionNo() == null || existing.getReleaseId() == null) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Legacy session has no pinned release; start a new session");
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT, "Legacy session has no pinned release; start a new session");
         }
         var version = versions.findByAgentIdAndVersionNo(existing.getAgentId(), existing.getVersionNo())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT, "Pinned session version is unavailable"));
+                .orElseThrow(() ->
+                        new ResponseStatusException(HttpStatus.CONFLICT, "Pinned session version is unavailable"));
         return new ResolvedRuntime(
                 io.okagent.module.release.application.ReleaseAgentConfig.fromSnapshot(version.getSnapshotJson()),
-                existing.getReleaseId(), existing.getVersionNo(), true);
+                existing.getReleaseId(),
+                existing.getVersionNo(),
+                true);
     }
 
-    record ResolvedRuntime(
-            ResolvedAgentConfig config, UUID releaseId, Integer versionNo, boolean fromRelease) {}
+    record ResolvedRuntime(ResolvedAgentConfig config, UUID releaseId, Integer versionNo, boolean fromRelease) {}
 
     /**
      * Classifies a query against the intent tree, then reverse-resolves the matched intentKey against
      * the router's already-resolved sub-agents (each carries its declared intentKeys) to find the
      * delegate. Best-effort: any failure yields a fallback classification with no delegate.
      */
-    private IntentClassification classify(String query, ResolvedAgentConfig router) {
+    IntentClassification classify(String query, ResolvedAgentConfig router) {
         if (router.getSubagents() == null || router.getSubagents().isEmpty()) {
             return new IntentClassification(null, null, 0.0, null, true);
         }
@@ -235,11 +245,56 @@ public class ReleasedAgentChatService implements CustomerChatService {
         if (flat.isEmpty()) {
             return new IntentClassification(null, null, 0.0, null, true);
         }
+        if (router.getDecisionModelAssetId() != null || router.getResolvedDecisionModelAsset() != null) {
+            long started = System.nanoTime();
+            try {
+                var decision = decisions.choose(router, query);
+                String key = decision.key();
+                var matched = flat.stream()
+                        .filter(i -> i.intentKey().equals(key))
+                        .findFirst()
+                        .orElse(null);
+                String delegate = matched == null
+                                || (decision.confidence() != null && decision.confidence() < CONFIDENCE_FALLBACK)
+                        ? null
+                        : resolveDelegate(router, key);
+                log.info(
+                        "Decision routing completed agent={} durationMs={} matched={} delegated={} confidence={}",
+                        router.getId(),
+                        (System.nanoTime() - started) / 1_000_000,
+                        matched != null,
+                        delegate != null,
+                        decision.confidence());
+                return new IntentClassification(
+                        matched == null ? null : key,
+                        matched == null ? null : matched.name(),
+                        decision.confidence(),
+                        delegate,
+                        delegate == null);
+            } catch (Exception e) {
+                var failure = e instanceof io.okagent.module.decision.application.DecisionModelException provider
+                        ? provider
+                        : null;
+                log.warn(
+                        "Decision routing failed agent={} durationMs={} causeType={} kind={} status={}",
+                        router.getId(),
+                        (System.nanoTime() - started) / 1_000_000,
+                        e.getClass().getSimpleName(),
+                        failure == null ? "CONFIGURATION" : failure.kind(),
+                        failure == null ? 0 : failure.statusCode());
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_GATEWAY,
+                        "Decision model routing failed: " + (failure == null ? "CONFIGURATION" : failure.kind()));
+            }
+        }
         String raw;
         try {
             raw = factory.classify(router, buildClassificationPrompt(query, flat));
         } catch (Exception e) {
-            log.warn("Intent classification failed agent={} causeType={}", router.getId(), e.getClass().getSimpleName());
+            log.warn(
+                    "Intent classification failed agent={} causeType={}",
+                    router.getId(),
+                    e.getClass().getSimpleName());
             return new IntentClassification(null, null, 0.0, null, true);
         }
         if (raw == null || raw.isBlank()) {
@@ -256,7 +311,10 @@ public class ReleasedAgentChatService implements CustomerChatService {
                     .findFirst()
                     .orElse(null);
         } catch (Exception e) {
-            log.warn("Invalid classification response agent={} causeType={}", router.getId(), e.getClass().getSimpleName());
+            log.warn(
+                    "Invalid classification response agent={} causeType={}",
+                    router.getId(),
+                    e.getClass().getSimpleName());
             return new IntentClassification(null, null, 0.0, null, true);
         }
         if (matched == null || (!Double.isFinite(confidence) || confidence > 1.0 || confidence < CONFIDENCE_FALLBACK)) {
@@ -311,7 +369,8 @@ public class ReleasedAgentChatService implements CustomerChatService {
                 query);
     }
 
-    private String buildClassificationPrompt(String query, List<io.okagent.module.agent.application.ResolvedIntent> flat) {
+    private String buildClassificationPrompt(
+            String query, List<io.okagent.module.agent.application.ResolvedIntent> flat) {
         var sb = new StringBuilder();
         sb.append("你是一个客服意图分类器。下面是可用的意图树（意图键 | 名称 | 描述）：\n");
         for (var i : flat) {
@@ -352,8 +411,7 @@ public class ReleasedAgentChatService implements CustomerChatService {
 
     private static String base64Sha256(String value) {
         try {
-            byte[] digest = MessageDigest.getInstance("SHA-256")
-                    .digest(value.getBytes(StandardCharsets.UTF_8));
+            byte[] digest = MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8));
             return Base64.getUrlEncoder().withoutPadding().encodeToString(digest);
         } catch (java.security.NoSuchAlgorithmException exception) {
             throw new IllegalStateException("SHA-256 is unavailable", exception);
@@ -398,5 +456,4 @@ public class ReleasedAgentChatService implements CustomerChatService {
     private void touchSession(String key) {
         dialogue.touchSession(key);
     }
-
 }

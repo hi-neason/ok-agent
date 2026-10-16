@@ -243,7 +243,9 @@ export function ModelRegistryPage() {
                     key={x}
                     onClick={() => {
                       setTestResult(null);
-                      setEditing({ ...editing, type: x });
+                      setEditing(x === "DECISION" && editing.type !== "DECISION"
+                        ? { ...editing, type: x, provider: "JEV", modelId: "jev-latest", endpoint: "https://api.typesafe.ai/v1/systemone" }
+                        : { ...editing, type: x });
                     }}
                     className={
                       editing.type === x ? "provider active" : "provider"

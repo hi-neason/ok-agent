@@ -32,6 +32,7 @@ export type AgentItem = {
   systemPrompt: string;
   welcomeMessage: string;
   modelAssetId: string | null;
+  decisionModelAssetId: string | null;
   modelName: string | null;
   temperature: number | null;
   topP: number | null;
@@ -118,6 +119,7 @@ export type AgentForm = {
   systemPrompt: string;
   welcomeMessage: string;
   modelAssetId: string;
+  decisionModelAssetId: string;
   temperature: number;
   topP: number;
   topK: number;

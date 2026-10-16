@@ -18,6 +18,7 @@ public record AgentConfigRequest(
         @Size(max = 200000) String systemPrompt,
         @Size(max = 2048) String welcomeMessage,
         UUID modelAssetId,
+        UUID decisionModelAssetId,
         @DecimalMin("0.0") @DecimalMax("2.0") Double temperature,
         @DecimalMin("0.0") @DecimalMax("1.0") Double topP,
         @Min(1) Integer topK,

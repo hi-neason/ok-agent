@@ -1,6 +1,7 @@
 package io.okagent.module.release.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -25,9 +26,31 @@ import org.junit.jupiter.api.Test;
 class AgentSnapshotRuntimeAssetsTests {
 
     @Test
+    void rejectsMissingDisabledAndWrongTypeDecisionReferences() {
+        var models = mock(ModelAssetRepository.class);
+        var cipher = new ApiKeyCipher("test-key");
+        var snapshots = new AgentSnapshotService(mock(AgentAssetRepository.class), mock(AgentVersionRepository.class),
+                models, mock(McpServerRepository.class), mock(SkillAssetRepository.class), cipher,
+                new ObjectMapper(), mock(io.okagent.module.intent.application.IntentService.class));
+        var agent = new AgentAsset(UUID.randomUUID(), "agent", "Agent", "", "GENERAL");
+        UUID id = UUID.randomUUID();
+        agent.setDecisionModelAssetId(id);
+        assertThatThrownBy(() -> snapshots.buildSnapshot(agent))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+        var model = new ModelAsset(id, "Decision", ModelType.LLM, "jev", "jev", "https://example.com", cipher.encrypt("key"), true);
+        when(models.findById(id)).thenReturn(Optional.of(model));
+        assertThatThrownBy(() -> snapshots.buildSnapshot(agent))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+        model.update("Decision", ModelType.DECISION, "jev", "jev", "https://example.com", null, false);
+        assertThatThrownBy(() -> snapshots.buildSnapshot(agent))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+    }
+
+    @Test
     void freezesModelMcpAndSkillRuntimeConfiguration() {
         UUID agentId = UUID.randomUUID();
         UUID modelId = UUID.randomUUID();
+        UUID decisionId = UUID.randomUUID();
         UUID mcpId = UUID.randomUUID();
         UUID skillId = UUID.randomUUID();
         AgentAsset agent = new AgentAsset(agentId, "router", "Router", "Routes requests", "SUPPORT");
@@ -51,6 +74,9 @@ class AgentSnapshotRuntimeAssetsTests {
                 "https://model.example/v1",
                 cipher.encrypt("secret"),
                 true);
+        agent.setDecisionModelAssetId(decisionId);
+        ModelAsset decision = new ModelAsset(decisionId, "Decision", ModelType.DECISION, "jev", "jev-1",
+                "https://decision.example", cipher.encrypt("decision-secret"), true);
         McpServer mcp = new McpServer(
                 mcpId,
                 "catalog",
@@ -82,6 +108,7 @@ class AgentSnapshotRuntimeAssetsTests {
         McpServerRepository mcpServers = mock(McpServerRepository.class);
         SkillAssetRepository skills = mock(SkillAssetRepository.class);
         when(models.findById(modelId)).thenReturn(Optional.of(model));
+        when(models.findById(decisionId)).thenReturn(Optional.of(decision));
         when(mcpServers.findById(mcpId)).thenReturn(Optional.of(mcp));
         when(skills.findById(skillId)).thenReturn(Optional.of(skill));
         AgentSnapshotService snapshots =
@@ -89,6 +116,8 @@ class AgentSnapshotRuntimeAssetsTests {
                         agents, versions, models, mcpServers, skills, cipher, new ObjectMapper(), mock(io.okagent.module.intent.application.IntentService.class));
 
         String snapshotJson = snapshots.buildSnapshot(agent).snapshotJson();
+        decision.update("Changed", ModelType.DECISION, "changed", "changed", "https://changed.example", null, true);
+        agent.setDecisionModelAssetId(null);
         model.update(
                 "Changed",
                 ModelType.LLM,
@@ -122,6 +151,11 @@ class AgentSnapshotRuntimeAssetsTests {
 
         ReleaseAgentConfig frozen = ReleaseAgentConfig.fromSnapshot(snapshotJson);
 
+        assertThat(snapshotJson).doesNotContain("decision-secret", decision.getApiKeyCiphertext());
+        assertThat(frozen.getDecisionModelAssetId()).isEqualTo(decisionId);
+        assertThat(frozen.getResolvedDecisionModelAsset().provider()).isEqualTo("jev");
+        assertThat(frozen.getResolvedDecisionModelAsset().modelId()).isEqualTo("jev-1");
+        assertThat(frozen.getResolvedDecisionModelAsset().endpoint()).isEqualTo("https://decision.example");
         assertThat(frozen.getResolvedModelAsset().modelId()).isEqualTo("frozen-model");
         assertThat(frozen.getResolvedMcpServers()).singleElement().satisfies(server -> {
             assertThat(server.serverKey()).isEqualTo("catalog");

@@ -47,6 +47,7 @@ function initialForm(agent: AgentItem): AgentForm {
     systemPrompt: agent.systemPrompt || "",
     welcomeMessage: agent.welcomeMessage || "",
     modelAssetId: agent.modelAssetId || "",
+    decisionModelAssetId: agent.decisionModelAssetId || "",
     temperature: agent.temperature ?? 0.7,
     topP: agent.topP ?? 1,
     topK: agent.topK ?? 40,
@@ -96,6 +97,7 @@ export function AgentConfigPage({
   const [agent, setAgent] = useState<AgentItem | null>(null);
   const [form, setForm] = useState<AgentForm | null>(null);
   const [models, setModels] = useState<Option[]>([]);
+  const [decisionModels, setDecisionModels] = useState<Option[]>([]);
   const [mcpServers, setMcpServers] = useState<Option[]>([]);
   const [skills, setSkills] = useState<Option[]>([]);
   const [mcpTools, setMcpTools] = useState<Record<string, string[]>>({});
@@ -131,17 +133,19 @@ export function AgentConfigPage({
     void (async () => {
       setLoading(true);
       try {
-        const [agentRes, modelList, mcpList, skillList, userList] = await Promise.all([
+        const [agentRes, modelList, mcpList, skillList, userList, decisionModelList] = await Promise.all([
           loadAgent(agentId),
           loadModels(),
           loadMcpServers(),
           loadSkills(),
           loadUsers(),
+          loadModels("DECISION"),
         ]);
         if (cancelled) return;
         setAgent(agentRes);
         setForm(initialForm(agentRes));
         setModels(modelList);
+        setDecisionModels(decisionModelList);
         setMcpServers(mcpList);
         setSkills(skillList);
         setUsers(userList);
@@ -442,7 +446,7 @@ export function AgentConfigPage({
             </div>
 
             {tab === "core" && (
-              <AgentPromptTab form={form} setField={setField} errorsByField={errorsByField} models={models} />
+              <AgentPromptTab form={form} setField={setField} errorsByField={errorsByField} models={models} decisionModels={decisionModels} />
             )}
             {tab === "skills" && (
               <AgentSkillsTab form={form} setField={setField} errorsByField={errorsByField} skills={skills} />

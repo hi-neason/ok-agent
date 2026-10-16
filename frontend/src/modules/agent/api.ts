@@ -49,10 +49,10 @@ export async function loadAgent(agentId: string): Promise<AgentItem> {
   return (await jsonOrThrow(res)) as AgentItem;
 }
 
-export async function loadModels(): Promise<Option[]> {
+export async function loadModels(type: "LLM" | "DECISION" = "LLM"): Promise<Option[]> {
   const list = await loadOptions("/api/v1/models");
   return list
-    .filter((m) => m.enabled !== false)
+    .filter((m) => m.enabled !== false && m.type === type)
     .map((m) => ({
       id: String(m.id),
       name: String(m.name),
@@ -204,6 +204,7 @@ export function toConfigPayload(_agentId: string, form: AgentForm) {
     systemPrompt: form.systemPrompt,
     welcomeMessage: form.welcomeMessage,
     modelAssetId: form.modelAssetId || null,
+    decisionModelAssetId: form.decisionModelAssetId || null,
     temperature: form.temperature,
     topP: form.topP,
     topK: form.topK,

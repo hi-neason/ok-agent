@@ -1,6 +1,7 @@
 package io.okagent.module.agent.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -63,7 +64,10 @@ class AgentConfigurationValidationTests {
         when(agents.findById(any())).thenReturn(Optional.of(mock(AgentAsset.class)));
 
         var model = mock(ModelAsset.class);
+        when(model.getId()).thenReturn(modelId);
+        when(model.getName()).thenReturn("Model");
         when(model.isEnabled()).thenReturn(true);
+        when(model.getType()).thenReturn(io.okagent.module.model.domain.ModelType.LLM);
         when(model.getApiKeyCiphertext()).thenReturn("enc");
         when(models.findById(modelId)).thenReturn(Optional.of(model));
 
@@ -95,6 +99,57 @@ class AgentConfigurationValidationTests {
                 validator,
                 mock(org.springframework.context.ApplicationEventPublisher.class),
                 new com.fasterxml.jackson.databind.ObjectMapper());
+    }
+
+    @Test
+    void decisionModelMustExistBeEnabledAndHaveDecisionType() {
+        UUID id = UUID.randomUUID();
+        var request = validReq();
+        request.decisionModelId = id;
+        assertThat(service().validateConfiguration(agentId, request.build()).errors())
+                .anyMatch(i -> i.code().equals("DECISION_MODEL_NOT_FOUND"));
+        var model = new ModelAsset(id, "Decision", io.okagent.module.model.domain.ModelType.LLM,
+                "jev", "jev", "https://example.com", "enc", true);
+        when(models.findById(id)).thenReturn(Optional.of(model));
+        assertThat(service().validateConfiguration(agentId, request.build()).errors())
+                .anyMatch(i -> i.code().equals("DECISION_MODEL_TYPE_INVALID"));
+        model.update("Decision", io.okagent.module.model.domain.ModelType.DECISION, "jev", "jev",
+                "https://example.com", null, false);
+        assertThat(service().validateConfiguration(agentId, request.build()).errors())
+                .anyMatch(i -> i.code().equals("DECISION_MODEL_DISABLED"));
+        model.update("Decision", io.okagent.module.model.domain.ModelType.DECISION, "jev", "jev",
+                "https://example.com", null, true);
+        assertThat(service().validateConfiguration(agentId, request.build()).errors()).isEmpty();
+    }
+
+    @Test
+    void savesDecisionReferenceAndRejectsWrongModelRoles() {
+        var agent = new AgentAsset(agentId, "agent", "Agent", "", "GENERAL");
+        when(agents.findById(agentId)).thenReturn(Optional.of(agent));
+        when(agents.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        var request = validReq();
+        request.mcpServerIds = List.of();
+        request.skillIds = List.of();
+        request.mcpToolFilters = Map.of();
+        UUID decisionId = UUID.randomUUID();
+        request.decisionModelId = decisionId;
+        assertThatThrownBy(() -> service().updateConfiguration(agentId, request.build()))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+        var decision = new ModelAsset(decisionId, "Decision", io.okagent.module.model.domain.ModelType.DECISION,
+                "jev", "jev", "https://example.com", "enc", true);
+        when(models.findById(decisionId)).thenReturn(Optional.of(decision));
+        assertThat(service().updateConfiguration(agentId, request.build()).decisionModelAssetId()).isEqualTo(decisionId);
+        assertThat(new DraftAgentConfig(agent, List.of()).getDecisionModelAssetId()).isEqualTo(decisionId);
+        assertThat(new DraftAgentConfig(agent, List.of()).getResolvedDecisionModelAsset()).isNull();
+        request.modelId = decisionId;
+        assertThatThrownBy(() -> service().updateConfiguration(agentId, request.build()))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+        request.modelId = modelId;
+        request.decisionModelId = modelId;
+        assertThatThrownBy(() -> service().updateConfiguration(agentId, request.build()))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+        request.decisionModelId = null;
+        assertThat(service().updateConfiguration(agentId, request.build()).decisionModelAssetId()).isNull();
     }
 
     private Req validReq() {
@@ -246,12 +301,14 @@ class AgentConfigurationValidationTests {
         int sandboxMemoryMb = 512;
         int sandboxCpuCount = 1;
         String subagentsJson = "";
+        UUID decisionModelId;
 
         AgentConfigRequest build() {
             return new AgentConfigRequest(
                     systemPrompt,
                     welcomeMessage,
                     modelId,
+                    decisionModelId,
                     temperature,
                     topP,
                     topK,

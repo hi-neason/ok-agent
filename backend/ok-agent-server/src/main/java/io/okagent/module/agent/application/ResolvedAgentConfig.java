@@ -42,6 +42,11 @@ public interface ResolvedAgentConfig {
 
     UUID getModelAssetId();
 
+    default UUID getDecisionModelAssetId() { return null; }
+
+    /** Returns frozen decision configuration for releases; drafts resolve their reference at runtime. */
+    default ResolvedDecisionModelAsset getResolvedDecisionModelAsset() { return null; }
+
     Double getTemperature();
 
     Double getTopP();

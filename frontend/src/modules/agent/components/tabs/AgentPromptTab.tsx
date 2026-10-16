@@ -12,7 +12,8 @@ export function AgentPromptTab({
   setField,
   errorsByField,
   models,
-}: AgentTabProps & { models: Option[] }) {
+  decisionModels,
+}: AgentTabProps & { models: Option[]; decisionModels: Option[] }) {
   const { t } = useTranslation();
   const fieldError = (field: string) =>
     errorsByField[field]?.[0]?.message;
@@ -66,6 +67,16 @@ export function AgentPromptTab({
         {fieldError("modelAssetId") && (
           <div className="field-error">{fieldError("modelAssetId")}</div>
         )}
+        <label className="runtime-field" data-field="decisionModelAssetId">
+          <span>{t("agents.decisionModel")}</span>
+          <select className="cfg-select" value={form.decisionModelAssetId}
+            onChange={(e) => setField("decisionModelAssetId", e.target.value)}>
+            <option value="">{t("agents.noDecisionModel")}</option>
+            {decisionModels.map((m) => <option key={m.id} value={m.id}>{m.name}{m.sub ? ` — ${m.sub}` : ""}</option>)}
+          </select>
+          <small>{t("agents.decisionModelHint")}</small>
+          {fieldError("decisionModelAssetId") && <div className="field-error">{fieldError("decisionModelAssetId")}</div>}
+        </label>
         <div className="param-grid">
           <label className="param-row">
             <span>

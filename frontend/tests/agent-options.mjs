@@ -24,8 +24,8 @@ try {
       const page = Number(new URL(url, 'http://localhost').searchParams.get('page'));
       return { ok: true, status: 200, json: async () => ({
         content: page === 0
-          ? Array.from({ length: 100 }, (_, id) => ({ id, userId: String(id), name: `Item ${id}`, enabled: true }))
-          : [{ id: 100, userId: '100', name: 'Last', enabled: true }, { id: 101, enabled: false }],
+          ? Array.from({ length: 100 }, (_, id) => ({ id, userId: String(id), name: `Item ${id}`, enabled: true, type: "LLM" }))
+          : [{ id: 100, userId: '100', name: 'Last', enabled: true, type: "LLM" }, { id: 101, enabled: false }],
         totalPages: 2,
       }) };
     };
@@ -33,6 +33,12 @@ try {
     assert.equal(items.length, 101, `${loader} must include later pages and exclude disabled items`);
     assert.deepEqual(calls, [`/api/v1/${path}?page=0&size=100`, `/api/v1/${path}?page=1&size=100`]);
   }
+  globalThis.fetch = async () => ({ ok: true, status: 200, json: async () => ({
+    content: [{ id: 'llm', type: 'LLM', enabled: true }, { id: 'decision', type: 'DECISION', enabled: true },
+      { id: 'disabled', type: 'DECISION', enabled: false }], totalPages: 1,
+  }) });
+  assert.deepEqual((await api.loadModels()).map(m => m.id), ['llm']);
+  assert.deepEqual((await api.loadModels('DECISION')).map(m => m.id), ['decision']);
   globalThis.fetch = async () => ({ ok: false, status: 400, json: async () => ({ message: 'Invalid page size' }) });
   await assert.rejects(api.loadModels(), /Invalid page size/);
   globalThis.fetch = async () => ({ ok: true, status: 200, json: async () => ({ content: [], totalPages: 0 }) });

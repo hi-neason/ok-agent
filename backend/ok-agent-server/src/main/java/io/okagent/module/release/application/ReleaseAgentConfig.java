@@ -11,6 +11,7 @@ import io.okagent.module.mcp.domain.McpTransport;
 import io.okagent.module.agent.application.ResolvedAgentConfig;
 import io.okagent.module.agent.application.ResolvedMcpServer;
 import io.okagent.module.agent.application.ResolvedModelAsset;
+import io.okagent.module.agent.application.ResolvedDecisionModelAsset;
 import io.okagent.module.agent.application.ResolvedSkillAsset;
 import io.okagent.module.agent.application.ResolvedSubagent;
 import java.util.ArrayList;
@@ -191,6 +192,19 @@ public final class ReleaseAgentConfig implements ResolvedAgentConfig {
     @Override
     public String getSkillIdsJson() {
         return jsonArrayField("skillIds");
+    }
+
+    @Override
+    public UUID getDecisionModelAssetId() {
+        return node.hasNonNull("decisionModelAssetId") ? uuid("decisionModelAssetId") : null;
+    }
+
+    @Override
+    public ResolvedDecisionModelAsset getResolvedDecisionModelAsset() {
+        JsonNode model = node.path("refs").path("decisionModel");
+        if (!model.isObject() || model.path("id").asText("").isBlank()) return null;
+        return new ResolvedDecisionModelAsset(UUID.fromString(model.path("id").asText()),
+                model.path("provider").asText(), model.path("modelId").asText(), model.path("endpoint").asText());
     }
 
     @Override

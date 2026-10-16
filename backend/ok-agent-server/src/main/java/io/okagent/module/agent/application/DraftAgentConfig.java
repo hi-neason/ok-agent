@@ -76,6 +76,11 @@ public final class DraftAgentConfig implements ResolvedAgentConfig {
     }
 
     @Override
+    public UUID getDecisionModelAssetId() {
+        return draft.getDecisionModelAssetId();
+    }
+
+    @Override
     public Double getTemperature() {
         return draft.getTemperature();
     }

@@ -69,6 +69,8 @@ class ReleaseAgentConfigAssetsTests {
     void defaultsMissingPermissionModeToDefault() {
         ReleaseAgentConfig config = ReleaseAgentConfig.fromSnapshot("{}");
 
+        assertThat(config.getDecisionModelAssetId()).isNull();
+        assertThat(config.getResolvedDecisionModelAsset()).isNull();
         assertThat(config.getPermissionMode()).isEqualTo(AgentPermissionMode.DEFAULT);
     }
 }

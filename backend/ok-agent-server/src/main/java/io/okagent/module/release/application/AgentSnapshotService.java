@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.okagent.module.agent.domain.AgentAsset;
 import io.okagent.module.mcp.domain.McpServer;
 import io.okagent.module.model.domain.ModelAsset;
+import io.okagent.module.model.domain.ModelType;
 import io.okagent.module.skill.domain.SkillAsset;
 import io.okagent.module.agent.infrastructure.persistence.AgentAssetRepository;
 import io.okagent.module.mcp.infrastructure.persistence.McpServerRepository;
@@ -110,6 +111,7 @@ public class AgentSnapshotService {
         if (draft.getModelAssetId() != null) {
             ModelAsset model = models.findById(draft.getModelAssetId())
                     .orElseThrow(() -> bad("引用的模型不存在或已删除"));
+            if (model.getType() != ModelType.LLM) throw bad("Agent model must have LLM type");
             if (!model.isEnabled()) {
                 throw bad("引用的模型「" + model.getName() + "」已禁用");
             }
@@ -117,6 +119,18 @@ public class AgentSnapshotService {
                 cipher.decrypt(model.getApiKeyCiphertext());
             } catch (Exception e) {
                 throw bad("引用的模型「" + model.getName() + "」API 密钥无法解密，请重新配置");
+            }
+        }
+        if (draft.getDecisionModelAssetId() != null) {
+            ModelAsset model = models.findById(draft.getDecisionModelAssetId())
+                    .orElseThrow(() -> bad("Decision model does not exist"));
+            if (!model.isEnabled() || model.getType() != ModelType.DECISION) {
+                throw bad("Decision model must be enabled and have DECISION type");
+            }
+            try {
+                cipher.decrypt(model.getApiKeyCiphertext());
+            } catch (Exception e) {
+                throw bad("Decision model API key cannot be decrypted; please reconfigure it");
             }
         }
         for (UUID id : readUuidList(draft.getMcpServerIdsJson())) {
@@ -161,6 +175,7 @@ public class AgentSnapshotService {
         n.put("systemPrompt", agent.getSystemPrompt());
         n.put("welcomeMessage", agent.getWelcomeMessage());
         if (agent.getModelAssetId() != null) n.put("modelAssetId", agent.getModelAssetId().toString());
+        if (agent.getDecisionModelAssetId() != null) n.put("decisionModelAssetId", agent.getDecisionModelAssetId().toString());
         putDouble(n, "temperature", agent.getTemperature());
         putDouble(n, "topP", agent.getTopP());
         putInt(n, "topK", agent.getTopK());
@@ -242,6 +257,16 @@ public class AgentSnapshotService {
                 r.put("endpoint", m.getEndpoint());
                 r.put("updatedAt", m.getUpdatedAt() == null ? "" : m.getUpdatedAt().toString());
                 refs.set("model", r);
+            });
+        }
+        if (agent.getDecisionModelAssetId() != null) {
+            models.findById(agent.getDecisionModelAssetId()).ifPresent(m -> {
+                ObjectNode r = refs.putObject("decisionModel");
+                r.put("id", m.getId().toString());
+                r.put("provider", m.getProvider());
+                r.put("modelId", m.getModelId());
+                r.put("endpoint", m.getEndpoint());
+                r.put("updatedAt", m.getUpdatedAt() == null ? "" : m.getUpdatedAt().toString());
             });
         }
         ArrayNode mcpArr = json.createArrayNode();

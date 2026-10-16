@@ -46,6 +46,9 @@ public class AgentAsset {
     @Column(name = "model_asset_id")
     private UUID modelAssetId;
 
+    @Column(name = "decision_model_asset_id")
+    private UUID decisionModelAssetId;
+
     private Double temperature;
 
     @Column(name = "top_p")
@@ -362,6 +365,14 @@ public class AgentAsset {
 
     public UUID getModelAssetId() {
         return modelAssetId;
+    }
+
+    public UUID getDecisionModelAssetId() {
+        return decisionModelAssetId;
+    }
+
+    public void setDecisionModelAssetId(UUID decisionModelAssetId) {
+        this.decisionModelAssetId = decisionModelAssetId;
     }
 
     public Double getTemperature() {

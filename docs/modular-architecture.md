@@ -32,6 +32,18 @@ editing an Agent draft does not restart production channels.
 New snapshots include model endpoint/name, MCP and skill configurations, pinned subagents and intent classification rules.
 Secrets are resolved separately from snapshots. Legacy snapshots without intent rules skip pre-classification.
 
+## Decision model configuration
+
+`DECISION` assets are managed separately from chat (`LLM`) assets. Agent drafts optionally reference
+`decisionModelAssetId`; the primary model still requires an enabled LLM. Migration V55 adds the nullable
+reference, so existing configurations need no backfill. Saving rejects unavailable, disabled or wrongly
+classified model references.
+
+New release snapshots freeze the decision model's asset ID, provider, model ID and endpoint under
+`refs.decisionModel`; API keys remain outside the snapshot and are resolved through the managed asset
+credential reference. Editing a draft or model endpoint cannot change a published decision configuration.
+Legacy snapshots without this field retain their existing classification behavior.
+
 ## Human handling
 
 Only `OPEN` conversations permit automated replies. Incoming messages remain recorded during human handling.

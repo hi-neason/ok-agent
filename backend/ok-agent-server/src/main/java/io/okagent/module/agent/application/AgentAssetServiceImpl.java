@@ -7,6 +7,7 @@ import io.okagent.module.agent.infrastructure.persistence.AgentAssetRepository;
 import io.okagent.module.mcp.infrastructure.persistence.McpServerRepository;
 import io.okagent.module.mcp.infrastructure.persistence.McpToolSnapshotRepository;
 import io.okagent.module.model.infrastructure.persistence.ModelAssetRepository;
+import io.okagent.module.model.domain.ModelType;
 import io.okagent.module.skill.infrastructure.persistence.SkillAssetRepository;
 import io.okagent.module.agent.application.AgentAssetResponse;
 import io.okagent.module.agent.application.AgentConfigRequest;
@@ -127,6 +128,7 @@ public class AgentAssetServiceImpl implements AgentAssetService {
                 request.maxTokens(),
                 writeUuidList(request.mcpServerIds()),
                 writeUuidList(request.skillIds()));
+        agent.setDecisionModelAssetId(request.decisionModelAssetId());
         agent.updateRuntimePolicy(
                 request.maxIters(),
                 request.modelTimeoutSeconds(),
@@ -196,6 +198,7 @@ public class AgentAssetServiceImpl implements AgentAssetService {
             return report.toResponse(start);
         }
         collectModelIssues(request, report);
+        collectDecisionModelIssues(request, report);
         collectMcpServerIssues(request, report);
         collectMcpToolFilterIssues(request, report);
         collectSkillIssues(request, report);
@@ -217,7 +220,7 @@ public class AgentAssetServiceImpl implements AgentAssetService {
 
     private static String tabForField(String field) {
         return switch (field) {
-            case "systemPrompt", "welcomeMessage", "modelAssetId", "temperature", "topP", "topK", "maxTokens" -> "core";
+            case "systemPrompt", "welcomeMessage", "modelAssetId", "decisionModelAssetId", "temperature", "topP", "topK", "maxTokens" -> "core";
             case "mcpServerIds", "mcpToolFilters" -> "mcp";
             case "skillIds" -> "skills";
             case "memoryEnabled",
@@ -270,6 +273,10 @@ public class AgentAssetServiceImpl implements AgentAssetService {
             report.check("model.resolvable", false, "Model disabled");
             return;
         }
+        if (m.getType() != ModelType.LLM) {
+            report.error("modelAssetId", "MODEL_TYPE_INVALID", "Agent model must be an LLM", "core");
+            return;
+        }
         report.check("model.resolvable", true, "Model exists and is enabled");
         if (m.getApiKeyCiphertext() == null || m.getApiKeyCiphertext().isBlank()) {
             report.warn(
@@ -277,6 +284,18 @@ public class AgentAssetServiceImpl implements AgentAssetService {
                     "MODEL_API_KEY_MISSING",
                     "Model has no API key configured; connection tests will fail",
                     "core");
+        }
+    }
+
+    private void collectDecisionModelIssues(AgentConfigRequest request, ValidationReport report) {
+        if (request.decisionModelAssetId() == null) return;
+        var model = models.findById(request.decisionModelAssetId()).orElse(null);
+        if (model == null) {
+            report.error("decisionModelAssetId", "DECISION_MODEL_NOT_FOUND", "Decision model does not exist", "core");
+        } else if (!model.isEnabled()) {
+            report.error("decisionModelAssetId", "DECISION_MODEL_DISABLED", "Decision model is disabled", "core");
+        } else if (model.getType() != ModelType.DECISION) {
+            report.error("decisionModelAssetId", "DECISION_MODEL_TYPE_INVALID", "Decision model must have DECISION type", "core");
         }
     }
 
@@ -506,9 +525,8 @@ public class AgentAssetServiceImpl implements AgentAssetService {
     }
 
     private void validateReferences(AgentConfigRequest request) {
-        if (request.modelAssetId() != null && !models.existsById(request.modelAssetId())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Referenced model asset does not exist");
-        }
+        validateModelReference(request.modelAssetId(), ModelType.LLM);
+        validateModelReference(request.decisionModelAssetId(), ModelType.DECISION);
         for (UUID mcpId : safeList(request.mcpServerIds())) {
             if (!mcpServers.existsById(mcpId)) {
                 throw new ResponseStatusException(
@@ -520,6 +538,15 @@ public class AgentAssetServiceImpl implements AgentAssetService {
                 throw new ResponseStatusException(
                         HttpStatus.BAD_REQUEST, "Referenced skill does not exist: " + skillId);
             }
+        }
+    }
+
+    private void validateModelReference(UUID id, ModelType type) {
+        if (id == null) return;
+        var model = models.findById(id).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.BAD_REQUEST, "Referenced model asset does not exist"));
+        if (!model.isEnabled() || model.getType() != type) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Referenced model must be enabled and have type " + type);
         }
     }
 

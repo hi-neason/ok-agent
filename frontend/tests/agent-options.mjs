@@ -45,6 +45,16 @@ try {
   assert.deepEqual(await api.loadModels(), []);
   globalThis.fetch = async () => ({ ok: true, status: 200, json: async () => ({ content: [] }) });
   await assert.rejects(api.loadModels(), /Invalid option page response/);
+  let excessivePageCalls = 0;
+  globalThis.fetch = async () => {
+    excessivePageCalls += 1;
+    if (excessivePageCalls > 1) throw new Error('Unexpected extra page request');
+    return { ok: true, status: 200, json: async () => ({
+      content: [{ id: 'first', type: 'LLM', enabled: true }], totalPages: 51,
+    }) };
+  };
+  await assert.rejects(api.loadModels(), /Pagination response exceeds page limit/);
+  assert.equal(excessivePageCalls, 1);
   console.log('Agent option loading regression checks passed');
 } finally {
   globalThis.fetch = originalFetch;

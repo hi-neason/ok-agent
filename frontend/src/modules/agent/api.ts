@@ -1,4 +1,5 @@
 import type { Page } from "../shared";
+import { loadAllPages } from "../shared/loadAllPages";
 import type {
   AgentForm,
   AgentItem,
@@ -22,9 +23,8 @@ async function jsonOrThrow(res: Response): Promise<unknown> {
 }
 
 async function loadOptions(path: string): Promise<Array<Record<string, unknown>>> {
-  const items: Array<Record<string, unknown>> = [];
-  for (let page = 0; ; page += 1) {
-    const res = await fetch(`${path}?page=${page}&size=100`);
+  return loadAllPages(async (page, size) => {
+    const res = await fetch(`${path}?page=${page}&size=${size}`);
     const data = await jsonOrThrow(res);
     if (!data || typeof data !== "object" || !("content" in data) || !("totalPages" in data)) {
       throw new Error("Invalid option page response");
@@ -37,11 +37,9 @@ async function loadOptions(path: string): Promise<Array<Record<string, unknown>>
       if (!item || typeof item !== "object" || Array.isArray(item)) {
         throw new Error("Invalid option item response");
       }
-      items.push(item as Record<string, unknown>);
     }
-    if (page + 1 >= totalPages) return items;
-    if (content.length === 0) throw new Error("Incomplete option page response");
-  }
+    return { content, totalPages } as Page<Record<string, unknown>>;
+  });
 }
 
 export async function loadAgent(agentId: string): Promise<AgentItem> {

@@ -1,4 +1,5 @@
 import type { Page } from "../shared";
+import { loadAllPages } from "../shared/loadAllPages";
 import type {
   AgentOption,
   ChannelOption,
@@ -23,18 +24,9 @@ async function parse<T>(response: Response): Promise<T> {
 }
 
 async function listOptions<T>(path: string): Promise<T[]> {
-  const items: T[] = [];
-  for (let page = 0; ; page += 1) {
-    const data = await parse<Page<T>>(await fetch(`${path}?page=${page}&size=100`));
-    if (!data || !Array.isArray(data.content) || !Number.isInteger(data.totalPages) || data.totalPages < 0) {
-      throw new Error(i18n.t("common.requestFailed", { status: "Invalid pagination" }));
-    }
-    items.push(...data.content);
-    if (page + 1 >= data.totalPages) return items;
-    if (data.content.length === 0) {
-      throw new Error(i18n.t("common.requestFailed", { status: "Incomplete pagination" }));
-    }
-  }
+  return loadAllPages(async (page, size) =>
+    parse<Page<T>>(await fetch(`${path}?page=${page}&size=${size}`)),
+  );
 }
 
 export async function listAgents(): Promise<AgentOption[]> {

@@ -44,12 +44,13 @@ export async function deleteIntent(id: string): Promise<void> {
 
 export function flatten(nodes: IntentNode[]): IntentDto[] {
   const out: IntentDto[] = [];
-  const walk = (ns: IntentNode[]) => {
-    for (const n of ns) {
-      out.push(n.node);
-      walk(n.children);
+  const pending = [...nodes].reverse();
+  while (pending.length > 0) {
+    const current = pending.pop()!;
+    out.push(current.node);
+    for (let index = current.children.length - 1; index >= 0; index -= 1) {
+      pending.push(current.children[index]);
     }
-  };
-  walk(nodes);
+  }
   return out;
 }

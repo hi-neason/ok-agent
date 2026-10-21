@@ -22,8 +22,8 @@ export async function loadAllPages<T>(
       throw new Error("Invalid pagination response");
     }
     if (result.totalPages > maxPages) throw new Error("Pagination response exceeds page limit");
-    items.push(...result.content);
-    if (items.length > maxItems) throw new Error("Pagination response exceeds item limit");
+    if (result.content.length > maxItems - items.length) throw new Error("Pagination response exceeds item limit");
+    for (const item of result.content) items.push(item);
     if (page + 1 >= result.totalPages) return items;
     if (result.content.length === 0) throw new Error("Incomplete pagination response");
   }

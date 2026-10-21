@@ -54,4 +54,9 @@ await assert.rejects(
   /Invalid pagination limit/,
 );
 
+await assert.rejects(
+  api.loadAllPages(async () => ({ content: new Array(200_000).fill(null), totalPages: 1 })),
+  /Pagination response exceeds item limit/,
+);
+
 console.log('Bounded loadAllPages regression checks passed');

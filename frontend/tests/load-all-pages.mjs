@@ -59,4 +59,13 @@ await assert.rejects(
   /Pagination response exceeds item limit/,
 );
 
+for (const key of ['maxPages', 'maxItems']) {
+  let requested = false;
+  await assert.rejects(api.loadAllPages(async () => {
+    requested = true;
+    return { content: [], totalPages: 0 };
+  }, { [key]: Number.MAX_SAFE_INTEGER + 1 }), /Invalid pagination limit/);
+  assert.equal(requested, false, 'Invalid limits must be rejected before requesting data');
+}
+
 console.log('Bounded loadAllPages regression checks passed');

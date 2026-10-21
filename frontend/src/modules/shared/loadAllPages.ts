@@ -10,8 +10,8 @@ export async function loadAllPages<T>(
 ): Promise<T[]> {
   const maxPages = options.maxPages ?? DEFAULT_MAX_PAGES;
   const maxItems = options.maxItems ?? DEFAULT_MAX_ITEMS;
-  if (!Number.isInteger(maxPages) || maxPages < 1) throw new Error("Invalid pagination limit");
-  if (!Number.isInteger(maxItems) || maxItems < 1) throw new Error("Invalid pagination limit");
+  if (!Number.isSafeInteger(maxPages) || maxPages < 1) throw new Error("Invalid pagination limit");
+  if (!Number.isSafeInteger(maxItems) || maxItems < 1) throw new Error("Invalid pagination limit");
 
   const items: T[] = [];
   for (let page = 0; ; page += 1) {

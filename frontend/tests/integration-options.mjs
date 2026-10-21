@@ -63,6 +63,12 @@ try {
     return { ok: true, json: async () => ({ content: [], totalPages: 3 }) };
   };
   await inbox.listWorkItems('OPEN', 2, 50);
+  globalThis.fetch = async () => new Response('Upstream unavailable', { status: 502 });
+  await assert.rejects(inbox.listWorkItems(), /^Error: Upstream unavailable$/);
+  globalThis.fetch = async () => new Response('', { status: 503 });
+  await assert.rejects(inbox.listWorkItems(), /^Error: HTTP 503$/);
+  globalThis.fetch = async () => Response.json({ detail: 'Queue unavailable' }, { status: 500 });
+  await assert.rejects(inbox.listWorkItems(), /^Error: Queue unavailable$/);
   console.log('All option loading and inbox pagination regression checks passed');
 } finally {
   globalThis.fetch = originalFetch;

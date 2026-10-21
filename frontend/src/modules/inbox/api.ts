@@ -29,7 +29,9 @@ async function jsonOrThrow<T>(response: Response): Promise<T> {
     const body = (await (response.clone?.() ?? response).json().catch(() => null)) as
       | { detail?: string; message?: string }
       | null;
-    throw new Error(body?.detail || body?.message || `HTTP ${response.status}`);
+    if (body?.detail || body?.message) throw new Error(body.detail || body.message);
+    const text = await response.text().catch(() => "");
+    throw new Error(text || `HTTP ${response.status}`);
   }
   if (response.status === 204 || response.status === 205) return undefined as T;
   return (await response.json()) as T;

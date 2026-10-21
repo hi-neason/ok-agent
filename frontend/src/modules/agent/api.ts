@@ -14,8 +14,9 @@ async function jsonOrThrow(res: Response): Promise<unknown> {
     const body = (await (res.clone?.() ?? res).json().catch(() => null)) as
       | { message?: unknown; detail?: unknown }
       | null;
-    const message = body?.message ?? body?.detail;
-    if (typeof message === "string" && message) throw new Error(message);
+    for (const message of [body?.message, body?.detail]) {
+      if (typeof message === "string" && message) throw new Error(message);
+    }
     const text = await res.text().catch(() => "");
     throw new Error(text || `HTTP ${res.status}`);
   }

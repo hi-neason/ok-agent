@@ -55,6 +55,10 @@ try {
   };
   await assert.rejects(api.loadModels(), /Pagination response exceeds page limit/);
   assert.equal(excessivePageCalls, 1);
+  for (const message of ['', 42]) {
+    globalThis.fetch = async () => Response.json({ message, detail: 'Agent unavailable' }, { status: 500 });
+    await assert.rejects(api.loadAgent('missing'), /^Error: Agent unavailable$/);
+  }
   console.log('Agent option loading regression checks passed');
 } finally {
   globalThis.fetch = originalFetch;
